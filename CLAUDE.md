@@ -16,9 +16,7 @@ Read this file before doing anything. It is configuration, not documentation. Ch
 ## 2 · Standing decisions — never ask about these
 
 **The PRD is the product; this file is how we build it.** Every product fact — vocabulary, screens, data model,
-permissions, the do-not-build list, the demo as the acceptance bar, the build decisions — is read from
-`docs/initialRequirements/PRD.md`, never restated here. **Disagreement between the two is a bug**: the PRD wins on product,
-this file wins on process.
+permissions, the do-not-build list, the demo as the acceptance bar, the build decisions — never restated here. **Disagreement between PRD and claude.md is a bug**: the PRD wins on product,this file wins on process.
 
 - **Follow the design system named in the PRD from the first line of frontend code.** No "build it plain, style it
   later". A generically-styled screen **fails its acceptance criteria** and the reviewer blocks it on that alone.
@@ -90,13 +88,7 @@ In doubt, the list. Never open an issue "to be safe"; a backlog nobody drains is
 
 ## 7 · Communication
 
-TLDR first. One-liners. Numbered steps, one action per line. End with exactly one next action.
+MANDATORY to talk to me using TLDR first and One-liners (highest priority if possible). Numbered steps, one action per line. End with exactly one next action.
 Always qualify a number — `issue #12` or `PR #12`, never a bare `#12`. No preamble, no recap, no sign-off.
 
-## Known shell traps on this team's machines (Windows)
 
-- PowerShell 5.1 has **no `&&`** — use `A; if ($?) { B }`. No ternary, no `??`.
-- Writing an issue or PR body: PowerShell adds a byte-order mark and bash heredocs break on apostrophes. Write it with
-  Python `open(..., encoding="utf-8")`, then pass `--body-file`. `Set-Content` also defaults to ANSI — pass `-Encoding utf8`.
-- `gh` and `node` may be off PATH in a fresh shell — check in preflight, do not assume.
-- `index.lock` means another terminal is mid-command. Wait 5 seconds, retry 3 times.
