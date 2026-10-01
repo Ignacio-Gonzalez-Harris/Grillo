@@ -49,36 +49,25 @@ permissions, the do-not-build list, the demo as the acceptance bar, the build de
 
 ## 5 · Build and test commands
 
-Written down because there is nothing to auto-detect. Every agent uses exactly these; the scaffold must make them true.
+**The tech stack is not decided yet.** Every command below is open. The pull request that decides the stack fills this
+section in; from then on every agent uses exactly those commands and the scaffold must make them true.
 
 | Purpose | Command |
 |---|---|
-| Build | `npm run build` |
-| **The full suite** | `npm test` |
-| One file | `npx vitest run src/x.test.ts` |
-| One test | `npx vitest run -t "<test name>"` |
-| Typecheck | `npm run typecheck` |
-| Lint | `npm run lint` |
-| Apply migrations | `npm run db:migrate` |
-| Create a migration | `npx prisma migrate dev --name <issue>-<what-changed>` |
-| Reset database | `npm run db:reset` |
-| Seed | `npm run db:seed` |
-| Dev server | `npm run dev` |
+| Build | _to be decided_ |
+| **The full suite** | _to be decided_ |
+| One test | _to be decided_ |
+| Lint | _to be decided_ |
+| Dev server | _to be decided_ |
 
-**The gate, before any pull request opens:** `npm run build && npm run typecheck && npm test`
+Add rows as the chosen stack needs them (typecheck, database migrations, seed).
 
-- Stack: **Next.js (App Router) · TypeScript · Prisma · PostgreSQL · npm · Node 22 · Vitest**. Hosted on Railway; `main` auto-deploys.
-- **Node 22**: `engines` in `package.json` sets the floor (`>=22`) and the committed `.nvmrc` pins `22` for version managers. Six laptops, one runtime.
-- **Local database:** PostgreSQL 16 from the committed `docker-compose.yml`, published on port **15432** (not 5432 — a native PostgreSQL owns 5432 on at least one team machine), user and password `postgres`. `.env.example` carries the matching URL and a test asserts the two agree.
-- **Seed data grows per area, never in one shared file.** `prisma/seed.ts` is the loader; a story that adds seed data puts it in `prisma/seed/<area>.ts` and imports it there, so two branches never append to the same file.
-- **Schema changes are versioned migration files** (`prisma/migrations/`), so nothing is ever silently dropped. Three rules
-  keep parallel branches from fighting over them: name every migration `<issue>-<what-changed>`; **never edit or delete a
-  migration that has reached `main`** — correct it with a new one; and after `git merge origin/main`, run `npm run db:migrate`
-  before anything else, so you are running on everyone else's schema and not just your own.
-- **Per worktree:** database `grillo_<issue>` in your own Docker Postgres; dev server on port `3000 + <issue>`.
-  Kill a server **by process id, never by image or process name** — you will kill a teammate's.
-- `DATABASE_URL` and secrets live in a gitignored `.env` beside the committed `.env.example`. **Never commit a secret.**
-- CI runs `npm ci && npm run lint && npm run build && npm run typecheck && npm test` on every pull request.
+**The gate, before any pull request opens:** _to be decided_ — the build plus the full suite, once they exist. Until
+then there is nothing to build or test; say so in the pull request body.
+
+- Stack, runtime version, database, hosting and CI: **all to be decided**. Do not assume any of them.
+- Kill a server **by process id, never by image or process name** — you will kill a teammate's.
+- **Never commit a secret.**
 
 ## 6 · Deferred findings
 
