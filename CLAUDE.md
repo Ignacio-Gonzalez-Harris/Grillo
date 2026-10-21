@@ -60,21 +60,22 @@ section in; from then on every agent uses exactly those commands and the scaffol
 | Lint | `TBD` |
 | Dev server | `TBD` |
 
-Add rows as the chosen stack needs them (typecheck, database migrations, seed).
+Add rows as the chosen stack needs them (database migrations, seed).
 
-**The gate, before any pull request opens:** `TBD` — the build plus the full suite, once they exist. Until
+**The gate, before any pull request opens:** `TBD` — build, lint, typecheck, then the full suite, once they exist. Until
 then there is nothing to build or test; say so in the pull request body.
 
-- Stack, runtime version, database, hosting and CI: **all to be decided**. Do not assume any of them.
+- Stack, runtime version, database and hosting: **all to be decided**. Do not assume any of them. CI is GitHub
+  Actions (`.github/workflows/ci.yml`); until the stack is decided it runs only orion's install check.
 - Kill a server **by process id, never by image or process name** — you will kill a teammate's.
 - **Never commit a secret.**
 
-## 7 · Communication
+## 6 · Communication
 
 MANDATORY to talk to me using TLDR first and One-liners (highest priority if possible). Numbered steps, one action per line. End with exactly one next action.
 Always qualify a number — `issue #12` or `PR #12`, never a bare `#12`. No preamble, no recap, no sign-off.
 
-## 8 · Boundaries
+## 7 · Boundaries
 
 - Deploy target: `TBD`.
 - External read-only repositories: `TBD`.
@@ -82,7 +83,7 @@ Always qualify a number — `issue #12` or `PR #12`, never a bare `#12`. No prea
 - Boundaries an agent must not move: `TBD`.
 - Working language: English (see Standing decisions).
 
-## 9 · Pending until PRD v1
+## 8 · Pending until PRD v1
 
 | Question | Decides (file · section) | Who decides |
 |---|---|---|
