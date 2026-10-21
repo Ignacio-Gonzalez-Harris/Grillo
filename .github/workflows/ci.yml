@@ -1,0 +1,21 @@
+# The merge gate. One job, named `ci`, so every pull request reports a check run called `ci`.
+#
+# The stack is not decided yet, so the only gate is orion's mechanical install check: it fails when
+# a file orion installed is missing, doubled or broken. Add the build and test steps here once the
+# stack decides them.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: orion verify
+        run: bash .claude/orion/orion.sh verify
