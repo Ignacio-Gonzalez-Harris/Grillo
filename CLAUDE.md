@@ -30,10 +30,7 @@ permissions, the do-not-build list, the demo as the acceptance bar, the build de
 
 ## 3 · Git
 
-- **NEVER push to `main`. Ever.** Not a fix, not a typo, not "it is only a doc". Every single change reaches `main` as a
-  pull request that is then merged. Agents have full autonomy to open, review and merge that pull request — they have no
-  autonomy to skip it. Nothing on GitHub's side enforces this; it holds because you do.
-- **One issue = one worktree = one branch `feature/<issue>-<slug>` = one pull request.** Never work in the main checkout.
+- **One issue = one worktree = one branch `feat/<issue>-<slug>` = one pull request.** Never work in the main checkout.
 - Worktrees live at **`C:\wt\<issue>-<slug>`**, never inside the project — Windows path limits bite once `node_modules` exists.
 - Update a branch with `git merge origin/main` — **never rebase, never stash**.
 - Never force-push. Never `git add -A`. Never delete work you did not create.
@@ -45,7 +42,6 @@ permissions, the do-not-build list, the demo as the acceptance bar, the build de
 - **Never delete, skip or weaken a test. Never widen a timeout.** The skip count is baselined; a change to it is a failure.
 - The pull request body carries the **evidence table** — what you did, what you expected, what you saw. There are no browser
   tests, so a green suite alone is *not* evidence that a screen works.
-- A **fresh agent** reviews every pull request and runs the suite itself — never the agent that wrote the code.
 - **Never merge on red or pending.** "No checks reported" is red. Poll for the check run first: GitHub can take four minutes.
 - Branch protection is unavailable on this plan, so nothing enforces these but you. That is the deal.
 
@@ -56,30 +52,43 @@ section in; from then on every agent uses exactly those commands and the scaffol
 
 | Purpose | Command |
 |---|---|
-| Build | _to be decided_ |
-| **The full suite** | _to be decided_ |
-| One test | _to be decided_ |
-| Lint | _to be decided_ |
-| Dev server | _to be decided_ |
+| Build | `TBD` |
+| **The full suite** | `TBD` |
+| One file | `TBD` |
+| One test | `TBD` |
+| Typecheck | `TBD` |
+| Lint | `TBD` |
+| Dev server | `TBD` |
 
 Add rows as the chosen stack needs them (typecheck, database migrations, seed).
 
-**The gate, before any pull request opens:** _to be decided_ — the build plus the full suite, once they exist. Until
+**The gate, before any pull request opens:** `TBD` — the build plus the full suite, once they exist. Until
 then there is nothing to build or test; say so in the pull request body.
 
 - Stack, runtime version, database, hosting and CI: **all to be decided**. Do not assume any of them.
 - Kill a server **by process id, never by image or process name** — you will kill a teammate's.
 - **Never commit a secret.**
 
-## 6 · Deferred findings
-
-Small and safe → fix it in the same pull request. Critical → a GitHub issue, linked from the pull request.
-Everything else → one line in `docs/deferred/<issue>.md`, **one file per issue** — a shared list conflicts on every branch.
-In doubt, the list. Never open an issue "to be safe"; a backlog nobody drains is worse than no backlog.
-
 ## 7 · Communication
 
 MANDATORY to talk to me using TLDR first and One-liners (highest priority if possible). Numbered steps, one action per line. End with exactly one next action.
 Always qualify a number — `issue #12` or `PR #12`, never a bare `#12`. No preamble, no recap, no sign-off.
+
+## 8 · Boundaries
+
+- Deploy target: `TBD`.
+- External read-only repositories: `TBD`.
+- Sensitive data classes that must never enter the repository: `TBD`.
+- Boundaries an agent must not move: `TBD`.
+- Working language: English (see Standing decisions).
+
+## 9 · Pending until PRD v1
+
+| Question | Decides (file · section) | Who decides |
+|---|---|---|
+| Tech stack and runtime version | CLAUDE.md · Build and test commands | `TBD` |
+| Database | CLAUDE.md · Build and test commands | `TBD` |
+| Hosting | CLAUDE.md · Boundaries | `TBD` |
+| CI runner and gate steps | CLAUDE.md · Build and test commands; .github/workflows/ci.yml | `TBD` |
 
 
