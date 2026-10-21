@@ -1,3 +1,5 @@
+Mandatory rules, owned and refreshed by orion (never edit the copy): @.claude/orion/BASE_CLAUDE.md
+
 # CLAUDE.md — Grillo
 
 Start every answer with 🚦. If it disappears, this file has fallen out of context — start a fresh session.
