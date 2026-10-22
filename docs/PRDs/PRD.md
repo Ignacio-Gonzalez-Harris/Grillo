@@ -244,8 +244,8 @@ GitHub is the single truth; each member's Grillo reads it on demand. No live syn
 | Decision | Choice |
 |---|---|
 | Form | Desktop app, Windows and Mac from release 1, one shared codebase `[T9]`. |
-| Toolkit | **Electron**: system-audio capture is documented on Windows (loopback) and on macOS 14.2+ (CoreAudio tap; a missing permission fails silently, so Grillo checks it itself); embedded terminal from **xterm.js + node-pty**. Tauri lacks an official terminal plugin. Fallback: fork dockterm or multiagent-terminal (both permissive licences) if building the terminal proves slow `[T36]`. |
-| Agent runtime | The member's unmodified local Claude Code, signed in with their own subscription (any plan). Grillo launches it in the project folder, ships the skills there and types the first message. The chat view (release 2) needs Claude Code's machine-readable mode or the Agent SDK; the stack decision confirms that every wayfinder prompt comes through it and that the member's user-level `CLAUDE.md` still loads `[T17, T21, T22, T23]`. |
+| Toolkit | **Electron**: system-audio capture is documented on Windows (loopback) and on macOS 14.2+ (CoreAudio tap; a missing permission fails silently, so Grillo checks it itself); embedded terminal from **xterm.js + node-pty**. Tauri lacks an official terminal plugin. Fallback: fork dockterm or multiagent-terminal (both permissive licences) if building the terminal proves slow `[T36]`. Decided: Mac call audio uses Electron's built-in loopback capture (Electron 39+, CoreAudio tap on macOS 14.2+) with `NSAudioCaptureUsageDescription`; a missing permission yields an already-ended track with no error, so Grillo checks the track state and tells the host; fallback only if the Mac test fails: a small in-house Swift helper writing tap audio to stdout `[I2]`. |
+| Agent runtime | The member's unmodified local Claude Code, signed in with their own subscription (any plan). Grillo launches it in the project folder, ships the skills there and types the first message. The chat view (release 2) needs Claude Code's machine-readable mode or the Agent SDK; the stack decision confirms that every wayfinder prompt comes through it and that the member's user-level `CLAUDE.md` still loads `[T17, T21, T22, T23]`. Decided: Grillo drives the member's own installed `claude` in machine-readable mode (`stream-json` in and out, `--permission-prompt-tool stdio`, never `--bare`), one process per agent tab, behind one swappable driver interface; clickable options and permission prompts arrive as control requests and are answered on stdin; the support relay writes a message into the target agent's stdin; the Agent SDK remains the alternative behind the same interface `[I2]`. |
 | Shipped skill | The wayfinder skill and sub-skills ship inside the project folder Grillo creates on each laptop. Grillo's copy adds one step: a contradiction check against the map before recording an answer, with follow-up questions to the member `[T21, T23]`. |
 | Speech-to-text | A Whisper-family model run locally (prototype used faster-whisper, 8-bit, `small.en` / `base.en`; whisper.cpp runs on both systems). 5-second slices for live delivery with a small queue for outlier slices `[T18, T25, T36]`. The model is downloaded on first use; a setting offers automatic, ask or never for model updates `[I1]`. |
 | Speaker labels | Not in release 1; later, once a better local model exists `[T25]`. |
@@ -363,6 +363,8 @@ Carried from the tickets so nobody mistakes them for facts.
 - Grillo's label names do not clash with labels a connected repository already uses `[T44]`.
 - Whether an internal server app on a Team or Enterprise Claude login would be permitted is undetermined and not needed by this PRD `[T17]`.
 - Transcription speed on an older laptop than the test machine; headset or call audio accuracy; Mac transcription `[T25]`.
+- Anthropic's Agent SDK terms say third-party products may not offer claude.ai login without approval and call `claude -p` the SDK via the CLI; whether that wording covers Grillo driving each member's own Claude Code is unsettled and must be checked before the company-wide release `[I2]`.
+- Electron's Mac loopback capture and its Screen Recording permission behaviour are untested on a Mac; Anthropic may make `--bare` the default for `claude -p`, so Grillo pins the flags `[I2]`.
 
 ---
 
@@ -413,6 +415,7 @@ Every `[T<n>]` code above is GitHub issue `n` in this repository, a ticket of th
 | T43 | What goes on Grillo's do-not-build list? | grilling |
 | T44 | Can a project connect to an existing GitHub repository? | grilling |
 | I1 | Interview during /prd-to-tickets on 2026-10-22 | grilling |
+| I2 | Decisions recorded after the ticket split on 2026-10-22 (chat driver spike, Mac audio research) | grilling |
 
 Where a later ticket amended an earlier one, this document states the amended decision: Railway as the first store was replaced by GitHub Issues (T21 amends T10); the hidden agent became a visible terminal, then a chat view over it (T21, T22 amend T3); one fixed PRD structure and "latest version only" became a per-project structure with every version kept (T26 amends T14); "Spec Plan" was retired for "PRD" (T16 amends T26, T27); "every member is an admin" is relaxed to write access in connected repositories (T44 amends T31); the private pilot repository became public (T42 amends T39); the agent kinds gained "generic" (T28 amends T5).
 
