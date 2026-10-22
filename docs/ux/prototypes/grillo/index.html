@@ -158,6 +158,7 @@ a { color: var(--color-accent); }
 .m0 { margin: 0; }
 .fill { flex: 1; min-width: 0; }
 .w-auto { width: auto; }
+.full { flex-basis: 100%; }
 
 /* ---------- Glass ---------- */
 .glass {
@@ -482,17 +483,43 @@ ol.steps li { margin-bottom: var(--space-1); }
     <p class="purpose">The member creates a project in a new or an existing repository, shapes its PRD structure, invites people, sets their own role and domains, and gives the idea.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 2 · flows 4.2 (Starting a project) · 7 (Permissions)</dd>
-      <dt>Controls</dt><dd>New repository or connect existing; repository picker; PRD structure source, add, remove, rename, reorder sections; invite by GitHub login; own role and domains; idea as text with attachments, or a pasted or uploaded transcript; Create project.</dd>
-      <dt>States</dt><dd>New repository · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · Joining as an invitee · Creating (loading)</dd>
+      <dt>Controls</dt><dd>Your projects (recently opened) with Open; pending invitations with one-click Accept; New project; new repository with organisation picker, or connect existing; repository picker; PRD structure source (default of 13 sections), add, remove, rename, reorder sections; Save and regenerate for an existing project; invite by GitHub login; own role and domains; idea as text with attachments, or a pasted or uploaded transcript; Create project.</dd>
+      <dt>States</dt><dd>Your projects and invitations · New repository · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · After accepting an invite · Creating (loading) · Editing the structure of an existing project</dd>
     </dl>
   </header>
   <div class="states">
     <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="start">Your projects and invitations</button>
       <button class="btn sm" data-state="new">New repository</button>
       <button class="btn sm" data-state="connect">Connect existing, write access only</button>
       <button class="btn sm" data-state="connect-problems">Connect: repository problems</button>
-      <button class="btn sm" data-state="invitee">Joining as an invitee</button>
+      <button class="btn sm" data-state="invitee">After accepting an invite</button>
       <button class="btn sm" data-state="creating">Creating</button>
+      <button class="btn sm" data-state="structure">Editing the structure</button>
+    </div>
+
+    <div class="state" data-state="start">
+      <p class="state-caption">State: Your projects and invitations (what Grillo shows after the setup check)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Projects</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Your projects</h3><span class="spacer"></span><a class="btn primary" href="#screen-project-creation/new">New project</a></div>
+            <p class="small muted">Recently opened first.</p>
+            <ul class="rows">
+              <li><div class="grow"><span class="strong">Sample project 1</span><br><span class="small muted">example-org/sample-project-1 · opened 2026-10-22</span></div><a class="btn sm" href="#screen-map-and-tickets">Open</a></li>
+              <li><div class="grow"><span class="strong">Sample project 0</span> <span class="badge">Archived</span><br><span class="small muted">example-org/sample-project-0 · opened 2026-10-02</span></div><a class="btn sm" href="#screen-map-and-tickets/archived">Open</a></li>
+            </ul>
+          </div>
+          <div class="card stack">
+            <h3>Pending invitations</h3>
+            <ul class="rows">
+              <li><div class="grow"><span class="strong">Sample project 2</span><br><span class="small muted">example-org/sample-project-2 · invited by member-b on 2026-10-21</span></div><a class="btn sm primary" href="#screen-project-creation/invitee">Accept</a></li>
+            </ul>
+            <p class="small muted">Accepting takes the GitHub repository invite in one click; you then set your role and domains.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="state" data-state="new">
@@ -505,9 +532,10 @@ ol.steps li { margin-bottom: var(--space-1); }
             <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
             <div class="grid-2">
               <label class="field">Project name<input type="text" value="Sample project 1"></label>
+              <label class="field">Organisation<select><option>example-org</option><option>example-org-2</option></select></label>
               <label class="field">Repository name<input type="text" value="sample-project-1"></label>
             </div>
-            <p class="small muted">A private repository in <strong>example-org</strong> (from your GitHub sign-in). Every member becomes a repository admin.</p>
+            <p class="small muted">A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.</p>
           </div>
 
           <div class="card stack">
@@ -517,10 +545,19 @@ ol.steps li { margin-bottom: var(--space-1); }
             </label>
             <p class="small muted">With no choice made, the default applies. Edit it now or at any time later.</p>
             <ul class="rows">
-              <li><span class="row"><button class="btn sm" aria-label="Move up" disabled>↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Sample section 1" aria-label="Section name"><input type="text" value="One-line note for sample section 1" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
-              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Sample section 2" aria-label="Section name"><input type="text" value="One-line note for sample section 2" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
-              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Sample section 3" aria-label="Section name"><input type="text" value="One-line note for sample section 3" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
-              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down" disabled>↓</button></span><div class="grow grid-2"><input type="text" value="Sample added section" aria-label="Section name"><input type="text" value="One-line note for the section this member added" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up" disabled>↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Problem" aria-label="Section name"><input type="text" value="What goes wrong today, and the outcomes wanted" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Users and roles" aria-label="Section name"><input type="text" value="Who uses the product, and what each person may do" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Vocabulary" aria-label="Section name"><input type="text" value="One name per thing, used in every screen and document" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Flows" aria-label="Section name"><input type="text" value="What people do, step by step" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Screens" aria-label="Section name"><input type="text" value="Every screen, and what it holds" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Data model" aria-label="Section name"><input type="text" value="The records kept, and where each one lives" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Permissions" aria-label="Section name"><input type="text" value="Who may see and change what" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Build decisions" aria-label="Section name"><input type="text" value="The technical choices, and why" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Design system" aria-label="Section name"><input type="text" value="The look every screen follows" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Do-not-build list" aria-label="Section name"><input type="text" value="What must never be built" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Acceptance demo" aria-label="Section name"><input type="text" value="The walkthrough that proves the release works" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Release order" aria-label="Section name"><input type="text" value="What ships in which release" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down" disabled>↓</button></span><div class="grow grid-2"><input type="text" value="Assumptions" aria-label="Section name"><input type="text" value="What is still unverified" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
             </ul>
             <div class="row"><button class="btn sm">Add section</button></div>
           </div>
@@ -575,7 +612,7 @@ ol.steps li { margin-bottom: var(--space-1); }
           </div>
           <div class="card stack">
             <h3>2 · PRD structure</h3>
-            <div class="row"><span>Grillo default · 4 sections</span><span class="spacer"></span><button class="btn sm">Edit</button></div>
+            <div class="row"><span>Grillo default · 13 sections</span><span class="spacer"></span><button class="btn sm">Edit</button></div>
           </div>
           <div class="card stack">
             <h3>3 · Members</h3>
@@ -624,19 +661,19 @@ Sample transcript line 2: a made-up reply.</textarea>
     </div>
 
     <div class="state" data-state="invitee">
-      <p class="state-caption">State: Joining as an invitee</p>
+      <p class="state-caption">State: After accepting an invite</p>
       <div class="window glass">
-        <div class="titlebar"><strong>Grillo</strong><span>Invite</span><span class="spacer"></span><span>member-c</span></div>
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 2</span><span class="spacer"></span><span>member-a</span></div>
         <div class="window-body">
           <div class="card stack">
-            <h3>member-a invited you to Sample project 1</h3>
-            <p class="small muted">Repository example-org/sample-project-1.</p>
+            <div class="row"><h3 class="m0">You joined Sample project 2</h3><span class="badge ok">Invite accepted</span></div>
+            <p class="small muted">Invited by member-b · repository example-org/sample-project-2.</p>
             <div class="grid-2">
-              <label class="field">Your role (free text)<input type="text" value="Sample role C"></label>
-              <label class="field">Your domains<span class="row"><span class="tag d3">platform ×</span><button class="btn sm">Add domain</button></span></label>
+              <label class="field">Your role (free text)<input type="text" value="Sample role A"></label>
+              <label class="field">Your domains<span class="row"><span class="tag d1">product ×</span><button class="btn sm">Add domain</button></span></label>
             </div>
-            <p class="small muted">Pre-filled from the last project you joined, Sample project 0.</p>
-            <div class="row"><span class="spacer"></span><button class="btn primary">Join project</button></div>
+            <p class="small muted">Pre-filled from the last project you joined, Sample project 1.</p>
+            <div class="row"><span class="spacer"></span><a class="btn primary" href="#screen-map-and-tickets">Save and open the project</a></div>
           </div>
         </div>
       </div>
@@ -657,6 +694,36 @@ Sample transcript line 2: a made-up reply.</textarea>
         </div>
       </div>
     </div>
+
+    <div class="state" data-state="structure">
+      <p class="state-caption">State: Editing the structure of an existing project (opened from the PRD view)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>PRD structure</h3>
+            <p class="small muted">Any member can change the structure at any time. A new section makes the engine add tickets or fog first, so the PRD is regenerated once every section can be written.</p>
+            <ul class="rows">
+              <li><span class="row"><button class="btn sm" aria-label="Move up" disabled>↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Problem" aria-label="Section name"><input type="text" value="What goes wrong today, and the outcomes wanted" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Users and roles" aria-label="Section name"><input type="text" value="Who uses the product, and what each person may do" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Vocabulary" aria-label="Section name"><input type="text" value="One name per thing, used in every screen and document" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Flows" aria-label="Section name"><input type="text" value="What people do, step by step" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Screens" aria-label="Section name"><input type="text" value="Every screen, and what it holds" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Data model" aria-label="Section name"><input type="text" value="The records kept, and where each one lives" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Permissions" aria-label="Section name"><input type="text" value="Who may see and change what" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Build decisions" aria-label="Section name"><input type="text" value="The technical choices, and why" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Design system" aria-label="Section name"><input type="text" value="The look every screen follows" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Do-not-build list" aria-label="Section name"><input type="text" value="What must never be built" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Acceptance demo" aria-label="Section name"><input type="text" value="The walkthrough that proves the release works" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Release order" aria-label="Section name"><input type="text" value="What ships in which release" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Assumptions" aria-label="Section name"><input type="text" value="What is still unverified" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down" disabled>↓</button></span><div class="grow grid-2"><input type="text" value="Sample added section" aria-label="Section name"><input type="text" value="One-line note for the section this member added" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+            </ul>
+            <div class="row"><button class="btn sm">Add section</button><span class="spacer"></span><a class="btn" href="#screen-prd-view/versions">Cancel</a><a class="btn primary" href="#screen-prd-view/writing">Save and regenerate</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -667,16 +734,18 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The member sees where the project stands (destination, settled, fog, out of scope) and the ticket list, and runs the tagging round.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 3 · flows 4.2 steps 6 and 7 · 4.3 (Routing a question)</dd>
-      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; per ticket Edit, Merge, Close as out of scope.</dd>
-      <dt>States</dt><dd>Engine building the map (loading) · Tickets untagged · Tagged and assigned · Map done</dd>
+      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; per ticket Edit, Merge, Close as out of scope; Sources list (code, kind, who, when, where) with Open to read a source's full text; Close project; Reopen on an archived project.</dd>
+      <dt>States</dt><dd>Engine building the map (loading) · Tickets untagged · Tagged and assigned, with sources · Source opened · Map done · Closed project, archived</dd>
     </dl>
   </header>
   <div class="states">
     <div class="state-tabs"><span class="label">States:</span>
       <button class="btn sm" data-state="building">Engine building the map</button>
       <button class="btn sm" data-state="untagged">Tickets untagged</button>
-      <button class="btn sm" data-state="tagged">Tagged and assigned</button>
+      <button class="btn sm" data-state="tagged">Tagged and assigned, with sources</button>
+      <button class="btn sm" data-state="source-open">Source opened</button>
       <button class="btn sm" data-state="done">Map done</button>
+      <button class="btn sm" data-state="archived">Closed project, archived</button>
     </div>
 
     <div class="state" data-state="building">
@@ -751,6 +820,48 @@ Sample transcript line 2: a made-up reply.</textarea>
               <tr><td>Sample ticket 5</td><td><span class="badge">research</span></td><td><span class="tag none">no domain</span></td><td>—</td><td>Sample ticket 3</td><td><button class="btn sm">Edit</button></td></tr>
             </table></div>
           </div>
+          <div class="card stack">
+            <h3>Sources</h3>
+            <p class="small muted">Every source a decision came from, with its stable code. The PRD cites these codes.</p>
+            <div class="table-wrap"><table>
+              <tr><th>Code</th><th>Kind</th><th>Who</th><th>When</th><th>Where</th><th></th></tr>
+              <tr><td><span class="code-chip">S1</span></td><td>Document</td><td>member-a</td><td>2026-10-20</td><td>Kick-off transcript, uploaded at project start</td><td><a class="btn sm" href="#screen-map-and-tickets/source-open">Open</a></td></tr>
+              <tr><td><span class="code-chip">S2</span></td><td>Meeting</td><td>member-a (host), member-b</td><td>2026-10-21</td><td>Grilling session 1</td><td><a class="btn sm" href="#screen-map-and-tickets/source-open">Open</a></td></tr>
+              <tr><td><span class="code-chip">S4</span></td><td>Own-time answer</td><td>member-c, via GitHub; recorded by member-a</td><td>2026-10-22</td><td>Comment on Sample ticket 2</td><td><a class="btn sm" href="#screen-map-and-tickets/source-open">Open</a></td></tr>
+              <tr><td><span class="code-chip">S7</span></td><td>Email or pasted text</td><td>A sample customer; recorded by member-b via generic agent</td><td>2026-10-21</td><td>Pasted email</td><td><a class="btn sm" href="#screen-map-and-tickets/source-open">Open</a></td></tr>
+            </table></div>
+          </div>
+          <div class="card stack">
+            <h3>Project</h3>
+            <div class="row"><button class="btn danger">Close project</button><span class="small muted">Closing archives the repository: everything stays readable and nothing can change. Any member can reopen it.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="source-open">
+      <p class="state-caption">State: A source opened to read its full text</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card glass-strong stack" role="dialog" aria-label="Source S2">
+            <div class="row"><span class="code-chip">S2</span><h3 class="m0">Grilling session 1</h3><span class="spacer"></span><a class="btn sm" href="#screen-map-and-tickets/tagged">Close</a></div>
+            <table class="small">
+              <tr><th>Kind</th><td>Meeting</td></tr>
+              <tr><th>Who</th><td>member-a (host), member-b present; consent ticked by member-a at 10:02</td></tr>
+              <tr><th>When</th><td>2026-10-21, 10:00 to 11:00</td></tr>
+              <tr><th>Where</th><td>Live grilling session on member-a's laptop</td></tr>
+            </table>
+            <h4>Full text</h4>
+            <div class="transcript">
+              <p><span class="muted">10:13:05</span> Sample transcript line: a made-up remark about the question.</p>
+              <p><span class="muted">10:13:10</span> Sample transcript line: a made-up reply, no speaker names.</p>
+              <p><span class="muted">10:13:15</span> Sample transcript line: a made-up follow-up.</p>
+              <p><span class="muted">10:13:20</span> Sample transcript line: a made-up conclusion.</p>
+            </div>
+            <p class="small muted">Cited by: Sample question 3.2, Sample question 3.3.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -769,6 +880,32 @@ Sample transcript line 2: a made-up reply.</textarea>
             <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
           </div>
           <div class="card"><h3>Tickets</h3><p class="small muted">All 5 tickets are closed.</p></div>
+          <div class="card stack">
+            <h3>Project</h3>
+            <div class="row"><button class="btn danger">Close project</button><span class="small muted">Closing archives the repository: everything stays readable and nothing can change. Any member can reopen it.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="archived">
+      <p class="state-caption">State: Closed project, archived (Reopen)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 0</span><span class="badge">Archived</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span></div>
+        <div class="window-body">
+          <div class="note warn row"><span class="grow fill">Closed by member-a on 2026-10-05. The repository is archived: everything stays readable and nothing can change.</span><button class="btn primary">Reopen</button></div>
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 0.</p></div>
+            <div class="card"><h4>Settled</h4><ul class="small"><li>Sample ticket 1: sample decision gist.</li><li>Sample ticket 2: sample decision gist.</li></ul></div>
+            <div class="card"><h4>Fog</h4><p class="muted small">No fog left.</p></div>
+            <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
+          </div>
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Tickets</h3><span class="spacer"></span><button class="btn" disabled>Add ticket</button><button class="btn" disabled>Run tagging round</button></div>
+            <p class="reason">Archived: reopen the project to change anything.</p>
+            <p class="small muted">All 2 tickets are closed.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -1262,7 +1399,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The member reads the latest PRD with its source codes and audit appendix, opens or downloads any kept version, exports it, and talks to an agent about it.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 8 · flows 4.7 (Writing, tracing and grading the PRD)</dd>
-      <dt>Controls</dt><dd>Version list numbered and dated with Open and Download; Export as document; Talk to an agent about this PRD; source codes like [S4, Q12] linking to the audit appendix; [no source] marks and the unsourced list; audit appendix table.</dd>
+      <dt>Controls</dt><dd>Version list numbered and dated, earlier versions kept, each with Open, Markdown and HTML downloads; Export: Download Markdown, Download HTML; Edit structure and regenerate (opens the structure editor on screen-project-creation); Regenerate; Talk to an agent about this PRD; source codes like [S4, Q12] linking to the audit appendix; [no source] marks and the unsourced list; audit appendix table.</dd>
       <dt>States</dt><dd>No version yet (empty) · Writing (loading) · Versions list</dd>
     </dl>
   </header>
@@ -1309,7 +1446,8 @@ Sample transcript line 2: a made-up reply.</textarea>
         <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab active">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
         <div class="window-body split rev">
           <div class="stack">
-            <div class="row"><h3 class="m0">PRD · version 2</h3><span class="badge info">Latest</span><span class="muted small">2026-10-22</span><span class="spacer"></span><button class="btn">Talk to an agent about this PRD</button><button class="btn primary">Export as document</button></div>
+            <div class="row"><h3 class="m0">PRD · version 2</h3><span class="badge info">Latest</span><span class="muted small">2026-10-22</span><span class="spacer"></span><button class="btn">Talk to an agent about this PRD</button><a class="btn" href="#screen-project-creation/structure">Edit structure and regenerate</a><a class="btn" href="#screen-prd-view/writing">Regenerate</a></div>
+            <div class="row"><span class="small strong muted">Export</span><button class="btn sm primary">Download Markdown</button><button class="btn sm primary">Download HTML</button></div>
             <article class="card doc">
               <h3>Sample section 1</h3>
               <p>Sample decision statement one, written from the answers. <span class="code-chip">[S4, Q12]</span></p>
@@ -1333,9 +1471,10 @@ Sample transcript line 2: a made-up reply.</textarea>
           <div class="card stack">
             <h4>Versions</h4>
             <ul class="rows small">
-              <li class="selected"><div class="grow"><span class="strong">Version 2</span><br><span class="muted">2026-10-22</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Download</button></span></li>
-              <li><div class="grow"><span class="strong">Version 1</span><br><span class="muted">2026-10-21</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Download</button></span></li>
+              <li class="selected"><div class="grow full"><span class="strong">Version 2</span> <span class="badge info">Latest</span><br><span class="muted">2026-10-22 · after a structure edit</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Markdown</button><button class="btn sm">HTML</button></span></li>
+              <li><div class="grow full"><span class="strong">Version 1</span><br><span class="muted">2026-10-21</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Markdown</button><button class="btn sm">HTML</button></span></li>
             </ul>
+            <p class="small muted">Every version is kept, numbered and dated.</p>
           </div>
         </div>
       </div>
@@ -1353,15 +1492,7 @@ Sample transcript line 2: a made-up reply.</textarea>
   var links = Array.prototype.slice.call(document.querySelectorAll('.proto-nav a'));
   var ids = screens.map(function (s) { return s.id; });
 
-  function show() {
-    var id = location.hash.slice(1);
-    if (ids.indexOf(id) === -1) id = ids[0];
-    screens.forEach(function (s) { s.classList.toggle('active', s.id === id); });
-    links.forEach(function (a) { a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'page' : 'false'); });
-    window.scrollTo(0, 0);
-  }
-  window.addEventListener('hashchange', show);
-  show();
+  var pickers = {}; // screen id -> function that shows one of its states
 
   // State switchers: one variant visible at a time (all stacked when JavaScript is off).
   document.querySelectorAll('.states').forEach(function (group) {
@@ -1373,7 +1504,21 @@ Sample transcript line 2: a made-up reply.</textarea>
     }
     buttons.forEach(function (b) { b.addEventListener('click', function () { pick(b.dataset.state); }); });
     if (buttons.length) pick(buttons[0].dataset.state);
+    pickers[group.closest('.screen').id] = pick;
   });
+
+  // A link "#screen-id/state" opens that screen in that state.
+  function show() {
+    var parts = location.hash.slice(1).split('/');
+    var id = parts[0];
+    if (ids.indexOf(id) === -1) id = ids[0];
+    screens.forEach(function (s) { s.classList.toggle('active', s.id === id); });
+    links.forEach(function (a) { a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'page' : 'false'); });
+    if (parts[1] && pickers[id]) pickers[id](parts[1]);
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', show);
+  show();
 
   // Segmented controls: one pressed button per group.
   document.querySelectorAll('.seg').forEach(function (seg) {
