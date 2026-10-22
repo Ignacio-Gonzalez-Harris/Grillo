@@ -1,8 +1,8 @@
 # The merge gate. One job, named `ci`, so every pull request reports a check run called `ci`.
 #
-# The stack is not decided yet, so the only gate is orion's mechanical install check: it fails when
-# a file orion installed is missing, doubled or broken. Add the build and test steps here once the
-# stack decides them.
+# Until the scaffold story lands there is nothing to build, so the only gate is orion's mechanical install
+# check: it fails when a file orion installed is missing, doubled or broken. The scaffold story adds the
+# gate chain from CLAUDE.md section 5 (build, lint, typecheck, full suite) on Windows and Mac runners.
 name: ci
 
 on:

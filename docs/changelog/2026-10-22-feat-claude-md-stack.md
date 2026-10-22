@@ -1,0 +1,1 @@
+CLAUDE.md now names the stack (Electron + TypeScript, npm, Vitest, ESLint, electron-vite), the gate chain, the port rule, the deploy target, the sensitive data classes and the fixed boundaries from PRD v1, so stories can be cut and built against real commands instead of `TBD`.
