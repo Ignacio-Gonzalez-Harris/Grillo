@@ -90,11 +90,11 @@ Not app words: cluster, team, business unit, expert, administrator `[T5, T29]`.
 ### 4.2 Starting a project
 
 1. A member creates a project. Two ways in: Grillo creates a new private repository in the company GitHub organisation, or the member connects an existing repository (a team's code repository, an empty one, or an earlier Grillo project) `[T21, T44]`.
-2. The member picks the PRD structure: Grillo's shipped default or the structure of an earlier project they belong to, then edits it (add, remove, rename, reorder sections). With no choice made, the default applies `[T26]`.
-3. The member invites people; an invite is a repository access invite. Each invitee sets their free-text role and domains, pre-filled from the last project they joined `[T10, T21, T31]`.
+2. The member picks the PRD structure: Grillo's shipped default or the structure of an earlier project they belong to, then edits it (add, remove, rename, reorder sections). With no choice made, the default applies `[T26]`. The shipped default has 13 sections: Problem; Users and roles; Vocabulary; Flows; Screens; Data model; Permissions; Build decisions; Design system; Do-not-build list; Acceptance demo; Release order; Assumptions `[I1]`.
+3. The member invites people; an invite is a repository access invite. Each invitee sets their free-text role and domains, pre-filled from the last project they joined `[T10, T21, T31]`. Grillo lists the member's pending invitations and accepts one with a click `[I1]`.
 4. The member gives the idea: written text (typed or pasted, with documents attachable) or a recorded conversation's transcript pasted or uploaded `[T6, T11]`.
 5. The destination is always a PRD; Grillo never asks what "done" looks like `[T6]`.
-6. Grillo opens a grilling agent in the project folder and types the first message (`/wayfinder <idea>`). The engine creates the map, the tickets and their questions alone, using frontier, fog and out of scope exactly as wayfinder does today. No conversation is needed before tickets exist `[T6, T21]`.
+6. Grillo opens a grilling agent in the project folder and types the first message (`/grillo-wayfinder <source file>`, the idea having been saved first as source S1). The engine creates the map, the tickets and their questions alone, using frontier, fog and out of scope exactly as wayfinder does today. No conversation is needed before tickets exist `[T6, T21]`. In release 1 tickets of every kind are created, but only grilling agents run; research, prototype and task tickets are worked by members as grilling until release 3 `[I1]`.
 7. Tickets are live and editable from the moment they exist: members can edit, merge, close as out of scope or add tickets at any time. No approval gate `[T6]`.
 
 Connecting an existing repository `[T44]`:
@@ -132,7 +132,7 @@ Connecting an existing repository `[T44]`:
 2. **Consent before recording.** The host ticks "everyone here agreed"; Record stays disabled until then. Grillo shows a one-line script to read aloud ("This call is recorded and transcribed by Grillo") and a red "Recording" banner on the host's screen. Meeting platforms show nothing, because Grillo records on the host's laptop; no connection to any meeting platform is built `[T35]`.
 3. The host shares their screen (projector in a room, screen share on a call) and holds the controls: Listen / Type per question, "use it", skip, jump to another ticket `[T13]`.
 4. **Recording and transcription are local.** Grillo captures the room microphone or the call audio on the host's laptop and turns it into text on that laptop with an open speech model of the Whisper family. No audio or text leaves the machine for transcription `[T11, T18, T25]`.
-5. **One global recording switch** turns the session recording on or off; that recording is the session transcript. **Each agent tab has an "Open channel" switch**; while open, that agent receives the transcript, live as it is spoken (feasible: 5-second slices transcribe in 1-2 seconds on an ordinary CPU) with a fallback of one chunk at "use it". Several channels may be open at once; each agent picks out what fits its ticket `[T22, T25]`.
+5. **One global recording switch** turns the session recording on or off; that recording is the session transcript. **Each agent tab has an "Open channel" switch**; while open, that agent receives the transcript, live as it is spoken (feasible: 5-second slices transcribe in 1-2 seconds on an ordinary CPU) with a fallback of one chunk at "use it". Live delivery writes each slice into the agent's input box as it is spoken; one message is sent at "use it" `[I1]`. Several channels may be open at once; each agent picks out what fits its ticket `[T22, T25]`.
 6. **Order.** The grilling agent picks the next unblocked ticket whose domain matches someone present ("no domain" counts as everyone's) and walks its questions one at a time, then the next ticket. Tickets of absent domains stay in the list `[T13]`.
 7. **Per question, the room picks a mode** `[T11]`:
    - **Type**: a member types the answer; no discussion is captured.
@@ -159,8 +159,8 @@ Connecting an existing repository `[T44]`:
 1. **Trigger: automatic.** The PRD is written the moment the map is done: no open tickets, no fog `[T14]`.
 2. **Input: everything.** All answers, all question discussions and all session transcripts, worked through in stages because the input is large `[T12, T14]`.
 3. **Structure: the project's own.** The AI writes the PRD in the project's PRD structure. Any member can change the structure at any time and regenerate; a new section makes the engine add tickets or fog, so the map is not done until every section can be written `[T26]`.
-4. **Output:** Markdown stored in the project, readable in Grillo and exportable as a document. Every version is kept, numbered and dated, each openable and downloadable `[T14, T26]`.
-5. **Trace.** Every statement that states a decision ends with codes such as `[S4, Q12]` (source 4, question 12). Each version ends with an audit appendix listing every source and question it cites in full: who, when, where, exact words. Codes are stable across versions. A statement no answer supports is marked `[no source]` and listed as unsourced, so a reviewer can confirm it (which turns it into an answer with a source) or remove it `[T27]`.
+4. **Output:** Markdown stored in the project, readable in Grillo and exportable as a document. Export formats: Markdown and self-contained HTML `[I1]`. Every version is kept, numbered and dated, each openable and downloadable `[T14, T26]`.
+5. **Trace.** Every statement that states a decision ends with codes such as `[S4, Q12.3]` (source 4, question 3 of ticket 12); a question code is `Q<ticket issue number>.<k>` `[I1]`. Each version ends with an audit appendix listing every source and question it cites in full: who, when, where, exact words. Codes are stable across versions. A statement no answer supports is marked `[no source]` and listed as unsourced, so a reviewer can confirm it (which turns it into an answer with a source) or remove it `[T27]`.
 6. **Feedback loop.** A member opens an agent and says what is wrong; the agent edits the PRD or opens new tickets; when those close the PRD is regenerated as a new version. No approval state: nobody signs it off inside Grillo `[T14]`.
 7. **Score (release 3).** 0-10, two halves of equal weight: **quality** (clear, complete, verifiable, tied to objectives, consistent, feasible, needs-not-solutions, scope and priorities, from ISO/IEC/IEEE 29148, INCOSE and product-management guides) and **coverage** (does each section of the project's structure hold real decisions rather than gaps). Equal weight across criteria to start. The member sees a number per criterion and per section, each with one comment: what is weak, why, and a concrete suggestion. It runs on every generation and can be rerun. Nothing is automatic after a low score; the score is guidance, not a gate `[T15, T20, T16]`.
 8. **Hand-over.** Grillo stops at the exported PRD. Developers cut it into tickets with their own tool outside Grillo `[T41]`.
@@ -177,14 +177,14 @@ Release 1 has exactly these eight screens, the ones the acceptance walkthrough p
 
 | # | Screen | Holds |
 |---|---|---|
-| 1 | **Setup check** | Claude Code and `gh` detected and signed in; GitHub sign-in; guidance for what is missing; update offer `[T8, T21, T39, T42]`. |
-| 2 | **Project creation and invites, with the PRD structure** | New repository or connect an existing one; pick and edit the PRD structure; invite members; role and domains; the idea as text or pasted/uploaded transcript `[T6, T26, T31, T44]`. |
-| 3 | **The map and its tickets** | Destination, settled, fog, out of scope; the ticket list with kinds, domain tags and assignees; "run tagging round" `[T5, T6, T7]`. |
+| 1 | **Setup check** | Claude Code and `gh` detected and signed in; GitHub sign-in; guidance for what is missing; update offer; the speech-model update setting (automatic / ask / never) `[T8, T21, T39, T42, I1]`. |
+| 2 | **Project creation and invites, with the PRD structure** | New repository or connect an existing one; pick and edit the PRD structure; invite members; role and domains; the idea as text or pasted/uploaded transcript; recent projects, pending invitations accepted with one click, organisation picker `[T6, T26, T31, T44, I1]`. |
+| 3 | **The map and its tickets** | Destination, settled, fog, out of scope; the ticket list with kinds, domain tags and assignees; "run tagging round"; the Sources list (every source with its code, who, when, where, full text on open); close and reopen the project `[T5, T6, T7, I1]`. |
 | 4 | **Ticket-and-question management** | Per ticket: questions and their answered state, tags (change by hand), take, send, reassign; the member's own list first `[T7, T8]`. |
 | 5 | **Meeting screen** (on the grilling agent's tab) | Attendee ticks; consent tick, read-aloud script and red banner; global recording switch; Listen/Type; "use it"; skip/jump; running transcript strip; Open channel per tab `[T13, T22, T35]`. |
 | 6 | **Own-time answering** | A ticket answered in a terminal with a grilling agent, or in a form; the done button `[T8]`. |
 | 7 | **Generic agent tab** | "+" on the tab bar, member-named tab, the agent in a terminal `[T28]`. |
-| 8 | **PRD view with versions and export** | The latest version, the list of kept versions numbered and dated, open and download, the audit appendix, "talk to an agent about this PRD" `[T14, T26, T27]`. |
+| 8 | **PRD view with versions and export** | The latest version, the list of kept versions numbered and dated, open and download, the audit appendix, "talk to an agent about this PRD"; edit structure and regenerate; regenerate `[T14, T26, T27, I1]`. |
 
 Release 2 restyles screens 5, 6 and 7 as chat views with the "show terminal" switch and adds the support agent tab and nudges; release 3 adds the score to screen 8 `[T16, T22]`.
 
@@ -247,7 +247,7 @@ GitHub is the single truth; each member's Grillo reads it on demand. No live syn
 | Toolkit | **Electron**: system-audio capture is documented on Windows (loopback) and on macOS 14.2+ (CoreAudio tap; a missing permission fails silently, so Grillo checks it itself); embedded terminal from **xterm.js + node-pty**. Tauri lacks an official terminal plugin. Fallback: fork dockterm or multiagent-terminal (both permissive licences) if building the terminal proves slow `[T36]`. |
 | Agent runtime | The member's unmodified local Claude Code, signed in with their own subscription (any plan). Grillo launches it in the project folder, ships the skills there and types the first message. The chat view (release 2) needs Claude Code's machine-readable mode or the Agent SDK; the stack decision confirms that every wayfinder prompt comes through it and that the member's user-level `CLAUDE.md` still loads `[T17, T21, T22, T23]`. |
 | Shipped skill | The wayfinder skill and sub-skills ship inside the project folder Grillo creates on each laptop. Grillo's copy adds one step: a contradiction check against the map before recording an answer, with follow-up questions to the member `[T21, T23]`. |
-| Speech-to-text | A Whisper-family model run locally (prototype used faster-whisper, 8-bit, `small.en` / `base.en`; whisper.cpp runs on both systems). 5-second slices for live delivery with a small queue for outlier slices `[T18, T25, T36]`. |
+| Speech-to-text | A Whisper-family model run locally (prototype used faster-whisper, 8-bit, `small.en` / `base.en`; whisper.cpp runs on both systems). 5-second slices for live delivery with a small queue for outlier slices `[T18, T25, T36]`. The model is downloaded on first use; a setting offers automatic, ask or never for model updates `[I1]`. |
 | Speaker labels | Not in release 1; later, once a better local model exists `[T25]`. |
 | Store | Company GitHub Issues, one repository per project, through `gh`; one swappable store interface in Grillo's code; MCP tools deferred until a second backend `[T21, T31]`. |
 | Other models | None in this PRD: no laptop model, no company-paid account or gateway `[T40]`. |
@@ -264,6 +264,7 @@ Risks carried from the decisions: code written as an employee may belong to the 
 ## 9. Design system
 
 - **Grillo's design system is a "liquid glass" theme** (see-through, frosted panels) for every desktop screen `[T37]`.
+- The interface language is English `[I1]`.
 - **How the look gets made:** after this PRD and before tickets are cut, Claude drafts a mock-up of the eight release-1 screens in that theme into `docs/ux/prototypes/` (a pull request a human merges). That mock-up produces the colour and spacing token file every front-end story must use; no colour or spacing value outside it goes in `[T37]`.
 - Liquid glass is Apple's look; on Windows it has to be imitated, so the mock-up checks it reads well on both systems `[T37]`.
 - The target users include experts who are not technical, so release 2's chat view is the intended everyday face of an agent; the release-1 terminal is the plain stand-in `[T22, T16]`.
@@ -411,6 +412,7 @@ Every `[T<n>]` code above is GitHub issue `n` in this repository, a ticket of th
 | T42 | What must happen before Grillo goes company-wide? | grilling |
 | T43 | What goes on Grillo's do-not-build list? | grilling |
 | T44 | Can a project connect to an existing GitHub repository? | grilling |
+| I1 | Interview during /prd-to-tickets on 2026-10-22 | grilling |
 
 Where a later ticket amended an earlier one, this document states the amended decision: Railway as the first store was replaced by GitHub Issues (T21 amends T10); the hidden agent became a visible terminal, then a chat view over it (T21, T22 amend T3); one fixed PRD structure and "latest version only" became a per-project structure with every version kept (T26 amends T14); "Spec Plan" was retired for "PRD" (T16 amends T26, T27); "every member is an admin" is relaxed to write access in connected repositories (T44 amends T31); the private pilot repository became public (T42 amends T39); the agent kinds gained "generic" (T28 amends T5).
 
