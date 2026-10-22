@@ -59,14 +59,24 @@
 - **Epic → story is a native GitHub sub-issue**, never a plain text list.
 - **Every story names the folder or module it owns** under `### Seam`, so two stories on one folder are spotted
   before they collide (merged into one, or one blocks the other).
-- **Every new issue, whoever files it, follows `.claude/skills/dev-next/references/new-issue.md`**: body headings,
-  labels, the native parent and blocking links with their read-back checks. A person writing a ticket by hand follows
-  the same file; there is no separate issue template to keep in step. **A change wanted now that has no ticket goes
-  through `/dev-quick`**: it files the issue to that shape and hands it to `/dev-next` — never built by hand in the
-  chat. **When the person asks for a code change in chat without starting a skill, ask once whether to ship it with
-  `/dev-quick`** (only when `.claude/skills/dev-quick/` is installed and no gate command reads `TBD`): yes runs it end
-  to end, merging on green with no further questions (it interviews only when the request is unclear); no means no
-  change is made, by hand or otherwise.
+- **Every new issue, whoever files it and however it comes up, follows
+  `.claude/skills/dev-next/references/new-issue.md`**: body headings, labels, the native parent and blocking links
+  with their read-back checks. A person writing a ticket by hand follows the same file; there is no separate issue
+  template to keep in step. **An agent asked in chat to file a bug or open a ticket, with no skill running, is no
+  exception**: it reads `new-issue.md` before its first `gh issue create`, files to that shape (`story` plus exactly
+  one readiness label, `agent-ready`, `needs-human` or `outside-change` with `needs-human`; one tier label,
+  `tier:bug` for a defect, else `tier:manual`; `bug` when it reports a defect; the native epic link and both blocker
+  forms) and reads the labels back as `new-issue.md` says. **Never run `gh issue create` without those labels**: an
+  issue with no readiness label is never taken by `/dev-next`, sits on the issue map as a yellow box with no owner
+  and no epic, and is lost to the workflow. When the person did not say who takes it, ask once with clickable
+  options, `needs-human` recommended because nobody has yet checked that nothing is left to ask. When no epic fits,
+  ask which one; a story never hangs loose. Filing a ticket is not a request to build it: offer `/dev-quick` only
+  when the person wants the change made now. **A change wanted now that has no ticket goes through `/dev-quick`**:
+  it files the issue to that shape and hands it to `/dev-next` — never built by hand in the chat. **When the person
+  asks for a code change in chat without starting a skill, ask once whether to ship it with `/dev-quick`** (only
+  when `.claude/skills/dev-quick/` is installed and no gate command reads `TBD`): yes runs it end to end, merging on
+  green with no further questions (it interviews only when the request is unclear); no means no change is made, by
+  hand or otherwise.
 - **An issue filed while working on another is tied to where it came from**: the pull request in hand links the new
   issue, and the new issue names that pull request (or the issue, if no pull request is open yet) under
   `### References`.
@@ -260,8 +270,8 @@ PRD wins on product, the rules files win on process.
   broken issue map (no epic, blocker forms that disagree, impossible label pairs, two stories on one folder, built
   out of order), work the code and the issues disagree on — then fixes each with the person's word, under the
   ownership rules above. A bookmark file on `main` records what was reconciled and what the person accepted as fine.
-  `/dev-next` only probes: a disagreement in the issue map's footer, an impossible label pair or a story without an
-  epic, or a PRD changed since the bookmark, and it ends its run with `Drift found: run /reconcile-issue-map`.
+  `/dev-next` only probes: an impossible label pair or a story without an epic, or a PRD changed since the bookmark,
+  and it ends its run with `Drift found: run /reconcile-issue-map`.
 - **Sub-agents:** name each one after what it does (`review-auth-tests`, never `agent-3`); mechanical work runs on a
   cheap model at low effort, hard decisions and reviews on the top model; every spawn prompt asks for a bounded result
   (a verdict plus a few bullets, never an essay). A sub-agent never uses `git stash` and never switches branches — it
@@ -286,7 +296,7 @@ PRD wins on product, the rules files win on process.
 - `/dev-next` takes the next free story end to end: claim, build in a worktree, fresh-agent review, merge on green,
   close, report.
 - `/issue-map` draws the blocked-by graph of every issue, level by level, into `docs/issue_map/issue_map.html` — a
-  local, never-committed snapshot that `/dev-next` rebuilds after every claim and merge. The issues stay the truth.
+  local, never-committed snapshot rebuilt only when a person asks for it. The issues stay the truth.
 - `/harvest` works through the run reports on the audit branches with the person and turns what matters into tickets
   or rule edits.
 - `/harvest-qa` drives the QA checks every merged story left behind against `main`, in sequential rounds until every
