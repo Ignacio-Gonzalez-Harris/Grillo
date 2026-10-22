@@ -247,7 +247,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-accent);
 .switch input.rec:checked { background: var(--color-danger); border-color: var(--color-danger); }
 .switch input:disabled { border-color: var(--color-divider); cursor: not-allowed; }
 .switch input:disabled::after { background: var(--color-disabled-fill); box-shadow: none; }
-.seg { display: inline-flex; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
+.seg { display: inline-flex; justify-self: start; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
 .seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
 .seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
 .reason { font-size: var(--font-size-s); color: var(--color-warning); }
@@ -309,6 +309,7 @@ ol.steps li { margin-bottom: var(--space-1); }
 .typebox input { font-family: var(--font-family-mono); }
 .transcript { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); max-height: calc(var(--size-textarea-min) + var(--space-6)); overflow-y: auto; }
 .transcript p { margin: 0 0 var(--space-1); }
+.progress { width: 100%; height: var(--size-dot); accent-color: var(--color-accent); }
 
 /* ---------- Document (PRD view) ---------- */
 .doc h3 { margin-top: var(--space-5); }
@@ -345,6 +346,7 @@ ol.steps li { margin-bottom: var(--space-1); }
     <li><a href="#screen-own-time-answering"><span class="num">6</span>Own-time answering</a></li>
     <li><a href="#screen-generic-agent-tab"><span class="num">7</span>Generic agent tab</a></li>
     <li><a href="#screen-prd-view"><span class="num">8</span>PRD view with versions and export</a></li>
+    <li><a href="#screen-download-site"><span class="num">9</span>Download site (GitHub Pages)</a></li>
   </ol>
   <label class="switch small"><input type="checkbox" id="toggle-fallback"> Windows fallback (no frosted blur)</label>
   <p class="small muted">Turn it on to check every screen still reads well where the frosted effect is unavailable.</p>
@@ -359,7 +361,7 @@ ol.steps li { margin-bottom: var(--space-1); }
     <p class="purpose">The member checks that Claude Code and the GitHub command-line tool <code>gh</code> are installed and signed in, signs in to GitHub, and takes an update when one is offered.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 1 · flows 4.1 (Setup) · 8 (Updates)</dd>
-      <dt>Controls</dt><dd>Requirement rows with status; install and sign-in guidance; Open install guide; Sign in to GitHub; Check again; Continue; update offer with Download and install, Later, and the auto-update setting.</dd>
+      <dt>Controls</dt><dd>Requirement rows with status; install and sign-in guidance; Open install guide; Sign in to GitHub; Check again; Continue; update offer with Download and install and Later; App updates switch (install automatically on the next restart); Speech model updates: Automatic, Ask or Never.</dd>
       <dt>States</dt><dd>Checking · Everything missing · Signed out of GitHub · All green, with update offer</dd>
     </dl>
   </header>
@@ -465,8 +467,18 @@ ol.steps li { margin-bottom: var(--space-1); }
           </ul>
           <div class="card glass-strong stack" role="dialog" aria-label="Update offer">
             <div class="row"><span class="badge warn">Update</span><span class="strong">Grillo 1.1.0 is available. You have 1.0.0.</span></div>
-            <label class="check small"><input type="checkbox"> Install updates automatically on the next restart</label>
-            <p class="small muted">On Mac, automatic install works only once Grillo is signed.</p>
+            <div class="grid-2">
+              <div class="stack">
+                <span class="small strong muted">App updates</span>
+                <label class="switch small"><input type="checkbox"> Install automatically on the next restart</label>
+                <p class="small muted">On Mac, automatic install works only once Grillo is signed.</p>
+              </div>
+              <div class="stack">
+                <span class="small strong muted">Speech model updates</span>
+                <div class="seg" role="group" aria-label="Speech model updates"><button aria-pressed="false">Automatic</button><button aria-pressed="true">Ask</button><button aria-pressed="false">Never</button></div>
+                <p class="small muted">The local speech model that transcribes meetings on this laptop.</p>
+              </div>
+            </div>
             <div class="row"><button class="btn primary sm">Download and install</button><button class="btn sm">Later</button></div>
           </div>
           <div class="row"><span class="spacer"></span><button class="btn primary">Continue</button></div>
@@ -1027,14 +1039,60 @@ Sample transcript line 2: a made-up reply.</textarea>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 5 · flows 4.5 (Live grilling session) · 4.6 items 2 to 4 (tabs, typing, controls on the tab)</dd>
       <dt>Controls</dt><dd>Agent tabs named "kind · ticket" with a dot for "waiting for you" and an Open channel switch on each; "+" for a generic agent; present-member ticks; consent tick and read-aloud script; global Record switch; red Recording banner; Listen or Type per question; Use it; Skip question; Jump to ticket; running transcript strip; import a transcript; type box; terminal panel (release 1).</dd>
-      <dt>States</dt><dd>Before consent (Record disabled) · Recording, Listen · Recording, Type</dd>
+      <dt>States</dt><dd>Preparing speech model (downloading, before the first recording) · Before consent (Record disabled) · Recording, Listen · Recording, Type</dd>
     </dl>
   </header>
   <div class="states">
     <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="preparing">Preparing speech model</button>
       <button class="btn sm" data-state="before-consent">Before consent</button>
       <button class="btn sm" data-state="listen">Recording, Listen</button>
       <button class="btn sm" data-state="type">Recording, Type</button>
+    </div>
+
+    <div class="state" data-state="preparing">
+      <p class="state-caption">State: Preparing speech model (shown before the first recording on this laptop)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span>
+          <span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+          <button class="tab add" aria-label="Open a generic agent">+</button>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+              <label class="check"><input type="checkbox"> member-c · Carla <span class="tag d3">platform</span></label>
+            </div>
+            <div class="card stack">
+              <h4>Consent</h4>
+              <p class="script">"This call is recorded and transcribed by Grillo."</p>
+              <label class="check"><input type="checkbox"> Everyone here agreed</label>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <label class="switch"><input type="checkbox" class="rec" disabled> Record</label>
+              <p class="reason">Record unlocks once the speech model is ready.</p>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card stack" role="status">
+              <div class="row"><span class="badge warn">Preparing</span><span class="strong">Preparing speech model (downloading, 42%)</span></div>
+              <progress class="progress" value="42" max="100" aria-label="Speech model download">42%</progress>
+              <p class="small muted">One time on this laptop. The model runs here, so no audio or text leaves the machine for transcription. Type answers work meanwhile.</p>
+            </div>
+<pre class="terminal"><span class="t-muted">Grilling agent · Sample project 1</span>
+
+<span class="t-hl">Sample question 3.1: a made-up question for the room.</span>
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="state" data-state="before-consent">
@@ -1476,6 +1534,113 @@ Sample transcript line 2: a made-up reply.</textarea>
             </ul>
             <p class="small muted">Every version is kept, numbered and dated.</p>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 9 -->
+<section id="screen-download-site" class="screen">
+  <header class="screen-head glass">
+    <h2>Download site (GitHub Pages)</h2>
+    <p class="purpose">A visitor reads what Grillo is, downloads the latest installer for Windows or Mac, and follows the install and first-use steps. A public web page, not a version of Grillo.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>8 (Distribution, Signing) · 10 item 1 (the page is not a Grillo web app) · 4.1 step 1</dd>
+      <dt>Controls</dt><dd>What Grillo is; what you need first; Download for Windows and Download for Mac (latest release, version and date); All releases on GitHub; install steps per system with the unsigned-installer warning note; how to use it, step by step.</dd>
+      <dt>States</dt><dd>Pilot release (unsigned installers, warning note shown) · Signed release (company-wide, no warning)</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="pilot">Pilot release, unsigned</button>
+      <button class="btn sm" data-state="signed">Signed release</button>
+    </div>
+
+    <div class="state" data-state="pilot">
+      <p class="state-caption">State: Pilot release, unsigned installers (demo install step)</p>
+      <div class="window glass">
+        <div class="titlebar"><span class="badge">Browser</span><span>example-owner.github.io/grillo</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3 class="m0">Grillo</h3>
+            <p>From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD. A desktop app for Windows and Mac.</p>
+            <div class="row"><button class="btn primary">Download for Windows</button><button class="btn primary">Download for Mac</button><a class="btn" href="#screen-download-site">All releases on GitHub</a></div>
+            <p class="small muted">Latest release: version 1.0.0 · 2026-10-22 · Grillo-Setup-1.0.0.exe · Grillo-1.0.0.dmg</p>
+          </div>
+          <div class="grid-2">
+            <div class="card stack">
+              <h4>What Grillo is</h4>
+              <ul class="small">
+                <li>Experts answer only the questions for their domain, live or in their own time.</li>
+                <li>Answers are recorded with their discussion, on your own laptop.</li>
+                <li>Every line of the PRD traces back to who said it, when and where.</li>
+              </ul>
+            </div>
+            <div class="card stack">
+              <h4>What you need first</h4>
+              <ul class="small">
+                <li>Claude Code, signed in with your own Claude subscription (any plan).</li>
+                <li>The GitHub command-line tool <code>gh</code>, signed in.</li>
+                <li>A company GitHub account.</li>
+              </ul>
+            </div>
+          </div>
+          <p class="note warn">These pilot installers are not signed yet, so Windows and Mac each show one warning the first time. This is expected; the steps below say what to click.</p>
+          <div class="grid-2">
+            <div class="card stack">
+              <h4>Install on Windows</h4>
+              <ol class="steps small">
+                <li>Run Grillo-Setup-1.0.0.exe.</li>
+                <li>If Windows says it protected your PC, click "More info", then "Run anyway".</li>
+                <li>Open Grillo; the setup check guides you through the rest.</li>
+              </ol>
+            </div>
+            <div class="card stack">
+              <h4>Install on Mac</h4>
+              <ol class="steps small">
+                <li>Open Grillo-1.0.0.dmg and drag Grillo into Applications.</li>
+                <li>If macOS says it cannot check the developer, open System Settings, Privacy and Security, and click "Open Anyway".</li>
+                <li>Open Grillo; the setup check guides you through the rest.</li>
+              </ol>
+            </div>
+          </div>
+          <div class="card stack">
+            <h4>How to use it</h4>
+            <ol class="steps small">
+              <li>Create a project and invite the people who know the subject.</li>
+              <li>Give the idea as text or a transcript; Grillo turns it into a map of tickets and questions.</li>
+              <li>Run the tagging round so each question reaches the right domain.</li>
+              <li>Answer together in a live session, or each in your own time.</li>
+              <li>When the map is done, Grillo writes the PRD; download it as Markdown or HTML.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="signed">
+      <p class="state-caption">State: Signed release (company-wide; no warning note)</p>
+      <div class="window glass">
+        <div class="titlebar"><span class="badge">Browser</span><span>example-owner.github.io/grillo</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3 class="m0">Grillo</h3>
+            <p>From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD. A desktop app for Windows and Mac.</p>
+            <div class="row"><button class="btn primary">Download for Windows</button><button class="btn primary">Download for Mac</button><a class="btn" href="#screen-download-site">All releases on GitHub</a></div>
+            <p class="small muted">Latest release: version 1.2.0 · 2026-12-01 · signed for Windows and Mac</p>
+          </div>
+          <div class="grid-2">
+            <div class="card stack">
+              <h4>Install on Windows</h4>
+              <ol class="steps small"><li>Run Grillo-Setup-1.2.0.exe.</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+            </div>
+            <div class="card stack">
+              <h4>Install on Mac</h4>
+              <ol class="steps small"><li>Open Grillo-1.2.0.dmg and drag Grillo into Applications.</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+            </div>
+          </div>
+          <p class="small muted">"What Grillo is", "What you need first" and "How to use it" stay as in the pilot state.</p>
         </div>
       </div>
     </div>
