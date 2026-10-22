@@ -1,0 +1,1 @@
+Proposed the ADR for how release 2's chat view and support relay drive Claude Code (machine-readable mode on the member's own install), backed by a spike showing clickable options, permission prompts and the personal rules file all come through.
