@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grillo UX prototype</title>
+<style>
+/* ===== copied from tokens.css (the source of truth; change tokens there, then copy them here) ===== */
+/*
+ * Grillo design tokens: the "liquid glass" theme (PRD v1, section 9).
+ *
+ * This file is the source of truth for every colour, spacing, radius, blur and size value in Grillo's
+ * interface. Front-end stories take every such value from here and nothing else; a value that is missing
+ * is added here first, in its own pull request on docs/ux/prototypes/.
+ *
+ * Liquid glass = see-through, frosted panels over a soft coloured backdrop. The frost comes from CSS
+ * backdrop-filter. Where it is unavailable or too costly (some Windows set-ups), panels switch to the
+ * *-fallback colours, which are nearly opaque, so text stays readable on both Windows and Mac.
+ */
+
+:root {
+  /* ---------- Backdrop (the coloured layer the glass sits on) ---------- */
+  --color-backdrop-1: #dfe9fb;            /* Backdrop gradient, top-left stop: pale blue. */
+  --color-backdrop-2: #efe4f7;            /* Backdrop gradient, middle stop: pale lilac. */
+  --color-backdrop-3: #e1f3ee;            /* Backdrop gradient, bottom-right stop: pale mint. */
+  --color-backdrop-glow: rgba(120, 160, 255, 0.35); /* Soft light blob behind the panels, gives the glass something to blur. */
+
+  /* ---------- Glass panels ---------- */
+  --color-glass-fill: rgba(255, 255, 255, 0.55);          /* Standard frosted panel fill (with blur). */
+  --color-glass-fill-strong: rgba(255, 255, 255, 0.78);   /* Raised panel fill: pop-overs, active tab, cards on cards. */
+  --color-glass-fill-fallback: rgba(248, 250, 253, 0.96); /* Panel fill when backdrop-filter is off (Windows fallback). */
+  --color-glass-fill-strong-fallback: #ffffff;            /* Raised panel fill when backdrop-filter is off. */
+  --color-glass-border: rgba(255, 255, 255, 0.75);        /* Light rim along a panel's edge, the "glass edge". */
+  --color-glass-border-fallback: rgba(27, 34, 51, 0.14);  /* Panel edge when backdrop-filter is off (needs contrast, not light). */
+  --color-glass-shadow: rgba(30, 40, 80, 0.14);           /* Drop shadow under panels. */
+  --color-glass-highlight: rgba(255, 255, 255, 0.9);      /* Inner top highlight line on a panel. */
+
+  /* ---------- Text ---------- */
+  --color-text: #1b2233;          /* Body text and headings. */
+  --color-text-muted: #545e72;    /* Secondary text: hints, dates, one-line notes. */
+  --color-text-disabled: #8e97a8; /* Text of a disabled control. */
+  --color-text-on-accent: #ffffff; /* Text on an accent-filled button. */
+  --color-text-on-danger: #ffffff; /* Text on the red Recording banner and danger buttons. */
+
+  /* ---------- Lines ---------- */
+  --color-divider: rgba(27, 34, 51, 0.1);   /* Hairline between rows and sections. */
+  --color-input-border: rgba(27, 34, 51, 0.2); /* Border of text fields, selects and checkboxes. */
+  --color-input-fill: rgba(255, 255, 255, 0.7); /* Fill of text fields on glass. */
+
+  /* ---------- Accent and status ---------- */
+  --color-accent: #2f6fed;                    /* Primary action, links, selected item. */
+  --color-accent-hover: #2459c4;              /* Primary action on hover. */
+  --color-accent-soft: rgba(47, 111, 237, 0.13); /* Selected row, active tab underlay, info notes. */
+  --color-success: #1d8a4c;                   /* "Signed in", "answered", all-green. */
+  --color-success-soft: rgba(29, 138, 76, 0.13); /* Success badge background. */
+  --color-warning: #b36b00;                   /* Needs attention, but not broken: update offer, greyed-out reason. */
+  --color-warning-soft: rgba(230, 150, 20, 0.16); /* Warning badge background. */
+  --color-danger: #d42a2a;                    /* Error, missing requirement, the Recording banner. */
+  --color-danger-soft: rgba(212, 42, 42, 0.12); /* Error badge background. */
+  --color-attention-dot: #f08c00;             /* The dot on an agent tab: "this agent is waiting for you". */
+  --color-focus-ring: rgba(47, 111, 237, 0.45); /* Keyboard focus outline. */
+  --color-disabled-fill: rgba(27, 34, 51, 0.06); /* Fill of a disabled control. */
+
+  /* ---------- Domain tag chips (one hue per declared domain, cycled in order) ---------- */
+  --color-tag-1: rgba(47, 111, 237, 0.14);   /* First declared domain. */
+  --color-tag-2: rgba(140, 70, 220, 0.14);   /* Second declared domain. */
+  --color-tag-3: rgba(20, 150, 120, 0.15);   /* Third declared domain. */
+  --color-tag-4: rgba(220, 120, 30, 0.15);   /* Fourth declared domain. */
+  --color-tag-none: rgba(27, 34, 51, 0.08);  /* The "no domain" tag. */
+
+  /* ---------- Terminal panel (release 1 agent view) ---------- */
+  --color-terminal-bg: rgba(16, 20, 32, 0.9);  /* Terminal background: dark smoked glass. */
+  --color-terminal-text: #dbe4f1;              /* Terminal text. */
+  --color-terminal-muted: #8794a8;             /* Terminal secondary text. */
+  --color-terminal-prompt: #7cc4ff;            /* Prompt sign and the member's own input. */
+  --color-terminal-highlight: #ffd479;         /* Agent question or clash warning in the terminal. */
+  --color-terminal-success: #7ee2a8;           /* "Recorded" lines in the terminal. */
+
+  /* ---------- Spacing (4-pixel grid) ---------- */
+  --space-0: 2px;   /* Hairline gap: inside chips and badges. */
+  --space-1: 4px;   /* Tightest gap: icon to label. */
+  --space-2: 8px;   /* Gap between related controls. */
+  --space-3: 12px;  /* Padding inside small controls and rows. */
+  --space-4: 16px;  /* Standard padding inside a panel; side gutter at phone width. */
+  --space-5: 24px;  /* Gap between panels. */
+  --space-6: 32px;  /* Gap between page sections. */
+  --space-7: 48px;  /* Large page margin at desktop width. */
+
+  /* ---------- Radius ---------- */
+  --radius-s: 8px;     /* Inputs, small buttons, chips with corners. */
+  --radius-m: 14px;    /* Cards and rows inside a panel. */
+  --radius-l: 22px;    /* Glass panels and the window frame. */
+  --radius-pill: 999px; /* Pills: tags, switches, segmented controls, tabs. */
+
+  /* ---------- Blur and glass effect ---------- */
+  --blur-glass: 22px;          /* Frost strength of a standard panel. */
+  --blur-glass-strong: 36px;   /* Frost strength of a raised panel or pop-over. */
+  --saturate-glass: 170%;      /* Colour boost behind the frost, the "liquid" look. */
+
+  /* ---------- Lines and shadows ---------- */
+  --border-width: 1px;          /* Every border and divider. */
+  --focus-ring-width: 3px;      /* Keyboard focus outline width. */
+  --shadow-offset-y: 8px;       /* Panel shadow vertical offset. */
+  --shadow-blur: 28px;          /* Panel shadow softness. */
+
+  /* ---------- Sizes ---------- */
+  --size-nav-width: 260px;      /* Prototype navigation column width (prototype only). */
+  --size-content-max: 1180px;   /* Widest a screen's content grows. */
+  --size-side-column: 300px;    /* Side column: version list, ticket list, meeting controls. */
+  --size-control-height: 36px;  /* Height of buttons, inputs and tabs. */
+  --size-switch-width: 36px;    /* Toggle switch track width. */
+  --size-switch-height: 20px;   /* Toggle switch track height. */
+  --size-switch-knob: 14px;     /* Toggle switch knob diameter. */
+  --size-dot: 8px;              /* Status dot and the "waiting for you" tab dot. */
+  --size-terminal-min: 260px;   /* Minimum height of a terminal panel. */
+  --size-textarea-min: 96px;    /* Minimum height of a multi-line text field. */
+  /* --breakpoint-narrow: 760px;   Phone-width layout below this. Media queries cannot read custom
+                                    properties, so this value is copied into @media rules by hand. */
+
+  /* ---------- Typography ---------- */
+  --font-family-ui: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; /* System UI font on Windows and Mac, no download. */
+  --font-family-mono: "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace; /* Terminal and code. */
+  --font-size-s: 12px;   /* Badges, hints, dates. */
+  --font-size-m: 14px;   /* Body text and controls. */
+  --font-size-l: 17px;   /* Panel headings. */
+  --font-size-xl: 22px;  /* Screen headings. */
+  --font-weight-regular: 400; /* Body text. */
+  --font-weight-strong: 600;  /* Headings, labels, primary buttons. */
+}
+/* ===== end of the copy of tokens.css ===== */
+
+/* Every colour, spacing, radius, blur and size below comes from the tokens above. */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-m);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.45;
+  color: var(--color-text);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 8%, var(--color-backdrop-glow), transparent 38%),
+    radial-gradient(circle at 85% 90%, var(--color-backdrop-glow), transparent 32%),
+    linear-gradient(135deg, var(--color-backdrop-1), var(--color-backdrop-2) 50%, var(--color-backdrop-3));
+  background-attachment: fixed;
+}
+h1, h2, h3, h4 { font-weight: var(--font-weight-strong); line-height: 1.25; }
+h3 { font-size: var(--font-size-l); margin: 0 0 var(--space-3); }
+h4 { font-size: var(--font-size-m); margin: 0 0 var(--space-2); }
+p { margin: 0 0 var(--space-2); }
+code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); }
+a { color: var(--color-accent); }
+:focus-visible { outline: var(--focus-ring-width) solid var(--color-focus-ring); outline-offset: var(--space-0); }
+.muted { color: var(--color-text-muted); }
+.small { font-size: var(--font-size-s); }
+.strong { font-weight: var(--font-weight-strong); }
+.m0 { margin: 0; }
+.fill { flex: 1; min-width: 0; }
+.w-auto { width: auto; }
+
+/* ---------- Glass ---------- */
+.glass {
+  background: var(--color-glass-fill);
+  border: var(--border-width) solid var(--color-glass-border);
+  border-radius: var(--radius-l);
+  box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow), inset 0 var(--border-width) 0 var(--color-glass-highlight);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(var(--saturate-glass));
+  backdrop-filter: blur(var(--blur-glass)) saturate(var(--saturate-glass));
+}
+.glass-strong {
+  background: var(--color-glass-fill-strong);
+  -webkit-backdrop-filter: blur(var(--blur-glass-strong)) saturate(var(--saturate-glass));
+  backdrop-filter: blur(var(--blur-glass-strong)) saturate(var(--saturate-glass));
+}
+.card {
+  background: var(--color-glass-fill-strong);
+  border: var(--border-width) solid var(--color-glass-border);
+  border-radius: var(--radius-m);
+  padding: var(--space-4);
+}
+/* Fallback: no backdrop-filter (some Windows set-ups), or the prototype's "Windows fallback" switch. */
+@supports not ((backdrop-filter: none) or (-webkit-backdrop-filter: none)) {
+  .glass { background: var(--color-glass-fill-fallback); border-color: var(--color-glass-border-fallback); }
+  .glass-strong, .card { background: var(--color-glass-fill-strong-fallback); border-color: var(--color-glass-border-fallback); }
+}
+body.no-glass .glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--color-glass-fill-fallback); border-color: var(--color-glass-border-fallback); }
+body.no-glass .glass-strong, body.no-glass .card { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--color-glass-fill-strong-fallback); border-color: var(--color-glass-border-fallback); }
+
+/* ---------- Page layout ---------- */
+.app { display: grid; grid-template-columns: var(--size-nav-width) minmax(0, 1fr); gap: var(--space-5); padding: var(--space-5); max-width: calc(var(--size-content-max) + var(--size-nav-width)); margin: 0 auto; }
+.proto-nav { position: sticky; top: var(--space-5); align-self: start; padding: var(--space-4); }
+.proto-nav h1 { font-size: var(--font-size-l); margin: 0 0 var(--space-1); }
+.proto-nav ol { list-style: none; padding: 0; margin: var(--space-4) 0; display: grid; gap: var(--space-1); }
+.proto-nav a { display: block; padding: var(--space-2) var(--space-3); border-radius: var(--radius-s); color: var(--color-text); text-decoration: none; }
+.proto-nav a:hover { background: var(--color-accent-soft); }
+.proto-nav a[aria-current="page"] { background: var(--color-accent-soft); color: var(--color-accent); font-weight: var(--font-weight-strong); }
+.proto-nav .num { display: inline-block; min-width: var(--space-5); color: var(--color-text-muted); }
+main { min-width: 0; }
+html.js .screen { display: none; }
+html.js .screen.active { display: block; }
+.screen { margin-bottom: var(--space-6); }
+.screen-head { padding: var(--space-5); margin-bottom: var(--space-4); }
+.screen-head h2 { font-size: var(--font-size-xl); margin: 0; }
+.purpose { margin: var(--space-1) 0 0; }
+.meta { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-3); margin: var(--space-3) 0 0; font-size: var(--font-size-s); }
+.meta dt { font-weight: var(--font-weight-strong); }
+.meta dd { margin: 0; color: var(--color-text-muted); }
+.state-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin: var(--space-4) 0 0; }
+.state-tabs .label { font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
+.state-tabs button[aria-pressed="true"] { background: var(--color-accent-soft); color: var(--color-accent); border-color: var(--color-accent); }
+.state + .state { margin-top: var(--space-5); }
+.state-caption { font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); margin: 0 0 var(--space-2); }
+
+/* ---------- App window ---------- */
+.window { overflow: hidden; }
+.titlebar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); color: var(--color-text-muted); flex-wrap: wrap; }
+.titlebar strong { color: var(--color-text); }
+.spacer { flex: 1; }
+.window-body { padding: var(--space-5); display: grid; gap: var(--space-5); }
+.stack { display: grid; gap: var(--space-3); }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.split { display: grid; grid-template-columns: var(--size-side-column) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.split.rev { grid-template-columns: minmax(0, 1fr) var(--size-side-column); }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+
+/* ---------- Controls ---------- */
+.btn { font: inherit; text-decoration: none; min-height: var(--size-control-height); padding: 0 var(--space-4); border-radius: var(--radius-pill); border: var(--border-width) solid var(--color-input-border); background: var(--color-glass-fill-strong); color: var(--color-text); cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+.btn:hover { border-color: var(--color-accent); }
+.btn.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-text-on-accent); font-weight: var(--font-weight-strong); }
+.btn.primary:hover { background: var(--color-accent-hover); }
+.btn.danger { background: var(--color-danger); border-color: var(--color-danger); color: var(--color-text-on-danger); font-weight: var(--font-weight-strong); }
+.btn.sm { min-height: 0; padding: var(--space-1) var(--space-3); font-size: var(--font-size-s); }
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--color-disabled-fill); color: var(--color-text-disabled); border-color: var(--color-divider); cursor: not-allowed; }
+input[type="text"], input[type="search"], select, textarea { font: inherit; color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); width: 100%; }
+textarea { min-height: var(--size-textarea-min); resize: vertical; }
+input:disabled, select:disabled, textarea:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--color-accent); margin: 0; }
+.field { display: grid; gap: var(--space-1); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
+.check { display: inline-flex; gap: var(--space-2); align-items: center; }
+.switch { display: inline-flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+.switch input { -webkit-appearance: none; appearance: none; margin: 0; width: var(--size-switch-width); height: var(--size-switch-height); border-radius: var(--radius-pill); background: var(--color-disabled-fill); border: var(--border-width) solid var(--color-input-border); position: relative; cursor: pointer; flex: none; }
+.switch input::after { content: ""; position: absolute; top: var(--space-0); left: var(--space-0); width: var(--size-switch-knob); height: var(--size-switch-knob); border-radius: var(--radius-pill); background: var(--color-glass-fill-strong-fallback); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
+.switch input:checked { background: var(--color-accent); border-color: var(--color-accent); }
+.switch input:checked::after { left: auto; right: var(--space-0); }
+.switch input.rec:checked { background: var(--color-danger); border-color: var(--color-danger); }
+.switch input:disabled { border-color: var(--color-divider); cursor: not-allowed; }
+.switch input:disabled::after { background: var(--color-disabled-fill); box-shadow: none; }
+.seg { display: inline-flex; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
+.seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
+.seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
+.reason { font-size: var(--font-size-s); color: var(--color-warning); }
+
+/* ---------- Badges and tags ---------- */
+.badge { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); background: var(--color-disabled-fill); color: var(--color-text-muted); white-space: nowrap; }
+.badge.ok { background: var(--color-success-soft); color: var(--color-success); }
+.badge.warn { background: var(--color-warning-soft); color: var(--color-warning); }
+.badge.err { background: var(--color-danger-soft); color: var(--color-danger); }
+.badge.info { background: var(--color-accent-soft); color: var(--color-accent); }
+.tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); color: var(--color-text); white-space: nowrap; }
+.tag.d1 { background: var(--color-tag-1); } .tag.d2 { background: var(--color-tag-2); } .tag.d3 { background: var(--color-tag-3); } .tag.d4 { background: var(--color-tag-4); } .tag.none { background: var(--color-tag-none); }
+.code-chip { font-family: var(--font-family-mono); font-size: var(--font-size-s); color: var(--color-accent); background: var(--color-accent-soft); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); white-space: nowrap; }
+.code-chip.nosrc { color: var(--color-warning); background: var(--color-warning-soft); }
+.sdot { display: inline-block; width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-disabled); flex: none; }
+.sdot.ok { background: var(--color-success); } .sdot.err { background: var(--color-danger); } .sdot.warn { background: var(--color-warning); }
+
+/* ---------- Notes and banners ---------- */
+.note { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.note.warn { background: var(--color-warning-soft); }
+.note.err { background: var(--color-danger-soft); }
+.note.ok { background: var(--color-success-soft); }
+.note > :last-child { margin-bottom: 0; }
+.rec-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--color-danger); color: var(--color-text-on-danger); font-weight: var(--font-weight-strong); }
+.rec-banner .sdot { background: var(--color-text-on-danger); }
+.script { font-style: italic; padding: var(--space-3); border-left: var(--focus-ring-width) solid var(--color-accent); background: var(--color-accent-soft); border-radius: var(--radius-s); }
+
+/* ---------- Lists and tables ---------- */
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows > li { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: flex-start; justify-content: space-between; padding: var(--space-3) 0; border-bottom: var(--border-width) solid var(--color-divider); }
+.rows > li:last-child { border-bottom: 0; }
+.rows .grow { flex: 1; min-width: 0; }
+.rows > li.selected { background: var(--color-accent-soft); border-radius: var(--radius-s); padding-left: var(--space-2); padding-right: var(--space-2); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: var(--border-width) solid var(--color-divider); vertical-align: top; }
+th { font-size: var(--font-size-s); color: var(--color-text-muted); font-weight: var(--font-weight-strong); white-space: nowrap; }
+ol.steps { margin: var(--space-2) 0; padding-left: var(--space-5); }
+ol.steps li { margin-bottom: var(--space-1); }
+.list-head { font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); margin: var(--space-3) 0 0; }
+
+/* ---------- Project tab bar ---------- */
+.tabbar { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); overflow-x: auto; }
+.tab { font: inherit; display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--size-control-height); padding: 0 var(--space-3); border-radius: var(--radius-pill); color: var(--color-text-muted); white-space: nowrap; border: var(--border-width) solid transparent; background: none; }
+.tab.active { background: var(--color-glass-fill-strong); color: var(--color-text); border-color: var(--color-glass-border); box-shadow: 0 var(--border-width) var(--space-2) var(--color-glass-shadow); font-weight: var(--font-weight-strong); }
+.tab .dot { width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-attention-dot); flex: none; }
+.tab .switch { font-size: var(--font-size-s); font-weight: var(--font-weight-regular); color: var(--color-text-muted); }
+.tab.add { color: var(--color-accent); font-weight: var(--font-weight-strong); font-size: var(--font-size-l); cursor: pointer; }
+.tab.add[aria-pressed="true"] { background: var(--color-accent-soft); }
+.tab-sep { width: var(--border-width); align-self: stretch; background: var(--color-divider); margin: 0 var(--space-2); flex: none; }
+
+/* ---------- Terminal (release 1 agent view) ---------- */
+.terminal { background: var(--color-terminal-bg); color: var(--color-terminal-text); font-family: var(--font-family-mono); font-size: var(--font-size-s); padding: var(--space-4); border-radius: var(--radius-m); min-height: var(--size-terminal-min); white-space: pre-wrap; overflow-x: auto; margin: 0; }
+.terminal .t-muted { color: var(--color-terminal-muted); }
+.terminal .t-prompt { color: var(--color-terminal-prompt); }
+.terminal .t-hl { color: var(--color-terminal-highlight); }
+.terminal .t-ok { color: var(--color-terminal-success); }
+.typebox { display: flex; gap: var(--space-2); align-items: center; }
+.typebox input { font-family: var(--font-family-mono); }
+.transcript { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); max-height: calc(var(--size-textarea-min) + var(--space-6)); overflow-y: auto; }
+.transcript p { margin: 0 0 var(--space-1); }
+
+/* ---------- Document (PRD view) ---------- */
+.doc h3 { margin-top: var(--space-5); }
+.doc h3:first-child { margin-top: 0; }
+.doc p { line-height: 1.6; }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); padding: var(--space-4); gap: var(--space-4); }
+  .proto-nav { position: static; }
+  .proto-nav ol { display: flex; overflow-x: auto; margin: var(--space-3) 0; }
+  .proto-nav a { white-space: nowrap; }
+  .screen-head { padding: var(--space-4); }
+  .window-body { padding: var(--space-4); gap: var(--space-4); }
+  .split, .split.rev, .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .meta { grid-template-columns: minmax(0, 1fr); }
+  .meta dd { margin-bottom: var(--space-2); }
+  .rows .grow { flex-basis: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<nav class="proto-nav glass" aria-label="Screens">
+  <h1>Grillo prototype</h1>
+  <p class="small muted">PRD v1 · release 1 · liquid glass theme. Fake data only.</p>
+  <ol>
+    <li><a href="#screen-setup-check"><span class="num">1</span>Setup check</a></li>
+    <li><a href="#screen-project-creation"><span class="num">2</span>Project creation and invites</a></li>
+    <li><a href="#screen-map-and-tickets"><span class="num">3</span>The map and its tickets</a></li>
+    <li><a href="#screen-ticket-management"><span class="num">4</span>Ticket-and-question management</a></li>
+    <li><a href="#screen-meeting"><span class="num">5</span>Meeting screen</a></li>
+    <li><a href="#screen-own-time-answering"><span class="num">6</span>Own-time answering</a></li>
+    <li><a href="#screen-generic-agent-tab"><span class="num">7</span>Generic agent tab</a></li>
+    <li><a href="#screen-prd-view"><span class="num">8</span>PRD view with versions and export</a></li>
+  </ol>
+  <label class="switch small"><input type="checkbox" id="toggle-fallback"> Windows fallback (no frosted blur)</label>
+  <p class="small muted">Turn it on to check every screen still reads well where the frosted effect is unavailable.</p>
+</nav>
+
+<main>
+
+<!-- ======================================================================= 1 -->
+<section id="screen-setup-check" class="screen">
+  <header class="screen-head glass">
+    <h2>Setup check</h2>
+    <p class="purpose">The member checks that Claude Code and the GitHub command-line tool <code>gh</code> are installed and signed in, signs in to GitHub, and takes an update when one is offered.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 (Screens), row 1 · flows 4.1 (Setup) · 8 (Updates)</dd>
+      <dt>Controls</dt><dd>Requirement rows with status; install and sign-in guidance; Open install guide; Sign in to GitHub; Check again; Continue; update offer with Download and install, Later, and the auto-update setting.</dd>
+      <dt>States</dt><dd>Checking · Everything missing · Signed out of GitHub · All green, with update offer</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="checking">Checking</button>
+      <button class="btn sm" data-state="missing">Everything missing</button>
+      <button class="btn sm" data-state="signed-out">Signed out of GitHub</button>
+      <button class="btn sm" data-state="green">All green, with update offer</button>
+    </div>
+
+    <div class="state" data-state="checking">
+      <p class="state-caption">State: Checking (loading)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Setup check</span></div>
+        <div class="window-body">
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot"></span><span class="strong">Claude Code</span></span><span class="badge">Checking…</span></li>
+            <li><span class="row"><span class="sdot"></span><span class="strong">GitHub command-line tool (gh)</span></span><span class="badge">Checking…</span></li>
+            <li><span class="row"><span class="sdot"></span><span class="strong">GitHub account</span></span><span class="badge">Checking…</span></li>
+          </ul>
+          <div class="row"><span class="spacer"></span><button class="btn primary" disabled>Continue</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="missing">
+      <p class="state-caption">State: Everything missing (error)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Setup check</span></div>
+        <div class="window-body">
+          <p class="note err">Grillo needs two tools on this laptop before it can start. Follow the steps below, then press Check again.</p>
+          <ul class="rows card">
+            <li>
+              <div class="grow">
+                <div class="row"><span class="sdot err"></span><span class="strong">Claude Code</span><span class="badge err">Not found</span></div>
+                <p class="small muted">Grillo runs its agents in Claude Code, signed in with your own Claude subscription (any plan).</p>
+                <ol class="steps small">
+                  <li>Install Claude Code.</li>
+                  <li>Sign in once: open a terminal, run <code>claude</code> and follow the sign-in.</li>
+                </ol>
+              </div>
+              <button class="btn sm">Open install guide</button>
+            </li>
+            <li>
+              <div class="grow">
+                <div class="row"><span class="sdot err"></span><span class="strong">GitHub command-line tool (gh)</span><span class="badge err">Not found</span></div>
+                <p class="small muted">Grillo keeps every project in your company's GitHub through <code>gh</code>.</p>
+                <ol class="steps small">
+                  <li>Install <code>gh</code>.</li>
+                  <li>Sign in once: run <code>gh auth login</code> and follow the steps in your browser.</li>
+                </ol>
+              </div>
+              <button class="btn sm">Open install guide</button>
+            </li>
+            <li><span class="row"><span class="sdot"></span><span class="strong">GitHub account</span></span><span class="badge">Waits for gh</span></li>
+          </ul>
+          <div class="row"><button class="btn">Check again</button><span class="spacer"></span><span class="reason">Continue unlocks when every row is green.</span><button class="btn primary" disabled>Continue</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="signed-out">
+      <p class="state-caption">State: Signed out of GitHub (demo step 1)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Setup check</span></div>
+        <div class="window-body">
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot ok"></span><span class="strong">Claude Code</span></span><span class="row"><span class="badge ok">Installed</span><span class="badge ok">Signed in</span></span></li>
+            <li>
+              <div class="grow">
+                <div class="row"><span class="sdot err"></span><span class="strong">GitHub command-line tool (gh)</span><span class="badge ok">Installed</span><span class="badge err">Signed out</span></div>
+                <p class="small muted">You are signed out of GitHub. Sign in once with your company GitHub account: Grillo opens a terminal running <code>gh auth login</code>, and you follow the steps in your browser.</p>
+              </div>
+              <button class="btn sm primary">Sign in to GitHub</button>
+            </li>
+            <li><span class="row"><span class="sdot err"></span><span class="strong">GitHub account</span></span><span class="badge err">Not signed in</span></li>
+          </ul>
+          <div class="row"><button class="btn">Check again</button><span class="spacer"></span><span class="reason">Continue unlocks when every row is green.</span><button class="btn primary" disabled>Continue</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="green">
+      <p class="state-caption">State: All green, with update offer (success)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Setup check</span><span class="spacer"></span><span>Version 1.0.0</span></div>
+        <div class="window-body">
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot ok"></span><span class="strong">Claude Code</span></span><span class="row"><span class="badge ok">Installed</span><span class="badge ok">Signed in</span></span></li>
+            <li><span class="row"><span class="sdot ok"></span><span class="strong">GitHub command-line tool (gh)</span></span><span class="row"><span class="badge ok">Installed</span><span class="badge ok">Signed in</span></span></li>
+            <li>
+              <div class="grow">
+                <div class="row"><span class="sdot ok"></span><span class="strong">GitHub account</span><span class="badge ok">Signed in</span></div>
+                <table class="small">
+                  <tr><th>Login</th><td>member-a</td></tr>
+                  <tr><th>Name</th><td>Ana</td></tr>
+                  <tr><th>Email</th><td>member-a@example.com</td></tr>
+                  <tr><th>Organisation</th><td>example-org <span class="badge ok">Member</span></td></tr>
+                </table>
+              </div>
+            </li>
+          </ul>
+          <div class="card glass-strong stack" role="dialog" aria-label="Update offer">
+            <div class="row"><span class="badge warn">Update</span><span class="strong">Grillo 1.1.0 is available. You have 1.0.0.</span></div>
+            <label class="check small"><input type="checkbox"> Install updates automatically on the next restart</label>
+            <p class="small muted">On Mac, automatic install works only once Grillo is signed.</p>
+            <div class="row"><button class="btn primary sm">Download and install</button><button class="btn sm">Later</button></div>
+          </div>
+          <div class="row"><span class="spacer"></span><button class="btn primary">Continue</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 2 -->
+<section id="screen-project-creation" class="screen">
+  <header class="screen-head glass">
+    <h2>Project creation and invites, with the PRD structure</h2>
+    <p class="purpose">The member creates a project in a new or an existing repository, shapes its PRD structure, invites people, sets their own role and domains, and gives the idea.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 (Screens), row 2 · flows 4.2 (Starting a project) · 7 (Permissions)</dd>
+      <dt>Controls</dt><dd>New repository or connect existing; repository picker; PRD structure source, add, remove, rename, reorder sections; invite by GitHub login; own role and domains; idea as text with attachments, or a pasted or uploaded transcript; Create project.</dd>
+      <dt>States</dt><dd>New repository · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · Joining as an invitee · Creating (loading)</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="new">New repository</button>
+      <button class="btn sm" data-state="connect">Connect existing, write access only</button>
+      <button class="btn sm" data-state="connect-problems">Connect: repository problems</button>
+      <button class="btn sm" data-state="invitee">Joining as an invitee</button>
+      <button class="btn sm" data-state="creating">Creating</button>
+    </div>
+
+    <div class="state" data-state="new">
+      <p class="state-caption">State: New repository</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
+            <div class="grid-2">
+              <label class="field">Project name<input type="text" value="Sample project 1"></label>
+              <label class="field">Repository name<input type="text" value="sample-project-1"></label>
+            </div>
+            <p class="small muted">A private repository in <strong>example-org</strong> (from your GitHub sign-in). Every member becomes a repository admin.</p>
+          </div>
+
+          <div class="card stack">
+            <h3>2 · PRD structure</h3>
+            <label class="field">Start from
+              <select><option>Grillo default</option><option>Sample project 0 (an earlier project of yours)</option></select>
+            </label>
+            <p class="small muted">With no choice made, the default applies. Edit it now or at any time later.</p>
+            <ul class="rows">
+              <li><span class="row"><button class="btn sm" aria-label="Move up" disabled>↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Sample section 1" aria-label="Section name"><input type="text" value="One-line note for sample section 1" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Sample section 2" aria-label="Section name"><input type="text" value="One-line note for sample section 2" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Sample section 3" aria-label="Section name"><input type="text" value="One-line note for sample section 3" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down" disabled>↓</button></span><div class="grow grid-2"><input type="text" value="Sample added section" aria-label="Section name"><input type="text" value="One-line note for the section this member added" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+            </ul>
+            <div class="row"><button class="btn sm">Add section</button></div>
+          </div>
+
+          <div class="card stack">
+            <h3>3 · Members</h3>
+            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login, for example member-b" aria-label="GitHub login to invite"></div><button class="btn">Invite</button></div>
+            <p class="small muted">An invite is a GitHub repository access invite.</p>
+            <ul class="rows">
+              <li>
+                <div class="grow stack">
+                  <div class="row"><span class="strong">member-a</span><span class="muted">Ana</span><span class="badge info">You</span></div>
+                  <div class="grid-2">
+                    <label class="field">Your role (free text)<input type="text" value="Sample role A"></label>
+                    <label class="field">Your domains<span class="row"><span class="tag d1">product ×</span><button class="btn sm">Add domain</button></span></label>
+                  </div>
+                  <p class="small muted">Pre-filled from the last project you joined, Sample project 0.</p>
+                </div>
+              </li>
+              <li><span class="row"><span class="strong">member-b</span><span class="muted">Ben</span></span><span class="row"><span class="badge warn">Invited</span><span class="small muted">sets their own role and domains</span></span></li>
+              <li><span class="row"><span class="strong">member-c</span><span class="muted">Carla</span></span><span class="row"><span class="badge warn">Invited</span><span class="small muted">sets their own role and domains</span></span></li>
+            </ul>
+          </div>
+
+          <div class="card stack">
+            <h3>4 · The idea</h3>
+            <div class="seg" role="group" aria-label="Idea format"><button aria-pressed="true">Write or paste text</button><button aria-pressed="false">Paste or upload a transcript</button></div>
+            <textarea aria-label="The idea">Sample idea: a short description of the product, written in the member's own words.</textarea>
+            <div class="row"><button class="btn sm">Attach documents</button><span class="tag none">sample-notes-1.txt ×</span></div>
+            <p class="small muted">The destination is always a PRD. Grillo then opens a grilling agent that builds the map, the tickets and their questions.</p>
+          </div>
+
+          <div class="row"><span class="spacer"></span><button class="btn">Cancel</button><button class="btn primary">Create project</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect">
+      <p class="state-caption">State: Connect existing, write access only (admin-only actions greyed out with the reason)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <input type="search" placeholder="Search your repositories" aria-label="Search repositories">
+            <ul class="rows">
+              <li class="selected"><label class="check"><input type="radio" name="repo-connect" checked> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+              <li><label class="check"><input type="radio" name="repo-connect"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+            </ul>
+            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
+          </div>
+          <div class="card stack">
+            <h3>2 · PRD structure</h3>
+            <div class="row"><span>Grillo default · 4 sections</span><span class="spacer"></span><button class="btn sm">Edit</button></div>
+          </div>
+          <div class="card stack">
+            <h3>3 · Members</h3>
+            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
+            <p class="reason">Inviting needs admin rights on example-org/sample-repo-1, and you have write access. Ask one of its admins to add people.</p>
+            <ul class="rows">
+              <li><span class="row"><span class="strong">member-a</span><span class="badge info">You</span></span><span class="row"><span class="small">Sample role A</span><span class="tag d1">product</span></span></li>
+              <li><span class="row"><span class="strong">member-b</span><span class="muted">already a collaborator</span></span><span class="small muted">sets their own role and domains</span></li>
+            </ul>
+          </div>
+          <div class="card stack">
+            <h3>4 · The idea</h3>
+            <div class="seg" role="group" aria-label="Idea format"><button aria-pressed="false">Write or paste text</button><button aria-pressed="true">Paste or upload a transcript</button></div>
+            <textarea aria-label="Transcript">Sample transcript line 1: a made-up kick-off remark.
+Sample transcript line 2: a made-up reply.</textarea>
+            <div class="row"><button class="btn sm">Upload transcript file</button></div>
+          </div>
+          <div class="row"><span class="spacer"></span><button class="btn">Cancel</button><button class="btn primary">Connect and start</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-problems">
+      <p class="state-caption">State: Connect, repository problems (error)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>New project</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <ul class="rows">
+              <li>
+                <div class="grow"><div class="row"><span class="strong">example-org/sample-repo-3</span><span class="badge info">Already holds a Grillo project</span></div>
+                <p class="small muted">One Grillo project per repository. Open the one it holds instead.</p></div>
+                <button class="btn sm primary">Open it</button>
+              </li>
+              <li>
+                <div class="grow"><div class="row"><span class="strong">example-org/sample-repo-4</span><span class="badge err">Issues are turned off</span></div>
+                <p class="small muted">Grillo keeps its map and tickets as GitHub issues. Turn on Issues in this repository's GitHub settings, then check again.</p></div>
+                <button class="btn sm">Check again</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="invitee">
+      <p class="state-caption">State: Joining as an invitee</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Invite</span><span class="spacer"></span><span>member-c</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>member-a invited you to Sample project 1</h3>
+            <p class="small muted">Repository example-org/sample-project-1.</p>
+            <div class="grid-2">
+              <label class="field">Your role (free text)<input type="text" value="Sample role C"></label>
+              <label class="field">Your domains<span class="row"><span class="tag d3">platform ×</span><button class="btn sm">Add domain</button></span></label>
+            </div>
+            <p class="small muted">Pre-filled from the last project you joined, Sample project 0.</p>
+            <div class="row"><span class="spacer"></span><button class="btn primary">Join project</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="creating">
+      <p class="state-caption">State: Creating (loading)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span></div>
+        <div class="window-body">
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot ok"></span>Private repository example-org/sample-project-1 created</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot ok"></span>Grillo labels and the Grillo folder added</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot ok"></span>Invites sent to member-b and member-c</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot warn"></span>Grilling agent started; it is building the map and tickets</span><span class="badge warn">Working…</span></li>
+          </ul>
+          <p class="note small">Tickets appear on the map as the engine creates them, and you can edit them at once.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 3 -->
+<section id="screen-map-and-tickets" class="screen">
+  <header class="screen-head glass">
+    <h2>The map and its tickets</h2>
+    <p class="purpose">The member sees where the project stands (destination, settled, fog, out of scope) and the ticket list, and runs the tagging round.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 (Screens), row 3 · flows 4.2 steps 6 and 7 · 4.3 (Routing a question)</dd>
+      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; per ticket Edit, Merge, Close as out of scope.</dd>
+      <dt>States</dt><dd>Engine building the map (loading) · Tickets untagged · Tagged and assigned · Map done</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="building">Engine building the map</button>
+      <button class="btn sm" data-state="untagged">Tickets untagged</button>
+      <button class="btn sm" data-state="tagged">Tagged and assigned</button>
+      <button class="btn sm" data-state="done">Map done</button>
+    </div>
+
+    <div class="state" data-state="building">
+      <p class="state-caption">State: Engine building the map (loading)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Map<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 1.</p></div>
+            <div class="card"><h4>Settled</h4><p class="muted small">Nothing settled yet.</p></div>
+            <div class="card"><h4>Fog</h4><p class="muted small">Nothing yet.</p></div>
+            <div class="card"><h4>Out of scope</h4><p class="muted small">Nothing yet.</p></div>
+          </div>
+          <div class="card stack">
+            <h3>Tickets</h3>
+            <p class="note small">The grilling agent is building the map and tickets from your idea. Tickets appear here as they are created.</p>
+            <ul class="rows"><li><span>Sample ticket 1</span><span class="badge">grilling</span></li></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="untagged">
+      <p class="state-caption">State: Tickets untagged (before the first tagging round)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Map<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 1.</p></div>
+            <div class="card"><h4>Settled</h4><p class="muted small">Nothing settled yet.</p></div>
+            <div class="card"><h4>Fog</h4><ul class="small"><li>Sample fog item 1: cannot be asked precisely yet.</li></ul></div>
+            <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
+          </div>
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Tickets</h3><span class="spacer"></span><button class="btn">Add ticket</button><button class="btn primary">Run tagging round</button></div>
+            <p class="small muted">An agent gives every open ticket one or more domains from the members' domains: product, developer, platform.</p>
+            <div class="table-wrap"><table>
+              <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th><th>Blocked by</th><th></th></tr>
+              <tr><td>Sample ticket 1</td><td><span class="badge">grilling</span></td><td><span class="muted small">untagged</span></td><td>—</td><td>—</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td>Sample ticket 2</td><td><span class="badge">grilling</span></td><td><span class="muted small">untagged</span></td><td>—</td><td>—</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td>Sample ticket 3</td><td><span class="badge">grilling</span></td><td><span class="muted small">untagged</span></td><td>—</td><td>Sample ticket 1</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td>Sample ticket 4</td><td><span class="badge">research</span></td><td><span class="muted small">untagged</span></td><td>—</td><td>—</td><td><button class="btn sm">Edit</button></td></tr>
+            </table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="tagged">
+      <p class="state-caption">State: Tagged and assigned</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Sample ticket 3<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 1.</p></div>
+            <div class="card"><h4>Settled</h4><ul class="small"><li>Sample ticket 0: sample decision gist, one line.</li></ul></div>
+            <div class="card"><h4>Fog</h4><ul class="small"><li>Sample fog item 1: cannot be asked precisely yet.</li></ul></div>
+            <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
+          </div>
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Tickets</h3><span class="spacer"></span><div class="seg" role="group" aria-label="Filter"><button aria-pressed="false">All</button><button aria-pressed="true">My domains first</button></div><button class="btn">Add ticket</button><button class="btn">Run tagging round</button></div>
+            <p class="small muted">Last tagging round: 2026-10-22, run by member-a. Rerun it when members join.</p>
+            <div class="table-wrap"><table>
+              <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th><th>Blocked by</th><th></th></tr>
+              <tr><td>Sample ticket 1</td><td><span class="badge">grilling</span></td><td><span class="tag d1">product</span></td><td>—</td><td>—</td><td><span class="row"><button class="btn sm">Edit</button><button class="btn sm">Merge</button><button class="btn sm">Close as out of scope</button></span></td></tr>
+              <tr><td>Sample ticket 2</td><td><span class="badge">grilling</span></td><td><span class="tag d3">platform</span></td><td>member-c <span class="badge warn">Locked · sent by member-a</span></td><td>—</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td>Sample ticket 3</td><td><span class="badge">grilling</span></td><td><span class="tag d2">developer</span> <span class="tag d1">product</span></td><td>Grilling agent (member-a) <span class="badge warn">Locked</span></td><td>—</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td>Sample ticket 4</td><td><span class="badge">grilling</span></td><td><span class="tag d2">developer</span></td><td>member-b <span class="badge warn">Locked · taken</span></td><td>—</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td>Sample ticket 5</td><td><span class="badge">research</span></td><td><span class="tag none">no domain</span></td><td>—</td><td>Sample ticket 3</td><td><button class="btn sm">Edit</button></td></tr>
+            </table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="done">
+      <p class="state-caption">State: Map done (success)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <p class="note ok">The map is done: no open tickets and no fog. Grillo is writing the PRD now. <a href="#screen-prd-view">Open the PRD</a></p>
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 1.</p></div>
+            <div class="card"><h4>Settled</h4><ul class="small"><li>Sample ticket 1: sample decision gist.</li><li>Sample ticket 2: sample decision gist.</li><li>Sample ticket 3: sample decision gist.</li></ul></div>
+            <div class="card"><h4>Fog</h4><p class="muted small">No fog left.</p></div>
+            <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
+          </div>
+          <div class="card"><h3>Tickets</h3><p class="small muted">All 5 tickets are closed.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 4 -->
+<section id="screen-ticket-management" class="screen">
+  <header class="screen-head glass">
+    <h2>Ticket-and-question management</h2>
+    <p class="purpose">The member works through their own list first, opens a ticket, sees its questions and their answered state, changes its tags, and takes, sends or reassigns it.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 (Screens), row 4 · flows 4.3 (Routing) · 4.4 steps 1 and 5 (own list, answers from GitHub)</dd>
+      <dt>Controls</dt><dd>Own list grouped: taken by or sent to me, my domains, everything else; search; ticket detail with tags changed by hand; Take; Send to a member; Reassign (unanswered tickets); Edit; Merge; Close as out of scope; questions with answered state and source; Undo on a recorded answer; Answer now.</dd>
+      <dt>States</dt><dd>Unassigned ticket · Locked by another member · Answer picked up from a GitHub comment · Empty list</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="unassigned">Unassigned ticket</button>
+      <button class="btn sm" data-state="locked">Locked by another member</button>
+      <button class="btn sm" data-state="from-github">Answer from a GitHub comment</button>
+      <button class="btn sm" data-state="empty">Empty list</button>
+    </div>
+
+    <div class="state" data-state="unassigned">
+      <p class="state-caption">State: Unassigned ticket</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab active">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split">
+          <div class="card">
+            <input type="search" placeholder="Search tickets" aria-label="Search tickets">
+            <p class="list-head">Taken by you or sent to you</p>
+            <ul class="rows small"><li><span>Sample ticket 3</span><span class="tag d2">developer</span></li></ul>
+            <p class="list-head">Your domains</p>
+            <ul class="rows small"><li class="selected"><span>Sample ticket 1</span><span class="tag d1">product</span></li><li><span>Sample ticket 5</span><span class="tag none">no domain</span></li></ul>
+            <p class="list-head">Everything else</p>
+            <ul class="rows small"><li><span>Sample ticket 2 <span class="muted">· member-c</span></span><span class="tag d3">platform</span></li><li><span>Sample ticket 4 <span class="muted">· member-b</span></span><span class="tag d2">developer</span></li></ul>
+          </div>
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Sample ticket 1</h3><span class="badge">grilling</span><span class="badge">Not assigned</span></div>
+            <div class="row"><span class="small strong muted">Domains</span><span class="tag d1">product ×</span><select class="w-auto" aria-label="Add a domain tag"><option>Add a domain…</option><option>developer</option><option>platform</option><option>no domain</option></select></div>
+            <div class="row"><button class="btn primary">Take</button><select class="w-auto" aria-label="Send to"><option>Send to…</option><option>member-b</option><option>member-c</option></select><button class="btn">Send</button><span class="spacer"></span><button class="btn sm">Edit</button><button class="btn sm">Merge</button><button class="btn sm">Close as out of scope</button></div>
+            <h4>Questions</h4>
+            <ul class="rows">
+              <li><span class="grow">Sample question 1.1: a made-up question about the product.</span><span class="badge">Open</span></li>
+              <li><span class="grow">Sample question 1.2: a made-up question about the product.</span><span class="badge">Open</span></li>
+              <li><div class="grow">Sample question 1.3: a made-up question about the product.<p class="small muted">Answer: sample answer text. Typed in a meeting by member-a, 2026-10-21 · source <span class="code-chip">S3</span></p></div><span class="badge ok">Answered</span></li>
+            </ul>
+            <div class="row"><button class="btn">Show discussion (word for word)</button><span class="spacer"></span><a class="btn primary" href="#screen-own-time-answering">Answer now</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="locked">
+      <p class="state-caption">State: Locked by another member (sent to member-c, still unanswered)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab active">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Sample ticket 2</h3><span class="badge">grilling</span><span class="badge warn">Locked · sent to member-c by member-a</span></div>
+            <div class="row"><span class="small strong muted">Domains</span><span class="tag d3">platform ×</span><select class="w-auto" aria-label="Add a domain tag"><option>Add a domain…</option></select></div>
+            <div class="row"><button class="btn" disabled>Take</button><span class="reason">Sent to member-c. You can still read and discuss it.</span></div>
+            <div class="row"><select class="w-auto" aria-label="Reassign to"><option>Reassign to…</option><option>member-a (you)</option><option>member-b</option></select><button class="btn">Reassign</button><span class="small muted">Any member can reassign a ticket nobody has answered yet.</span></div>
+            <h4>Questions</h4>
+            <ul class="rows">
+              <li><span class="grow">Sample question 2.1: a made-up question about the platform.</span><span class="badge">Open</span></li>
+              <li><span class="grow">Sample question 2.2: a made-up question about the platform.</span><span class="badge">Open</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="from-github">
+      <p class="state-caption">State: Answer picked up from a GitHub comment (demo step 8)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab active">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Sample ticket 2</h3><span class="badge">grilling</span><span class="badge ok">Closed · all questions answered</span></div>
+            <h4>Questions</h4>
+            <ul class="rows">
+              <li><div class="grow">Sample question 2.1: a made-up question about the platform.
+                <p class="small muted">Answer: sample answer text. Source: <strong>member-c, via GitHub, 2026-10-22</strong> · recorded by member-a <span class="code-chip">S4</span></p></div>
+                <span class="row"><span class="badge ok">Answered</span><button class="btn sm">Undo</button></span></li>
+              <li><div class="grow">Sample question 2.2: a made-up question about the platform.
+                <p class="small muted">Answer: sample answer text. Source: <strong>member-c, via GitHub, 2026-10-22</strong> · recorded by member-a <span class="code-chip">S5</span></p></div>
+                <span class="row"><span class="badge ok">Answered</span><button class="btn sm">Undo</button></span></li>
+            </ul>
+            <p class="small muted">Done clicked by member-a's agent on member-c's behalf. Any member can undo it.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="empty">
+      <p class="state-caption">State: Empty list</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab active">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card"><p class="muted">No tickets yet. They appear here once the grilling agent has built the map.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 5 -->
+<section id="screen-meeting" class="screen">
+  <header class="screen-head glass">
+    <h2>Meeting screen (on the grilling agent's tab)</h2>
+    <p class="purpose">The host runs a live grilling session from the grilling agent's own tab: ticks who is present, records consent, records, and lets the room answer each question by Listen or Type.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 (Screens), row 5 · flows 4.5 (Live grilling session) · 4.6 items 2 to 4 (tabs, typing, controls on the tab)</dd>
+      <dt>Controls</dt><dd>Agent tabs named "kind · ticket" with a dot for "waiting for you" and an Open channel switch on each; "+" for a generic agent; present-member ticks; consent tick and read-aloud script; global Record switch; red Recording banner; Listen or Type per question; Use it; Skip question; Jump to ticket; running transcript strip; import a transcript; type box; terminal panel (release 1).</dd>
+      <dt>States</dt><dd>Before consent (Record disabled) · Recording, Listen · Recording, Type</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="before-consent">Before consent</button>
+      <button class="btn sm" data-state="listen">Recording, Listen</button>
+      <button class="btn sm" data-state="type">Recording, Type</button>
+    </div>
+
+    <div class="state" data-state="before-consent">
+      <p class="state-caption">State: Before consent (Record stays disabled until the consent tick)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span>
+          <span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+          <span class="tab">Grilling · Sample ticket 1<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+          <span class="tab">Generic · Sample notes<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+          <button class="tab add" aria-label="Open a generic agent">+</button>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+              <label class="check"><input type="checkbox"> member-c · Carla <span class="tag d3">platform</span></label>
+              <p class="small muted">Used only to pick tickets: product, developer and no-domain tickets come up. Change it at any time.</p>
+            </div>
+            <div class="card stack">
+              <h4>Consent</h4>
+              <p class="script">"This call is recorded and transcribed by Grillo."</p>
+              <label class="check"><input type="checkbox" data-enables="rec-switch-demo"> Everyone here agreed</label>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <label class="switch"><input type="checkbox" class="rec" id="rec-switch-demo" disabled> Record</label>
+              <p class="reason">Read the line above aloud and tick "Everyone here agreed" first.</p>
+              <button class="btn sm">Import a transcript (paste or upload)</button>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card stack">
+              <div class="row"><span class="strong">Sample ticket 3</span><span class="tag d2">developer</span><span class="tag d1">product</span><span class="muted small">Question 1 of 3</span></div>
+              <p>Sample question 3.1: a made-up question for the room.</p>
+              <div class="row"><div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="false">Listen</button><button aria-pressed="true">Type</button></div><button class="btn primary" disabled>Use it</button><button class="btn">Skip question</button><select class="w-auto" aria-label="Jump to ticket"><option>Jump to ticket…</option><option>Sample ticket 1</option><option>Sample ticket 5</option></select></div>
+              <p class="reason">Listen needs the recording on.</p>
+            </div>
+<pre class="terminal"><span class="t-muted">Grilling agent · Sample project 1</span>
+<span class="t-muted">Present: product, developer. Next unblocked ticket for them: Sample ticket 3.</span>
+
+<span class="t-hl">Sample question 3.1: a made-up question for the room.</span>
+  1. Sample option A
+  2. Sample option B
+  3. Something else
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
+            <div class="transcript"><p class="muted">Not recording. The session transcript appears here once Record is on.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="listen">
+      <p class="state-caption">State: Recording, Listen (the red banner shows on the host's screen only)</p>
+      <div class="window glass">
+        <div class="rec-banner"><span class="sdot"></span>Recording<span class="small">· audio and transcription stay on this laptop</span><span class="spacer"></span><span class="small">00:12:40</span></div>
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span>
+          <span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <span class="tab">Grilling · Sample ticket 1<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <span class="tab">Generic · Sample notes<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+          <button class="tab add" aria-label="Open a generic agent">+</button>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+              <label class="check"><input type="checkbox"> member-c · Carla <span class="tag d3">platform</span></label>
+            </div>
+            <div class="card stack">
+              <h4>Consent</h4>
+              <label class="check"><input type="checkbox" checked> Everyone here agreed</label>
+              <p class="small muted">Ticked by member-a at 10:02.</p>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+              <button class="btn sm">Import a transcript (paste or upload)</button>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card stack">
+              <div class="row"><span class="strong">Sample ticket 3</span><span class="tag d2">developer</span><span class="tag d1">product</span><span class="muted small">Question 2 of 3</span></div>
+              <p>Sample question 3.2: a made-up question for the room.</p>
+              <div class="row"><div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="true">Listen</button><button aria-pressed="false">Type</button></div><button class="btn primary">Use it</button><button class="btn">Skip question</button><select class="w-auto" aria-label="Jump to ticket"><option>Jump to ticket…</option><option>Sample ticket 1</option><option>Sample ticket 5</option></select></div>
+              <p class="small muted">Use it: the agent distils the answer from the talk and keeps the whole talk as the question's discussion.</p>
+            </div>
+<pre class="terminal"><span class="t-muted">Grilling agent · channel open, receiving the transcript live</span>
+
+<span class="t-ok">✓ Recorded answer to question 3.1 (typed by member-b).</span>
+
+<span class="t-hl">Sample question 3.2: a made-up question for the room.</span>
+<span class="t-muted">Listening…</span>
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" value="…sample live transcript words appear here while the channel is open" aria-label="Type to the agent"><button class="btn">Send</button></div>
+            <div class="transcript">
+              <p><span class="muted">10:13:05</span> Sample transcript line: a made-up remark about the question.</p>
+              <p><span class="muted">10:13:10</span> Sample transcript line: a made-up reply, no speaker names.</p>
+              <p><span class="muted">10:13:15</span> Sample transcript line: a made-up follow-up.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="type">
+      <p class="state-caption">State: Recording, Type (a member types the answer; no discussion is captured)</p>
+      <div class="window glass">
+        <div class="rec-banner"><span class="sdot"></span>Recording<span class="small">· audio and transcription stay on this laptop</span><span class="spacer"></span><span class="small">00:15:02</span></div>
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span>
+          <span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <span class="tab">Grilling · Sample ticket 1<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+          <button class="tab add" aria-label="Open a generic agent">+</button>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+              <label class="check"><input type="checkbox"> member-c · Carla <span class="tag d3">platform</span></label>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card stack">
+              <div class="row"><span class="strong">Sample ticket 3</span><span class="tag d2">developer</span><span class="muted small">Question 3 of 3</span></div>
+              <p>Sample question 3.3: a made-up question for the room.</p>
+              <div class="row"><div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="false">Listen</button><button aria-pressed="true">Type</button></div><button class="btn">Skip question</button><select class="w-auto" aria-label="Jump to ticket"><option>Jump to ticket…</option></select></div>
+            </div>
+<pre class="terminal"><span class="t-hl">Sample question 3.3: a made-up question for the room.</span>
+<span class="t-muted">Type the answer below.</span>
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" value="Sample typed answer" aria-label="Type to the agent"><button class="btn primary">Send</button></div>
+            <div class="transcript"><p><span class="muted">10:15:01</span> Sample transcript line: the session recording keeps running.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 6 -->
+<section id="screen-own-time-answering" class="screen">
+  <header class="screen-head glass">
+    <h2>Own-time answering</h2>
+    <p class="purpose">The member answers a ticket on their own, either with a grilling agent in a terminal or by typing into a form, and presses Done.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 (Screens), row 6 · flows 4.4 (Answering in your own time) · 4.6 items 1, 2 and 6</dd>
+      <dt>Controls</dt><dd>With a grilling agent or In a form; question list with answered state; terminal panel and type box (release 1); per-question answer fields and Save answer; Done.</dd>
+      <dt>States</dt><dd>With a grilling agent (terminal) · In a form, partly answered · Done with open questions · Done, all answered</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="terminal">With a grilling agent</button>
+      <button class="btn sm" data-state="form">In a form</button>
+      <button class="btn sm" data-state="done-open">Done with open questions</button>
+      <button class="btn sm" data-state="done-all">Done, all answered</button>
+    </div>
+
+    <div class="state" data-state="terminal">
+      <p class="state-caption">State: With a grilling agent (plain terminal in release 1)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab active">Grilling · Sample ticket 4<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split rev">
+          <div class="stack">
+            <div class="row"><h3 class="m0">Sample ticket 4</h3><span class="tag d2">developer</span><span class="badge warn">Taken by you</span><span class="spacer"></span><div class="seg" role="group" aria-label="Answer with"><button aria-pressed="true">With a grilling agent</button><button aria-pressed="false">In a form</button></div></div>
+<pre class="terminal"><span class="t-muted">Grilling agent · Sample ticket 4</span>
+
+<span class="t-hl">Sample question 4.1: a made-up question for a developer.</span>
+  1. Sample option A
+  2. Sample option B
+  3. Something else
+
+<span class="t-prompt">❯ 1, for a sample reason.</span>
+
+<span class="t-muted">Re-reading the map and related tickets for clashes… none found.</span>
+<span class="t-ok">✓ Recorded answer to question 4.1 (own-time answer, member-b, 2026-10-22).</span>
+
+<span class="t-hl">Sample question 4.2: a made-up follow-up question.</span>
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
+          </div>
+          <div class="card stack">
+            <h4>Questions</h4>
+            <ul class="rows small">
+              <li><span>4.1 Sample question</span><span class="badge ok">Answered</span></li>
+              <li><span>4.2 Sample question</span><span class="badge">Open</span></li>
+              <li><span>4.3 Sample question</span><span class="badge">Open</span></li>
+            </ul>
+            <button class="btn primary">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="form">
+      <p class="state-caption">State: In a form, partly answered (demo step 8)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab active">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="row"><h3 class="m0">Sample ticket 4</h3><span class="tag d2">developer</span><span class="badge warn">Taken by you</span><span class="spacer"></span><div class="seg" role="group" aria-label="Answer with"><button aria-pressed="false">With a grilling agent</button><button aria-pressed="true">In a form</button></div></div>
+          <div class="card stack">
+            <div class="row"><span class="strong fill">4.1 Sample question: a made-up question for a developer.</span><span class="badge ok">Answered</span></div>
+            <p class="small">Sample answer text, already saved.</p>
+            <div class="row"><button class="btn sm">Edit</button></div>
+          </div>
+          <div class="card stack">
+            <div class="row"><span class="strong fill">4.2 Sample question: a made-up follow-up question.</span><span class="badge">Open</span></div>
+            <textarea aria-label="Answer to 4.2">Sample answer being typed.</textarea>
+            <div class="row"><button class="btn sm primary">Save answer</button></div>
+          </div>
+          <div class="card stack">
+            <div class="row"><span class="strong fill">4.3 Sample question: another made-up question.</span><span class="badge">Open</span></div>
+            <textarea aria-label="Answer to 4.3" placeholder="Your answer"></textarea>
+            <div class="row"><button class="btn sm">Save answer</button></div>
+          </div>
+          <div class="row"><span class="spacer"></span><span class="small muted">Done with open questions returns the ticket to the pool, unlocked.</span><button class="btn primary">Done</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="done-open">
+      <p class="state-caption">State: Done with open questions</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="window-body">
+          <p class="note warn">Sample ticket 4 is back in the pool, unlocked. 1 question is still open and visible to everyone.</p>
+          <ul class="rows card small">
+            <li><span>4.1 Sample question</span><span class="badge ok">Answered</span></li>
+            <li><span>4.2 Sample question</span><span class="badge ok">Answered</span></li>
+            <li><span>4.3 Sample question</span><span class="badge">Open</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="done-all">
+      <p class="state-caption">State: Done, all answered (success)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="window-body">
+          <p class="note ok">All questions answered. Sample ticket 4 is closed, and its decision is on the map.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 7 -->
+<section id="screen-generic-agent-tab" class="screen">
+  <header class="screen-head glass">
+    <h2>Generic agent tab</h2>
+    <p class="purpose">The member opens a generic agent with "+", names its tab, pastes material with where it came from, and lets the agent record or change answers after it shows any clash.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 (Screens), row 7 · flows 4.6 item 9 (Generic agent)</dd>
+      <dt>Controls</dt><dd>"+" on the tab bar; tab name field and Open agent; member-named tab with its Open channel switch; terminal panel (release 1); type box.</dd>
+      <dt>States</dt><dd>Naming the new tab · Pasted email with a clash · Own words as the source</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="naming">Naming the new tab</button>
+      <button class="btn sm" data-state="clash">Pasted email with a clash</button>
+      <button class="btn sm" data-state="own-words">Own words as the source</button>
+    </div>
+
+    <div class="state" data-state="naming">
+      <p class="state-caption">State: Naming the new tab</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Sample ticket 4<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-pressed="true" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card glass-strong stack" role="dialog" aria-label="Name the new tab">
+            <h4>New generic agent</h4>
+            <label class="field">Tab name<input type="text" value="Sample customer email"></label>
+            <p class="small muted">A generic agent can change anything the engine can, after it shows clashes and asks you.</p>
+            <div class="row"><span class="spacer"></span><button class="btn">Cancel</button><button class="btn primary">Open agent</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="clash">
+      <p class="state-caption">State: Pasted email with a clash (demo step 9)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Sample ticket 4<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><span class="tab active">Generic · Sample customer email<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+<pre class="terminal"><span class="t-muted">Generic agent · Sample customer email</span>
+
+<span class="t-prompt">❯ (pasted) From: sample-customer@example.com · "Sample email text asking for sample rule B."</span>
+<span class="t-prompt">❯ Source: an email from a sample customer, sent to me on 2026-10-21.</span>
+
+<span class="t-muted">Re-reading the map and related tickets…</span>
+<span class="t-hl">! Clash: Sample ticket 2, question 2.1 was answered "sample rule A" (S4, member-c, 2026-10-22).</span>
+<span class="t-hl">  The email asks for "sample rule B". What should happen?</span>
+  1. Change the recorded answer to sample rule B
+  2. Keep the answer, and save the email as a source only
+  3. Open a new ticket to discuss it
+
+<span class="t-prompt">❯ 1</span>
+
+<span class="t-ok">✓ Saved the email as source S7.</span>
+<span class="t-ok">✓ Changed the answer to 2.1, marked "member-b, via generic agent, 2026-10-22".</span>
+<span class="t-ok">✓ Kept this conversation word for word as the answer's discussion.</span>
+
+<span class="t-prompt">❯</span> </pre>
+          <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="own-words">
+      <p class="state-caption">State: Own words as the source (no written source)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab active">Generic · Sample hallway note<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+<pre class="terminal"><span class="t-muted">Generic agent · Sample hallway note</span>
+
+<span class="t-prompt">❯ I heard a sample requirement in a corridor chat today.</span>
+
+<span class="t-hl">There is no written source, so your own words become the source. Please give:</span>
+  · your name, · the date, · how you heard it, · the exact words
+
+<span class="t-prompt">❯ member-b, 2026-10-22, corridor chat, "Sample exact words."</span>
+
+<span class="t-ok">✓ Saved as source S8 (member-b, own words).</span>
+
+<span class="t-prompt">❯</span> </pre>
+          <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 8 -->
+<section id="screen-prd-view" class="screen">
+  <header class="screen-head glass">
+    <h2>PRD view with versions and export</h2>
+    <p class="purpose">The member reads the latest PRD with its source codes and audit appendix, opens or downloads any kept version, exports it, and talks to an agent about it.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 (Screens), row 8 · flows 4.7 (Writing, tracing and grading the PRD)</dd>
+      <dt>Controls</dt><dd>Version list numbered and dated with Open and Download; Export as document; Talk to an agent about this PRD; source codes like [S4, Q12] linking to the audit appendix; [no source] marks and the unsourced list; audit appendix table.</dd>
+      <dt>States</dt><dd>No version yet (empty) · Writing (loading) · Versions list</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="no-version">No version yet</button>
+      <button class="btn sm" data-state="writing">Writing</button>
+      <button class="btn sm" data-state="versions">Versions list</button>
+    </div>
+
+    <div class="state" data-state="no-version">
+      <p class="state-caption">State: No version yet (empty)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab active">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>No PRD yet</h3>
+            <p class="muted">Grillo writes the PRD automatically the moment the map is done. Still left: 3 open tickets and 1 fog item.</p>
+            <div class="row"><a class="btn" href="#screen-map-and-tickets">Open the map</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="writing">
+      <p class="state-caption">State: Writing (loading)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab active">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Writing version 1</h3><span class="badge warn">Working…</span></div>
+            <p class="muted">Working through every answer, discussion and session transcript in stages, in this project's PRD structure.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="versions">
+      <p class="state-caption">State: Versions list (demo steps 11 and 12)</p>
+      <div class="window glass">
+        <div class="titlebar"><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab active">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split rev">
+          <div class="stack">
+            <div class="row"><h3 class="m0">PRD · version 2</h3><span class="badge info">Latest</span><span class="muted small">2026-10-22</span><span class="spacer"></span><button class="btn">Talk to an agent about this PRD</button><button class="btn primary">Export as document</button></div>
+            <article class="card doc">
+              <h3>Sample section 1</h3>
+              <p>Sample decision statement one, written from the answers. <span class="code-chip">[S4, Q12]</span></p>
+              <p>Sample decision statement two, traced to a meeting answer. <span class="code-chip">[S2, Q3]</span></p>
+              <h3>Sample section 2</h3>
+              <p>Sample statement that no answer supports. <span class="code-chip nosrc">[no source]</span></p>
+              <h3>Sample added section</h3>
+              <p>Sample decision statement for the section a member added. <span class="code-chip">[S7, Q5]</span></p>
+              <h3>Unsourced statements</h3>
+              <ul class="small"><li>Sample section 2: "Sample statement that no answer supports." A reviewer confirms it, which turns it into an answer with a source, or removes it.</li></ul>
+              <h3>Audit appendix</h3>
+              <div class="table-wrap"><table class="small">
+                <tr><th>Code</th><th>Kind</th><th>Who</th><th>When</th><th>Where</th><th>Exact words</th></tr>
+                <tr><td>S2</td><td>Live meeting</td><td>member-b</td><td>2026-10-21</td><td>Grilling session 1</td><td>"Sample transcript words."</td></tr>
+                <tr><td>S4</td><td>Own-time answer</td><td>member-c, via GitHub; recorded by member-a</td><td>2026-10-22</td><td>Comment on Sample ticket 2</td><td>"Sample answer text."</td></tr>
+                <tr><td>S7</td><td>Email</td><td>A sample customer; recorded by member-b via generic agent</td><td>2026-10-21</td><td>Pasted email</td><td>"Sample email text."</td></tr>
+                <tr><td>Q12</td><td>Question</td><td colspan="4">Sample question 2.1: a made-up question about the platform.</td></tr>
+              </table></div>
+            </article>
+          </div>
+          <div class="card stack">
+            <h4>Versions</h4>
+            <ul class="rows small">
+              <li class="selected"><div class="grow"><span class="strong">Version 2</span><br><span class="muted">2026-10-22</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Download</button></span></li>
+              <li><div class="grow"><span class="strong">Version 1</span><br><span class="muted">2026-10-21</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Download</button></span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+(function () {
+  document.documentElement.classList.add('js');
+  var screens = Array.prototype.slice.call(document.querySelectorAll('.screen'));
+  var links = Array.prototype.slice.call(document.querySelectorAll('.proto-nav a'));
+  var ids = screens.map(function (s) { return s.id; });
+
+  function show() {
+    var id = location.hash.slice(1);
+    if (ids.indexOf(id) === -1) id = ids[0];
+    screens.forEach(function (s) { s.classList.toggle('active', s.id === id); });
+    links.forEach(function (a) { a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'page' : 'false'); });
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', show);
+  show();
+
+  // State switchers: one variant visible at a time (all stacked when JavaScript is off).
+  document.querySelectorAll('.states').forEach(function (group) {
+    var buttons = group.querySelectorAll('.state-tabs button');
+    var panels = group.querySelectorAll(':scope > .state');
+    function pick(name) {
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.state === name)); });
+      panels.forEach(function (p) { p.hidden = p.dataset.state !== name; });
+    }
+    buttons.forEach(function (b) { b.addEventListener('click', function () { pick(b.dataset.state); }); });
+    if (buttons.length) pick(buttons[0].dataset.state);
+  });
+
+  // Segmented controls: one pressed button per group.
+  document.querySelectorAll('.seg').forEach(function (seg) {
+    var buttons = seg.querySelectorAll('button');
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () { buttons.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); });
+    });
+  });
+
+  // A tick that unlocks another control (the consent tick unlocks Record).
+  document.querySelectorAll('[data-enables]').forEach(function (box) {
+    var target = document.getElementById(box.dataset.enables);
+    box.addEventListener('change', function () { target.disabled = !box.checked; if (!box.checked) target.checked = false; });
+  });
+
+  // Windows fallback preview: turns the frosted blur off.
+  document.getElementById('toggle-fallback').addEventListener('change', function (e) {
+    document.body.classList.toggle('no-glass', e.target.checked);
+  });
+})();
+</script>
+</body>
+</html>
