@@ -20,8 +20,10 @@ Read this file before doing anything. It is configuration, not documentation. Ch
 **The PRD is the product; this file is how we build it.** Every product fact — vocabulary, screens, data model,
 permissions, the do-not-build list, the demo as the acceptance bar, the build decisions — never restated here. **Disagreement between PRD and claude.md is a bug**: the PRD wins on product,this file wins on process.
 
-- **Follow the design system named in the PRD from the first line of frontend code.** No "build it plain, style it
-  later". A generically-styled screen **fails its acceptance criteria** and the reviewer blocks it on that alone.
+- **Follow the design system named in the PRD from the first line of frontend code.** The PRD names the **liquid
+  glass** theme (see-through, frosted panels); its colour and spacing token file comes from the UX prototype under
+  `docs/ux/prototypes/`. No "build it plain, style it later". A generically-styled screen **fails its acceptance
+  criteria** and the reviewer blocks it on that alone.
 - **Never invent a colour or a spacing value.** If it is not in the token file, it does not go in.
 - **Code, comments, commits, issues and docs in English.** Interface language is a product decision — see the PRD.
 - **External systems are mocked in-process.** Each sits behind one swappable interface.
@@ -32,6 +34,8 @@ permissions, the do-not-build list, the demo as the acceptance bar, the build de
 
 - **One issue = one worktree = one branch `feat/<issue>-<slug>` = one pull request.** Never work in the main checkout.
 - Worktrees live at **`C:\wt\<issue>-<slug>`**, never inside the project — Windows path limits bite once `node_modules` exists.
+- **Port rule:** each worktree's dev server listens on **`5173 + <issue number>`**, carried in the env variable
+  **`GRILLO_DEV_PORT`** (set it before `npm run dev`), so two stories never fight over one port.
 - Update a branch with `git merge origin/main` — **never rebase, never stash**.
 - Never force-push. Never `git add -A`. Never delete work you did not create.
 - Conventional Commits: `type(scope): summary`.
@@ -47,26 +51,36 @@ permissions, the do-not-build list, the demo as the acceptance bar, the build de
 
 ## 5 · Build and test commands
 
-**The tech stack is not decided yet.** Every command below is open. The pull request that decides the stack fills this
-section in; from then on every agent uses exactly those commands and the scaffold must make them true.
+**The stack is decided by PRD v1 (section 8, Build decisions): Electron, one TypeScript codebase for Windows and
+Mac.** Every agent uses exactly these commands. **The scaffold story** (the first story cut from the PRD) makes them
+true; until it lands there is nothing to build or test, and a pull request says so in its body.
 
 | Purpose | Command |
 |---|---|
-| Build | `TBD` |
-| **The full suite** | `TBD` |
-| One file | `TBD` |
-| One test | `TBD` |
-| Typecheck | `TBD` |
-| Lint | `TBD` |
-| Dev server | `TBD` |
+| Build | `npm run build` (`electron-vite build`) |
+| **The full suite** | `npm test` (`vitest run`) |
+| One file | `npx vitest run <path>` |
+| One test | `npx vitest run <path> -t "<test name>"` |
+| Typecheck | `npm run typecheck` (`tsc --noEmit`) |
+| Lint | `npm run lint` (`eslint .`) |
+| Dev server | `npm run dev` (`electron-vite dev`, on the port `GRILLO_DEV_PORT` names) |
+| Installers | `npm run dist` (`electron-builder`) — only when a version is published, never in the gate |
 
-Add rows as the chosen stack needs them (database migrations, seed).
+No database, no migrations, no seed: the store is GitHub Issues through `gh` behind one swappable interface (PRD
+section 6.3), and nothing central runs (PRD section 8, Hosting).
 
-**The gate, before any pull request opens:** `TBD` — build, lint, typecheck, then the full suite, once they exist. Until
-then there is nothing to build or test; say so in the pull request body.
+**The gate, before any pull request opens:** `npm run build && npm run lint && npm run typecheck && npm test` — the
+same chain CI runs.
 
-- Stack, runtime version, database and hosting: **all to be decided**. Do not assume any of them. CI is GitHub
-  Actions (`.github/workflows/ci.yml`); until the stack is decided it runs only orion's install check.
+- **Stack and layout.** Language: TypeScript on Electron; renderer, preload and main process bundled by
+  electron-vite (one config and one `dev` command for all three, where plain Vite needs a separate Electron launcher).
+  Runtime: the current Node LTS when the scaffold lands, exact version pinned in `.nvmrc` and mirrored in `engines`
+  of `package.json`; package manager npm, lockfile committed. Terminals: xterm.js + node-pty (its native build must
+  match Electron's ABI). Tests: Vitest; test files sit beside the code they test as `*.test.ts`. Application code
+  path: `src/` (`src/main/`, `src/preload/`, `src/renderer/`). Skip-count baseline: **0**.
+- **CI** is GitHub Actions (`.github/workflows/ci.yml`) on GitHub-hosted **Windows and Mac** runners: every pull
+  request runs the gate chain above on both; installers are built only when a version is published (PRD section 8,
+  CI). Until the scaffold lands, CI runs only orion's install check, and the scaffold story adds the gate steps.
 - Kill a server **by process id, never by image or process name** — you will kill a teammate's.
 - **Never commit a secret.**
 
@@ -77,19 +91,19 @@ Always qualify a number — `issue #12` or `PR #12`, never a bare `#12`. No prea
 
 ## 7 · Boundaries
 
-- Deploy target: `TBD`.
-- External read-only repositories: `TBD`.
-- Sensitive data classes that must never enter the repository: `TBD`.
-- Boundaries an agent must not move: `TBD`.
+- Deploy target: **GitHub Releases** (the installers) and the **GitHub Pages** site of Grillo's own repository, from
+  `main` only (PRD section 8, Distribution). Nothing central: no Grillo server, no database.
+- External read-only repositories: **none** today. The company GitHub repositories Grillo creates for its users'
+  projects are product data, not code this team changes.
+- Sensitive data classes that must never enter the repository: real meeting transcripts or recordings, real customer
+  emails, personal data of any colleague, and Claude or GitHub tokens. Fixtures and demo materials are made up only
+  (PRD section 11, Materials).
+- Boundaries an agent must not move: the eight items of the PRD's do-not-build list (PRD section 10) and the fixed
+  rules in PRD section 1.1. Changing either is a PRD change by a person, never a story.
 - Working language: English (see Standing decisions).
 
 ## 8 · Pending until PRD v1
 
-| Question | Decides (file · section) | Who decides |
-|---|---|---|
-| Tech stack and runtime version | CLAUDE.md · Build and test commands | `TBD` |
-| Database | CLAUDE.md · Build and test commands | `TBD` |
-| Hosting | CLAUDE.md · Boundaries | `TBD` |
-| CI runner and gate steps | CLAUDE.md · Build and test commands; .github/workflows/ci.yml | `TBD` |
-
+Every question (stack and runtime, database, hosting, CI runner and gate steps) was answered by PRD v1 on 2026-10-22
+and written into sections 5 and 7 above. Nothing is pending.
 
