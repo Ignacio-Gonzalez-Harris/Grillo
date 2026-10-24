@@ -1,5 +1,15 @@
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
+import { defaultUserDataFolder, speechModelPathIn } from './src/main/features/transcription/model';
+
+// `*.model.test.ts` files transcribe real speech with the model the app downloads. They are part of the suite only
+// on a machine where that model file exists (CI never downloads it); elsewhere the name pattern leaves them out.
+const speechModelPath = speechModelPathIn(
+  defaultUserDataFolder({ platform: process.platform, env: process.env, homeFolder: homedir() }),
+);
+const testsNeedingTheSpeechModel = existsSync(speechModelPath) ? [] : ['**/*.model.test.ts'];
 
 export default defineConfig({
   resolve: {
@@ -11,7 +21,7 @@ export default defineConfig({
   },
   test: {
     include: ['**/*.test.ts'],
-    exclude: ['**/node_modules/**', 'out/**', 'dist/**', '.claude/**'],
+    exclude: ['**/node_modules/**', 'out/**', 'dist/**', '.claude/**', ...testsNeedingTheSpeechModel],
     environment: 'node',
   },
 });
