@@ -48,7 +48,7 @@ export function createSettings(filePath: string): Settings {
   const values = readValues(filePath);
   return {
     get(key, defaultValue) {
-      return key in values ? (values[key] as typeof defaultValue) : defaultValue;
+      return Object.hasOwn(values, key) ?(values[key] as typeof defaultValue) : defaultValue;
     },
     set(key, value) {
       values[key] = value;

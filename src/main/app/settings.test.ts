@@ -21,6 +21,13 @@ describe('settings', () => {
     expect(createSettings(settingsFile).get('updates.mode', 'ask')).toBe('ask');
   });
 
+  it.each(['constructor', 'toString', '__proto__', 'hasOwnProperty'])(
+    'returns the default for a key never set, even one named like a built-in (%s)',
+    (key) => {
+      expect(createSettings(settingsFile).get(key, 'ask')).toBe('ask');
+    },
+  );
+
   it('keeps a value it was given across restarts', () => {
     createSettings(settingsFile).set('updates.mode', 'automatic');
 
