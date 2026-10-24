@@ -1,0 +1,1 @@
+Added the agent runtime: Grillo starts your own Claude Code in the project folder, ships its skills there without touching tracked files, types the first message and tracks each agent's tab name and waiting dot.
