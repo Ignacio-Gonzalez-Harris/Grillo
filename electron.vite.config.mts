@@ -33,6 +33,9 @@ export default defineConfig({
     },
   },
   renderer: {
+    resolve: {
+      alias: { '@screens': resolve('src/renderer/screens') },
+    },
     server: { port: devPort(), strictPort: true },
     build: {
       rolldownOptions: { input: { index: resolve('src/renderer/index.html') } },

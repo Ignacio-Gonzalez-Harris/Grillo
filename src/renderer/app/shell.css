@@ -1,0 +1,27 @@
+/*
+ * The app window, title bar and project tab bar, ported from the UX prototype (docs/ux/prototypes/grillo/index.html).
+ * Every colour, spacing, radius and size comes from theme/tokens.css.
+ */
+
+/* ---------- App window ---------- */
+.shell { min-height: 100vh; padding: var(--space-5); display: flex; }
+.window { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.titlebar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); color: var(--color-text-muted); flex-wrap: wrap; }
+.titlebar strong { color: var(--color-text); }
+.window-body { flex: 1; min-height: 0; overflow: auto; padding: var(--space-5); display: grid; gap: var(--space-5); align-content: start; }
+.empty-screen { padding: var(--space-5); }
+.empty-screen p { margin: 0; }
+
+/* ---------- Project tab bar ---------- */
+.tabbar { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); overflow-x: auto; }
+.agent-tabs { display: contents; }
+.tab { font: inherit; display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--size-control-height); padding: 0 var(--space-3); border-radius: var(--radius-pill); color: var(--color-text-muted); white-space: nowrap; border: var(--border-width) solid transparent; background: none; cursor: pointer; }
+.tab.active { background: var(--color-glass-fill-strong); color: var(--color-text); border-color: var(--color-glass-border); box-shadow: 0 var(--border-width) var(--space-2) var(--color-glass-shadow); font-weight: var(--font-weight-strong); }
+.tab .tab-name { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.tab .tab-header:empty { display: none; }
+.tab .dot { width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-attention-dot); flex: none; }
+.tab .dot[hidden] { display: none; }
+.tab .switch { font-size: var(--font-size-s); font-weight: var(--font-weight-regular); color: var(--color-text-muted); }
+.tab.add { color: var(--color-accent); font-weight: var(--font-weight-strong); font-size: var(--font-size-l); }
+.tab.add[aria-pressed="true"] { background: var(--color-accent-soft); }
+.tab-sep { width: var(--border-width); align-self: stretch; background: var(--color-divider); margin: 0 var(--space-2); flex: none; }
