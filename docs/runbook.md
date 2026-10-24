@@ -72,6 +72,24 @@ The meeting screen arrives with its own story. What already works underneath it:
 - Developers: the real-transcription smoke test (`*.model.test.ts`) joins `npm test` only on a machine where that
   model file exists; delete the file to leave it out again.
 
+### Audio capture
+
+The meeting screen's record button arrives with its own story; the capture underneath it works on its own.
+
+- **What is captured:** the room microphone (Windows and Mac), or the call audio, meaning whatever the speakers play
+  (Windows only). Audio becomes 5-second slices of 16 kHz mono 16-bit sound, the format the speech model reads,
+  and stays on the laptop. Stopping a capture sends what is left as one last, shorter slice.
+- **Mac call audio is not available yet.** Choosing it on a Mac says so; record the room microphone instead.
+- **Microphone permission:** a Mac asks the first time Grillo records. If it was refused, Grillo says where to
+  turn it on: System Settings > Privacy & Security > Microphone, then restart Grillo. On Windows a switched-off
+  microphone is reported the same way: Settings > Privacy & security > Microphone, with "Let desktop apps access
+  your microphone" on.
+- **Picking a microphone:** Grillo lists the computer's microphones and keeps the one picked as `audioInputDevice`
+  in the app data folder's `settings.json`; with none picked it uses the system default. If the picked microphone
+  is unplugged, recording says so instead of silently using another one.
+- **Call audio on Windows** needs no permission and shows no picker; it captures every sound the computer plays,
+  including notification sounds.
+
 ## Own-time answering
 
 Nothing to do yet: own-time answering arrives with its own story.
