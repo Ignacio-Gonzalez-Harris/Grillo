@@ -1,0 +1,1 @@
+The setup check screen now shows whether Claude Code and gh are installed and signed in, who you are on GitHub, what to run when something is missing, and the update offer with its two update settings, so a new member can get Grillo ready without help.
