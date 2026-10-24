@@ -145,7 +145,7 @@ export interface Discussion extends CommentHeader {
   question: QuestionCode;
   /** The transcript segment, word for word. */
   transcript: string;
-  /** The session file it was cut from, such as `.grillo/sessions/2026-10-24-0915.md`; null when typed. */
+  /** The session file it was cut from, such as `.grillo/sessions/2026-10-24-091500.md`; null when typed. */
   sessionFile: string | null;
 }
 
@@ -172,7 +172,7 @@ export interface Consent {
 }
 
 export interface GrillingSession {
-  /** The file name without `.md`: `<date>-<time>`, such as `2026-10-24-0915`. */
+  /** The file name without `.md`: `<date>-<time>`, such as `2026-10-24-091500` (UTC, `YYYY-MM-DD-HHMMSS`). */
   id: string;
   date: IsoDateTime;
   present: Login[];

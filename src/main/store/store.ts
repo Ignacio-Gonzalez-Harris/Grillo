@@ -64,7 +64,7 @@ export type TicketPatch = Partial<
   Pick<Ticket, 'title' | 'question' | 'whyItMatters' | 'assumptions' | 'kind' | 'domains' | 'noDomain' | 'blockers'>
 >;
 
-/** Filters for `listTickets`; the result lists the signed-in member's own tickets first. */
+/** Filters for `listTickets`; the signed-in member's own tickets come first and pass every domain filter. */
 export interface TicketFilter {
   state?: Ticket['state'];
   /** Keep tickets tagged with any of these domains, plus every "no domain" ticket. */
@@ -174,6 +174,7 @@ export interface Store {
   closeTicket(id: TicketId): Promise<CloseResult>;
   /** Closes `id` as a duplicate of `into`, with a decision comment pointing at it. */
   mergeTicket(id: TicketId, into: TicketId): Promise<CloseResult>;
+  /** Undoes a close: the ticket's gist line leaves the map's settled list; its decision comments stay. */
   reopenTicket(id: TicketId): Promise<Ticket>;
   /**
    * Takes the ticket for the signed-in member under the claim rule (docs/store-layout.md): assign, re-read,

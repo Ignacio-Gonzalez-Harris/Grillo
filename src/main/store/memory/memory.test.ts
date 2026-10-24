@@ -293,7 +293,7 @@ describe('in-memory store: tickets', () => {
     expect(await refusal(store.updateTicket(ticket, patch))).toBe('invalid');
   });
 
-  it('lists the member own tickets first, then filters by state and by domain with "no domain" kept', async () => {
+  it('lists the member own tickets first and keeps them through every domain filter, with "no domain" kept', async () => {
     const { store, ticket } = await projectWithTicket();
     const product = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
     const anyone = await store.createTicket(PROJECT, newTicket({ title: 'Glossary' }));
@@ -308,7 +308,8 @@ describe('in-memory store: tickets', () => {
 
     expect(await titles()).toEqual(['Hosting', 'Login flow', 'Pricing', 'Glossary']);
     expect(await titles({ state: 'open' })).toEqual(['Hosting', 'Pricing', 'Glossary']);
-    expect(await titles({ domains: ['product'] })).toEqual(['Pricing', 'Glossary']);
+    expect(await titles({ domains: ['product'] })).toEqual(['Hosting', 'Pricing', 'Glossary']);
+    expect(await titles({ domains: ['platform'] })).toEqual(['Hosting', 'Glossary']);
   });
 
   it('reports the map done only when no ticket is open and no fog is left', async () => {
@@ -346,6 +347,17 @@ describe('in-memory store: tickets', () => {
     await store.closeTicket(ticket);
 
     await expect(store.reopenTicket(ticket)).resolves.toMatchObject({ state: 'open', duplicateOf: null });
+  });
+
+  it('takes a reopened ticket off the settled list of the map', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+    await store.createDecision(into.id, { text: 'GitHub', gist: 'Sign in with GitHub', sources: [], via: null });
+    await store.mergeTicket(ticket, into.id);
+
+    await store.reopenTicket(ticket);
+
+    expect((await store.getMap(PROJECT)).settled).toEqual([{ ticket: 3, gist: 'Sign in with GitHub' }]);
   });
 });
 

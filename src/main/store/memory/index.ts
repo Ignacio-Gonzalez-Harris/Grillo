@@ -455,7 +455,13 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       return [...project(id).tickets.values()]
         .map(toTicket)
         .filter((entry) => filter.state === undefined || entry.state === filter.state)
-        .filter((entry) => wanted === null || entry.noDomain || entry.domains.some((domain) => wanted.has(domain)))
+        .filter(
+          (entry) =>
+            wanted === null ||
+            entry.assignee === me() ||
+            entry.noDomain ||
+            entry.domains.some((domain) => wanted.has(domain)),
+        )
         .sort((a, b) => Number(b.assignee === me()) - Number(a.assignee === me()) || a.id.number - b.id.number);
     },
     async updateTicket(id, patch: TicketPatch) {
@@ -486,9 +492,12 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       return mapDone(record);
     },
     async reopenTicket(id) {
-      const entry = ticket(id);
+      const record = writable(id.project);
+      const entry = ticketIn(record, id.number);
       entry.ticket.state = 'open';
       entry.ticket.duplicateOf = null;
+      const current = map(record);
+      current.settled = current.settled.filter((line) => line.ticket !== id.number);
       return toTicket(entry);
     },
     async claimTicket(id) {

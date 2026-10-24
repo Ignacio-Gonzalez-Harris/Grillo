@@ -7,21 +7,36 @@ others. The records themselves are PRD section 6.1; the interface over them is `
 ## Contents
 
 1. [One project, one repository](#one-project-one-repository)
-2. [The Grillo folder](#the-grillo-folder)
-3. [Labels](#labels)
-4. [The map and its tickets](#the-map-and-its-tickets)
-5. [Comment markers](#comment-markers)
-6. [Codes: S, Q and v](#codes-s-q-and-v)
-7. [The claim rule](#the-claim-rule)
-8. [Saves to a protected main](#saves-to-a-protected-main)
-9. [Merging tickets](#merging-tickets)
-10. [Recent projects](#recent-projects)
+2. [Header lines](#header-lines)
+3. [The Grillo folder](#the-grillo-folder)
+4. [Labels](#labels)
+5. [The map issue](#the-map-issue)
+6. [Ticket issues](#ticket-issues)
+7. [Comment markers](#comment-markers)
+8. [Codes: S, Q and v](#codes-s-q-and-v)
+9. [The claim rule](#the-claim-rule)
+10. [Saves to a protected main](#saves-to-a-protected-main)
+11. [Merging and reopening tickets](#merging-and-reopening-tickets)
+12. [Recent projects](#recent-projects)
 
 ## One project, one repository
 
 A project is one GitHub repository, named `<owner>/<repo>`: a new private one Grillo creates in the
 organisation, or an existing one the member connects. One Grillo project per repository. Closing a project
 archives its repository; unarchiving reopens it.
+
+## Header lines
+
+Source files, session files, PRD version files and Grillo's comments share one way of keeping fields
+apart from long text:
+
+- A block of **header lines** comes first, each `<name>: <value>`, in the order this document gives, every
+  line present even when its value is empty (nothing after `<name>:`).
+- A value is one line: a line break inside it is written as a space.
+- A list value is comma-separated (`S1, S4`); an empty list is an empty value.
+- Moments are ISO 8601 in UTC (`2026-10-24T09:15:00.000Z`).
+- The **first empty line** ends the header block. Everything after it, to the end of the file or comment,
+  is the long text, kept exactly as written (it may hold empty lines of its own).
 
 ## The Grillo folder
 
@@ -30,14 +45,72 @@ Everything long lives as files in `.grillo/` on `main` of the project repository
 | File | Holds |
 |---|---|
 | `.grillo/members.json` | One entry per member: `login`, `role`, `domains`. Name and email come from GitHub. |
-| `.grillo/structure.json` | The PRD structure: the ordered sections, each a `name` and a one-line `note`. |
-| `.grillo/sources/S<n>.md` | One source: kind, who, when, where, and the text word for word. |
-| `.grillo/sessions/<date>-<time>.md` | One grilling session: date, who was present, the consent record, the full transcript. |
-| `.grillo/prd/v<n>.md` | One PRD version: the Markdown body with its codes, then the audit appendix. |
-| `.grillo/prd/v<n>.score.json` | The score of PRD version `n`: overall, per criterion and per section, each a mark and one comment. |
+| `.grillo/structure.json` | The PRD structure. |
+| `.grillo/sources/S<n>.md` | One source. |
+| `.grillo/sessions/<date>-<time>.md` | One grilling session. |
+| `.grillo/prd/v<n>.md` | One PRD version: its body, then its audit appendix. |
+| `.grillo/prd/v<n>.score.json` | The score of PRD version `n`; no file until the version is scored. |
 
-A session's `<date>-<time>` is the moment it started, in UTC, as `YYYY-MM-DD-HHMMSS`
-(`2026-10-24-091500`).
+**`members.json`**, a JSON list in members-file order:
+
+```json
+[{ "login": "ada-example", "role": "developer", "domains": ["platform"] }]
+```
+
+**`structure.json`**, the sections in order:
+
+```json
+{ "sections": [{ "name": "Problem", "note": "What goes wrong today, and the outcomes wanted" }] }
+```
+
+**`sources/S<n>.md`**: header lines `kind:` (`meeting`, `own-time-answer`, `pasted-text` or `document`),
+`who:`, `when:`, `where:`, then the text word for word.
+
+```
+kind: pasted-text
+who: Ben Example, product
+when: 2026-10-23T10:00:00.000Z
+where: email to Ada
+
+The text of the source, word for word.
+```
+
+**`sessions/<date>-<time>.md`**: `<date>-<time>` is the moment the session started, in UTC, as
+`YYYY-MM-DD-HHMMSS` (`2026-10-24-091500`). Header lines `date:`, `present:` (logins), `consent-by:` and
+`consent-at:` (both empty until the host ticks consent), then the full transcript.
+
+```
+date: 2026-10-24T09:15:00.000Z
+present: ada-example, ben-example
+consent-by: ada-example
+consent-at: 2026-10-24T09:16:00.000Z
+
+The transcript, as spoken.
+```
+
+**`prd/v<n>.md`**: header lines `version:` and `date:`, then the Markdown body with its `[S<n>, Q<n>.<k>]`
+codes. The audit appendix starts at the first line that reads exactly `<!-- grillo:appendix -->`; the body
+is everything before that line and never contains it, the appendix everything after it.
+
+```
+version: 2
+date: 2026-10-24T11:00:00.000Z
+
+# The PRD body ...
+
+<!-- grillo:appendix -->
+# Audit appendix ...
+```
+
+**`prd/v<n>.score.json`**: every mark is a number from 0 to 10.
+
+```json
+{
+  "overall": 6.5,
+  "criteria": [{ "name": "Clear", "mark": 7, "comment": "Mostly plain words" }],
+  "sections": [{ "name": "Problem", "mark": 6, "comment": "Outcomes are vague" }]
+}
+```
 
 ## Labels
 
@@ -50,43 +123,100 @@ A session's `<date>-<time>` is the moment it started, in UTC, as `YYYY-MM-DD-HHM
 
 Grillo sees only issues carrying these labels; any other issue in a connected repository is ignored.
 
-## The map and its tickets
+## The map issue
 
-The map is one issue labelled `wayfinder:map` with the sections destination, notes, settled (one gist line
-per closed ticket), fog and out of scope. Every ticket is a native sub-issue of the map. A ticket's blockers
-are set twice: GitHub's native "blocked by" relation for people and a `### Blocked by` body section for
-agents. The ticket's assignee is its claim.
+One issue labelled `wayfinder:map`, titled `Map`. Its body holds these sections, in this order, each a
+`### ` heading followed by its content (an empty section keeps its heading):
+
+```
+### Destination
+A PRD for ...
+
+### Notes
+Free text.
+
+### Settled
+- #12 Sign in with GitHub only
+
+### Fog
+- Pricing is unclear
+
+### Out of scope
+- A mobile app
+```
+
+Settled holds one line per closed ticket, `- #<ticket issue number> <gist>`. Fog and out of scope hold one
+`- ` line per item.
+
+## Ticket issues
+
+Every ticket is a native sub-issue of the map. Its title is the ticket's title; its kind and domains are
+labels; its assignee is its claim; its state is the issue's state. Its body holds these sections, in this
+order:
+
+```
+### Question
+How do members sign in?
+
+### Why it matters
+Every screen needs a member.
+
+### Assumptions
+- GitHub accounts exist
+
+### Questions
+- Q12.1 Which provider?
+- Q12.2 (removed)
+- Q12.3 Is single sign-on needed?
+
+### Blocked by
+- #9
+```
+
+- **Questions:** one line per question, `- Q<issue number>.<k> <text>`, in order. The ticket's issue number
+  is known only once the issue exists, so the questions are written by an edit right after the issue is
+  created. A removed question keeps its line as `- Q<n>.<k> (removed)`, so the next question takes the
+  highest `k` plus one and a code is never reused.
+- **Answered:** a question is answered when an answer comment on the ticket names its code in `question:`.
+- **Blocked by:** one `- #<issue number>` line per blocker, set together with GitHub's native "blocked by"
+  relation; the two always agree.
 
 ## Comment markers
 
-Answers, discussions and decisions are comments on their ticket. Each starts with a marker line, then
-header lines, then the text:
+Answers, discussions and decisions are comments on their ticket. Each starts with a marker line, then its
+header lines (see [Header lines](#header-lines)), then the text:
+
+| First line | Record | Header lines, in order | Text |
+|---|---|---|---|
+| `<!-- grillo:answer -->` | An answer to one question | `who:`, `when:`, `sources:`, `via:`, `question:`, `from:` | The answer |
+| `<!-- grillo:discussion -->` | The talk around an answer | `who:`, `when:`, `sources:`, `via:`, `question:`, `session:` | The transcript segment, word for word |
+| `<!-- grillo:decision -->` | The ticket's final answer | `who:`, `when:`, `sources:`, `via:`, `gist:` | The decision |
+
+- `who:` the login who recorded it.
+- `when:` the moment it was recorded.
+- `sources:` the codes it rests on (`S1, S4`); empty when none.
+- `via:` empty when typed in Grillo, `github` when turned from a member's comment written in GitHub's own
+  app, `generic-agent` when recorded by a generic agent.
+- `question:` the code of the question it belongs to (`Q12.1`).
+- `from:` on an answer turned from a plain member comment, that comment's id; empty otherwise.
+- `session:` the session file the segment was cut from (`.grillo/sessions/2026-10-24-091500.md`); empty when
+  the discussion was typed.
+- `gist:` the one line the map's settled list shows for this ticket.
 
 ```
 <!-- grillo:answer -->
 who: ada-example
 when: 2026-10-24T09:15:00.000Z
 sources: S1, S4
-via:
-The text of the answer.
+via: github
+question: Q12.1
+from: 2412345678
+
+Sign in with GitHub only.
 ```
 
-| First line | Record |
-|---|---|
-| `<!-- grillo:answer -->` | An answer to one question. |
-| `<!-- grillo:discussion -->` | The talk around an answer, word for word. |
-| `<!-- grillo:decision -->` | The ticket's final answer; its gist line goes on the map. |
-
-Header lines, in this order:
-
-- `who:` the login who recorded it.
-- `when:` the moment, ISO 8601 in UTC.
-- `sources:` the codes it rests on, comma-separated; empty when none.
-- `via:` empty when typed in Grillo, `github` when turned from a member's comment written in GitHub's own
-  app, `generic-agent` when recorded by a generic agent.
-
-A comment with no marker is a plain member comment: one written in GitHub's web or phone app, waiting to be
-turned into an answer.
+A comment with no marker is a plain member comment: one written in GitHub's web or phone app. It waits to be
+turned into an answer until an answer comment names its id in `from:`; deleting that answer puts it back.
 
 ## Codes: S, Q and v
 
@@ -113,10 +243,11 @@ Agents follow the same rule through `gh`.
 Every save to the Grillo folder is first a direct push to `main`. When the repository refuses it (a
 protected `main`), Grillo opens a pull request with the change and tells the member.
 
-## Merging tickets
+## Merging and reopening tickets
 
-Merging a ticket into another closes it as a duplicate, with a decision comment pointing at the other
-ticket.
+- **Merge:** closing a ticket as a duplicate of another, with a decision comment whose text and gist are
+  `Merged into #<other issue number>`.
+- **Reopen:** the ticket's line leaves the map's settled list; its decision comments stay as history.
 
 ## Recent projects
 
