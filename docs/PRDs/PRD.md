@@ -132,7 +132,7 @@ Connecting an existing repository `[T44]`:
 2. **Consent before recording.** The host ticks "everyone here agreed"; Record stays disabled until then. Grillo shows a one-line script to read aloud ("This call is recorded and transcribed by Grillo") and a red "Recording" banner on the host's screen. Meeting platforms show nothing, because Grillo records on the host's laptop; no connection to any meeting platform is built `[T35]`.
 3. The host shares their screen (projector in a room, screen share on a call) and holds the controls: Listen / Type per question, "use it", skip, jump to another ticket `[T13]`.
 4. **Recording and transcription are local.** Grillo captures the room microphone or the call audio on the host's laptop and turns it into text on that laptop with an open speech model of the Whisper family. No audio or text leaves the machine for transcription `[T11, T18, T25]`.
-5. **One global recording switch** turns the session recording on or off; that recording is the session transcript. **Each agent tab has an "Open channel" switch**; while open, that agent receives the transcript, live as it is spoken (feasible: 5-second slices transcribe in 1-2 seconds on an ordinary CPU) with a fallback of one chunk at "use it". Live delivery writes each slice into the agent's input box as it is spoken; one message is sent at "use it" `[I1]`. Several channels may be open at once; each agent picks out what fits its ticket `[T22, T25]`.
+5. **One global recording switch** turns the session recording on or off; that recording is the session transcript. **Each agent tab has an "Open channel" switch**; while open, that agent receives the transcript, live as it is spoken (assumed feasible on an ordinary CPU; see section 13) with a fallback of one chunk at "use it". Live delivery writes each slice into the agent's input box as it is spoken; one message is sent at "use it" `[I1]`. Several channels may be open at once; each agent picks out what fits its ticket `[T22, T25]`.
 6. **Order.** The grilling agent picks the next unblocked ticket whose domain matches someone present ("no domain" counts as everyone's) and walks its questions one at a time, then the next ticket. Tickets of absent domains stay in the list `[T13]`.
 7. **Per question, the room picks a mode** `[T11]`:
    - **Type**: a member types the answer; no discussion is captured.
@@ -144,7 +144,7 @@ Connecting an existing repository `[T44]`:
 
 ### 4.6 Agents on screen
 
-1. Every agent is a **chat view**: message bubbles, clickable answer buttons and a message box, with a **"show terminal" switch** that reveals the raw Claude Code screen underneath. Release 1 ships the plain terminal only; the chat view arrives in release 2 `[T22, T16]`.
+1. Every agent is a **chat view**: message bubbles, clickable answer buttons and a message box, with a **"show terminal" switch** that reveals the raw Claude Code output underneath (the machine-readable event stream, since the chat view runs Claude Code without a terminal `[I2]`). Release 1 ships the plain terminal only; the chat view arrives in release 2 `[T22, T16]`.
 2. Agents sit in **tabs** along the top of the project, named "kind · current ticket" ("Grilling · Login flow"), renamed as the agent moves on; a dot on a tab means the agent is waiting for you `[T22]`.
 3. Typing is always available; with a channel open, the live transcript also appears in the tab's type box `[T22]`.
 4. The meeting controls (present-member ticks, Listen/Type, "use it", skip/jump, transcript strip, consent tick, red banner) sit on the grilling agent's own tab; there is no separate session screen `[T22, T35]`.
@@ -319,7 +319,7 @@ This walkthrough is the acceptance bar for release 1. Release 1 is done only whe
 | 8 | **Own time.** Ben answers his ticket by form; Carla comments her answer from the GitHub phone app. | Ana's Grillo picks up Carla's comment and records it with the source "Carla, via GitHub, date", naming Ana as the one who recorded it. |
 | 9 | **Generic agent.** Ben opens "+" and pastes a made-up customer email that clashes with a recorded answer. | The clash is shown, Ben resolves it, the change is marked "Ben, via generic agent, date", and the email becomes a source. |
 | 10 | **Finish.** The remaining tickets are answered and the map completes. | The PRD is written automatically, in Ana's structure including her extra section. |
-| 11 | **PRD check.** | Decision statements carry source codes like `[S4, Q12]`, unsupported ones are marked `[no source]`, an audit appendix exists, and one line traces back to Carla's phone answer. |
+| 11 | **PRD check.** | Decision statements carry source codes like `[S4, Q12.3]`, unsupported ones are marked `[no source]`, an audit appendix exists, and one line traces back to Carla's phone answer. |
 | 12 | **Version.** A member edits the PRD structure and regenerates. | Version 2 exists, and version 1 is kept, numbered and dated. |
 | 13 | **Close.** Ana closes the project. | The repository is archived. |
 
@@ -365,6 +365,7 @@ Carried from the tickets so nobody mistakes them for facts.
 - Transcription speed on an older laptop than the test machine; headset or call audio accuracy; Mac transcription `[T25]`.
 - Anthropic's Agent SDK terms say third-party products may not offer claude.ai login without approval and call `claude -p` the SDK via the CLI; whether that wording covers Grillo driving each member's own Claude Code is unsettled and must be checked before the company-wide release `[I2]`.
 - Electron's Mac loopback capture and its Screen Recording permission behaviour are untested on a Mac; Anthropic may make `--bare` the default for `claude -p`, so Grillo pins the flags `[I2]`.
+- 5-second slices transcribe faster than they are spoken on an ordinary laptop CPU, so live delivery keeps up; the first measurement (the pull request for the local transcription engine story, `base.en`) took 3.2 to 4.2 s per 4-second slice on a busy machine, so this is unproven `[I1]`.
 
 ---
 

@@ -1,0 +1,12 @@
+{
+  "reconciled_at": "e9d31ffe7739eb41392a3e31f295eabf94691595",
+  "last_reconcile": "2026-10-24",
+  "accepted": [
+    { "lens": "2", "issue": "82", "section": "docs/PRDs/PRD.md 4.4 item 5", "reason": "Turning GitHub comments into answers by a Pick up button is fine: the PRD says the agent may do it.", "on": "2026-10-24" },
+    { "lens": "2", "issue": "57", "section": "none", "reason": "The closed demo-materials story cites section 7 for the made-up-data rule (it is in section 11); closed, nothing to build.", "on": "2026-10-24" },
+    { "lens": "3", "issue": "56", "section": "none", "reason": "The closed scaffold story names electron.vite.config.ts; main has the .mts file. Cosmetic.", "on": "2026-10-24" },
+    { "lens": "4", "issue": "61", "section": "docs/PRDs/PRD.md 8 Agent runtime", "reason": "ADR story closed as superseded: the decision is recorded in the PRD as [I2], no ADR file needed.", "on": "2026-10-24" },
+    { "lens": "4", "issue": "62", "section": "docs/PRDs/PRD.md 8", "reason": "ADR story closed as superseded: the decision is recorded in the PRD as [I2], no ADR file needed.", "on": "2026-10-24" },
+    { "lens": "1", "issue": "none", "section": "docs/PRDs/PRD.md 2 (undo any action)", "reason": "Undo of a close is GitHub's own reopen; section 7 names GitHub's history the undo trail. Undo of a recorded answer is now on the ticket screen and backend stories.", "on": "2026-10-24" }
+  ]
+}
