@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261024-000235-a640",
+  "issue": 56,
+  "title": "Scaffold: Electron + TypeScript app that builds, lints, typechecks and tests on Windows and Mac CI",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 111,
+  "merged_at": "2026-10-24T00:44:32Z",
+  "merge_commit": "57b616ecccdedb5384a55e4c9cb14be706255b62",
+  "seam": "repository root config, src/main/app/, src/main/ipc/, src/preload/, src/shared/ipc.ts, src/renderer/index.html and src/renderer/main.ts, .github/workflows/ci.yml, docs/runbook.md",
+  "story": "Grillo now exists as a desktop app that opens its own window on the liquid glass background on Windows and Mac. Nothing is usable in it yet, but every later feature plugs in by adding its own folder. Links inside the window never load an outside page there; web links open in the system browser.",
+  "checks": [
+    {
+      "key": "app/dev-window",
+      "criterion": "npm run dev starts the app on the port in GRILLO_DEV_PORT and shows a window",
+      "steps": "In a fresh clone run npm ci, set GRILLO_DEV_PORT=5301, then run npm run dev.",
+      "expected": "The log says the dev server runs at http://localhost:5301/ and a window titled Grillo opens on a pale blue, lilac and mint gradient with nothing else on it."
+    },
+    {
+      "key": "app/dev-port-default",
+      "criterion": "The default dev port is 5173",
+      "steps": "Unset GRILLO_DEV_PORT, then run npm run dev.",
+      "expected": "The log shows http://localhost:5173/ and the same Grillo window opens."
+    },
+    {
+      "key": "app/dist-installer",
+      "criterion": "npm run dist produces an installer for the current OS",
+      "steps": "On Windows with the Visual Studio Spectre-mitigated libraries installed, run npm run dist; on a Mac run the same command.",
+      "expected": "Windows: dist/Grillo Setup 0.1.0.exe exists and installing it opens a Grillo window. Mac: a .dmg and a .zip appear in dist/."
+    }
+  ],
+  "no_qa_reason": null
+}

@@ -1,0 +1,65 @@
+{
+  "run_id": "Grillo-20261024-000235-a640",
+  "issue": 56,
+  "title": "Scaffold: Electron + TypeScript app that builds, lints, typechecks and tests on Windows and Mac CI",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T00:02:35Z",
+  "finished_at": "2026-10-24T00:44:32Z",
+  "outcome": "merged",
+  "pr": 111,
+  "summary": "Creates the Electron + TypeScript app: electron-vite build, typed IPC bridge, feature auto-discovery, settings helper, packaging config, runbook skeleton, and the full gate in CI on Windows and Mac. 39 tests, 0 skipped; review added a settings lookup fix and a navigation guard so outside pages never get the IPC bridge.",
+  "agents": [
+    {
+      "name": "dev-56",
+      "model": "opus",
+      "tokens_total": 216232
+    },
+    {
+      "name": "review-56-r1",
+      "model": "opus",
+      "tokens_total": 115916
+    },
+    {
+      "name": "review-56-r2",
+      "model": "opus",
+      "tokens_total": 108250
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1671,
+    "review_seconds": 457,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [
+    "node-pty 1.1.0 ships its Mac spawn-helper without execute permission; the scaffold's postinstall script fixes it, and forcing a source rebuild of node-pty on Windows needs the MSVC Spectre-mitigated libraries (opt-in via npm run rebuild:native)"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "electron-builder.yml",
+      "what": "npm run dist on Windows fails without the Visual Studio MSVC Spectre-mitigated libraries, because npmRebuild: true rebuilds node-pty from source; GitHub's Windows runners were not checked for that component",
+      "why": "The issue pins npmRebuild: true and installers are not built in the gate",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": ".nvmrc and package.json engines",
+      "what": "Node is pinned to 24.4.1, a release from before the Node 24 line became LTS, so CI and every worktree build on a Node missing over a year of security fixes, and the exact engines value warns on any other 24.x",
+      "why": "Only 24.4.1 is installed on the build machine, so a bump could not be verified there",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/app/",
+      "what": "An error thrown by any feature's register() at start-up is swallowed: no window opens and the process keeps running invisibly, which in the installed app leaves a background process the user can only end in Task Manager",
+      "why": "No feature exists yet, and how to show a start-up error is a product choice",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

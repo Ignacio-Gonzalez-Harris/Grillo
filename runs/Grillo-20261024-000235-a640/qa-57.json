@@ -1,0 +1,13 @@
+{
+  "run_id": "Grillo-20261024-000235-a640",
+  "issue": 57,
+  "title": "Demo materials: the made-up kick-off transcript and the \"what we want\" sheet",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 110,
+  "merged_at": "2026-10-24T00:14:29Z",
+  "merge_commit": "b996c7d016c7bdfbc51f1c98e5808a4b91a3a455",
+  "seam": "docs/demo/",
+  "story": "Before a demo, the cast opens the demo folder, pastes the kick-off chat in step 3, answers every question from the one-page sheet, and pastes the customer email in step 9. Each step's pass condition says whether release 1 holds.",
+  "checks": [],
+  "no_qa_reason": "Documents only; nothing in the app to drive."
+}
