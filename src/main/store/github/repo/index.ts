@@ -88,8 +88,14 @@ function refuse(kind: ConstructorParameters<typeof StoreError>[0], message: stri
   throw new StoreError(kind, message);
 }
 
+/** Every section a name and a note, both text, as `structure.json` must hold them. */
 function checkStructure(structure: PrdStructure): void {
-  const names = Array.isArray(structure?.sections) ? structure.sections.map((section) => String(section?.name ?? '').trim()) : [];
+  const sections: unknown[] = Array.isArray(structure?.sections) ? structure.sections : [];
+  const names = sections.map((section) => {
+    const { name, note } = fieldsOf(section as PrdStructure['sections'][number], 'a PRD section');
+    checkText(note, 'note');
+    return checkText(name, 'name').trim();
+  });
   if (names.length === 0 || names.some((name) => name === '')) {
     refuse('invalid', 'A PRD structure needs at least one section, and every section a name');
   }
@@ -121,6 +127,10 @@ function checkScore(score: Score): void {
   const { overall, criteria, sections } = fieldsOf(score, 'a score');
   if (!Array.isArray(criteria) || !Array.isArray(sections) || [...criteria, ...sections].some((item) => typeof item !== 'object' || item === null)) {
     refuse('invalid', 'A score needs its criteria and sections lists');
+  }
+  for (const item of [...criteria, ...sections]) {
+    checkText(item.name, 'name');
+    checkText(item.comment, 'comment');
   }
   const marks = [overall, ...criteria.map((item) => item.mark), ...sections.map((item) => item.mark)];
   if (marks.some((mark) => typeof mark !== 'number' || !Number.isFinite(mark) || mark < LOWEST_MARK || mark > HIGHEST_MARK)) {

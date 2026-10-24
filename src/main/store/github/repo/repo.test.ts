@@ -480,6 +480,27 @@ describe('GitHub repository backend: archive and unarchive', () => {
 });
 
 describe('GitHub repository backend: untrusted input', () => {
+  type Write = (store: ReturnType<typeof createRepoStore>) => Promise<unknown>;
+  const badSection = (section: object) => ({ sections: [section] }) as unknown as typeof STRUCTURE;
+  const badScore = (criterion: object) => ({ ...SCORE, criteria: [criterion] }) as unknown as Score;
+  it.each<[string, Write]>([
+    ['a structure section without a note', (store) => store.updateStructure(PROJECT, badSection({ name: 'Problem' }))],
+    ['a structure section whose name is not text', (store) => store.updateStructure(PROJECT, badSection({ name: 42, note: 'n' }))],
+    ['a new project whose structure lacks a note', (store) => store.createProject({ newRepository: { organisation: 'example-org', name: 'other' }, structure: badSection({ name: 'Problem' }) })],
+    ['a score criterion without a name', (store) => store.setScore(PROJECT, 1, badScore({ mark: 5, comment: 'c' }))],
+    ['a score criterion without a comment', (store) => store.setScore(PROJECT, 1, badScore({ name: 'Clear', mark: 5 }))],
+  ])('refuses %s as invalid and saves nothing the file parser would refuse', async (_case, write) => {
+    const { store, github, seed } = await setup();
+    const repository = seed();
+    await store.createPrdVersion(PROJECT, { body: 'b', appendix: '' });
+    const before = repository.version;
+
+    expect((await refusal(write(store))).kind).toBe('invalid');
+    expect(repository.version).toBe(before);
+    expect(github.repositories.has('example-org/other')).toBe(false);
+    await expect(store.getStructure(PROJECT)).resolves.toEqual(STRUCTURE);
+  });
+
   it('refuses every method called without its arguments as invalid, before running gh or git', async () => {
     const { store, github } = await setup();
     const takingNone = ['listOrganisations', 'listPendingInvitations', 'listProjects', 'listRecentProjects'];
