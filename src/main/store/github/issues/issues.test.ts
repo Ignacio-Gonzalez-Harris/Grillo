@@ -256,6 +256,19 @@ describe('GitHub issues backend: tickets', () => {
     expect(await titles({ domains: ['platform'] })).toEqual(['Hosting', 'Glossary']);
   });
 
+  it('filters by any declared domain names, "none" and blank ones included, as the members file allows them', async () => {
+    const { store } = await projectWithTicket();
+    const anyone = await store.createTicket(PROJECT, newTicket({ title: 'Glossary' }));
+    await store.updateTicket(anyone.id, { noDomain: true });
+    const titles = async (domains: unknown) =>
+      (await store.listTickets(PROJECT, { domains: domains as string[] })).map((entry) => entry.title);
+
+    expect(await titles(['platform', 'none'])).toEqual(['Glossary']);
+    expect(await titles(['platform', ''])).toEqual(['Glossary']);
+    expect(await refusal(store.listTickets(PROJECT, { domains: 'platform' as unknown as string[] }))).toBe('invalid');
+    expect(await refusal(store.listTickets(PROJECT, { domains: ['platform', 7] as unknown as string[] }))).toBe('invalid');
+  });
+
   it('ignores issues that are no tickets: the map, an unlabelled issue and a pull request', async () => {
     const { store, github } = await projectWithTicket();
     github.addIssue(PROJECT, { title: 'A bug report', labels: ['bug'] });

@@ -150,6 +150,14 @@ function checkDomains(value: unknown): string[] {
   return [...new Set(value.map((domain: string) => domain.trim()))];
 }
 
+/** A list filter only reads: any declared name passes, as the members file allows any text ('none' and blank ones too). */
+function checkFilterDomains(value: unknown): string[] {
+  if (!Array.isArray(value) || value.some((domain) => typeof domain !== 'string')) {
+    refuse('invalid', 'The domain filter must be a list of text');
+  }
+  return [...value];
+}
+
 function checkComment(input: CommentInput | null | undefined) {
   const { sources, via } = fieldsOf(input, 'a new record');
   if (!Array.isArray(sources) || sources.some((code) => sourceNumberOf(code) === null)) {
@@ -521,7 +529,7 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       if (state !== undefined && state !== 'open' && state !== 'closed') {
         refuse('invalid', `'${String(state)}' is not a ticket state`);
       }
-      const wanted = domains === undefined ? null : new Set(checkDomains(domains));
+      const wanted = domains === undefined ? null : new Set(checkFilterDomains(domains));
       const me = await api.viewer();
       const issues = await listTicketIssues(ref, state ?? 'all');
       const tickets = await Promise.all(issues.map(async (issue) => toTicket(ref, issue, await commentsOf(ref, issue))));
