@@ -1,0 +1,109 @@
+# Builds the installers when a version is published (PRD section 8, Distribution and CI) and attaches them to that
+# release, with the update files (latest.yml, latest-mac.yml and the blockmaps) the app's update check reads.
+#
+# One job, on a Windows and a Mac runner: the gate chain from CLAUDE.md section 5 first, then `npm run dist`. The
+# pilot ships unsigned (PRD section 8, Signing), so nothing here signs; the signing story adds that.
+#
+# `workflow_dispatch` lets a developer try the workflow on a draft release before publishing it: create the draft with
+# its tag, then run this workflow by hand from the branch to build, giving that tag (steps in docs/runbook.md).
+name: release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of the (draft) release to attach the installers to, for example v1.0.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  installers:
+    name: installers
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      # The write token must not sit in .git/config while dependency scripts run (npm ci, npm test, npm run dist);
+      # no step needs git credentials, and the upload step brings its own GH_TOKEN.
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The installers and the update files take their version from package.json, so a tag naming another version
+      # would publish files the update check cannot match to the release.
+      - name: tag matches the version
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "$RELEASE_TAG" != "v$version" ]; then
+            echo "::error::Release tag '$RELEASE_TAG' does not match package.json version 'v$version'."
+            exit 1
+          fi
+
+      - name: install
+        run: npm ci
+
+      - name: build
+        run: npm run build
+
+      - name: lint
+        run: npm run lint
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: test
+        run: npm test
+
+      - name: installers
+        run: npm run dist
+        env:
+          # Unsigned in the pilot: never pick up a signing identity a runner happens to have.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      # electron-builder writes the update files with GitHub-safe names (spaces become dashes), while the installer
+      # files on disk keep their spaces; GitHub would turn those spaces into dots. So every file is copied under its
+      # safe name, and exactly the files the update files name (plus their blockmaps) are uploaded.
+      - name: upload to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          shopt -s nullglob
+          mkdir -p release-assets
+          for file in dist/*; do
+            [ -f "$file" ] || continue
+            name="$(basename "$file")"
+            cp "$file" "release-assets/${name// /-}"
+          done
+          update_files=(release-assets/latest*.yml)
+          if [ ${#update_files[@]} -eq 0 ]; then
+            echo "::error::npm run dist wrote no latest*.yml update file."
+            exit 1
+          fi
+          upload=("${update_files[@]}")
+          for url in $(cat "${update_files[@]}" | tr -d '\r' | sed -n 's/^ *- url: *//p'); do
+            if [ ! -f "release-assets/$url" ]; then
+              echo "::error::The update file names '$url', which npm run dist did not write."
+              exit 1
+            fi
+            upload+=("release-assets/$url")
+            if [ -f "release-assets/$url.blockmap" ]; then upload+=("release-assets/$url.blockmap"); fi
+          done
+          printf 'Uploading %s\n' "${upload[@]}"
+          gh release upload "$RELEASE_TAG" "${upload[@]}" --clobber
