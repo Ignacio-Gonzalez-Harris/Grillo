@@ -171,6 +171,7 @@ export interface Store {
   getTicket(id: TicketId): Promise<Ticket>;
   listTickets(project: ProjectId, filter?: TicketFilter): Promise<Ticket[]>;
   updateTicket(id: TicketId, patch: TicketPatch): Promise<Ticket>;
+  /** A ticket with a decision and no gist line on the map (closed again after a reopen) gets its latest one back. */
   closeTicket(id: TicketId): Promise<CloseResult>;
   /** Closes `id` as a duplicate of `into`, with a decision comment pointing at it. */
   mergeTicket(id: TicketId, into: TicketId): Promise<CloseResult>;

@@ -349,6 +349,38 @@ describe('in-memory store: tickets', () => {
     await expect(store.reopenTicket(ticket)).resolves.toMatchObject({ state: 'open', duplicateOf: null });
   });
 
+  it('puts the gist line of the latest decision back when a reopened ticket is closed again', async () => {
+    const { store, ticket } = await projectWithTicket();
+    await store.createDecision(ticket, { text: 'GitHub', gist: 'GitHub first', sources: [], via: null });
+    await store.createDecision(ticket, { text: 'GitHub only', gist: 'GitHub only', sources: [], via: null });
+    await store.closeTicket(ticket);
+    await store.reopenTicket(ticket);
+
+    await store.closeTicket(ticket);
+
+    expect((await store.getMap(PROJECT)).settled).toEqual([{ ticket: 2, gist: 'GitHub only' }]);
+  });
+
+  it('reads duplicateOf from the merge decision while the ticket is closed, also when closed again', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+    await store.mergeTicket(ticket, into.id);
+    expect((await store.reopenTicket(ticket)).duplicateOf).toBeNull();
+
+    await store.closeTicket(ticket);
+
+    expect(await store.getTicket(ticket)).toMatchObject({ state: 'closed', duplicateOf: 3 });
+  });
+
+  it('checks only the domains an edit sets, so an edit keeps a tag whose last declarer left', async () => {
+    const { store, ticket } = await projectWithTicket();
+    await store.updateTicket(ticket, { domains: ['product'] });
+    await store.removeMember(PROJECT, OTHER);
+
+    await expect(store.updateTicket(ticket, { title: 'Sign-in flow' })).resolves.toMatchObject({ domains: ['product'] });
+    expect(await refusal(store.updateTicket(ticket, { domains: ['product'] }))).toBe('invalid');
+  });
+
   it('takes a reopened ticket off the settled list of the map', async () => {
     const { store, ticket } = await projectWithTicket();
     const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));

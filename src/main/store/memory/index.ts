@@ -82,11 +82,14 @@ export const DEFAULT_MEMORY_SEED: MemorySeed = {
 };
 
 const REPOSITORY_NAME = /^[A-Za-z0-9._-]+$/;
+const MERGE_POINTER = /^Merged into #(\d+)$/;
+const mergePointer = (number: number): string => `Merged into #${number}`;
 const LOWEST_MARK = 0;
 const HIGHEST_MARK = 10;
 
 interface TicketRecord {
-  ticket: Omit<Ticket, 'questions'>;
+  /** `duplicateOf` is not kept: it is read from the merge decision (docs/store-layout.md). */
+  ticket: Omit<Ticket, 'questions' | 'duplicateOf'>;
   questions: { code: string; text: string }[];
   nextQuestion: number;
   answers: Answer[];
@@ -199,8 +202,10 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
 
   function toTicket(record: TicketRecord): Ticket {
     const answered = new Set(record.answers.map((answer) => answer.question));
+    const merge = record.decisions.map((decision) => MERGE_POINTER.exec(decision.text)).findLast((match) => match !== null);
     return clone({
       ...record.ticket,
+      duplicateOf: record.ticket.state === 'closed' && merge ? Number(merge[1]) : null,
       questions: record.questions.map(({ code, text }) => ({ code, text, answered: answered.has(code) })),
     });
   }
@@ -223,12 +228,13 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
     }
   }
 
-  function checkTags(record: ProjectRecord, next: Omit<Ticket, 'questions'>): void {
+  /** Only the domains an edit sets must be declared: a tag stays when the last member declaring it leaves. */
+  function checkTags(record: ProjectRecord, next: TicketRecord['ticket'], setDomains: string[] = []): void {
     if (next.noDomain && next.domains.length > 0) {
       refuse('invalid', 'A ticket tagged "no domain" carries no other domain');
     }
     const declared = new Set(record.members.flatMap((entry) => entry.domains));
-    const unknown = next.domains.find((domain) => !declared.has(domain));
+    const unknown = setDomains.find((domain) => !declared.has(domain));
     if (unknown !== undefined) {
       refuse('invalid', `No member declared the domain '${unknown}'`);
     }
@@ -434,7 +440,6 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
           blockers: [...input.blockers],
           assignee: null,
           state: 'open',
-          duplicateOf: null,
         },
         questions: input.questions.map((text, index) => ({ code: `Q${number}.${index + 1}`, text })),
         nextQuestion: input.questions.length + 1,
@@ -468,14 +473,20 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       const record = writable(id.project);
       const entry = ticketIn(record, id.number);
       const next = { ...entry.ticket, ...clone(patch) };
-      checkTags(record, next);
+      checkTags(record, next, patch.domains);
       checkBlockers(record, next.blockers, id.number);
       entry.ticket = next;
       return toTicket(entry);
     },
     async closeTicket(id) {
       const record = writable(id.project);
-      ticketIn(record, id.number).ticket.state = 'closed';
+      const entry = ticketIn(record, id.number);
+      entry.ticket.state = 'closed';
+      const latest = entry.decisions.at(-1);
+      const settled = map(record).settled;
+      if (latest && !settled.some((line) => line.ticket === id.number)) {
+        settled.push({ ticket: id.number, gist: latest.gist });
+      }
       return mapDone(record);
     },
     async mergeTicket(id, into) {
@@ -485,17 +496,15 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       if (!target || target === entry || target.ticket.state === 'closed') {
         refuse('invalid', `Ticket ${id.number} can only merge into another open ticket of ${id.project}`);
       }
-      const pointer = `Merged into #${into.number}`;
+      const pointer = mergePointer(into.number);
       addDecision(record, entry, { ...header(id, { sources: [], via: null }), text: pointer, gist: pointer });
       entry.ticket.state = 'closed';
-      entry.ticket.duplicateOf = into.number;
       return mapDone(record);
     },
     async reopenTicket(id) {
       const record = writable(id.project);
       const entry = ticketIn(record, id.number);
       entry.ticket.state = 'open';
-      entry.ticket.duplicateOf = null;
       const current = map(record);
       current.settled = current.settled.filter((line) => line.ticket !== id.number);
       return toTicket(entry);

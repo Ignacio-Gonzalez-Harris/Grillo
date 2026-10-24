@@ -248,6 +248,10 @@ protected `main`), Grillo opens a pull request with the change and tells the mem
 - **Merge:** closing a ticket as a duplicate of another, with a decision comment whose text and gist are
   `Merged into #<other issue number>`.
 - **Reopen:** the ticket's line leaves the map's settled list; its decision comments stay as history.
+- **Close again:** a ticket that has a decision comment and no line in the settled list gets the gist line of
+  its latest decision back.
+- **`duplicateOf`** is the number in the latest `Merged into #<n>` decision while the ticket is closed; an
+  open ticket has none.
 
 ## Recent projects
 
