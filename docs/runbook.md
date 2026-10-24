@@ -61,8 +61,9 @@ The project screens arrive with their own stories. What already works underneath
 - **A new project** is a new private repository in the organisation you pick, tagged with the topic
   `grillo-created`, with Grillo's labels and a `.grillo/` folder (`members.json`, `structure.json`) on main.
 - **Connecting an existing repository** needs write access and issues turned on. A repository that already
-  holds a Grillo project opens that project. With write access only, inviting, removing people, closing and
-  reopening are refused with the reason: GitHub keeps those for repository admins.
+  holds a Grillo project opens that project. An empty repository (no commits yet) works too: Grillo's first
+  save makes its first commit. With write access only, inviting, removing people, closing and reopening are
+  refused with the reason: GitHub keeps those for repository admins.
 - **Invitations** are GitHub repository invitations: an admin in a repository Grillo created, write access in
   a connected one. Pending invitations to you are listed and accepted inside Grillo.
 - **Saves** go through the project folder: commit, then push to main. If someone pushed first, Grillo pulls and

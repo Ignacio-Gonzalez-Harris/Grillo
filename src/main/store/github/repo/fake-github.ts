@@ -42,6 +42,8 @@ export interface FakeInvitation {
 interface Commit {
   before: Map<string, string>;
   after: Map<string, string>;
+  /** The branch's first commit: it has no parent. */
+  root: boolean;
 }
 
 interface Clone {
@@ -52,6 +54,8 @@ interface Clone {
   commits: Commit[];
   /** Paths added to the index and not yet committed. */
   staged: Set<string>;
+  /** False until the local branch has a commit: a clone of an empty repository starts without one. */
+  born: boolean;
 }
 
 const ok = (stdout = ''): RunResult => ({ exitCode: 0, stdout, stderr: '' });
@@ -234,7 +238,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       const folder = args[3];
       mkdirSync(join(folder, '.git'), { recursive: true });
       repository.files.forEach((content, path) => writeTree(folder, path, content));
-      clones.set(folder, { repository: target, head: new Map(repository.files), base: repository.version, commits: [], staged: new Set() });
+      clones.set(folder, { repository: target, head: new Map(repository.files), base: repository.version, commits: [], staged: new Set(), born: repository.version > 0 });
       return ok();
     }
     if (group === 'pr' && action === 'create') {
@@ -261,6 +265,9 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       return ok(dirty.map((path) => ` M ${path}\n`).join(''));
     }
     if (line === 'pull --ff-only') {
+      if (repository.version === 0) {
+        return failed(`Your configuration specifies to merge with the ref 'refs/heads/${repository.defaultBranch}'\nfrom the remote, but no such ref was fetched.`);
+      }
       if (repository.version === clone.base) return ok('Already up to date.\n');
       if (clone.commits.length > 0) return failed('fatal: Not possible to fast-forward, aborting.');
       const incoming = changedPaths(clone.head, repository.files);
@@ -276,6 +283,27 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       failing = null;
       if (args[0] === 'add') paths.slice(0, 1).forEach((path) => clone.staged.add(path));
       return failed(stderr);
+    }
+    if (line === 'rev-parse --verify -q HEAD') {
+      return clone.born ? ok('0123abcd\n') : failed('');
+    }
+    if (line === 'rev-parse --verify -q HEAD~1') {
+      const last = clone.commits.at(-1);
+      return last !== undefined && !last.root ? ok('0123abcd\n') : failed('');
+    }
+    if (line === 'ls-remote --heads origin') {
+      return ok(repository.version > 0 ? `0123abcd\trefs/heads/${repository.defaultBranch}\n` : '');
+    }
+    if (line === 'update-ref -d HEAD') {
+      const commit = clone.commits.pop()!;
+      clone.head = commit.before;
+      clone.born = false;
+      commit.after.forEach((_content, path) => clone.staged.add(path));
+      return ok();
+    }
+    if (line.startsWith('rm --cached -q -- ')) {
+      paths.forEach((path) => clone.staged.delete(path));
+      return ok();
     }
     if (line.startsWith('reset -q -- ')) {
       paths.forEach((path) => clone.staged.delete(path));
@@ -297,7 +325,8 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       const after = new Map(clone.head);
       paths.forEach((path) => (working.has(path) ? after.set(path, working.get(path)!) : after.delete(path)));
       paths.forEach((path) => clone.staged.delete(path));
-      clone.commits.push({ before: clone.head, after });
+      clone.commits.push({ before: clone.head, after, root: !clone.born });
+      clone.born = true;
       clone.head = after;
       return ok();
     }
@@ -321,6 +350,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       return ok();
     }
     if (line === 'reset --keep HEAD~1') {
+      if (clone.commits.at(-1)?.root) return failed("fatal: ambiguous argument 'HEAD~1': unknown revision");
       const commit = clone.commits.pop()!;
       changedPaths(commit.before, commit.after).forEach((path) => writeTree(folder, path, commit.before.get(path)));
       clone.head = commit.before;

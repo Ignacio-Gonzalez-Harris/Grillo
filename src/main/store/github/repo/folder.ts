@@ -117,9 +117,20 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
     await gh.text(['repo', 'clone', projectIdOf(ref), folder]);
   }
 
+  const succeeds = async (ref: RepositoryRef, args: string[]): Promise<boolean> => (await runGit(ref, args)).exitCode === 0;
+
+  /** True for a clone of a repository that has no commit yet: there is nothing to pull, and the first save makes the first commit. */
+  async function isEmptyRepository(ref: RepositoryRef): Promise<boolean> {
+    if (await succeeds(ref, ['rev-parse', '--verify', '-q', 'HEAD'])) {
+      return false;
+    }
+    const heads = await runGit(ref, ['ls-remote', '--heads', 'origin']);
+    return heads.exitCode === 0 && heads.stdout.trim() === '';
+  }
+
   async function pull(ref: RepositoryRef): Promise<void> {
     const result = await runGit(ref, ['pull', '--ff-only']);
-    if (result.exitCode !== 0) {
+    if (result.exitCode !== 0 && !(await isEmptyRepository(ref))) {
       throw new StoreError(
         'conflict',
         `The project folder ${pathOf(ref)} could not be brought up to date with GitHub; Grillo changed nothing in it: ${result.stderr.trim()}`,
@@ -211,16 +222,30 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
     }
   }
 
-  /** Takes the save's commit back out and puts its files back as main has them; other changes stay. */
-  const undoCommit = (ref: RepositoryRef): Promise<string> => gitOk(ref, ['reset', '--keep', 'HEAD~1']);
+  /**
+   * Takes the save's commit back out and puts its files back as main has them; other changes stay. The first
+   * commit of an empty repository has no parent to go back to: the branch becomes empty again and its files go.
+   */
+  async function undoCommit(ref: RepositoryRef, changes: PendingChange[]): Promise<void> {
+    if (await succeeds(ref, ['rev-parse', '--verify', '-q', 'HEAD~1'])) {
+      await gitOk(ref, ['reset', '--keep', 'HEAD~1']);
+      return;
+    }
+    const paths = changes.map((change) => change.path);
+    await gitOk(ref, ['update-ref', '-d', 'HEAD']);
+    await gitOk(ref, ['rm', '--cached', '-q', '--', ...paths]);
+    for (const path of paths) {
+      await rm(join(pathOf(ref), path), { force: true });
+    }
+  }
 
   /** The commit goes to a branch of its own, and a pull request asks to bring it into main. */
-  async function proposeChange(ref: RepositoryRef, base: string, message: string): Promise<void> {
+  async function proposeChange(ref: RepositoryRef, base: string, changes: PendingChange[], message: string): Promise<void> {
     const head = `grillo/save-${now().getTime()}`;
     try {
       await gitOk(ref, ['push', 'origin', `HEAD:refs/heads/${head}`]);
     } finally {
-      await undoCommit(ref);
+      await undoCommit(ref, changes);
     }
     const body = `Grillo could not save this change straight to \`${base}\`, which is protected. Merge this pull request to keep it.`;
     const url = await api.openPullRequest(ref, { base, head, title: message, body });
@@ -242,10 +267,10 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
       }
       const refusal = refusalOf(push.stderr);
       if (refusal === 'protected') {
-        await proposeChange(ref, branch, message);
+        await proposeChange(ref, branch, pending, message);
         return result;
       }
-      await undoCommit(ref);
+      await undoCommit(ref, pending);
       if (refusal === 'failed') {
         throw new StoreError('backend', `Saving to ${projectIdOf(ref)} failed: ${push.stderr.trim()}`);
       }

@@ -127,6 +127,33 @@ describe('GitHub repository backend: createProject', () => {
     expect(close).toMatchObject({ kind: 'forbidden', message: expect.stringContaining('may close the project') });
   });
 
+  it('connects an empty repository: the first save makes its first commit, and the folder then opens and saves', async () => {
+    const { store, github, folder } = await setup();
+    const repository = github.addRepository('example-org/empty', { permission: 'write', version: 0, files: {} });
+
+    const project = await store.createProject({ connectRepository: { owner: 'example-org', name: 'empty' }, structure: STRUCTURE });
+
+    expect(project.id).toBe('example-org/empty');
+    expect([...repository.files.keys()].sort()).toEqual(['.grillo/members.json', '.grillo/structure.json']);
+    expect(repository.version).toBe(1);
+    await expect(store.openProjectFolder('example-org/empty')).resolves.toBe(folder('example-org/empty'));
+    await expect(store.createSource('example-org/empty', SOURCE)).resolves.toMatchObject({ code: 'S1' });
+    expect(readTree(folder('example-org/empty'))).toEqual(repository.files);
+  });
+
+  it('takes back a refused first push to an empty repository and saves again on top of what arrived', async () => {
+    const { store, github, folder } = await setup();
+    const repository = github.addRepository('example-org/empty', { permission: 'write', version: 0, files: {} });
+    github.onNextPush(() => github.pushFromElsewhere('example-org/empty', 'README.md', '# Started elsewhere\n'));
+
+    await store.createProject({ connectRepository: { owner: 'example-org', name: 'empty' }, structure: STRUCTURE });
+
+    expect(github.calls).toContain('git update-ref -d HEAD');
+    expect([...repository.files.keys()].sort()).toEqual(['.grillo/members.json', '.grillo/structure.json', 'README.md']);
+    expect(readTree(folder('example-org/empty'))).toEqual(repository.files);
+    await expect(store.openProjectFolder('example-org/empty')).resolves.toBe(folder('example-org/empty'));
+  });
+
   it.each([
     ['read access only', { permission: 'read' as const }, 'forbidden'],
     ['issues turned off', { hasIssues: false }, 'invalid'],
