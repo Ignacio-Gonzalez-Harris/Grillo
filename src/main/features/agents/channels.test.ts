@@ -1,0 +1,75 @@
+import { describe, expect, it } from 'vitest';
+import { createGrilloApi } from '../../../preload/bridge';
+import type { AgentInfo, StartAgentRequest } from '../../../shared/agents';
+import { createMainIpc } from '../../ipc/bridge';
+import { createFakeIpc } from '../../ipc/fake-ipc';
+import { registerAgentChannels } from './channels';
+import { FakePty } from './fake-pty';
+
+const request: StartAgentRequest = {
+  kind: 'task',
+  folder: '/home/ada/demo-project',
+  firstMessage: '',
+  title: 'Task · Export button',
+};
+
+function connect() {
+  const fake = createFakeIpc();
+  const ptys: FakePty[] = [];
+  registerAgentChannels(createMainIpc(fake.main, () => [fake.window]), {
+    findClaude: () => '/opt/made-up/bin/claude',
+    shipSkills: async () => undefined,
+    spawnPty: (file, args, options) => {
+      const pty = new FakePty(file, args, options);
+      ptys.push(pty);
+      return pty;
+    },
+    env: {},
+  });
+  return { grillo: createGrilloApi(fake.renderer), ptys };
+}
+
+describe('agent IPC channels', () => {
+  it('starts an agent from the renderer and streams its output and list changes back', async () => {
+    const { grillo, ptys } = connect();
+    const output: Array<{ id: string; data: string }> = [];
+    const lists: AgentInfo[][] = [];
+    grillo.on('agents:output', (event) => output.push(event));
+    grillo.on('agents:list-changed', (list) => lists.push(list));
+
+    const id = await grillo.invoke('agents:start', request);
+    ptys[0].print('claude says hi');
+
+    expect(output).toEqual([{ id, data: 'claude says hi' }]);
+    expect(lists.at(-1)).toEqual([{ id, kind: 'task', title: request.title, folder: request.folder, waiting: false }]);
+    await expect(grillo.invoke('agents:list', undefined)).resolves.toEqual(lists.at(-1));
+  });
+
+  it('types, resizes, renames and stops an agent from the renderer', async () => {
+    const { grillo, ptys } = connect();
+    const id = await grillo.invoke('agents:start', request);
+
+    await grillo.invoke('agents:write', { id, text: 'hello\r' });
+    await grillo.invoke('agents:resize', { id, cols: 90, rows: 20 });
+    await grillo.invoke('agents:set-title', { id, title: 'Task · Import button' });
+    const renamed = await grillo.invoke('agents:list', undefined);
+    await grillo.invoke('agents:stop', { id });
+
+    expect(ptys[0].written).toEqual(['hello\r']);
+    expect(ptys[0].sizes).toEqual([[90, 20]]);
+    expect(renamed[0].title).toBe('Task · Import button');
+    expect(ptys[0].killed).toBe(true);
+    await expect(grillo.invoke('agents:list', undefined)).resolves.toEqual([]);
+  });
+
+  it('tells the renderer when an agent ends on its own', async () => {
+    const { grillo, ptys } = connect();
+    const exits: Array<{ id: string; exitCode: number }> = [];
+    grillo.on('agents:exited', (event) => exits.push(event));
+    const id = await grillo.invoke('agents:start', request);
+
+    ptys[0].exit(2);
+
+    expect(exits).toEqual([{ id, exitCode: 2 }]);
+  });
+});
