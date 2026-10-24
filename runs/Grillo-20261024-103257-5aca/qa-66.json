@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261024-103257-5aca",
+  "issue": 66,
+  "title": "Audio capture: microphone on both systems, call audio on Windows, Mac microphone permission check",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 118,
+  "merged_at": "2026-10-24T10:51:10Z",
+  "merge_commit": "fbe3c11fb3ebb7e3625a0faf8103f36596efb383",
+  "seam": "src/main/features/audio/ and src/renderer/audio/",
+  "story": "Grillo can now record the room microphone on Windows and Mac, and the call audio on Windows, sending the sound to the main process as 5-second slices in the format the speech model reads. Before recording it checks the microphone permission, and the member can pick which microphone to use. Nothing appears on screen yet: the meeting screen's record button comes with its own story. Nothing earlier was replaced.",
+  "checks": [
+    {
+      "key": "audio/microphone-capture",
+      "criterion": "startCapture({ source: microphone }) sends 5-second 16 kHz mono slices to main, and stopCapture() ends the capture",
+      "steps": "Start Grillo on Windows or Mac with a microphone plugged in. Start a microphone recording. Speak for 15 seconds. Stop.",
+      "expected": "About three slices arrive in main, the last one shorter. No error is shown."
+    },
+    {
+      "key": "audio/call-capture-windows",
+      "criterion": "On Windows, call audio records what the speakers play",
+      "steps": "Start Grillo on Windows. Play any sound, such as a test video. Start a call-audio recording for 15 seconds. Stop.",
+      "expected": "No picker or permission prompt appears, and about three slices arrive carrying the sound."
+    },
+    {
+      "key": "audio/call-capture-mac-unsupported",
+      "criterion": "On a Mac, choosing call audio gives a typed unsupported result",
+      "steps": "Start Grillo on a Mac. Choose call-audio recording.",
+      "expected": "A message says Mac call audio is not available yet and suggests the room microphone. Nothing is recorded."
+    },
+    {
+      "key": "audio/microphone-permission-denied",
+      "criterion": "A refused microphone is reported with where to grant it",
+      "steps": "Turn Grillo off under System Settings > Privacy & Security > Microphone (Mac), or turn off Settings > Privacy & security > Microphone > Let desktop apps access your microphone (Windows). Start a microphone recording.",
+      "expected": "No recording starts, and that system's exact instruction is shown."
+    },
+    {
+      "key": "audio/input-device-pick",
+      "criterion": "The member can list the microphones and pick one",
+      "steps": "Plug in a second microphone. Open the microphone list and pick the second one. Record. Unplug it and record again.",
+      "expected": "The list shows both microphones. The first recording uses the picked one. The second says the picked microphone is not connected and does not switch to another."
+    }
+  ],
+  "no_qa_reason": null
+}

@@ -1,0 +1,13 @@
+{
+  "run_id": "Grillo-20261024-103257-5aca",
+  "issue": 73,
+  "title": "GitHub backend: repositories, members, invites, archive/unarchive, project files and the local project folder",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 120,
+  "merged_at": "2026-10-24T11:28:06Z",
+  "merge_commit": "e9d31ffe7739eb41392a3e31f295eabf94691595",
+  "seam": "src/main/store/github/repo/",
+  "story": "Underneath Grillo, the GitHub store can now create a private project repository or connect an existing one, including an empty one, keep members and invitations, save sources, sessions, PRD structure, versions and scores in .grillo/ through a local clone, and archive or reopen a project. Before this, every repository store call answered \"not implemented yet\". There is no screen yet.",
+  "checks": [],
+  "no_qa_reason": "Store methods only; no screen or command a person can drive until the project screens land."
+}

@@ -1,0 +1,41 @@
+{
+  "run_id": "Grillo-20261024-103257-5aca",
+  "issue": 68,
+  "title": "App update check with the update offer over IPC and the auto-update setting",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T10:32:57Z",
+  "finished_at": "2026-10-24T10:56:44Z",
+  "outcome": "merged",
+  "pr": 117,
+  "summary": "Grillo checks its GitHub Releases at start and hourly, reports the offer, download progress and ready-to-install over IPC for the setup screen, and with the auto-update setting installs silently on quit; unsigned Mac builds only offer a manual install.",
+  "agents": [
+    {
+      "name": "dev-68",
+      "model": "opus",
+      "tokens_total": 137112
+    },
+    {
+      "name": "review-68",
+      "model": "opus",
+      "tokens_total": 110737
+    },
+    {
+      "name": "review-68-r2",
+      "model": "opus",
+      "tokens_total": 110364
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 565,
+    "review_seconds": 554,
+    "ci_seconds": 130
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

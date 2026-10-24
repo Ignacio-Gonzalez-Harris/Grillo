@@ -1,0 +1,73 @@
+{
+  "run_id": "Grillo-20261024-103257-5aca",
+  "issue": 73,
+  "title": "GitHub backend: repositories, members, invites, archive/unarchive, project files and the local project folder",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T10:32:57Z",
+  "finished_at": "2026-10-24T11:28:06Z",
+  "outcome": "merged",
+  "pr": 120,
+  "summary": "The GitHub store can create a private project repository or connect an existing (also empty) one, keep members and invitations, save sources, sessions, PRD structure, versions and scores under .grillo/ through a local clone, and archive or reopen a project; before this every repository store call was a stub.",
+  "agents": [
+    {
+      "name": "dev-73",
+      "model": "opus",
+      "tokens_total": 286726
+    },
+    {
+      "name": "review-73",
+      "model": "opus",
+      "tokens_total": 156555
+    },
+    {
+      "name": "review-73-r2",
+      "model": "opus",
+      "tokens_total": 182744
+    },
+    {
+      "name": "review-73-r3",
+      "model": "opus",
+      "tokens_total": 139573
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1871,
+    "review_seconds": 1095,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 3,
+    "ci": 1
+  },
+  "friction": [
+    "The dev agent ran a live check against real GitHub and left a private archived repository (grillo-throwaway-73) that the gh token cannot delete; a person must refresh the token scope and delete it"
+  ],
+  "lessons_learned": [
+    "Store backends can be proven with real git against a local bare repository behind a fake gh, as both later reviewers did; the dev brief should say so, so no live repository is ever created",
+    "Each review round on the GitHub store found a real data or access bug (staged leftovers breaking numbering, case-sensitive logins leaving admin invites open, unvalidated text fields, empty repositories refused); budget for more than one round on store stories"
+  ],
+  "deferred": [
+    {
+      "severity": "high",
+      "area": "src/main/store/github/repo/",
+      "what": "On a protected main every save returns a result planned from main without the change: two createSource calls both return S1 and open two pull requests adding the same file, and updateSession right after createSession (or setScore right after createPrdVersion) refuses not-found until someone merges",
+      "why": "Needs a numbering design for unmerged saves (read pending grillo/save-* branches, or one long-lived save branch); the story followed the documented rule",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/repo/",
+      "what": "The backend calls an optional onPullRequest when a save became a pull request, but nothing passes one in, so the member is not told and sees main unchanged",
+      "why": "Needs a screen to show the notice",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/repo/index.ts",
+      "what": "listProjects rejects as a whole when one recent project has a damaged Grillo file (backend) or a folder that cannot fast-forward (conflict), hiding every other project",
+      "why": "Skipping quietly would hide a broken project and a signed-out gh is also a backend error; the project list screen must decide how to show it",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

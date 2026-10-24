@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261024-103257-5aca",
+  "issue": 70,
+  "title": "App shell: screen registry, fixed navigation tabs, project tab bar with agent tabs and \"+\", liquid-glass components from the tokens",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 119,
+  "merged_at": "2026-10-24T11:04:14Z",
+  "merge_commit": "0237b7853d7710518094e5f65e9d8ab66e35425b",
+  "seam": "src/renderer/app/ and src/renderer/theme/",
+  "story": "Grillo now opens in a liquid-glass window with a title bar and a tab bar: Setup, Project, Map, Tickets, PRD, one tab per running agent with an orange waiting-for-you dot, and \"+\". Each tab opens its screen, and a screen whose story has not landed yet says it is not built yet. Before this, the window was an empty backdrop.",
+  "checks": [
+    {
+      "key": "app/start-shell",
+      "criterion": "Fixed navigation as the prototype shows",
+      "steps": "Run npm run dev with GRILLO_STORE=memory.",
+      "expected": "A frosted glass window, the title bar \"Grillo Setup\", and the tabs Setup, Project, Map, Tickets, PRD and \"+\", with Setup active and \"Setup is not built yet.\""
+    },
+    {
+      "key": "app/fixed-tabs",
+      "criterion": "Each fixed tab opens its screen",
+      "steps": "Click Map, then Tickets, then PRD, then Project.",
+      "expected": "The clicked tab raised and active, the title bar showing its name, and \"<name> is not built yet.\" until that screen's story lands."
+    },
+    {
+      "key": "app/agent-tabs",
+      "criterion": "Agent tabs come from the runtime, with their title and waiting dot",
+      "steps": "In the developer tools console run window.grillo.invoke('agents:start', {kind:'grilling', folder:'<any empty folder>', firstMessage:'', title:'Grilling · Sample ticket 1'}), then wait 5 seconds.",
+      "expected": "The tab \"Grilling · Sample ticket 1\" after PRD with an orange dot. Clicking it shows \"The agent tab is not built yet.\""
+    },
+    {
+      "key": "app/plus-generic",
+      "criterion": "\"+\" opens the screen registered as generic-agent",
+      "steps": "Click \"+\".",
+      "expected": "\"+\" highlighted and \"The generic agent tab is not built yet.\""
+    },
+    {
+      "key": "app/windows-fallback",
+      "criterion": "The blur fallback works",
+      "steps": "In the console run document.body.classList.add('no-glass').",
+      "expected": "The panels turn nearly opaque white, with all text still readable."
+    }
+  ],
+  "no_qa_reason": null
+}

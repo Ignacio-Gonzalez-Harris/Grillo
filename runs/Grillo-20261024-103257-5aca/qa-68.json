@@ -1,0 +1,26 @@
+{
+  "run_id": "Grillo-20261024-103257-5aca",
+  "issue": 68,
+  "title": "App update check with the update offer over IPC and the auto-update setting",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 117,
+  "merged_at": "2026-10-24T10:56:44Z",
+  "merge_commit": "63e68454b760af69b91b9b8fe1a4483d8f68e9cc",
+  "seam": "src/main/features/updates/, src/shared/updates.ts",
+  "story": "Grillo now looks for a newer version on its GitHub Releases page when it starts and every hour after that, and sends the offer, the download progress and ready-to-install to the setup screen, which draws the update card in its own story. There is no pop-up window. With the App updates switch on, the new version downloads quietly and installs when Grillo closes; an unsigned Mac build only offers a manual install, and npm run dev never checks at all.",
+  "checks": [
+    {
+      "key": "updates/dev-run-skips-check",
+      "criterion": "An unsigned build or a dev run never errors loudly; the check logs and returns",
+      "steps": "In a fresh checkout run npm ci, set GRILLO_DEV_PORT, run npm run dev, and watch the terminal for 20 seconds.",
+      "expected": "The line \"Update check skipped: this is a development run, not an installed app\", and no error or stack trace."
+    },
+    {
+      "key": "updates/state-over-ipc",
+      "criterion": "The setup screen can read the update state and change the auto-update setting",
+      "steps": "With npm run dev open, open DevTools and run await window.grillo.invoke('updates:get-state'). Then run await window.grillo.invoke('updates:set-auto-update', true), close Grillo, and open the app data folder's settings.json.",
+      "expected": "The state is { currentVersion: '0.1.0', phase: 'none', version: null, percent: null, autoUpdate: false, manualInstall: false } on Windows (manualInstall: true on a Mac). The second call returns autoUpdate: true, and settings.json holds \"autoUpdate\": true."
+    }
+  ],
+  "no_qa_reason": null
+}

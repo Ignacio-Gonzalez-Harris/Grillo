@@ -1,0 +1,56 @@
+{
+  "run_id": "Grillo-20261024-103257-5aca",
+  "issue": 70,
+  "title": "App shell: screen registry, fixed navigation tabs, project tab bar with agent tabs and \"+\", liquid-glass components from the tokens",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T10:32:57Z",
+  "finished_at": "2026-10-24T11:04:14Z",
+  "outcome": "merged",
+  "pr": 119,
+  "summary": "The renderer now opens in the liquid-glass frame from the prototype: screens self-register, fixed tabs Setup, Project, Map, Tickets and PRD, one tab per running agent with its waiting dot, a \"+\" tab, glass DOM components and a lint test that refuses any colour or spacing value outside the token file.",
+  "agents": [
+    {
+      "name": "dev-70",
+      "model": "opus",
+      "tokens_total": 206939
+    },
+    {
+      "name": "review-70",
+      "model": "opus",
+      "tokens_total": 137469
+    },
+    {
+      "name": "review-70-r2",
+      "model": "opus",
+      "tokens_total": 125224
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 973,
+    "review_seconds": 500,
+    "ci_seconds": 180
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/app/",
+      "what": "The per-agent-tab header slot is reachable only through the ShellContext passed to a screen mount, and the shell raises nothing when an agent tab is created, so the Open channel switch cannot appear on a new agent tab while another screen (Map) is open",
+      "why": "Needs a small shell API decision (a hook on agent tab creation); the agent tab story (issue #78) would otherwise have to work outside its seam",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/app/tab-bar.ts",
+      "what": "setAgents re-appends every agent tab on each agents:list-changed, so a keyboard user focused on an agent tab or a control in its header slot loses focus whenever any agent waiting dot or title changes",
+      "why": "Raised by the confirming review after the first approval, so recorded instead of another round",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

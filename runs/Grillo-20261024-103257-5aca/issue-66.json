@@ -1,0 +1,51 @@
+{
+  "run_id": "Grillo-20261024-103257-5aca",
+  "issue": 66,
+  "title": "Audio capture: microphone on both systems, call audio on Windows, Mac microphone permission check",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T10:32:57Z",
+  "finished_at": "2026-10-24T10:51:10Z",
+  "outcome": "merged",
+  "pr": 118,
+  "summary": "Grillo can record the room microphone on Windows and Mac and the call audio on Windows as 5-second 16 kHz mono slices sent to the main process, with a microphone permission check and device choice; nothing on screen yet.",
+  "agents": [
+    {
+      "name": "dev-66",
+      "model": "opus",
+      "tokens_total": 148626
+    },
+    {
+      "name": "review-66",
+      "model": "opus",
+      "tokens_total": 114405
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 669,
+    "review_seconds": 242,
+    "ci_seconds": 60
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/preload/",
+      "what": "window.grillo has no type in renderer code because tsc ignores src/preload/index.d.ts beside src/preload/index.ts; the app shell story re-declared it in src/renderer/main.ts, so two declarations must now be kept in step and every screen story meets this",
+      "why": "Outside the seams of the audio capture and app shell stories",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/audio/",
+      "what": "Nothing listens for a media track ending: if the picked microphone is unplugged or Windows ends the call-audio share mid-capture, capture stays running, only silence arrives and no error reaches anyone, so a meeting loses its audio while the screen says it is recording",
+      "why": "Needs a mid-capture event channel to the session, a design choice for the grilling session story (issue #84), whose seam is the main-process session folder",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
