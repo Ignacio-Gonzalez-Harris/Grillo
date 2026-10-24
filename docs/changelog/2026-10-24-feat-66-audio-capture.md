@@ -1,0 +1,1 @@
+Grillo captures the room microphone (Windows and Mac) and the call audio (Windows) as 5-second slices for local transcription, checks the microphone permission first and lets the member pick the microphone.
