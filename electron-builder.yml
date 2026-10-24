@@ -1,0 +1,44 @@
+# Packaging. Product identity (productName, appId, targets) is fixed by issue 56 and never changes after the
+# first release; after the scaffold only the signing story edits this file.
+appId: com.grillo.app
+productName: Grillo
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - out/**/*
+  - package.json
+
+# Files shipped beside the app (skills, the project template): resources/<path> in the repository
+# becomes <process.resourcesPath>/<path> in the installed app.
+extraResources:
+  - from: resources/
+    to: .
+
+# Native modules cannot load from inside the asar archive.
+asarUnpack:
+  - "**/*.node"
+  - "**/node_modules/node-pty/**"
+
+# Rebuild native dependencies for Electron's ABI while packaging.
+npmRebuild: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+mac:
+  target: [dmg, zip]
+  category: public.app-category.productivity
+  extendInfo:
+    NSMicrophoneUsageDescription: Grillo records the meeting you host so its agent can listen to the answers.
+    NSAudioCaptureUsageDescription: Grillo captures the call's audio so remote participants' answers are heard too.
+    NSScreenCaptureUsageDescription: Grillo needs screen and system audio capture to hear the call's other participants.
+
+publish:
+  provider: github
+  owner: Ignacio-Gonzalez-Harris
+  repo: Grillo

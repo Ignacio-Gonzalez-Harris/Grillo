@@ -52,8 +52,7 @@ permissions, the do-not-build list, the demo as the acceptance bar, the build de
 ## 5 · Build and test commands
 
 **The stack is decided by PRD v1 (section 8, Build decisions): Electron, one TypeScript codebase for Windows and
-Mac.** Every agent uses exactly these commands. **The scaffold story** (the first story cut from the PRD) makes them
-true; until it lands there is nothing to build or test, and a pull request says so in its body.
+Mac.** Every agent uses exactly these commands. The scaffold has landed (issue #56), so every command below is real.
 
 | Purpose | Command |
 |---|---|
@@ -80,7 +79,7 @@ same chain CI runs.
   path: `src/` (`src/main/`, `src/preload/`, `src/renderer/`). Skip-count baseline: **0**.
 - **CI** is GitHub Actions (`.github/workflows/ci.yml`) on GitHub-hosted **Windows and Mac** runners: every pull
   request runs the gate chain above on both; installers are built only when a version is published (PRD section 8,
-  CI). Until the scaffold lands, CI runs only orion's install check, and the scaffold story adds the gate steps.
+  CI). Each runner also runs orion's install check before the gate.
 - Kill a server **by process id, never by image or process name** — you will kill a teammate's.
 - **Never commit a secret.**
 

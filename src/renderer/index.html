@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    />
+    <title>Grillo</title>
+    <style>
+      /* The liquid glass backdrop, as in the UX prototype (docs/ux/prototypes/grillo/index.html). */
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        font-family: var(--font-family-ui);
+        font-size: var(--font-size-m);
+        font-weight: var(--font-weight-regular);
+        line-height: 1.45;
+        color: var(--color-text);
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 15% 8%, var(--color-backdrop-glow), transparent 38%),
+          radial-gradient(circle at 85% 90%, var(--color-backdrop-glow), transparent 32%),
+          linear-gradient(135deg, var(--color-backdrop-1), var(--color-backdrop-2) 50%, var(--color-backdrop-3));
+        background-attachment: fixed;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

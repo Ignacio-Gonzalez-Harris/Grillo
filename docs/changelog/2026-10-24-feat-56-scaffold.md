@@ -1,0 +1,1 @@
+Scaffolded the Electron + TypeScript app (typed IPC bridge, feature discovery, settings, packaging) and put the build, lint, typecheck and test gate in CI on Windows and Mac, so every later story has a real gate to pass.
