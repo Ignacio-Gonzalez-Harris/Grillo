@@ -3,8 +3,8 @@ import type { Updater } from './updates';
 
 /**
  * A stand-in for electron-updater's `autoUpdater`, for tests. Like the real one it emits `update-available` during a
- * check, starts the download by itself when `autoDownload` is on, and both emits `error` and rejects when a check or a
- * download fails. Its flags start at the library's defaults (both true).
+ * check, starts the download by itself when `autoDownload` is on and hands it back as `downloadPromise` without
+ * waiting for it, and both emits `error` and rejects when a check or a download fails. Its flags start at the library's defaults (both true).
  */
 export function createFakeUpdater() {
   const emitter = new EventEmitter();
@@ -47,13 +47,12 @@ export function createFakeUpdater() {
         emitter.emit('error', state.checkFailure);
         throw state.checkFailure;
       }
-      if (state.published !== null) {
-        emitter.emit('update-available', { version: state.published });
-        if (updater.autoDownload) {
-          await download();
-        }
+      if (state.published === null) {
+        return null;
       }
-      return null;
+      emitter.emit('update-available', { version: state.published });
+      // As in electron-updater, the automatic download runs on: the check answers without waiting for it.
+      return { downloadPromise: updater.autoDownload ? download() : null };
     },
     downloadUpdate: download,
     quitAndInstall(isSilent, isForceRunAfter) {

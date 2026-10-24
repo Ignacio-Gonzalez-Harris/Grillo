@@ -15,7 +15,8 @@ export interface Updater {
   autoDownload: boolean;
   autoInstallOnAppQuit: boolean;
   on(event: UpdaterEvent, listener: (payload: unknown) => void): unknown;
-  checkForUpdates(): Promise<unknown>;
+  /** With `autoDownload` on, the answer carries the download it started, which runs on after the check. */
+  checkForUpdates(): Promise<{ downloadPromise?: Promise<unknown> | null } | null>;
   downloadUpdate(): Promise<unknown>;
   quitAndInstall(isSilent?: boolean, isForceRunAfter?: boolean): void;
 }
@@ -152,7 +153,10 @@ export function createUpdatesFeature(options: UpdatesFeatureOptions): UpdatesFea
     }
     checking = true;
     try {
-      await updater.checkForUpdates();
+      const result = await updater.checkForUpdates();
+      // A failed silent download is already logged and undone by the `error` listener; this keeps it from also
+      // surfacing as an unhandled rejection.
+      result?.downloadPromise?.catch(() => undefined);
     } catch (error) {
       log.warn(`Update check failed: ${describe(error)}`);
     } finally {

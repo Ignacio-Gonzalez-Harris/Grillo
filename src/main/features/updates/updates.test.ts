@@ -209,6 +209,28 @@ describe('app update check', () => {
     feature.stop();
   });
 
+  it('a failed silent download with autoUpdate on is logged once, never left as an unhandled rejection', async () => {
+    vi.useRealTimers();
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    try {
+      const settings = memorySettings({ [AUTO_UPDATE_SETTING]: true });
+      const { feature, client, state, log } = setUp({ settings });
+      state.published = '1.1.0';
+      state.downloadFailure = new Error('net::ERR_CONNECTION_RESET');
+      feature.start();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(unhandled).not.toHaveBeenCalled();
+      expect(log.warn).toHaveBeenCalledTimes(1);
+      expect(log.warn).toHaveBeenCalledWith(expect.stringMatching(/ERR_CONNECTION_RESET/));
+      expect(await client.getUpdateState()).toMatchObject({ phase: 'available', version: '1.1.0' });
+      feature.stop();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
+  });
+
   it('ignores malformed updater answers instead of throwing', async () => {
     const { feature, client, updater, log, events } = setUp();
     feature.start();
