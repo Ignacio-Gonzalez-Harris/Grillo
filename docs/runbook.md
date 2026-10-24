@@ -32,7 +32,27 @@ A signed-out `gh` is reported as signed out, never as an error.
 
 ## Projects
 
-Nothing to do yet: project creation and invitations arrive with their own story.
+The project screens arrive with their own stories. What already works underneath them, through `gh` and `git`:
+
+- **Before anything works:** `gh` is signed in, `git` is installed, and `git` can push to GitHub as you
+  (`gh auth setup-git` once, plus `git config --global user.name` and `user.email`). Without that, a save stops
+  with the error `git` printed.
+- **The project folder** is `~/Grillo/<owner>/<repo>`: cloned with `gh repo clone` the first time, brought up to
+  date with `git pull --ff-only` after that. Every agent runs there. If it holds changes that are not on GitHub,
+  opening the project stops and lists them; Grillo never resets or deletes them. Save or discard them yourself.
+- **A new project** is a new private repository in the organisation you pick, tagged with the topic
+  `grillo-created`, with Grillo's labels and a `.grillo/` folder (`members.json`, `structure.json`) on main.
+- **Connecting an existing repository** needs write access and issues turned on. A repository that already
+  holds a Grillo project opens that project. With write access only, inviting, removing people, closing and
+  reopening are refused with the reason: GitHub keeps those for repository admins.
+- **Invitations** are GitHub repository invitations: an admin in a repository Grillo created, write access in
+  a connected one. Pending invitations to you are listed and accepted inside Grillo.
+- **Saves** go through the project folder: commit, then push to main. If someone pushed first, Grillo pulls and
+  saves again, renumbering a new source or PRD version to the next free number. If main is protected, Grillo
+  pushes a `grillo/save-<time>` branch and opens a pull request instead; main changes once someone merges it.
+- **Closing a project** archives its repository (admins only): everything stays readable and every change is
+  refused until someone reopens it.
+- **The project list** is the recent projects on this laptop (opened before), minus any whose repository is gone.
 
 ## Map and tickets
 

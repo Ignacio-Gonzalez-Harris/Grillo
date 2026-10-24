@@ -72,7 +72,7 @@ describe('store IPC round trip through the in-process fake', () => {
   it.each([
     ['memory', 'GRILLO_STORE=memory', async (client: Store) => expect(await client.listProjects()).toEqual([])],
     ['GitHub', 'GRILLO_STORE unset', async (client: Store) =>
-      expect(await client.listProjects().catch((error: StoreError) => error.kind)).toBe('not-implemented')],
+      expect(await client.getMap('example-org/demo').catch((error: StoreError) => error.kind)).toBe('not-implemented')],
   ])('registers the %s store as the app feature when %s', async (_kind, setting, check) => {
     vi.stubEnv('GRILLO_STORE', setting === 'GRILLO_STORE=memory' ? 'memory' : '');
     const bridge = connect();
