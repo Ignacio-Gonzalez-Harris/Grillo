@@ -22,4 +22,20 @@ describe('native modules in Electron', () => {
     },
     ELECTRON_START_BUDGET_MS,
   );
+
+  // Kept in this file on purpose: the electron package downloads its binary on first import, so a second test file
+  // importing it in parallel on a fresh CI runner races that download and corrupts the binary.
+  it(
+    "the whisper.cpp binding loads in Electron's runtime",
+    () => {
+      const stdout = execFileSync(String(electronBinary), [join(__dirname, 'fixtures', 'whisper-load.cjs')], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        encoding: 'utf8',
+        timeout: ELECTRON_START_BUDGET_MS,
+      });
+
+      expect(JSON.parse(stdout)).toEqual({ electron: expect.any(String), hasWhisperContext: true });
+    },
+    ELECTRON_START_BUDGET_MS,
+  );
 });
