@@ -1,0 +1,79 @@
+{
+  "run_id": "Grillo-20261024-091055-e3b1",
+  "issue": 63,
+  "title": "Store contract: record types, the one store interface, in-memory store, gh runner, store IPC and the Grillo folder layout rules",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T09:12:52Z",
+  "finished_at": "2026-10-24T09:54:46Z",
+  "outcome": "merged",
+  "pr": 114,
+  "summary": "Adds Grillo's one store interface over the PRD records, a full in-memory store, the typed gh runner, one IPC channel per store method plus settings, and the store layout document that pins every file and comment format; the GitHub backends are stubs.",
+  "agents": [
+    {
+      "name": "dev-63",
+      "model": "opus",
+      "tokens_total": 209768
+    },
+    {
+      "name": "review-63",
+      "model": "opus",
+      "tokens_total": 174407
+    },
+    {
+      "name": "review-63-r2",
+      "model": "opus",
+      "tokens_total": 174645
+    },
+    {
+      "name": "review-63-r3",
+      "model": "opus",
+      "tokens_total": 160597
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1303,
+    "review_seconds": 1074,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 3,
+    "ci": 1
+  },
+  "friction": [
+    "The store contract took three review rounds because the layout document named files and comments without pinning their contents; each round found more unpinned formats that issues #73, #74, #75 and #77 would have invented separately"
+  ],
+  "lessons_learned": [
+    "A contract story that several backends and skills read must pin every file and comment format field by field, not only name the files"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/preload/",
+      "what": "A channel whose response type is `unknown` breaks the typecheck of `createGrilloApi`; the next story declaring such a response hits the same error (worked around here for `settings:get` with a JSON value type)",
+      "why": "Outside this issue's seam",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "docs/store-layout.md",
+      "what": "The layout document says `members.json` holds only login, role and domains (as PRD section 6.1 does), while issue #73 (GitHub repository backend) has an acceptance criterion that it holds login, name, email, role and domains; the issue #73 run must pick one",
+      "why": "The correction belongs on issue #73",
+      "owner": "issue #73 (GitHub backend: repositories, members, invites)"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/memory/",
+      "what": "`addDecision` adds a settled map line per decision, so one closed ticket can hold several lines (two decisions, or a decision then a merge), against the one-line-per-closed-ticket rule; the outdated gist stays beside the current one",
+      "why": "Found on the confirming review, no further round",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/memory/",
+      "what": "`duplicateOf` is read from the latest merge decision rather than the latest decision, so a merge that was undone and later decided on its own still reads as a duplicate",
+      "why": "Found on the confirming review, no further round",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

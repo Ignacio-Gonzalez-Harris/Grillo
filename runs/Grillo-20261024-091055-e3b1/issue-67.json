@@ -1,0 +1,58 @@
+{
+  "run_id": "Grillo-20261024-091055-e3b1",
+  "issue": 67,
+  "title": "Tool detection and GitHub identity: Claude Code and gh installed and signed in, login, name and email, guidance text",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T09:13:19Z",
+  "finished_at": "2026-10-24T09:41:32Z",
+  "outcome": "merged",
+  "pr": 112,
+  "summary": "Grillo's main process now checks whether Claude Code and gh are installed and signed in (with a 10-second cache and structured guidance) and reads the member's GitHub login, name and email, over two IPC channels for the later setup screen.",
+  "agents": [
+    {
+      "name": "dev-67",
+      "model": "opus",
+      "tokens_total": 156435
+    },
+    {
+      "name": "review-67",
+      "model": "opus",
+      "tokens_total": 107275
+    },
+    {
+      "name": "review-67-r2",
+      "model": "opus",
+      "tokens_total": 112079
+    },
+    {
+      "name": "review-67-r3",
+      "model": "opus",
+      "tokens_total": 101578
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 655,
+    "review_seconds": 754,
+    "ci_seconds": 120
+  },
+  "rounds": {
+    "review": 3,
+    "ci": 1
+  },
+  "friction": [
+    "A round-1 Fix now (`gh auth status --active`) introduced a regression on gh older than 2.57.0, costing a whole extra review round"
+  ],
+  "lessons_learned": [
+    "A fix that adds a command-line flag checks which tool version introduced it and keeps a fallback for older versions"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/features/tools/",
+      "what": "When a member keeps their GitHub email private the identity email comes back empty, because the email-list fallback needs the `user:email` scope that a plain `gh auth login --web` does not grant",
+      "why": "The acceptance criteria fix the sign-in command as exactly `gh auth login --web`; the runbook gives the refresh command",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

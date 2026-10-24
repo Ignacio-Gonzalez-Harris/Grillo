@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261024-091055-e3b1",
+  "issue": 64,
+  "title": "Agent runtime: Claude Code in an embedded pty in the project folder, skills shipped safely, first message, tab metadata, waiting dot",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T09:13:02Z",
+  "finished_at": "2026-10-24T09:44:38Z",
+  "outcome": "merged",
+  "pr": 115,
+  "summary": "Grillo can now start the member's own Claude Code in an embedded pty in the project folder, ship its grillo-* skills safely (kept out of git, tracked copies never overwritten), type the first message once the input box appears, and track each agent's tab name and waiting dot.",
+  "agents": [
+    {
+      "name": "dev-64",
+      "model": "opus",
+      "tokens_total": 159128
+    },
+    {
+      "name": "review-64",
+      "model": "opus",
+      "tokens_total": 118411
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1327,
+    "review_seconds": 271,
+    "ci_seconds": 130
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [
+    "Claude Code's folder-trust question defaults to 'No, exit': anything typing into a fresh Claude Code session must wait for the input box, not for any output"
+  ],
+  "deferred": []
+}

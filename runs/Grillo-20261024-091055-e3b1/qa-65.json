@@ -1,0 +1,13 @@
+{
+  "run_id": "Grillo-20261024-091055-e3b1",
+  "issue": 65,
+  "title": "Local transcription engine: whisper.cpp base.en on the laptop, 5-second slices with a queue, model download on first use, model update setting",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 113,
+  "merged_at": "2026-10-24T09:38:20Z",
+  "merge_commit": "6c712c4e4885e606352162375830888b27dbabfd",
+  "seam": "src/main/features/transcription/",
+  "story": "Grillo can now turn speech into text on the laptop with whisper.cpp base.en. On first use it downloads the model, checks it and keeps it in the app data folder; a speechModelUpdates setting decides what happens when a newer model is published. Nothing a user sees has changed yet.",
+  "checks": [],
+  "no_qa_reason": "Main-process code and IPC channels only, no screen; a person can drive it once the meeting panel and the setup check screen are built."
+}

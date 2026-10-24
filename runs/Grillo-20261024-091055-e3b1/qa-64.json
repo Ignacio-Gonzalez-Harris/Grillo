@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261024-091055-e3b1",
+  "issue": 64,
+  "title": "Agent runtime: Claude Code in an embedded pty in the project folder, skills shipped safely, first message, tab metadata, waiting dot",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 115,
+  "merged_at": "2026-10-24T09:44:38Z",
+  "merge_commit": "7d2baffbfa248ff2c3177de2d93125ad11c76d8f",
+  "seam": "src/main/features/agents/",
+  "story": "Grillo can now start a member's own Claude Code inside the project folder in an embedded terminal. It copies its grillo-* skills in first, keeping them out of git and never overwriting a copy the project tracks, waits for Claude Code's input box so the folder-trust question stays the member's choice, then types the first message. The terminal tab that shows this comes in a later story; before this no agent could be started at all.",
+  "checks": [
+    {
+      "key": "src/main/features/agents/first-message",
+      "criterion": "Grillo starts Claude Code in the project folder and types the first message, then Enter, once the prompt appears",
+      "steps": "Install Claude Code and sign in. git init a made-up project folder. In Grillo, start a grilling agent on a made-up ticket 'Login flow' for that folder. If asked whether you trust the folder, choose 'Yes, I trust this folder'.",
+      "expected": "Claude Code's screen in the tab; the first message appears only after the trust question, is sent without pressing Enter, and Claude starts answering."
+    },
+    {
+      "key": "src/main/features/agents/shipped-skills",
+      "criterion": "grillo-* skills are copied into <folder>/.claude/skills/ on every start, tracked files never overwritten, copies kept out of git, no CLAUDE.md written",
+      "steps": "In the made-up project, commit .claude/skills/grillo-<any shipped skill>/SKILL.md with the text 'project copy'. Start an agent on that folder. Run git status and open .git/info/exclude.",
+      "expected": "The committed file still says 'project copy' and a warning naming it is logged; other skill files present; git status clean; .git/info/exclude lists /.claude/skills/grillo-*/ once per skill; no new CLAUDE.md."
+    },
+    {
+      "key": "src/main/features/agents/waiting-dot",
+      "criterion": "The tab is named '<kind> · <ticket>' and shows the waiting dot after 3 seconds of silence; the dot clears on the next output",
+      "steps": "Start a grilling agent for the made-up ticket 'Login flow'. Wait until Claude finishes replying. Type a message.",
+      "expected": "The tab reads 'Grilling · Login flow'; the dot appears about 3 seconds after output stops and disappears when Claude prints again."
+    },
+    {
+      "key": "src/main/features/agents/several-at-once",
+      "criterion": "Several agents run at once, and stopping one leaves the others running",
+      "steps": "Start three agents (grilling, research, generic) on the made-up project. Stop the research agent.",
+      "expected": "The research tab goes away; the other two keep running and respond to typing."
+    },
+    {
+      "key": "src/main/features/agents/claude-missing",
+      "criterion": "A clear error appears when claude is not on PATH",
+      "steps": "Launch Grillo with a PATH that has no claude on it. Start any agent.",
+      "expected": "The message 'Claude Code was not found: there is no `claude` command on PATH. Install Claude Code, sign in with your Claude subscription, then start the agent again.'; no agent starts."
+    }
+  ],
+  "no_qa_reason": null
+}

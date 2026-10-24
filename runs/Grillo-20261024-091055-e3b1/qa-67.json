@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261024-091055-e3b1",
+  "issue": 67,
+  "title": "Tool detection and GitHub identity: Claude Code and gh installed and signed in, login, name and email, guidance text",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 112,
+  "merged_at": "2026-10-24T09:41:32Z",
+  "merge_commit": "a3408f2d5c99b2d31bdd204d79cd68d6b5320bd9",
+  "seam": "src/main/features/tools/",
+  "story": "Grillo's main process now checks whether Claude Code and the GitHub command-line tool are installed and signed in, and reads who the member is on GitHub. Two new channels, tools:check and tools:identity, feed the setup screen that comes later. There is no screen yet, and nothing earlier was replaced.",
+  "checks": [
+    {
+      "key": "src/main/features/tools/detect-signed-in",
+      "criterion": "Grillo reports Claude Code and gh as installed and signed in, with versions and no guidance",
+      "steps": "On a laptop where claude and gh are installed and signed in, start Grillo with npm run dev. In the developer tools console run: await window.grillo.invoke('tools:check', {})",
+      "expected": "Both tools installed and signed in, each with a version number; guidance is null."
+    },
+    {
+      "key": "src/main/features/tools/detect-signed-out",
+      "criterion": "A signed-out tool gets the exact sign-in command",
+      "steps": "Run gh auth logout, then in the console: await window.grillo.invoke('tools:check', { force: true })",
+      "expected": "gh shows signed in false, with guidance { action: 'sign-in', command: 'gh auth login --web' }."
+    },
+    {
+      "key": "src/main/features/tools/detect-cache",
+      "criterion": "Results are cached for 10 seconds; a forced check asks again",
+      "steps": "After signing gh back in, call tools:check with {} within 10 seconds of the previous check, then with { force: true }.",
+      "expected": "The first call still shows the old signed-out result; the forced call shows signed in."
+    },
+    {
+      "key": "src/main/features/tools/identity",
+      "criterion": "Grillo reads the GitHub login, name and email, and reports a signed-out gh as a typed result",
+      "steps": "Run await window.grillo.invoke('tools:identity', undefined) while signed in, then again after gh auth logout.",
+      "expected": "First { ok: true, identity: { login, name, email } } (email may be null), then { ok: false, reason: 'signed-out' }."
+    }
+  ],
+  "no_qa_reason": null
+}

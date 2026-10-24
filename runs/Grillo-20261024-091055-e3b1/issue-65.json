@@ -1,0 +1,60 @@
+{
+  "run_id": "Grillo-20261024-091055-e3b1",
+  "issue": 65,
+  "title": "Local transcription engine: whisper.cpp base.en on the laptop, 5-second slices with a queue, model download on first use, model update setting",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T09:13:10Z",
+  "finished_at": "2026-10-24T09:38:20Z",
+  "outcome": "merged",
+  "pr": 113,
+  "summary": "Grillo can now transcribe speech on the laptop with whisper.cpp base.en through @fugood/whisper.node: model downloaded on first use and checked by size and SHA-256, 5-second slices through a queue, and a speechModelUpdates setting (automatic, ask, never; default ask).",
+  "agents": [
+    {
+      "name": "dev-65",
+      "model": "opus",
+      "tokens_total": 178990
+    },
+    {
+      "name": "review-65",
+      "model": "opus",
+      "tokens_total": 124337
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1164,
+    "review_seconds": 250,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [
+    "The first Mac CI run went red because two test files importing electron raced its first-use binary download on a fresh runner"
+  ],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": ".github/workflows/ and test setup",
+      "what": "The electron package downloads its binary the first time a test imports it; two test files importing it in parallel on a fresh CI runner race that download and corrupt Electron, so any story adding a second Electron test file turns CI red",
+      "why": "Needs a CI pre-download step or a single Electron test file, outside this issue",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "electron-builder.yml",
+      "what": "On Windows npm installs the binding's CUDA (about 120 MB), Vulkan (about 40 MB) and WASM variants, which the app never loads; electron-builder ships them, growing the installer by about 170 MB",
+      "why": "The packaging config belongs to the signing story and npm run dist is outside the gate",
+      "owner": "issue #85 (signing configuration in the release workflow)"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/features/transcription/",
+      "what": "On a busy machine a 4-second slice took 3.2 to 4.2 seconds against the PRD's 1 to 2 second assumption (PRD section 13); if slices take longer than they last, the queue grows during a meeting",
+      "why": "Thread count did not help; audio-context tuning is outside this issue",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

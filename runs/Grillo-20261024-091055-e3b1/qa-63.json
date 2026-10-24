@@ -1,0 +1,26 @@
+{
+  "run_id": "Grillo-20261024-091055-e3b1",
+  "issue": 63,
+  "title": "Store contract: record types, the one store interface, in-memory store, gh runner, store IPC and the Grillo folder layout rules",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 114,
+  "merged_at": "2026-10-24T09:54:46Z",
+  "merge_commit": "8eb4d969b8d3a33c0315da980b96f6085ae14983",
+  "seam": "src/main/store/",
+  "story": "This issue added Grillo's one store interface over the PRD records, a full in-memory version and the typed gh runner, with one IPC channel per store method plus settings channels. No screen changed. The only thing a user can drive is the GRILLO_STORE setting: memory gives made-up data, and leaving it unset gives GitHub, whose every call answers 'not implemented yet' until issues #73 and #74 land.",
+  "checks": [
+    {
+      "key": "src/main/store/memory-backend-start",
+      "criterion": "The store feature registers when the app starts, and GRILLO_STORE picks the backend",
+      "steps": "In a fresh checkout of main, run npm ci. Set GRILLO_STORE=memory and GRILLO_DEV_PORT=5173, then run npm run dev.",
+      "expected": "The terminal shows 'starting electron app...', the Grillo window opens, and no error lines appear."
+    },
+    {
+      "key": "src/main/store/unknown-backend-refused",
+      "criterion": "An unknown GRILLO_STORE value is refused by name",
+      "steps": "Set GRILLO_STORE=bogus, then run npm run dev.",
+      "expected": "The terminal shows \"GRILLO_STORE must be 'memory' or 'github', got 'bogus'\", and no Grillo window opens."
+    }
+  ],
+  "no_qa_reason": null
+}
