@@ -112,7 +112,7 @@ export function parseMembers(content: string, file: string): MemberLine[] {
       }
       return { login, role: text(entry.role, 'role'), domains: textList(entry.domains, 'domains') };
     });
-    if (new Set(lines.map((line) => line.login)).size !== lines.length) {
+    if (new Set(lines.map((line) => line.login.toLowerCase())).size !== lines.length) {
       malformed('a login appears twice');
     }
     return lines;

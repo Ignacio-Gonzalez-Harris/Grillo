@@ -189,6 +189,43 @@ describe('GitHub repository backend: members and invitations', () => {
     expect((await refusal(store.addMember(PROJECT, { login: 'ben/../x', role: '', domains: [] }))).kind).toBe('invalid');
   });
 
+  it('keeps the login as GitHub spells it, so removing the member typed in any case withdraws their invitation', async () => {
+    const { store, seed } = await setup();
+    const repository = seed();
+
+    const added = await store.addMember(PROJECT, { login: 'ben-EXAMPLE', role: 'product', domains: [] });
+
+    expect(added.login).toBe('ben-example');
+    expect(repository.invitations.map((invitation) => invitation.invitee)).toEqual(['ben-example']);
+    expect((remoteJson(repository, '.grillo/members.json') as { login: string }[]).map((line) => line.login)).toEqual(['ada-example', 'ben-example']);
+    expect((await refusal(store.addMember(PROJECT, { login: 'BEN-example', role: '', domains: [] }))).kind).toBe('conflict');
+
+    await store.removeMember(PROJECT, 'ben-EXAMPLE');
+
+    expect(repository.invitations).toEqual([]);
+    expect((remoteJson(repository, '.grillo/members.json') as { login: string }[]).map((line) => line.login)).toEqual(['ada-example']);
+  });
+
+  it('refuses to invite a login with no GitHub account, inviting nobody and writing nothing', async () => {
+    const { store, seed } = await setup();
+    const repository = seed();
+    const before = repository.version;
+
+    expect((await refusal(store.addMember(PROJECT, { login: 'cy-example', role: '', domains: [] }))).kind).toBe('invalid');
+    expect(repository.invitations).toEqual([]);
+    expect(repository.version).toBe(before);
+  });
+
+  it('matches logins without case when reading members and starting sessions', async () => {
+    const { store, github, seed } = await setup();
+    seed();
+    github.me.login = 'Ada-Example';
+
+    await expect(store.currentMember(PROJECT)).resolves.toMatchObject({ role: 'developer', domains: ['platform'] });
+    await expect(store.getMember(PROJECT, 'ADA-EXAMPLE')).resolves.toMatchObject({ login: 'ada-example' });
+    await expect(store.createSession(PROJECT, { present: ['ADA-example'] })).resolves.toMatchObject({ present: ['ada-example'] });
+  });
+
   it('updates a member line, and removes a member with their pending invitation', async () => {
     const { store, seed } = await setup();
     const repository = seed();
@@ -301,6 +338,23 @@ describe('GitHub repository backend: Grillo folder files', () => {
     expect(notices).toEqual([{ project: PROJECT, url: `https://github.com/${PROJECT}/pull/1` }]);
     expect(readTree(folder())).toEqual(repository.files);
     expect(github.calls).toContain('git reset --keep HEAD~1');
+  });
+
+  it.each(['add', 'commit'] as const)('puts the files back when git %s fails, so the next save numbers from main again', async (step) => {
+    const { store, github, seed, folder } = await setup();
+    const repository = seed();
+    await store.openProjectFolder(PROJECT);
+    github.failNext(step, 'Author identity unknown');
+
+    const error = await refusal(store.createSource(PROJECT, SOURCE));
+    github.failNext(step, 'Author identity unknown');
+    await refusal(store.updateMember(PROJECT, 'ada-example', { role: 'lead' }));
+
+    expect(error).toMatchObject({ kind: 'backend', message: expect.stringContaining('Author identity unknown') });
+    expect(readTree(folder())).toEqual(repository.files);
+    await expect(store.openProjectFolder(PROJECT)).resolves.toBe(folder());
+    await expect(store.createSource(PROJECT, SOURCE)).resolves.toMatchObject({ code: 'S1' });
+    expect([...repository.files.keys()].filter((path) => path.startsWith('.grillo/sources/'))).toEqual(['.grillo/sources/S1.md']);
   });
 
   it('refuses to save over a Grillo file changed in the project folder but not saved, and keeps the change', async () => {

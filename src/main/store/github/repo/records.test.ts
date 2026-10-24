@@ -105,6 +105,7 @@ describe('Grillo folder records', () => {
     ['domains that are not a list of text', '[{"login":"ada-example","role":"","domains":[null]}]'],
     ['a role that is not text', '[{"login":"ada-example","role":3,"domains":[]}]'],
     ['the same login twice', '[{"login":"ada-example","role":"","domains":[]},{"login":"ada-example","role":"","domains":[]}]'],
+    ['the same login twice in different case', '[{"login":"ada-example","role":"","domains":[]},{"login":"Ada-Example","role":"","domains":[]}]'],
   ])('refuses a members file with %s as a backend error naming the file', (_case, text) => {
     expect(refusal(() => parseMembers(text, FILE))).toMatchObject({ kind: 'backend', message: expect.stringContaining(FILE) });
   });

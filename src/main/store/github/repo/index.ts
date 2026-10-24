@@ -17,6 +17,7 @@ import {
   numbersIn,
   projectIdOf,
   repositoryOf,
+  sameLogin,
   sessionIdOf,
   sourceNumberOf,
 } from './names';
@@ -134,6 +135,15 @@ function checkDomains(domains: unknown): string[] {
   return [...domains];
 }
 
+function lineOf(lines: MemberLine[], login: unknown): MemberLine | undefined {
+  return typeof login === 'string' ? lines.find((line) => sameLogin(line.login, login)) : undefined;
+}
+
+/** The members' logins as the members file spells them; a login of no member is refused. */
+function memberLoginsOf(lines: MemberLine[], logins: string[], id: ProjectId): string[] {
+  return logins.map((login) => lineOf(lines, login)?.login ?? refuse('invalid', `${login} is not a member of ${id}`));
+}
+
 const noGrilloProject = (id: ProjectId): never => refuse('not-found', `${id} holds no Grillo project`);
 
 /** Admin-only actions are refused with the reason the screen shows next to the greyed-out control. */
@@ -239,7 +249,7 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
     async currentMember(id) {
       const lines = await read(id, (files) => memberLines(files, id));
       const me = await api.identity();
-      const line = lines.find((entry) => entry.login === me.login);
+      const line = lineOf(lines, me.login);
       return { ...me, role: line?.role ?? '', domains: line?.domains ?? [] };
     },
     async viewerPermission(id) {
@@ -331,7 +341,7 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
     },
     async getMember(id, login) {
       const lines = await read(id, (files) => memberLines(files, id));
-      return withProfile(lines.find((line) => line.login === login) ?? refuse('not-found', `${String(login)} is not a member of ${id}`));
+      return withProfile(lineOf(lines, login) ?? refuse('not-found', `${String(login)} is not a member of ${id}`));
     },
     async addMember(id, member: NewMember) {
       const ref = repositoryOf(id);
@@ -341,25 +351,26 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
       if (!isLogin(login)) {
         refuse('invalid', `'${String(login)}' is not a GitHub login`);
       }
-      const line: MemberLine = { login, role: checkText(role, 'role'), domains: checkDomains(member.domains) };
+      const fields = { role: checkText(role, 'role'), domains: checkDomains(member.domains) };
       const lines = await folders.reading(ref, (files) => memberLines(files, id));
-      if (lines.some((entry) => entry.login === login)) {
+      if (lineOf(lines, login)) {
         refuse('conflict', `${login} is already a member of ${id}`);
       }
-      await api.invite(ref, login, repository.createdByGrillo ? 'admin' : 'push');
+      const account = (await api.account(login)) ?? refuse('invalid', `No GitHub account ${login}`);
+      const line: MemberLine = { login: account.login, ...fields };
+      await api.invite(ref, account.login, repository.createdByGrillo ? 'admin' : 'push');
       await folders.saving(ref, repository.defaultBranch, async (files) => {
-        const current = await memberLines(files, id);
-        const others = current.filter((entry) => entry.login !== login);
-        return { changes: [{ path: GRILLO_FILES.members, content: formatMembers([...others, line]) }], message: `grillo: add member ${login}`, result: undefined };
+        const others = (await memberLines(files, id)).filter((entry) => !sameLogin(entry.login, account.login));
+        return { changes: [{ path: GRILLO_FILES.members, content: formatMembers([...others, line]) }], message: `grillo: add member ${account.login}`, result: undefined };
       });
-      return withProfile(line);
+      return { ...account, ...fields };
     },
     async updateMember(id, login, patch) {
       const { role, domains: newDomains } = fieldsOf(patch, 'the member fields to change');
       const domains = newDomains === undefined ? undefined : checkDomains(newDomains);
       const updated = await save(id, async (files) => {
         const lines = await memberLines(files, id);
-        const line = lines.find((entry) => entry.login === login) ?? refuse('not-found', `${String(login)} is not a member of ${id}`);
+        const line = lineOf(lines, login) ?? refuse('not-found', `${String(login)} is not a member of ${id}`);
         const next: MemberLine = { ...line, role: role === undefined ? line.role : checkText(role, 'role'), domains: domains ?? line.domains };
         const content = formatMembers(lines.map((entry) => (entry === line ? next : entry)));
         return { changes: [{ path: GRILLO_FILES.members, content }], message: `grillo: update member ${login}`, result: next };
@@ -370,25 +381,19 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
       const ref = repositoryOf(id);
       const repository = await writable(ref);
       checkAdmin(repository, id, 'remove people');
-      await folders.saving(ref, repository.defaultBranch, async (files) => {
+      const removed = await folders.saving(ref, repository.defaultBranch, async (files) => {
         const lines = await memberLines(files, id);
-        if (!lines.some((entry) => entry.login === login)) {
-          refuse('not-found', `${String(login)} is not a member of ${id}`);
-        }
-        const content = formatMembers(lines.filter((entry) => entry.login !== login));
-        return { changes: [{ path: GRILLO_FILES.members, content }], message: `grillo: remove member ${login}`, result: undefined };
+        const line = lineOf(lines, login) ?? refuse('not-found', `${String(login)} is not a member of ${id}`);
+        const content = formatMembers(lines.filter((entry) => entry !== line));
+        return { changes: [{ path: GRILLO_FILES.members, content }], message: `grillo: remove member ${line.login}`, result: line.login };
       });
-      await api.uninvite(ref, login);
+      await api.uninvite(ref, removed);
     },
 
     async createSession(id, session) {
-      const present = checkLogins(fieldsOf(session, 'a new session').present);
+      const logins = checkLogins(fieldsOf(session, 'a new session').present);
       return save(id, async (files) => {
-        const members = new Set((await memberLines(files, id)).map((line) => line.login));
-        const stranger = present.find((login) => !members.has(login));
-        if (stranger !== undefined) {
-          refuse('invalid', `${stranger} is not a member of ${id}`);
-        }
+        const present = memberLoginsOf(await memberLines(files, id), logins, id);
         const started = now();
         const sessionId = sessionIdOf(started);
         if ((await files.read(GRILLO_FILES.session(sessionId))) !== null) {
@@ -419,12 +424,7 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
       return save(id, async (files) => {
         const session = await sessionIn(files, sessionId);
         if (present !== undefined) {
-          const members = new Set((await memberLines(files, id)).map((line) => line.login));
-          const stranger = present.find((login) => !members.has(login));
-          if (stranger !== undefined) {
-            refuse('invalid', `${stranger} is not a member of ${id}`);
-          }
-          session.present = [...present];
+          session.present = memberLoginsOf(await memberLines(files, id), present, id);
         }
         if (transcript !== undefined) {
           session.transcript = transcript;

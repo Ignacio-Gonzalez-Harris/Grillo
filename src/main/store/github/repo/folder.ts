@@ -33,6 +33,11 @@ export interface FolderReader {
   list(path: string): Promise<string[]>;
 }
 
+/** A change that differs from the folder; `existed` says whether its file is on main. */
+interface PendingChange extends FileChange {
+  existed: boolean;
+}
+
 /** Told when a save reached a protected main as a pull request: the screen tells the member. */
 export interface PullRequestNotice {
   project: ProjectId;
@@ -146,15 +151,16 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
   }
 
   /**
-   * Writes the changes that differ from what is there and returns their paths. A file the member changed in the
-   * folder without saving it is never written over: the save is refused instead.
+   * The changes that differ from what is there, each noting whether its file exists on main. A file the member
+   * changed in the folder without saving it is never written over: the save is refused instead.
    */
-  async function write(ref: RepositoryRef, changes: FileChange[]): Promise<string[]> {
+  async function pendingChanges(ref: RepositoryRef, changes: FileChange[]): Promise<PendingChange[]> {
     const files = reader(ref);
-    const changed: FileChange[] = [];
+    const changed: PendingChange[] = [];
     for (const change of changes) {
-      if ((await files.read(change.path)) !== (change.content === null ? null : unixLines(change.content))) {
-        changed.push(change);
+      const current = await files.read(change.path);
+      if (current !== (change.content === null ? null : unixLines(change.content))) {
+        changed.push({ ...change, existed: current !== null });
       }
     }
     const paths = changed.map((change) => change.path);
@@ -165,7 +171,11 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
         `The project folder ${pathOf(ref)} has changes to these files that are not on GitHub; save or discard them first:\n${unsaved}`,
       );
     }
-    for (const { path, content } of changed) {
+    return changed;
+  }
+
+  async function write(ref: RepositoryRef, changes: PendingChange[]): Promise<void> {
+    for (const { path, content } of changes) {
       const file = join(pathOf(ref), path);
       if (content === null) {
         await rm(file);
@@ -174,7 +184,31 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
         await writeFile(file, content, 'utf8');
       }
     }
-    return paths;
+  }
+
+  /** Unstages a save that never became a commit and puts its files back as main has them; other changes stay. */
+  async function discard(ref: RepositoryRef, changes: PendingChange[]): Promise<void> {
+    await gitOk(ref, ['reset', '-q', '--', ...changes.map((change) => change.path)]);
+    const onMain = changes.filter((change) => change.existed).map((change) => change.path);
+    if (onMain.length > 0) {
+      await gitOk(ref, ['checkout', '-q', 'HEAD', '--', ...onMain]);
+    }
+    for (const change of changes.filter((entry) => !entry.existed)) {
+      await rm(join(pathOf(ref), change.path), { force: true });
+    }
+  }
+
+  /** Writes and commits the changes; when that fails, the folder is left as main has it. */
+  async function commit(ref: RepositoryRef, changes: PendingChange[], message: string): Promise<void> {
+    const paths = changes.map((change) => change.path);
+    try {
+      await write(ref, changes);
+      await gitOk(ref, ['add', '--', ...paths]);
+      await gitOk(ref, ['commit', '-m', message, '--', ...paths]);
+    } catch (error) {
+      await discard(ref, changes).catch(() => undefined);
+      throw error;
+    }
   }
 
   /** Takes the save's commit back out and puts its files back as main has them; other changes stay. */
@@ -197,12 +231,11 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
     for (let attempt = 1; ; attempt++) {
       await update(ref);
       const { changes, message, result } = await plan(reader(ref));
-      const paths = await write(ref, changes);
-      if (paths.length === 0) {
+      const pending = await pendingChanges(ref, changes);
+      if (pending.length === 0) {
         return result;
       }
-      await gitOk(ref, ['add', '--', ...paths]);
-      await gitOk(ref, ['commit', '-m', message, '--', ...paths]);
+      await commit(ref, pending, message);
       const push = await runGit(ref, ['push', 'origin', `HEAD:${branch}`]);
       if (push.exitCode === 0) {
         return result;

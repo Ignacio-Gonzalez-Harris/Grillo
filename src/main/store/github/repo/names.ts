@@ -16,6 +16,11 @@ export function isLogin(value: unknown): value is string {
   return typeof value === 'string' && LOGIN.test(value);
 }
 
+/** GitHub logins ignore case: `Ben-Example` and `ben-example` are one account. */
+export function sameLogin(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
+}
+
 export function isRepositoryName(value: unknown): value is string {
   return typeof value === 'string' && REPOSITORY_NAME.test(value) && value !== '.' && value !== '..';
 }

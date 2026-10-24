@@ -50,6 +50,8 @@ interface Clone {
   /** The repository version the clone was last in step with. */
   base: number;
   commits: Commit[];
+  /** Paths added to the index and not yet committed. */
+  staged: Set<string>;
 }
 
 const ok = (stdout = ''): RunResult => ({ exitCode: 0, stdout, stderr: '' });
@@ -101,6 +103,10 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
   const calls: string[] = [];
   /** Runs once, just before the next push to a default branch: someone else saving first. */
   let beforePush: (() => void) | null = null;
+  /** The next `git add` or `git commit` fails with this message, as git does without an identity. */
+  let failing: { step: 'add' | 'commit'; stderr: string } | null = null;
+  /** GitHub logins ignore case: `users/BEN-example` answers with the account `ben-example`. */
+  const account = (login: string): FakeUser | undefined => [...users.values()].find((user) => user.login.toLowerCase() === login.toLowerCase());
 
   function addRepository(id: string, options: Partial<Omit<FakeRepository, 'files'>> & { files?: Record<string, string> } = {}): FakeRepository {
     const repository: FakeRepository = {
@@ -169,7 +175,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       return ok();
     }
     if ((match = /^GET users\/(.+)$/.exec(route))) {
-      const user = users.get(match[1]);
+      const user = account(match[1]);
       return user ? json(user) : notFound();
     }
     if ((match = /^(\w+) repos\/([^/]+\/[^/?]+)(.*)$/.exec(route))) {
@@ -184,8 +190,9 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       if ((match = /^\/collaborators\/(.+)$/.exec(rest))) {
         const login = match[1];
         if (verb === 'PUT') {
-          if (!users.has(login)) return notFound();
-          repository.invitations.push({ id: repository.invitations.length + 100, invitee: login, permission: field('-f')! });
+          const invitee = account(login);
+          if (!invitee) return notFound();
+          repository.invitations.push({ id: repository.invitations.length + 100, invitee: invitee.login, permission: field('-f')! });
           return ok();
         }
         return repository.collaborators.delete(login) ? ok() : notFound();
@@ -227,7 +234,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       const folder = args[3];
       mkdirSync(join(folder, '.git'), { recursive: true });
       repository.files.forEach((content, path) => writeTree(folder, path, content));
-      clones.set(folder, { repository: target, head: new Map(repository.files), base: repository.version, commits: [] });
+      clones.set(folder, { repository: target, head: new Map(repository.files), base: repository.version, commits: [], staged: new Set() });
       return ok();
     }
     if (group === 'pr' && action === 'create') {
@@ -249,7 +256,8 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
     const paths = args.slice(args.indexOf('--') + 1);
     if (args[0] === 'status') {
       const wanted = args.includes('--') ? paths : null;
-      const dirty = changedPaths(clone.head, working).filter((path) => wanted === null || wanted.includes(path));
+      const changed = new Set([...changedPaths(clone.head, working), ...clone.staged]);
+      const dirty = [...changed].filter((path) => wanted === null || wanted.includes(path));
       return ok(dirty.map((path) => ` M ${path}\n`).join(''));
     }
     if (line === 'pull --ff-only') {
@@ -263,13 +271,32 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       clone.base = repository.version;
       return ok();
     }
+    if (failing?.step === args[0]) {
+      const { stderr } = failing;
+      failing = null;
+      if (args[0] === 'add') paths.slice(0, 1).forEach((path) => clone.staged.add(path));
+      return failed(stderr);
+    }
+    if (line.startsWith('reset -q -- ')) {
+      paths.forEach((path) => clone.staged.delete(path));
+      return ok();
+    }
+    if (line.startsWith('checkout -q HEAD -- ')) {
+      const unknown = paths.find((path) => !clone.head.has(path));
+      if (unknown) return failed(`error: pathspec '${unknown}' did not match any file(s) known to git`);
+      paths.forEach((path) => writeTree(folder, path, clone.head.get(path)));
+      return ok();
+    }
     if (args[0] === 'add') {
       const unknown = paths.find((path) => !working.has(path) && !clone.head.has(path));
-      return unknown ? failed(`fatal: pathspec '${unknown}' did not match any files`) : ok();
+      if (unknown) return failed(`fatal: pathspec '${unknown}' did not match any files`);
+      paths.forEach((path) => clone.staged.add(path));
+      return ok();
     }
     if (args[0] === 'commit') {
       const after = new Map(clone.head);
       paths.forEach((path) => (working.has(path) ? after.set(path, working.get(path)!) : after.delete(path)));
+      paths.forEach((path) => clone.staged.delete(path));
       clone.commits.push({ before: clone.head, after });
       clone.head = after;
       return ok();
@@ -323,6 +350,9 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
     repositories,
     addRepository,
     pushFromElsewhere,
+    failNext(step: 'add' | 'commit', stderr: string) {
+      failing = { step, stderr };
+    },
     onNextPush(hook: () => void) {
       beforePush = hook;
     },

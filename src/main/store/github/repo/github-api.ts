@@ -6,7 +6,7 @@
 import { GhError, type Gh } from '../../gh';
 import { StoreError } from '../../store';
 import type { Invitation, Login, Organisation, Permission, RepositoryRef } from '../../types';
-import { isLogin, projectIdOf } from './names';
+import { isLogin, projectIdOf, sameLogin } from './names';
 
 /** What one repository read tells the backend. */
 export interface RepositoryInfo {
@@ -195,6 +195,9 @@ const repoPath = (ref: RepositoryRef): string => `repos/${ref.owner}/${ref.name}
 export type GithubApi = ReturnType<typeof createGithubApi>;
 
 export function createGithubApi(gh: Gh) {
+  const account = (member: Login): Promise<GithubIdentity | null> =>
+    unlessMissing(gh.json(['api', `users/${member}`], parseIdentity), null);
+
   return {
     /** The signed-in member; a private email is asked for once more, and stays null when GitHub keeps it. */
     async identity(): Promise<GithubIdentity> {
@@ -206,11 +209,13 @@ export function createGithubApi(gh: Gh) {
       return { ...identity, email };
     },
 
+    /** The account behind a login, with the login as GitHub spells it; null when there is no such account. */
+    account,
+
     /** Another member's public name and email; both null when the account no longer exists. */
     async profile(member: Login): Promise<Omit<GithubIdentity, 'login'>> {
-      const gone = { login: member, name: null, email: null };
-      const { name, email } = await unlessMissing(gh.json(['api', `users/${member}`], parseIdentity), gone);
-      return { name, email };
+      const found = await account(member);
+      return { name: found?.name ?? null, email: found?.email ?? null };
     },
 
     organisations(): Promise<Organisation[]> {
@@ -263,7 +268,7 @@ export function createGithubApi(gh: Gh) {
     /** Withdraws a pending invitation and removes the collaborator; either may already be gone. */
     async uninvite(ref: RepositoryRef, member: Login): Promise<void> {
       const pending = await gh.json(['api', `${repoPath(ref)}/invitations?${PAGE}`], parseRepositoryInvitations);
-      for (const invitation of pending.filter((entry) => entry.invitee === member)) {
+      for (const invitation of pending.filter((entry) => sameLogin(entry.invitee, member))) {
         await gh.text(['api', '--method', 'DELETE', `${repoPath(ref)}/invitations/${invitation.id}`]);
       }
       await unlessMissing(gh.text(['api', '--method', 'DELETE', `${repoPath(ref)}/collaborators/${member}`]), '');
