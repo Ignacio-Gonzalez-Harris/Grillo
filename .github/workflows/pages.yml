@@ -31,7 +31,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # The job's token can deploy Pages; no step needs git credentials, so none are left in .git/config.
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: collect the site
         run: |

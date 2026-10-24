@@ -97,6 +97,20 @@ describe('Pages workflow', () => {
   });
 });
 
+describe('workflows that hold a write token', () => {
+  it.each(['release.yml', 'pages.yml'])(
+    '%s checks out without leaving the token in .git/config for dependency scripts to read',
+    (fileName) => {
+      const checkouts = allSteps(workflow(fileName)).filter((step) => step.uses?.startsWith('actions/checkout@'));
+
+      expect(checkouts.length).toBeGreaterThan(0);
+      for (const checkout of checkouts) {
+        expect(checkout.with).toMatchObject({ 'persist-credentials': false });
+      }
+    },
+  );
+});
+
 describe('CI gate', () => {
   it('never builds installers (only a published release does)', () => {
     for (const step of allSteps(workflow('ci.yml'))) {

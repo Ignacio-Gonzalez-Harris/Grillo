@@ -32,7 +32,11 @@ jobs:
     env:
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
     steps:
+      # The write token must not sit in .git/config while dependency scripts run (npm ci, npm test, npm run dist);
+      # no step needs git credentials, and the upload step brings its own GH_TOKEN.
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v5
         with:
