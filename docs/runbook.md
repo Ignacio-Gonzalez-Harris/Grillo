@@ -22,8 +22,28 @@ Every screen sits in one window: the title bar ("Grillo" and where you are), the
 
 ## Setup
 
-The setup screen arrives with its own story. Underneath it, Grillo already checks the two tools every member needs
-and reads who the member is on GitHub. It holds no credentials: it only asks each tool about its own sign-in.
+Grillo opens on the setup check. It checks the two tools every member needs and reads who the member is on GitHub.
+It holds no credentials: it only asks each tool about its own sign-in.
+
+### The setup check screen
+
+- **Three rows:** Claude Code, the GitHub command-line tool (gh) and your GitHub account. Each shows "Checking…"
+  first, then green when it is ready.
+- **A tool not found** shows the install steps and "Open install guide", which opens the guide in your browser.
+- **A tool signed out** shows the exact sign-in command to run in a terminal, such as `gh auth login --web`.
+- **"Check again"** asks the tools afresh (it skips the 10-second cache) once you have installed or signed in.
+- **Your GitHub account** shows your login, name and email once gh is signed in. No email means gh may not read it
+  yet: the row shows `gh auth refresh -h github.com -s user:email`; run it once, then press "Check again".
+- **Continue** opens the Project screen. It unlocks when every row is green; a missing email does not lock it.
+- **The update card** appears below the rows once the first check has finished. It always holds the two update
+  settings: the app updates switch ("Install automatically on the next restart") and speech model updates
+  (Automatic, Ask or Never). Both are saved at once in the app data folder's `settings.json`, by the updates and
+  transcription features.
+- **When a newer Grillo is offered**, the card says which version and which you have, with "Download and install"
+  and "Later". While it downloads it shows the percent; once downloaded the button reads "Restart and install".
+  "Later" hides the offer until Grillo offers it again.
+- **On a Mac that cannot install updates itself** (an unsigned build), "Download and install" opens the latest
+  release page on GitHub instead: download the new version there and drag it into Applications.
 
 ### How Grillo checks the tools
 
