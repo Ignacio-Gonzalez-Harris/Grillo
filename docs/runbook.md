@@ -30,6 +30,23 @@ Grillo reads the login, name and email with `gh api user`. When the profile keep
 `gh auth login` does not grant, so the email then stays empty. To show it, run `gh auth refresh -h github.com -s user:email`.
 A signed-out `gh` is reported as signed out, never as an error.
 
+### App updates
+
+The update card on the setup screen arrives with that screen's story. Underneath it, Grillo already looks for a newer
+version on its GitHub Releases page when it starts and then every hour while it is open. It never shows a pop-up
+window of its own: the setup screen draws the offer.
+
+- **Download and install** downloads the new version, then closes Grillo, installs it and opens it again.
+- **Later** hides that version until Grillo starts again; a newer version is still offered.
+- **App updates switch** (`autoUpdate` in the app data folder's `settings.json`, off by default): when on, Grillo
+  downloads a new version quietly and installs it the next time Grillo closes.
+- **On a Mac, Grillo installs updates itself only once the app is signed.** Until then the update state carries
+  `manualInstall: true`, so the card explains how to install the new version by hand from the Releases page. The
+  release job that signs the Mac app builds with `MAIN_VITE_MAC_SIGNED=true`.
+- A failed check (no network, no release yet) is only written to the log; the member sees nothing and the next hourly
+  check tries again.
+- Developers: `npm run dev` never checks for updates; the log says "Update check skipped: this is a development run".
+
 ## Projects
 
 Nothing to do yet: project creation and invitations arrive with their own story.
