@@ -56,6 +56,7 @@ const STYLE_BLOCK = /<style[^>]*>([\s\S]*?)<\/style>/gi;
 const STYLE_ATTRIBUTE = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
 const STYLE_ASSIGNMENT = /\.style\.([a-zA-Z]+)\s*=\s*(['"`])([^'"`\n]*)\2/g;
 const STYLE_SET_PROPERTY = /\.style\.setProperty\(\s*(['"`])([^'"`]+)\1\s*,\s*(['"`])([^'"`\n]*)\3/g;
+const STYLE_SET_ATTRIBUTE = /\.setAttribute\(\s*(['"`])style\1\s*,\s*(['"`])([^'"`\n]*)\2/g;
 
 /** A piece of CSS text and the offset in the file where it starts. */
 interface CssChunk {
@@ -111,6 +112,10 @@ function typescriptChunks(content: string): CssChunk[] {
   for (const match of content.matchAll(STYLE_SET_PROPERTY)) {
     const [whole, , property, , value] = match;
     chunks.push(declarationChunk(`${property}: `, value, match.index + whole.lastIndexOf(value)));
+  }
+  for (const match of content.matchAll(STYLE_SET_ATTRIBUTE)) {
+    const [whole, , , css] = match;
+    chunks.push(declarationChunk('', css, match.index + whole.lastIndexOf(css)));
   }
   return chunks;
 }

@@ -62,6 +62,7 @@ describe('token lint: every colour and spacing value in src/renderer/ is a var(-
       "el.style.color = '#abc';",
       "el.style.setProperty('padding', '3px');",
       "el.style.cssText = 'margin: 1em';",
+      "el.setAttribute('style', 'margin: 5px');",
       "const selector = '#add';",
     ].join('\n');
 
@@ -69,6 +70,7 @@ describe('token lint: every colour and spacing value in src/renderer/ is a var(-
       { file: 'view.ts', line: 1, kind: 'colour', value: '#abc' },
       { file: 'view.ts', line: 2, kind: 'spacing', value: '3px' },
       { file: 'view.ts', line: 3, kind: 'spacing', value: '1em' },
+      { file: 'view.ts', line: 4, kind: 'spacing', value: '5px' },
     ]);
   });
 });
