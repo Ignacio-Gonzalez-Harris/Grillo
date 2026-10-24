@@ -9,7 +9,7 @@ const READY: FakeAnswers = {
   'claude --version': exited(0, '2.1.0 (Claude Code)\n'),
   'claude auth status --json': exited(0, CLAUDE_SIGNED_IN),
   'gh --version': exited(0, 'gh version 2.60.1 (2024-10-01)\nhttps://github.com/cli/cli/releases/tag/v2.60.1\n'),
-  'gh auth status': exited(0, '', 'github.com\n  Logged in to github.com account ada-example (keyring)\n'),
+  'gh auth status --active --hostname github.com': exited(0, '', 'github.com\n  Logged in to github.com account ada-example (keyring)\n'),
 };
 
 function checker(answers: FakeAnswers, clock = { now: 0 }) {
@@ -43,7 +43,7 @@ describe('checkTools', () => {
     const { tools } = checker({
       ...READY,
       'claude auth status --json': exited(1, CLAUDE_SIGNED_OUT),
-      'gh auth status': exited(1, '', 'You are not logged into any GitHub hosts. To log in, run: gh auth login\n'),
+      'gh auth status --active --hostname github.com': exited(1, '', 'You are not logged into any GitHub hosts. To log in, run: gh auth login\n'),
     });
 
     const report = await tools.checkTools();

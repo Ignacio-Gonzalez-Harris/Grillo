@@ -33,9 +33,12 @@ async function claudeSignedIn(runner: ProcessRunner): Promise<boolean> {
   }
 }
 
-/** `gh auth status` exits 0 only when gh holds a working sign-in. */
+/**
+ * Only the account Grillo uses: the active one on github.com. A plain `gh auth status` also fails for a
+ * stale second account or host, which `gh auth login --web` would not fix.
+ */
 async function ghSignedIn(runner: ProcessRunner): Promise<boolean> {
-  const result = await runner.run('gh', ['auth', 'status']);
+  const result = await runner.run('gh', ['auth', 'status', '--active', '--hostname', 'github.com']);
   return result.found && result.exitCode === 0;
 }
 
