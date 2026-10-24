@@ -2,6 +2,24 @@
 
 How to use each part of Grillo, one section per feature. Each feature's story edits only its own section.
 
+## App shell
+
+Every screen sits in one window: the title bar ("Grillo" and where you are), the tab bar, and the screen below it.
+
+- **The tab bar**, left to right: Setup and Project; then Map, Tickets and PRD; then one tab per running agent;
+  then "+". Grillo opens on Setup. A screen whose own story has not landed yet says "<name> is not built yet."
+- **Agent tabs** are named "kind · ticket" (for example "Grilling · Sample ticket 1") and follow the agent when it
+  renames itself. An orange dot on a tab means that agent is waiting for you. Click the name to open the agent.
+- **"+"** opens the generic agent tab.
+- **Windows fallback.** The panels are frosted glass. Where the blur is unavailable, or the system asks for less
+  transparency (on Windows: Settings, Personalisation, Colours, Transparency effects off), they turn nearly opaque so
+  text stays readable. To preview it, open the developer tools console and run
+  `document.body.classList.add('no-glass')`.
+- **Developers.** A new screen is a new folder `src/renderer/screens/<name>/index.ts` exporting `id`, `title` and
+  `mount(el, params, shell)`; no shared file changes. Every colour and spacing value is a `var(--...)` token from
+  `src/renderer/theme/tokens.css`, an exact copy of the UX prototype's token file: the token lint test fails on a
+  literal value, and on a copy that differs from the prototype.
+
 ## Setup
 
 The setup screen arrives with its own story. Underneath it, Grillo already checks the two tools every member needs
