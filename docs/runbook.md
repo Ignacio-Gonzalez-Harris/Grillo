@@ -180,9 +180,14 @@ Installers are built only when a version is published; the download site is publ
   2. Under Actions, run the `release` workflow by hand from `main`, giving that tag.
   3. Check that both runs pass and that the draft now lists the `.exe`, `.dmg`, `.zip`, both `latest*.yml` files
      and the blockmaps; then publish the draft or delete it.
-- **The download site** is the static page in `site/`. The `pages` workflow publishes it on every push to `main`
-  (Pages must be on, with "GitHub Actions" as its source). The page asks GitHub for the latest release when it
-  opens and points the download buttons at its installers; without an answer they open the releases page.
+- **The download site** is the static page in `site/`. The `pages` workflow publishes it on every push to `main`,
+  but only once Pages is switched on; until then its runs are skipped, not failed. To switch it on:
+  1. Settings, Pages: set the source to "GitHub Actions".
+  2. Settings, Secrets and variables, Actions, Variables: add the repository variable `PAGES_ENABLED` = `true`.
+  3. Under Actions, run the `pages` workflow by hand once (or push to `main`).
+
+  The page asks GitHub for the latest release when it opens and points the download buttons at its installers;
+  without an answer they open the releases page.
 - **Once the installers are signed**, set `data-installers="signed"` on the `<html>` element of `site/index.html`:
   the unsigned-installer warning and the "Run anyway" and "Open Anyway" steps disappear.
 - Open `site/index.html` from disk to check its look; the latest-release lookup only runs when it is served.

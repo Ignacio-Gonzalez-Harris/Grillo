@@ -15,6 +15,7 @@ interface Step {
 }
 
 interface Job {
+  if?: string;
   'runs-on': string;
   strategy?: { matrix?: { os?: string[] } };
   steps: Step[];
@@ -87,6 +88,12 @@ describe('Pages workflow', () => {
     expect(deploy).toBeDefined();
     expect(stepRunning(steps, 'site/')).toBeGreaterThanOrEqual(0);
     expect(pages.permissions).toMatchObject({ pages: 'write', 'id-token': 'write' });
+  });
+
+  it('skips the deploy until Pages is switched on with the PAGES_ENABLED repository variable', () => {
+    for (const job of Object.values(pages.jobs)) {
+      expect(job.if).toBe("${{ vars.PAGES_ENABLED == 'true' }}");
+    }
   });
 });
 
