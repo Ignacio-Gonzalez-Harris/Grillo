@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "dist": "electron-vite build && electron-builder --publish never",
-    "rebuild:native": "electron-builder install-app-deps"
+    "rebuild:native": "electron-builder install-app-deps",
+    "postinstall": "node scripts/node-pty-permissions.cjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
