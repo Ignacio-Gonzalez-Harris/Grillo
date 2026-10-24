@@ -1,0 +1,1 @@
+Added the made-up demo materials under docs/demo/ (kick-off transcript, "what we want" sheet, run sheet with the 13 demo steps), so every release-1 acceptance demo runs from the same script and answers.
