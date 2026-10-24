@@ -96,15 +96,19 @@ function fieldsOf<T extends object>(value: T | null | undefined, what: string): 
   return value;
 }
 
-/** Long text kept in an issue section: a line starting with `### ` would read as the next section. */
+/**
+ * Long text kept in an issue section: a line starting with `### ` would read as the next section. The check runs
+ * on the trimmed text, which is what gets written, so leading spaces cannot turn the first line into a heading.
+ */
 function checkSectionText(value: unknown, field: string): string {
   if (typeof value !== 'string') {
     refuse('invalid', `'${field}' must be text`);
   }
-  if (SECTION_LINE.test(value)) {
+  const written = value.trim();
+  if (SECTION_LINE.test(written)) {
     refuse('invalid', `'${field}' cannot hold a line starting with '### '`);
   }
-  return value.trim();
+  return written;
 }
 
 function checkText(value: unknown, field: string): string {

@@ -111,7 +111,9 @@ The map and ticket screens arrive with their own stories. What already works und
   their invitation to the repository can take a ticket or be sent one: GitHub ignores anyone else.
 - **Answers, discussions and decisions** are comments on the ticket that start with a hidden marker line
   (`<!-- grillo:answer -->` and so on) and a few header lines. Change them in Grillo, not on GitHub: a comment
-  whose header lines were edited by hand makes the ticket unreadable in Grillo until the header is put back.
+  whose header lines were edited by hand makes that ticket unreadable, and also makes the ticket list refuse for
+  the whole project, because the list reads every ticket's comments. The same goes for a ticket whose body
+  sections or kind labels were edited by hand. Put the header, body or label back on GitHub to recover.
 - **Answering from a phone or browser:** any comment without a marker waits in the ticket's pick-up list until an
   answer is made from it. Deleting that answer puts the comment back and the question reads unanswered again.
 - **Closing** closes the issue as completed. **Merging** writes the decision "Merged into #<other>" and closes the

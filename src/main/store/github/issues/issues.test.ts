@@ -89,12 +89,18 @@ describe('GitHub issues backend: the map', () => {
 
   it.each([
     ['a destination with a line that starts a section', { destination: 'A PRD\n### Notes' }],
+    ['a destination starting with spaces and a section heading', { destination: '  ### Notes' }],
+    ['a destination starting with a tab and a section heading', { destination: '\t### Notes' }],
+    ['notes starting with a blank line and a section heading', { notes: '\n  ### Fog' }],
     ['an empty fog item', { fog: [''] }],
     ['a fog list that is not a list', { fog: 'Pricing' as unknown as string[] }],
-  ])('refuses %s', async (_case, patch) => {
-    const { store } = await projectWithTicket();
+  ])('refuses %s without writing anything', async (_case, patch) => {
+    const { store, writes } = await projectWithTicket();
+    const before = writes().length;
 
     expect(await refusal(store.updateMap(PROJECT, patch))).toBe('invalid');
+    expect(writes()).toHaveLength(before);
+    await expect(store.getMap(PROJECT)).resolves.toMatchObject({ destination: 'A PRD' });
   });
 
   it('keeps a fog item on one line', async () => {
@@ -197,12 +203,30 @@ describe('GitHub issues backend: tickets', () => {
     ['the same blocker twice', { blockers: [3, 3] }],
     ['an empty title', { title: '  ' }],
     ['a question text with a line that starts a section', { question: 'How?\n### Questions' }],
+    ['a question text starting with spaces and a section heading', { question: '  ### Questions' }],
+    ['a why-it-matters text starting with a tab and a section heading', { whyItMatters: '\t### Assumptions' }],
     ['an unknown kind', { kind: 'meeting' as never }],
-  ])('refuses to update a ticket with %s', async (_case, patch) => {
-    const { store, ticket } = await projectWithTicket();
+  ])('refuses to update a ticket with %s without writing anything', async (_case, patch) => {
+    const { store, ticket, writes } = await projectWithTicket();
     await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    const before = writes().length;
 
     expect(await refusal(store.updateTicket(ticket, patch))).toBe('invalid');
+    expect(writes()).toHaveLength(before);
+    await expect(store.listTickets(PROJECT)).resolves.toHaveLength(2);
+  });
+
+  it.each([
+    ['a question starting with spaces and a section heading', { question: ' ### Context' }],
+    ['a question starting with a tab and a section heading', { question: '\t### Context' }],
+    ['a why-it-matters text with a section heading on a later line', { whyItMatters: 'Because\n### Questions' }],
+  ])('refuses to create a ticket with %s without creating any issue', async (_case, fields) => {
+    const { store, writes } = await projectWithTicket();
+    const before = writes().length;
+
+    expect(await refusal(store.createTicket(PROJECT, newTicket(fields)))).toBe('invalid');
+    expect(writes()).toHaveLength(before);
+    await expect(store.listTickets(PROJECT)).resolves.toHaveLength(1);
   });
 
   it('checks only the domains an edit sets, so an edit keeps a tag whose last declarer left', async () => {
