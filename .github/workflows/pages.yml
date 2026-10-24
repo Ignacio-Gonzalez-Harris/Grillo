@@ -1,0 +1,45 @@
+# Publishes Grillo's download site, the static page in site/, to GitHub Pages on every push to main (PRD section 8,
+# Distribution). The page reads the latest release itself, so publishing a release needs no new Pages run.
+#
+# Only the files the page serves are published: the tests beside them stay in the repository. Pages must be enabled
+# on the repository (Settings, Pages, Source: GitHub Actions) before the first run can deploy.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push waits instead of cancelling one already deploying.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: collect the site
+        run: |
+          mkdir -p _site
+          cp site/index.html site/tokens.css site/latest-release.js _site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

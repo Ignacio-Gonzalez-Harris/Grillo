@@ -1,0 +1,160 @@
+<!doctype html>
+<!--
+  Grillo's download site, published to GitHub Pages from main by .github/workflows/pages.yml. It implements the UX
+  prototype's screen `screen-download-site` (docs/ux/prototypes/grillo/index.html). A public web page, not a version
+  of Grillo (PRD section 10 item 1).
+
+  data-repository: the repository the installers are published to (electron-builder.yml, publish).
+  data-installers: `unsigned` in the pilot (the warning note and warning steps show); the signing story sets `signed`.
+-->
+<html lang="en" data-repository="Ignacio-Gonzalez-Harris/Grillo" data-installers="unsigned">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grillo: download</title>
+<meta name="description" content="Grillo turns a first idea, through a guided grilling of the right experts, into a finished, traceable PRD. Download it for Windows or Mac.">
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* Every colour, spacing, radius, blur and size below comes from tokens.css (a copy of the UX prototype's). */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-m);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.45;
+  color: var(--color-text);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 8%, var(--color-backdrop-glow), transparent 38%),
+    radial-gradient(circle at 85% 90%, var(--color-backdrop-glow), transparent 32%),
+    linear-gradient(135deg, var(--color-backdrop-1), var(--color-backdrop-2) 50%, var(--color-backdrop-3));
+  background-attachment: fixed;
+}
+h1, h2 { font-weight: var(--font-weight-strong); line-height: 1.25; }
+h1 { font-size: var(--font-size-xl); margin: 0; }
+h2 { font-size: var(--font-size-m); margin: 0 0 var(--space-2); }
+p { margin: 0 0 var(--space-2); }
+code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); }
+a { color: var(--color-accent); }
+:focus-visible { outline: var(--focus-ring-width) solid var(--color-focus-ring); outline-offset: var(--space-0); }
+.muted { color: var(--color-text-muted); }
+.small { font-size: var(--font-size-s); }
+
+/* ---------- Glass ---------- */
+.glass {
+  background: var(--color-glass-fill);
+  border: var(--border-width) solid var(--color-glass-border);
+  border-radius: var(--radius-l);
+  box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow), inset 0 var(--border-width) 0 var(--color-glass-highlight);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(var(--saturate-glass));
+  backdrop-filter: blur(var(--blur-glass)) saturate(var(--saturate-glass));
+}
+.card {
+  background: var(--color-glass-fill-strong);
+  border: var(--border-width) solid var(--color-glass-border);
+  border-radius: var(--radius-m);
+  padding: var(--space-4);
+}
+/* Fallback: no backdrop-filter (some Windows set-ups). */
+@supports not ((backdrop-filter: none) or (-webkit-backdrop-filter: none)) {
+  .glass { background: var(--color-glass-fill-fallback); border-color: var(--color-glass-border-fallback); }
+  .card { background: var(--color-glass-fill-strong-fallback); border-color: var(--color-glass-border-fallback); }
+}
+
+/* ---------- Page layout ---------- */
+.page { max-width: var(--size-content-max); margin: var(--space-7) auto; padding: var(--space-5); display: grid; gap: var(--space-5); }
+.stack { display: grid; gap: var(--space-3); }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+
+/* ---------- Controls ---------- */
+.btn { font: inherit; text-decoration: none; min-height: var(--size-control-height); padding: 0 var(--space-4); border-radius: var(--radius-pill); border: var(--border-width) solid var(--color-input-border); background: var(--color-glass-fill-strong); color: var(--color-text); cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+.btn:hover { border-color: var(--color-accent); }
+.btn.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-text-on-accent); font-weight: var(--font-weight-strong); }
+.btn.primary:hover { background: var(--color-accent-hover); }
+
+/* ---------- Notes and lists ---------- */
+.note { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.note.warn { background: var(--color-warning-soft); }
+.note > :last-child { margin-bottom: 0; }
+ol.steps { margin: var(--space-2) 0; padding-left: var(--space-5); }
+ol.steps li { margin-bottom: var(--space-1); }
+
+/* ---------- Pilot (unsigned) and signed release ---------- */
+html[data-installers="signed"] .unsigned-only { display: none; }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .page { margin: var(--space-4); padding: var(--space-4); gap: var(--space-4); }
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<main class="page glass">
+  <section class="card stack">
+    <h1>Grillo</h1>
+    <p>From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD. A desktop app for Windows and Mac.</p>
+    <div class="row">
+      <a class="btn primary" data-download="windows" href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases/latest">Download for Windows</a>
+      <a class="btn primary" data-download="mac" href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases/latest">Download for Mac</a>
+      <a class="btn" data-all-releases href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases">All releases on GitHub</a>
+    </div>
+    <p class="small muted" data-release-line>The latest release and its installers are on GitHub.</p>
+  </section>
+
+  <div class="grid-2">
+    <section class="card stack">
+      <h2>What Grillo is</h2>
+      <ul class="small">
+        <li>Experts answer only the questions for their domain, live or in their own time.</li>
+        <li>Answers are recorded with their discussion, on your own laptop.</li>
+        <li>Every line of the PRD traces back to who said it, when and where.</li>
+      </ul>
+    </section>
+    <section class="card stack">
+      <h2>What you need first</h2>
+      <ul class="small">
+        <li>Claude Code, signed in with your own Claude subscription (any plan).</li>
+        <li>The GitHub command-line tool <code>gh</code>, signed in.</li>
+        <li>A company GitHub account.</li>
+      </ul>
+    </section>
+  </div>
+
+  <p class="note warn unsigned-only" data-warning="unsigned">These pilot installers are not signed yet, so Windows and Mac each show one warning the first time. This is expected; the steps below say what to click.</p>
+
+  <div class="grid-2">
+    <section class="card stack">
+      <h2>Install on Windows</h2>
+      <ol class="steps small">
+        <li>Run <span data-file="windows">the Grillo-Setup .exe file you downloaded</span>.</li>
+        <li class="unsigned-only">If Windows says it protected your PC, click "More info", then "Run anyway".</li>
+        <li>Open Grillo; the setup check guides you through the rest.</li>
+      </ol>
+    </section>
+    <section class="card stack">
+      <h2>Install on Mac</h2>
+      <ol class="steps small">
+        <li>Open <span data-file="mac">the Grillo .dmg file you downloaded</span> and drag Grillo into Applications.</li>
+        <li class="unsigned-only">If macOS says it cannot check the developer, open System Settings, Privacy and Security, and click "Open Anyway".</li>
+        <li>Open Grillo; the setup check guides you through the rest.</li>
+      </ol>
+    </section>
+  </div>
+
+  <section class="card stack">
+    <h2>How to use it</h2>
+    <ol class="steps small">
+      <li>Create a project and invite the people who know the subject.</li>
+      <li>Give the idea as text or a transcript; Grillo turns it into a map of tickets and questions.</li>
+      <li>Run the tagging round so each question reaches the right domain.</li>
+      <li>Answer together in a live session, or each in your own time.</li>
+      <li>When the map is done, Grillo writes the PRD; download it as Markdown or HTML.</li>
+    </ol>
+  </section>
+</main>
+<script type="module" src="latest-release.js"></script>
+</body>
+</html>
