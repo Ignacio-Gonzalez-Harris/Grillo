@@ -1,0 +1,1 @@
+Added local speech-to-text underneath the meeting: whisper.cpp base.en on the laptop with an in-order slice queue, a verified first-use model download and an automatic/ask/never model-update setting, so live transcription never sends audio off the machine.

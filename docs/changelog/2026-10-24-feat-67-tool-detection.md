@@ -1,0 +1,1 @@
+Grillo now detects whether Claude Code and gh are installed and signed in, reads the member's GitHub login, name and email, and gives the exact install link or sign-in command, so the setup screen has real data to show.
