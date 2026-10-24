@@ -392,9 +392,15 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
     return toTicket(ref, { ...reread, assignees: [mine] }, comments);
   }
 
+  /** Replaces the assignees, once GitHub confirms it would assign each of them, so a refusal changes nothing. */
   async function setAssignees(id: TicketId, assignees: Login[], check: (comments: IssueComment[]) => void): Promise<Ticket> {
     const { ref, number, comments } = await openTicket(id);
     check(comments);
+    for (const login of assignees) {
+      if (!(await api.canBeAssigned(ref, login))) {
+        refuse('invalid', `GitHub cannot assign ${login}: only people with access to ${projectIdOf(ref)} can hold a ticket`);
+      }
+    }
     const issue = await api.editIssue(ref, number, { assignees });
     if (assignees.some((login) => !issue.assignees.some((assignee) => sameLogin(assignee, login)))) {
       refuse('invalid', `GitHub did not assign ${assignees.join(', ')}: only people with access to ${projectIdOf(ref)} can hold a ticket`);

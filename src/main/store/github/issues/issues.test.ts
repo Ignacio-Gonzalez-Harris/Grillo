@@ -402,6 +402,17 @@ describe('GitHub issues backend: the claim rule', () => {
     expect(await refusal(call(store, ticket))).toBe('invalid');
   });
 
+  it('refuses to reassign a ticket to a member without repository access and leaves the holder assigned', async () => {
+    const { store, repository, issue, ticket } = await projectWithTicket();
+    repository.files.set('.grillo/members.json', JSON.stringify([...MEMBERS, { login: 'cy-example', role: '', domains: [] }]));
+    await store.sendTicket(ticket, OTHER);
+
+    expect(await refusal(store.reassignTicket(ticket, 'cy-example'))).toBe('invalid');
+
+    expect(issue(2).assignees).toEqual([OTHER]);
+    expect((await store.getTicket(ticket)).assignee).toBe(OTHER);
+  });
+
   it('refuses to send a ticket to a member GitHub will not assign, because they have no access yet', async () => {
     const { store, repository, issue, ticket } = await projectWithTicket();
     repository.files.set('.grillo/members.json', JSON.stringify([...MEMBERS, { login: 'cy-example', role: '', domains: [] }]));
@@ -568,7 +579,8 @@ describe('GitHub issues backend: answers, discussions and decisions', () => {
 
 describe('GitHub issues backend: what GitHub hands back is checked', () => {
   const ISSUE = `GET repos/${PROJECT}/issues/2`;
-  const good = { id: 9002, number: 2, title: 'Login flow', body: '', state: 'open', labels: [{ name: 'wayfinder:task' }], assignees: [], comments: 0 };
+  const body = '### Question\n\n### Why it matters\n\n### Assumptions\n\n### Questions\n- Q2.1 Which provider?\n\n### Blocked by\n';
+  const good = { id: 9002, number: 2, title: 'Login flow', body, state: 'open', labels: [{ name: 'wayfinder:task' }], assignees: [], comments: 1 };
 
   it.each([
     ['null', 'null'],
@@ -581,11 +593,24 @@ describe('GitHub issues backend: what GitHub hands back is checked', () => {
     ['a null assignee', JSON.stringify({ ...good, assignees: [null] })],
     ['an assignee that is not a login', JSON.stringify({ ...good, assignees: [{ login: 'ada example' }] })],
     ['a body that is not text', JSON.stringify({ ...good, body: 7 })],
+    ['a hand-edited body', JSON.stringify({ ...good, body: '' })],
+    ['a missing comment count', JSON.stringify({ ...good, comments: undefined })],
+    ['a null comment count', JSON.stringify({ ...good, comments: null })],
+    ['a comment count given as text', JSON.stringify({ ...good, comments: '1' })],
   ])('refuses an issue answer that is %s as a backend error', async (_case, stdout) => {
     const { store, github, ticket } = await projectWithTicket();
+    await store.createAnswer(ticket, plainAnswer());
     github.answerNext(ISSUE, stdout);
 
     expect(await refusal(store.getTicket(ticket))).toBe('backend');
+  });
+
+  it('reads the good issue answer of these checks, so each refusal above has one cause', async () => {
+    const { store, github, ticket } = await projectWithTicket();
+    await store.createAnswer(ticket, plainAnswer());
+    github.answerNext(ISSUE, JSON.stringify(good));
+
+    expect((await store.getTicket(ticket)).questions).toEqual([{ code: 'Q2.1', text: 'Which provider?', answered: true }]);
   });
 
   it.each([

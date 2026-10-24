@@ -265,6 +265,10 @@ export function createFakeIssues(me = 'ada-example') {
     if (rest === '' && verb === 'GET') {
       return json({ archived: repository.archived, has_issues: true, default_branch: 'main', topics: [], permissions: { admin: true, push: true, pull: true } });
     }
+    const assignable = /^\/assignees\/([^/]+)$/.exec(rest);
+    if (assignable && verb === 'GET') {
+      return repository.collaborators.has(assignable[1].toLowerCase()) ? ok() : notFound();
+    }
     const file = /^\/contents\/(.+)$/.exec(rest);
     if (file && verb === 'GET') {
       const content = repository.files.get(file[1]);

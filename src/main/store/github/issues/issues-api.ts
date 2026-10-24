@@ -138,7 +138,8 @@ export function parseIssue(value: unknown): IssueData {
   if (state !== 'open' && state !== 'closed') {
     throw new Error("expected the issue state 'open' or 'closed'");
   }
-  const comments = issue.comments ?? 0;
+  // A missing count must not read as none: the ticket's answers would go unseen.
+  const comments = issue.comments;
   if (typeof comments !== 'number' || !Number.isSafeInteger(comments) || comments < 0) {
     throw new Error('expected the comment count as a whole number');
   }
@@ -243,6 +244,19 @@ export function createIssuesApi(gh: Gh) {
         `${projectIdOf(ref)} holds no Grillo project`,
       );
       return parseMembers(content, MEMBERS_FILE);
+    },
+
+    /** True when GitHub would assign the login: it has access to the repository (204), false when not (404). */
+    async canBeAssigned(ref: RepositoryRef, assignee: Login): Promise<boolean> {
+      try {
+        await refusing(gh.text(['api', `${repoPath(ref)}/assignees/${assignee}`]), `${assignee} cannot be assigned`);
+        return true;
+      } catch (error) {
+        if (error instanceof StoreError && error.kind === 'not-found') {
+          return false;
+        }
+        throw error;
+      }
     },
 
     /** The issue, or null when there is no such issue (or it was deleted). */
