@@ -1,0 +1,38 @@
+/*
+ * The setup check, ported from the UX prototype's screen-setup-check (docs/ux/prototypes/grillo/index.html).
+ * The prototype's helper classes this screen needs, kept under .setup-check so no other screen is touched.
+ * Every colour, spacing, radius and size comes from theme/tokens.css.
+ */
+.setup-check { display: grid; gap: var(--space-5); align-content: start; }
+.setup-check code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); }
+.setup-check .strong { font-weight: var(--font-weight-strong); }
+.setup-check .reason { font-size: var(--font-size-s); color: var(--color-warning); }
+
+/* ---------- Status dots and notes ---------- */
+.setup-check .sdot { display: inline-block; width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-disabled); flex: none; }
+.setup-check .sdot.ok { background: var(--color-success); }
+.setup-check .sdot.err { background: var(--color-danger); }
+.setup-check .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.setup-check .note.err { background: var(--color-danger-soft); }
+
+/* ---------- Requirement rows ---------- */
+.setup-check .rows .grow { flex: 1; min-width: 0; }
+.setup-check ol.steps { margin: var(--space-2) 0; padding-left: var(--space-5); }
+.setup-check ol.steps li { margin-bottom: var(--space-1); }
+.setup-check table { width: 100%; border-collapse: collapse; }
+.setup-check th, .setup-check td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: var(--border-width) solid var(--color-divider); vertical-align: top; }
+.setup-check table + p { margin: var(--space-2) 0 0; }
+.setup-check th { font-size: var(--font-size-s); color: var(--color-text-muted); font-weight: var(--font-weight-strong); white-space: nowrap; }
+
+/* ---------- Update card ---------- */
+.setup-check .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.setup-check .seg { display: inline-flex; justify-self: start; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
+.setup-check .seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
+.setup-check .seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
+.setup-check .seg button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .setup-check .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .setup-check .rows .grow { flex-basis: 100%; }
+}
