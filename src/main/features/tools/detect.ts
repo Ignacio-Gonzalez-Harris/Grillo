@@ -33,12 +33,20 @@ async function claudeSignedIn(runner: ProcessRunner): Promise<boolean> {
   }
 }
 
+const GH_HOST_STATUS = ['auth', 'status', '--hostname', 'github.com'];
+/** gh before 2.57.0 has no `--active` flag and stops with this message instead of answering. */
+const UNKNOWN_FLAG = /unknown flag/;
+
 /**
  * Only the account Grillo uses: the active one on github.com. A plain `gh auth status` also fails for a
- * stale second account or host, which `gh auth login --web` would not fix.
+ * stale second account or host, which `gh auth login --web` would not fix. A gh too old for `--active`
+ * is asked about github.com alone.
  */
 async function ghSignedIn(runner: ProcessRunner): Promise<boolean> {
-  const result = await runner.run('gh', ['auth', 'status', '--active', '--hostname', 'github.com']);
+  let result = await runner.run('gh', [...GH_HOST_STATUS, '--active']);
+  if (result.found && result.exitCode !== 0 && UNKNOWN_FLAG.test(result.stderr)) {
+    result = await runner.run('gh', GH_HOST_STATUS);
+  }
   return result.found && result.exitCode === 0;
 }
 

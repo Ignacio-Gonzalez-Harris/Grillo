@@ -12,7 +12,7 @@ and reads who the member is on GitHub. It holds no credentials: it only asks eac
 | Tool | Installed when | Signed in when | What Grillo tells the member when it is missing |
 |---|---|---|---|
 | Claude Code | `claude --version` runs | `claude auth status --json` prints `"loggedIn": true` | Install: <https://code.claude.com/docs/en/setup>. Sign in: `claude auth login` |
-| GitHub command-line tool | `gh --version` runs | `gh auth status --active --hostname github.com` exits with 0 (only the account Grillo uses) | Install: <https://cli.github.com/>. Sign in: `gh auth login --web` |
+| GitHub command-line tool | `gh --version` runs | `gh auth status --hostname github.com --active` exits with 0 (only the account Grillo uses); a gh older than 2.57.0, which lacks `--active`, is asked `gh auth status --hostname github.com` | Install: <https://cli.github.com/>. Sign in: `gh auth login --web` |
 
 - **No model usage is spent.** `claude auth status` reads Claude Code's own local sign-in and prints it; it starts no
   session and sends no prompt. Grillo never reads the credentials file or the keychain itself.

@@ -9,7 +9,7 @@ const READY: FakeAnswers = {
   'claude --version': exited(0, '2.1.0 (Claude Code)\n'),
   'claude auth status --json': exited(0, CLAUDE_SIGNED_IN),
   'gh --version': exited(0, 'gh version 2.60.1 (2024-10-01)\nhttps://github.com/cli/cli/releases/tag/v2.60.1\n'),
-  'gh auth status --active --hostname github.com': exited(0, '', 'github.com\n  Logged in to github.com account ada-example (keyring)\n'),
+  'gh auth status --hostname github.com --active': exited(0, '', 'github.com\n  Logged in to github.com account ada-example (keyring)\n'),
 };
 
 function checker(answers: FakeAnswers, clock = { now: 0 }) {
@@ -43,7 +43,7 @@ describe('checkTools', () => {
     const { tools } = checker({
       ...READY,
       'claude auth status --json': exited(1, CLAUDE_SIGNED_OUT),
-      'gh auth status --active --hostname github.com': exited(1, '', 'You are not logged into any GitHub hosts. To log in, run: gh auth login\n'),
+      'gh auth status --hostname github.com --active': exited(1, '', 'You are not logged into any GitHub hosts. To log in, run: gh auth login\n'),
     });
 
     const report = await tools.checkTools();
@@ -76,6 +76,23 @@ describe('checkTools', () => {
         guidance: { action: 'sign-in', command: CLAUDE_SIGN_IN_COMMAND },
       });
     }
+  });
+
+  it('asks a gh too old for --active about github.com alone, and trusts that answer', async () => {
+    const unknownFlag = exited(1, '', 'unknown flag: --active\n\nUsage:  gh auth status [flags]\n');
+    const oldGh = (hostAnswer: ReturnType<typeof exited>) =>
+      checker({
+        ...READY,
+        'gh --version': exited(0, 'gh version 2.56.0 (2024-09-01)\n'),
+        'gh auth status --hostname github.com --active': unknownFlag,
+        'gh auth status --hostname github.com': hostAnswer,
+      });
+
+    const signedIn = await oldGh(exited(0)).tools.checkTools();
+    const signedOut = await oldGh(exited(1, '', 'You are not logged into any GitHub hosts.\n')).tools.checkTools();
+
+    expect(signedIn.gh).toEqual({ installed: true, signedIn: true, version: '2.56.0', guidance: null });
+    expect(signedOut.gh).toMatchObject({ signedIn: false, guidance: { action: 'sign-in', command: GH_SIGN_IN_COMMAND } });
   });
 
   it('keeps a tool installed with no version when its version answer is unreadable or it stopped', async () => {
