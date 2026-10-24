@@ -25,6 +25,10 @@ A project is one GitHub repository, named `<owner>/<repo>`: a new private one Gr
 organisation, or an existing one the member connects. One Grillo project per repository. Closing a project
 archives its repository; unarchiving reopens it.
 
+A repository Grillo creates carries the repository topic `grillo-created`. Members invited to it become
+repository admins (PRD section 7); members invited to a connected repository get write access. The Grillo
+folder lives on the repository's default branch, called `main` in this document.
+
 ## Header lines
 
 Source files, session files, PRD version files and Grillo's comments share one way of keeping fields
