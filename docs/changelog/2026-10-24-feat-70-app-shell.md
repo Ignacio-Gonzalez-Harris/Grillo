@@ -1,0 +1,1 @@
+Added the app shell: the liquid glass window with the Setup, Project, Map, Tickets and PRD tabs, one tab per running agent with its waiting dot, "+" for a generic agent, and the screen registry every screen story plugs into.

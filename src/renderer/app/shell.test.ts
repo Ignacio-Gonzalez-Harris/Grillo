@@ -1,0 +1,194 @@
+// @vitest-environment happy-dom
+import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
+import type { AgentInfo } from '../../shared/agents';
+import type { EventChannel, EventPayload, GrilloApi } from '../../shared/ipc';
+import { createShell, type Shell } from './shell';
+import { loadScreens, registerScreens, type ScreenModule, type ScreenRegistry } from './screens';
+
+function agent(id: string, title: string, waiting = false): AgentInfo {
+  return { id, kind: 'grilling', title, folder: '/projects/sample-1', waiting };
+}
+
+/** A stand-in for `window.grillo`: `agents:list` answers with `listAnswer`; `emit` plays an event from main. */
+function fakeGrillo(listAnswer: Promise<AgentInfo[]> = Promise.resolve([])) {
+  const listeners = new Map<string, Set<(payload: unknown) => void>>();
+  const grillo = {
+    invoke: vi.fn((channel: string) => (channel === 'agents:list' ? listAnswer : Promise.resolve(undefined))),
+    on: vi.fn((channel: string, listener: (payload: unknown) => void) => {
+      const set = listeners.get(channel) ?? new Set();
+      set.add(listener);
+      listeners.set(channel, set);
+      return () => set.delete(listener);
+    }),
+  } as unknown as GrilloApi;
+  function emit<C extends EventChannel>(channel: C, payload: EventPayload<C>): void {
+    listeners.get(channel)?.forEach((listener) => listener(payload));
+  }
+  return { grillo, emit, listenerCount: (channel: string) => listeners.get(channel)?.size ?? 0 };
+}
+
+function screen(id: string, title: string): ScreenModule & { mount: Mock<ScreenModule['mount']> } {
+  return { id, title, mount: vi.fn<ScreenModule['mount']>() };
+}
+
+function registry(...screens: ScreenModule[]): ScreenRegistry {
+  return registerScreens(Object.fromEntries(screens.map((s) => [`/src/renderer/screens/${s.id}/index.ts`, s])));
+}
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+let shell: Shell | undefined;
+function start(screens: ScreenRegistry, grillo: GrilloApi): HTMLElement {
+  const root = document.createElement('div');
+  document.body.append(root);
+  shell = createShell(root, { grillo, screens });
+  return root;
+}
+
+const tabLabels = (root: HTMLElement) =>
+  [...root.querySelectorAll('nav .tab')].map((tab) => tab.querySelector('.tab-name')?.textContent ?? tab.textContent);
+const activeTab = (root: HTMLElement) => root.querySelector('nav [aria-current="page"]')?.textContent;
+const content = (root: HTMLElement) => root.querySelector('main') as HTMLElement;
+const titlebarContext = (root: HTMLElement) => root.querySelector('.titlebar .context')?.textContent;
+const agentTab = (root: HTMLElement, id: string) => root.querySelector<HTMLElement>(`[data-agent-id="${id}"]`);
+
+afterEach(() => {
+  shell?.dispose();
+  shell = undefined;
+  document.body.replaceChildren();
+});
+
+describe('app shell', () => {
+  it('shows the fixed navigation in the prototype order and opens Setup first', () => {
+    const root = start(registry(), fakeGrillo().grillo);
+
+    expect(tabLabels(root)).toEqual(['Setup', 'Project', 'Map', 'Tickets', 'PRD', '+']);
+    expect(root.querySelector('.window')?.classList.contains('glass')).toBe(true);
+    expect(activeTab(root)).toBe('Setup');
+    expect(titlebarContext(root)).toBe('Setup');
+    expect(content(root).textContent).toContain('Setup is not built yet.');
+  });
+
+  it('opens the registered screen of a fixed tab and closes the screen it leaves', () => {
+    const setup = screen('setup-check', 'Setup check');
+    const cleanup = vi.fn();
+    setup.mount.mockReturnValue(cleanup);
+    const map = screen('map', 'The map');
+    const root = start(registry(setup, map), fakeGrillo().grillo);
+
+    (root.querySelector('nav') as HTMLElement).querySelectorAll<HTMLElement>('.tab')[2].click();
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    expect(map.mount).toHaveBeenCalledTimes(1);
+    const [el, params, context] = map.mount.mock.calls[0];
+    expect(content(root).contains(el)).toBe(true);
+    expect(params).toEqual({});
+    expect(typeof context.navigate).toBe('function');
+    expect(activeTab(root)).toBe('Map');
+    expect(titlebarContext(root)).toBe('The map');
+  });
+
+  it('opens a screen found by discovery, with its params, without the shell naming it', () => {
+    const root = start(loadScreens(), fakeGrillo().grillo);
+
+    shell?.navigate('fixture-hello', { name: 'Ada' });
+
+    expect(content(root).textContent).toBe('Hello Ada');
+    expect(titlebarContext(root)).toBe('Fixture hello');
+    expect(activeTab(root)).toBeUndefined();
+  });
+
+  it("shows one tab per running agent with its name, the waiting dot and a header mount point that survives updates", async () => {
+    const { grillo, emit } = fakeGrillo(Promise.resolve([agent('a1', 'Grilling · Map', true), agent('a2', 'Task · Sample ticket 3')]));
+    const root = start(registry(), grillo);
+    await flush();
+
+    expect(tabLabels(root)).toEqual(['Setup', 'Project', 'Map', 'Tickets', 'PRD', 'Grilling · Map', 'Task · Sample ticket 3', '+']);
+    expect(agentTab(root, 'a1')?.querySelector('.dot')?.hasAttribute('hidden')).toBe(false);
+    expect(agentTab(root, 'a2')?.querySelector('.dot')?.hasAttribute('hidden')).toBe(true);
+    const header = shell?.agentTabHeader('a1');
+    expect(header && agentTab(root, 'a1')?.contains(header)).toBe(true);
+    header?.append(document.createTextNode('Channel'));
+
+    emit('agents:list-changed', [agent('a3', 'Generic · Sample note'), agent('a1', 'Grilling · Sample ticket 4', false)]);
+
+    expect(tabLabels(root)).toEqual(['Setup', 'Project', 'Map', 'Tickets', 'PRD', 'Generic · Sample note', 'Grilling · Sample ticket 4', '+']);
+    expect(agentTab(root, 'a2')).toBeNull();
+    expect(shell?.agentTabHeader('a2')).toBeUndefined();
+    expect(shell?.agentTabHeader('a1')).toBe(header);
+    expect(header?.textContent).toBe('Channel');
+    expect(agentTab(root, 'a1')?.querySelector('.dot')?.hasAttribute('hidden')).toBe(true);
+  });
+
+  it("opens an agent's tab on the agent-tab screen with its id", async () => {
+    const agentScreen = screen('agent-tab', 'Agent');
+    const { grillo, emit } = fakeGrillo(Promise.resolve([agent('a1', 'Grilling · Map')]));
+    const root = start(registry(agentScreen), grillo);
+    await flush();
+
+    agentTab(root, 'a1')?.querySelector<HTMLElement>('.tab-name')?.click();
+
+    expect(agentScreen.mount.mock.calls[0][1]).toEqual({ agentId: 'a1' });
+    expect(agentTab(root, 'a1')?.classList.contains('active')).toBe(true);
+    expect(titlebarContext(root)).toBe('Grilling · Map');
+
+    emit('agents:list-changed', [agent('a1', 'Grilling · Sample ticket 4')]);
+
+    expect(titlebarContext(root)).toBe('Grilling · Sample ticket 4');
+  });
+
+  it('opens the screen registered as generic-agent from "+"', () => {
+    const generic = screen('generic-agent', 'Generic agent');
+    const root = start(registry(generic), fakeGrillo().grillo);
+    const add = root.querySelector<HTMLButtonElement>('nav .add');
+
+    add?.click();
+
+    expect(add?.getAttribute('aria-label')).toBe('Open a generic agent');
+    expect(generic.mount).toHaveBeenCalledTimes(1);
+    expect(add?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it.each([
+    ['"+"', 'nav .add', 'The generic agent tab'],
+    ['an agent tab', '[data-agent-id] .tab-name', 'The agent tab'],
+  ])('names the screen %s opens while its story has not registered it', async (_case, selector, name) => {
+    const root = start(registry(), fakeGrillo(Promise.resolve([agent('a1', 'Grilling · Map')])).grillo);
+    await flush();
+
+    root.querySelector<HTMLElement>(selector)?.click();
+
+    expect(content(root).textContent).toBe(`${name} is not built yet.`);
+  });
+
+  it('keeps a newer agent list over an older answer that arrives late, and an empty strip when the list fails', async () => {
+    let answer: (agents: AgentInfo[]) => void = () => undefined;
+    const late = fakeGrillo(new Promise((resolve) => (answer = resolve)));
+    const root = start(registry(), late.grillo);
+
+    late.emit('agents:list-changed', [agent('new', 'Research · Sample ticket 2')]);
+    answer([agent('old', 'Grilling · Map')]);
+    await flush();
+
+    expect(agentTab(root, 'new')).not.toBeNull();
+    expect(agentTab(root, 'old')).toBeNull();
+
+    shell?.dispose();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const failing = start(registry(), fakeGrillo(Promise.reject(new Error('no runtime'))).grillo);
+    await flush();
+    expect(failing.querySelectorAll('[data-agent-id]')).toHaveLength(0);
+    expect(warn).toHaveBeenCalledWith('Grillo could not read the agent list; the agent tabs stay empty.', expect.any(Error));
+    warn.mockRestore();
+  });
+
+  it('stops listening for agent changes when disposed', () => {
+    const fake = fakeGrillo();
+    start(registry(), fake.grillo);
+
+    shell?.dispose();
+    shell = undefined;
+
+    expect(fake.listenerCount('agents:list-changed')).toBe(0);
+  });
+});

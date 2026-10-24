@@ -17,6 +17,8 @@ export default defineConfig({
       // Main discovers features under `@features/*/ipc.ts`. In tests that folder is a fixture,
       // so the discovery test runs the real discovery code without touching src/main/features/.
       '@features': resolve('src/main/app/__fixtures__/features'),
+      // The renderer discovers screens under `@screens/*/index.ts`; in tests that folder is a fixture too.
+      '@screens': resolve('src/renderer/app/__fixtures__/screens'),
     },
   },
   test: {
