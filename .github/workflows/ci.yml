@@ -1,8 +1,9 @@
-# The merge gate. One job, named `ci`, so every pull request reports a check run called `ci`.
+# The merge gate. One job, named `ci`, run on a Windows and a Mac runner (PRD section 8, CI), so every pull
+# request reports `ci (windows-latest)` and `ci (macos-latest)`.
 #
-# Until the scaffold story lands there is nothing to build, so the only gate is orion's mechanical install
-# check: it fails when a file orion installed is missing, doubled or broken. The scaffold story adds the
-# gate chain from CLAUDE.md section 5 (build, lint, typecheck, full suite) on Windows and Mac runners.
+# Each runner runs orion's mechanical install check (it fails when a file orion installed is missing, doubled or
+# broken), then the gate chain from CLAUDE.md section 5: build, lint, typecheck, full suite. Installers are not
+# built here; they are built only when a version is published.
 name: ci
 
 on:
@@ -16,9 +17,34 @@ permissions:
 jobs:
   ci:
     name: ci
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
 
       - name: orion verify
+        shell: bash
         run: bash .claude/orion/orion.sh verify
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: install
+        run: npm ci
+
+      - name: build
+        run: npm run build
+
+      - name: lint
+        run: npm run lint
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: test
+        run: npm test

@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build output (electron-vite) and installers (electron-builder)
+out/
+dist/
+
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+
+# Logs and tool leftovers
+*.log
+coverage/
