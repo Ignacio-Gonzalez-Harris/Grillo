@@ -4,7 +4,31 @@ How to use each part of Grillo, one section per feature. Each feature's story ed
 
 ## Setup
 
-Nothing to do yet: the setup check arrives with its own story.
+The setup screen arrives with its own story. Underneath it, Grillo already checks the two tools every member needs
+and reads who the member is on GitHub. It holds no credentials: it only asks each tool about its own sign-in.
+
+### How Grillo checks the tools
+
+| Tool | Installed when | Signed in when | What Grillo tells the member when it is missing |
+|---|---|---|---|
+| Claude Code | `claude --version` runs | `claude auth status --json` prints `"loggedIn": true` | Install: <https://code.claude.com/docs/en/setup>. Sign in: `claude auth login` |
+| GitHub command-line tool | `gh --version` runs | `gh auth status --hostname github.com --active` exits with 0 (only the account Grillo uses); a gh older than 2.57.0, which lacks `--active`, is asked `gh auth status --hostname github.com` | Install: <https://cli.github.com/>. Sign in: `gh auth login --web` |
+
+- **No model usage is spent.** `claude auth status` reads Claude Code's own local sign-in and prints it; it starts no
+  session and sends no prompt. Grillo never reads the credentials file or the keychain itself.
+- Any status answer Grillo cannot read counts as signed out, so the member sees the sign-in command.
+- Grillo looks for each tool on the PATH first, then in the folders installers use even when the PATH does not list
+  them yet: `~/.local/bin` on every system; `/opt/homebrew/bin` and `/usr/local/bin` on a Mac; the GitHub CLI and
+  WinGet folders on Windows. So a tool installed while Grillo is open is found by "Check again", without a restart.
+- A tool that does not answer within 15 seconds is stopped and reported without a version.
+- Results are kept for 10 seconds; "Check again" asks the tools afresh.
+
+### Who the member is on GitHub
+
+Grillo reads the login, name and email with `gh api user`. When the profile keeps the email private, Grillo asks
+`gh api user/emails` for the primary address. That second call needs the read-only `user:email` scope (permission), which a plain
+`gh auth login` does not grant, so the email then stays empty. To show it, run `gh auth refresh -h github.com -s user:email`.
+A signed-out `gh` is reported as signed out, never as an error.
 
 ## Projects
 
@@ -16,7 +40,20 @@ Nothing to do yet: the map and its tickets arrive with their own story.
 
 ## Agents
 
-Nothing to do yet: agent tabs arrive with their own story.
+The agent runtime is in place; the tab that shows an agent's terminal arrives with its own story.
+
+- **Claude Code must be installed and on PATH.** Each agent is your own `claude`, started with no extra flags
+  in the project folder. Without it, starting an agent fails with "Claude Code was not found: there is no
+  `claude` command on PATH".
+- **Answer Claude Code's own startup questions yourself.** The first time it opens a folder it asks whether
+  you trust it. Grillo waits; it types the agent's first message, then Enter, only once the message box appears.
+- **Grillo's skills are copied in on every start.** Every `grillo-*` skill goes into the project folder's
+  `.claude/skills/`, so updates arrive. A copy the project's repository tracks is never overwritten: Grillo
+  skips it and logs a warning. The copied folders are listed in `.git/info/exclude`, so they never show as
+  changes. Grillo writes no `CLAUDE.md`; your own user-level `CLAUDE.md` still applies.
+- **Several agents run at once**; stopping one leaves the others running. Closing Grillo stops them all.
+- **The waiting dot:** an agent counts as waiting for you once it has printed nothing for 3 seconds after
+  printing something, and stops waiting as soon as it prints again.
 
 ## Meeting
 
