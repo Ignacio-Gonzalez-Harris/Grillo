@@ -4,7 +4,7 @@ import { createStore, storeKindFrom } from '.';
 import { ISSUES_METHODS } from './github/issues';
 import { REPO_METHODS } from './github/repo';
 import { createMemorySettings } from './memory/settings';
-import { STORE_METHODS, StoreError } from './store';
+import { STORE_METHODS, type StoreError } from './store';
 
 const unusedGh: Gh = {
   text: () => Promise.reject(new Error('gh must not run')),
@@ -20,15 +20,10 @@ describe('store factory', () => {
     expect((await store.listProjects()).map((project) => project.id)).toEqual(['example-org/demo']);
   });
 
-  it('composes the GitHub store from the repository backend and the issues stub, every issues method refusing as not implemented', async () => {
+  it('composes the GitHub store from the repository and issues backends, no method refusing as not implemented', async () => {
     const store = createStore('github', { settings: createMemorySettings(), gh: unusedGh });
 
-    for (const method of ISSUES_METHODS) {
-      const error = await (store[method] as () => Promise<unknown>)().catch((thrown: unknown) => thrown);
-      expect(error, method).toBeInstanceOf(StoreError);
-      expect(error, method).toMatchObject({ kind: 'not-implemented', message: expect.stringContaining('not implemented') });
-    }
-    for (const method of REPO_METHODS) {
+    for (const method of [...REPO_METHODS, ...ISSUES_METHODS]) {
       const error = await (store[method] as () => Promise<unknown>)().catch((thrown: unknown) => thrown);
       expect((error as StoreError | undefined)?.kind, method).not.toBe('not-implemented');
     }

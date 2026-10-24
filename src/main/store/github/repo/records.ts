@@ -57,17 +57,18 @@ function json(value: unknown): string {
 }
 
 // Header lines: `<name>: <value>` in a fixed order, ended by the first empty line; the rest is the long text.
+// The issues backend writes its comment headers with the same three helpers.
 
 function headerValue(value: string): string {
   return value.replace(/\r\n|\r|\n/g, ' ');
 }
 
-function formatHeader(fields: [name: string, value: string][], body: string): string {
+export function formatHeader(fields: [name: string, value: string][], body: string): string {
   const lines = fields.map(([name, value]) => (value === '' ? `${name}:` : `${name}: ${headerValue(value)}`));
   return `${lines.join('\n')}\n\n${body}`;
 }
 
-function parseHeader(content: string, names: readonly string[]): { values: Record<string, string>; body: string } {
+export function parseHeader(content: string, names: readonly string[]): { values: Record<string, string>; body: string } {
   const lines = unixLines(content).split('\n');
   const end = lines.indexOf('');
   if (end < 0) {
@@ -88,7 +89,7 @@ function parseHeader(content: string, names: readonly string[]): { values: Recor
   return { values, body: lines.slice(end + 1).join('\n') };
 }
 
-const splitList = (value: string): string[] => (value === '' ? [] : value.split(',').map((item) => item.trim()));
+export const splitList = (value: string): string[] => (value === '' ? [] : value.split(',').map((item) => item.trim()));
 
 // members.json
 
