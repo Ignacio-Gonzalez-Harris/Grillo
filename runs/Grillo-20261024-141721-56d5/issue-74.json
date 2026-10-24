@@ -1,0 +1,72 @@
+{
+  "run_id": "Grillo-20261024-141721-56d5",
+  "issue": 74,
+  "title": "GitHub backend: map, tickets, questions, answers, discussions, decisions, domain labels, atomic assignment, map-done on close and merge",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T14:17:21Z",
+  "finished_at": "2026-10-24T15:20:09Z",
+  "outcome": "merged",
+  "pr": 128,
+  "summary": "Fills the issues half of the GitHub store through gh: the map issue, tickets as sub-issues with kind and domain labels, questions, marked answer, discussion and decision comments, the claim rule, and close and merge returning mapDone; 140 tests against a fake gh.",
+  "agents": [
+    {
+      "name": "dev-74",
+      "model": "opus",
+      "tokens_total": 272904
+    },
+    {
+      "name": "review-74",
+      "model": "opus",
+      "tokens_total": 182774
+    },
+    {
+      "name": "review-74-r2",
+      "model": "opus",
+      "tokens_total": 196496
+    },
+    {
+      "name": "review-74-r3",
+      "model": "opus",
+      "tokens_total": 194426
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": null,
+    "review_seconds": null,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 3,
+    "ci": 1
+  },
+  "friction": [
+    "Two of the fixes after a first APPROVED were real data-loss bugs (a refused reassign dropped the owner; leading-space '### ' text corrupted the map body), found only by the second and third fresh reviews; a backend that writes free text into structured bodies needs its write-path checks reviewed adversarially in round one"
+  ],
+  "lessons_learned": [
+    "Validate the exact text that will be written (after trim and normalisation), never the raw input: a check before .trim() let a section heading into the map body"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "Two laptops changing the map body at the same moment can lose one settled line, because GitHub has no conditional write for issue bodies",
+      "why": "Needs a new mechanism outside this story",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "Ticket create and merge make several gh calls in a row; a failure halfway leaves an issue without its sub-issue or blocker link and nothing is rolled back",
+      "why": "A retry or repair step is beyond this story",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "One hand-damaged ticket (a second kind label, an edited section, a damaged marked comment) makes listTickets refuse for the whole project, emptying the map and ticket screens, and makes closeTicket/mergeTicket report failure after the issue is already closed",
+      "why": "Skip-or-flag for damaged tickets is a design decision for the screen stories; the runbook warns of it",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

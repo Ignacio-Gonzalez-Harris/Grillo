@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261024-141721-56d5",
+  "issue": 79,
+  "title": "Setup check screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T14:17:21Z",
+  "finished_at": "2026-10-24T14:44:23Z",
+  "outcome": "merged",
+  "pr": 127,
+  "summary": "Adds the first screen: Claude Code and gh status with guidance and Check again, the GitHub identity (with the one-time email step), the update offer card, and the app and speech-model update settings.",
+  "agents": [
+    {
+      "name": "dev-79",
+      "model": "opus",
+      "tokens_total": 199746
+    },
+    {
+      "name": "review-79",
+      "model": "opus",
+      "tokens_total": 134751
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": null,
+    "review_seconds": null,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

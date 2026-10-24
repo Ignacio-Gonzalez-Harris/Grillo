@@ -1,0 +1,56 @@
+{
+  "run_id": "Grillo-20261024-141721-56d5",
+  "issue": 79,
+  "title": "Setup check screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 127,
+  "merged_at": "2026-10-24T14:44:23Z",
+  "merge_commit": "5387107c00e8f54831cf41fa56f9c4012914c2e2",
+  "seam": "src/renderer/screens/setup-check/",
+  "story": "I opened Grillo for the first time and it told me exactly which tool was missing and what to type to sign in. After I signed in to GitHub and pressed Check again, everything turned green and it showed my login, name and email. Below that I could choose whether Grillo and its speech model update themselves, and take a new version with one click.",
+  "checks": [
+    {
+      "key": "setup-check/everything-missing",
+      "criterion": "Each tool's status and guidance; 'Open install guide' opens the guide",
+      "steps": "On a laptop without Claude Code or gh, open Grillo.",
+      "expected": "A red note says Grillo needs two tools; both rows say 'Not found' with install steps; the GitHub account row says 'Waits for gh'; Continue is locked; 'Open install guide' opens the guide in the browser."
+    },
+    {
+      "key": "setup-check/signed-out-github",
+      "criterion": "A signed-out tool shows its sign-in command; Check again forces a fresh check",
+      "steps": "With gh installed, run gh auth logout and open Grillo. Then run gh auth login --web and press Check again.",
+      "expected": "First gh shows Installed / Signed out with gh auth login --web; after Check again all rows are green and Continue unlocks."
+    },
+    {
+      "key": "setup-check/identity",
+      "criterion": "When signed in, the screen shows the identity",
+      "steps": "Sign in to both tools with a test account and open Grillo.",
+      "expected": "A table with login, name and email; Continue opens the Project screen."
+    },
+    {
+      "key": "setup-check/missing-email",
+      "criterion": "The one-time email step appears when GitHub shares no email",
+      "steps": "Sign in with a plain gh auth login (no user:email scope) on an account with a private email, then open Grillo.",
+      "expected": "Email 'Not shared yet', the command gh auth refresh -h github.com -s user:email, a Check again button, and Continue still enabled."
+    },
+    {
+      "key": "setup-check/update-settings",
+      "criterion": "Both update settings are saved",
+      "steps": "Turn on 'Install automatically on the next restart', pick 'Never' for speech model updates, restart Grillo.",
+      "expected": "Both choices are kept; settings.json holds autoUpdate true and speechModelUpdates never."
+    },
+    {
+      "key": "setup-check/update-offer",
+      "criterion": "The update card offers Download and install and Later",
+      "steps": "In an installed build older than the latest release, open Grillo.",
+      "expected": "'Grillo X is available. You have Y.' with both buttons; Download shows progress then restarts into the new version; Later hides the offer."
+    },
+    {
+      "key": "setup-check/mac-manual-install",
+      "criterion": "On an unsigned Mac, Download and install opens the release page",
+      "steps": "On an unsigned Mac build with an update offered, press Download and install.",
+      "expected": "The card explains the manual install and the latest-release page opens in the browser."
+    }
+  ],
+  "no_qa_reason": null
+}

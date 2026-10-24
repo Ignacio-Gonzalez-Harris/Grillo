@@ -1,0 +1,50 @@
+{
+  "run_id": "Grillo-20261024-141721-56d5",
+  "issue": 69,
+  "title": "Release workflow and GitHub Pages site",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 126,
+  "merged_at": "2026-10-24T14:57:22Z",
+  "merge_commit": "8f168b8903b5c369e549d97b58e4a692655bfb32",
+  "seam": "site/, .github/workflows/release.yml, .github/workflows/pages.yml",
+  "story": "As a colleague, I open Grillo's download page, read what it is and what I need first, and click the button for my system to get the newest installer. The page warns me that the pilot installers are unsigned and tells me what to click. When the team publishes a new version, the installers appear on that release automatically and the page links to them.",
+  "checks": [
+    {
+      "key": "site/download-buttons",
+      "criterion": "The download links point at the latest release's installers",
+      "steps": "Turn Pages on and set PAGES_ENABLED to true. Publish a made-up release v0.1.0 with the installers attached. Open the Pages site.",
+      "expected": "The Windows button links to .../releases/download/v0.1.0/Grillo-Setup-0.1.0.exe, the Mac button to the .dmg, and a 'Latest release: version 0.1.0' line names both files."
+    },
+    {
+      "key": "site/pilot-warning",
+      "criterion": "The pilot (unsigned) state shows the warning note",
+      "steps": "Open the site while the page is marked unsigned.",
+      "expected": "The orange warning note, the 'More info / Run anyway' step and the 'Open Anyway' step are shown."
+    },
+    {
+      "key": "site/signed-state",
+      "criterion": "The signed state shows no warning",
+      "steps": "Set data-installers to signed in site/index.html and open the page from disk.",
+      "expected": "No warning note and no 'Run anyway' or 'Open Anyway' steps; each install list has 2 steps."
+    },
+    {
+      "key": "site/no-release-fallback",
+      "criterion": "With no release, both download buttons open the releases page",
+      "steps": "Open the site before any release exists, or with the network blocked.",
+      "expected": "Both buttons open .../Grillo/releases/latest."
+    },
+    {
+      "key": "pages/skipped-until-enabled",
+      "criterion": "The Pages job is skipped until the variable is set",
+      "steps": "Merge any change to main while PAGES_ENABLED is unset.",
+      "expected": "The pages run shows the deploy job as skipped, not failed."
+    },
+    {
+      "key": "release/installers-attached",
+      "criterion": "Publishing a version attaches the installers",
+      "steps": "Follow the pull request's 'Dry run, for a person' steps on a draft v0.1.0.",
+      "expected": "Both runner jobs are green and the draft lists the .exe, .dmg and .zip, both latest*.yml files and the blockmaps."
+    }
+  ],
+  "no_qa_reason": null
+}

@@ -1,0 +1,65 @@
+{
+  "run_id": "Grillo-20261024-141721-56d5",
+  "issue": 71,
+  "title": "Engine command catalogue, screen-to-agent protocol and the map-done rule",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T14:17:21Z",
+  "finished_at": "2026-10-24T14:51:57Z",
+  "outcome": "merged",
+  "pr": 125,
+  "summary": "Adds the one catalogue every skill and screen follows: the 14 Grillo commands with agent kind and release, the exact screen-to-agent messages, and the map-done rule; a test fails on a duplicate or misnamed command.",
+  "agents": [
+    {
+      "name": "dev-71",
+      "model": "opus",
+      "tokens_total": 172907
+    },
+    {
+      "name": "review-71",
+      "model": "opus",
+      "tokens_total": 150131
+    },
+    {
+      "name": "review-71-r2",
+      "model": "opus",
+      "tokens_total": 127478
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": null,
+    "review_seconds": null,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [
+    "Git Bash on Windows rewrites `origin/main:<path>` into a Windows path; set MSYS_NO_PATHCONV=1 before `git show origin/main:<path>` (not yet in shell-traps.md)"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/",
+      "what": "`updateMap` returns no `mapDone`, so a screen that removes the last fog item with no open tickets would not start the PRD writer",
+      "why": "Outside this story's seam; no screen story edits fog today",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/ (session, meeting panel)",
+      "what": "The catalogue adds `session: <path>` and no-slices-in-Type-mode for meeting agents, but neither issue #84 (grilling session) nor issue #91 (meeting panel) lists them; if neither types `session:`, live answers lose their trace to the session file",
+      "why": "Means editing other stories' acceptance criteria",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/ (own-time answering)",
+      "what": "Issue #92 (own-time answering screen) says its Done button calls closeTicket or release; the catalogue now says a screen working with an agent only types `done`; built as the issue reads, the last ticket closes twice and two PRD versions are written",
+      "why": "Another story's body; the catalogue rule is in place",
+      "owner": "issue #92"
+    }
+  ]
+}

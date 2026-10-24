@@ -1,0 +1,13 @@
+{
+  "run_id": "Grillo-20261024-141721-56d5",
+  "issue": 74,
+  "title": "GitHub backend: map, tickets, questions, answers, discussions, decisions, domain labels, atomic assignment, map-done on close and merge",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 128,
+  "merged_at": "2026-10-24T15:20:09Z",
+  "merge_commit": "b9a5d5fe259a8c487fcab3236e81df5592bd7fb2",
+  "seam": "src/main/store/github/issues/",
+  "story": "",
+  "checks": [],
+  "no_qa_reason": "No screen uses these methods yet; driving them needs writes to a real repository (the pull request's throwaway-repository steps, left for a human)"
+}

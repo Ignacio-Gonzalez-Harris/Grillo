@@ -1,0 +1,51 @@
+{
+  "run_id": "Grillo-20261024-141721-56d5",
+  "issue": 69,
+  "title": "Release workflow and GitHub Pages site",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-24T14:17:21Z",
+  "finished_at": "2026-10-24T14:57:22Z",
+  "outcome": "merged",
+  "pr": 126,
+  "summary": "Adds the release workflow that builds and attaches the Windows and Mac installers when a version is published, and the download site with its Pages workflow, held off until Pages is switched on; checkouts no longer leave the write token on disk.",
+  "agents": [
+    {
+      "name": "dev-69",
+      "model": "opus",
+      "tokens_total": 180173
+    },
+    {
+      "name": "review-69",
+      "model": "opus",
+      "tokens_total": 127762
+    },
+    {
+      "name": "review-69-r2",
+      "model": "opus",
+      "tokens_total": 133412
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": null,
+    "review_seconds": null,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [
+    "Under four parallel worktrees the full suite timed out twice in tests this run did not touch (an agents-feature test, the store's real-process tests); each passed alone and on the rerun, so a loaded machine can show a false red that costs a dev round to rule out"
+  ],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "electron-builder.yml",
+      "what": "`mac.target` names no arch and the Mac runner is Apple silicon, so the site's Mac download is an arm64 dmg that does not run on Intel Macs",
+      "why": "Arch choice and cross-building native modules belong to the packaging config, outside this story's seam",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

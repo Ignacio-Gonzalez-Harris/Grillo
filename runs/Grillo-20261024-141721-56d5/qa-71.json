@@ -1,0 +1,13 @@
+{
+  "run_id": "Grillo-20261024-141721-56d5",
+  "issue": 71,
+  "title": "Engine command catalogue, screen-to-agent protocol and the map-done rule",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 125,
+  "merged_at": "2026-10-24T14:51:57Z",
+  "merge_commit": "8146850f6c2e6fcc821654e654a82fc394c8698b",
+  "seam": "resources/skills/",
+  "story": "",
+  "checks": [],
+  "no_qa_reason": "A document and a parser test; nothing on any screen changes"
+}
