@@ -1,0 +1,1 @@
+GitHub issues backend: the map, tickets, questions, answers, discussions, decisions, tags and the claim rule now work through `gh`, so the screens can keep their work in the project's own GitHub issues.

@@ -95,7 +95,32 @@ The project screens arrive with their own stories. What already works underneath
 
 ## Map and tickets
 
-Nothing to do yet: the map and its tickets arrive with their own story.
+The map and ticket screens arrive with their own stories. What already works underneath them, through `gh`:
+
+- **The map** is one issue titled "Map" with the label `wayfinder:map`. Its body holds five sections: destination,
+  notes, settled (one line per closed ticket), fog and out of scope.
+- **A ticket** is an issue with exactly one kind label (`wayfinder:grilling`, `research`, `prototype` or `task`),
+  linked as a native sub-issue of the map. Its questions are numbered `Q<issue number>.<k>`; a removed question
+  keeps its line as "(removed)", so a number is never used twice.
+- **Tags** are `domain:<name>` labels, and only a domain some member declared can be set. "No domain" is the label
+  `domain:none`; it never sits beside another domain label. Grillo leaves every other label on the issue alone.
+- **Blockers** are written twice and kept in step: a "Blocked by" section in the body and GitHub's own "blocked by"
+  link between issues.
+- **Taking a ticket** assigns you, then reads the assignees again. If someone else was assigned at the same moment,
+  whoever was assigned first keeps it; the other is unassigned again and told who has it. Only people who accepted
+  their invitation to the repository can take a ticket or be sent one: GitHub ignores anyone else.
+- **Answers, discussions and decisions** are comments on the ticket that start with a hidden marker line
+  (`<!-- grillo:answer -->` and so on) and a few header lines. Change them in Grillo, not on GitHub: a comment
+  whose header lines were edited by hand makes that ticket unreadable, and also makes the ticket list refuse for
+  the whole project, because the list reads every ticket's comments. The same goes for a ticket whose body
+  sections or kind labels were edited by hand. Put the header, body or label back on GitHub to recover.
+- **Answering from a phone or browser:** any comment without a marker waits in the ticket's pick-up list until an
+  answer is made from it. Deleting that answer puts the comment back and the question reads unanswered again.
+- **Closing** closes the issue as completed. **Merging** writes the decision "Merged into #<other>" and closes the
+  issue as a duplicate of the other ticket. **Reopening** takes the ticket's line off the map's settled list.
+  After a close or a merge Grillo reports whether the map is done: no open ticket and no fog left.
+- **A closed (archived) project** can still be read; every change to the map or a ticket is refused.
+- Issues without Grillo's labels, and pull requests, are ignored.
 
 ## Agents
 
