@@ -1,0 +1,7 @@
+{
+  "sections": [
+    { "name": "Problem", "note": "What goes wrong today, and the outcomes wanted" },
+    { "name": "Flows", "note": "The steps people take" },
+    { "name": "Permissions", "note": "Who may see and change what" }
+  ]
+}

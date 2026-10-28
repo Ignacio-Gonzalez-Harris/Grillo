@@ -354,6 +354,36 @@ opens. A closed ticket, or one someone else holds, is shown with the reason and 
 - **Developers:** the screen's id is `own-time`, opened with `{ project: '<owner>/<repo>', ticket: '<number>' }`.
   `npx vitest run src/renderer/screens/own-time` runs its tests against the in-memory store and fake terminals.
 
+## Answer skill
+
+The agent behind own-time answering and the comment pickup is the skill `grillo-answer`, shipped into the project
+folder with the other Grillo skills. It records every answer the way the grilling engine does: the contradiction
+check, then the source file pushed to `main`, then the answer comment.
+
+- **`/grillo-answer <ticket number>`** (typed by the own-time screen's "With a grilling agent"): the agent takes the
+  ticket for you (a ticket someone else holds is refused, naming who holds it), then asks its open questions one at a
+  time, with follow-up questions. Each answer is saved with your words as an own-time source ("Grillo, own-time chat
+  on ticket #<n>"); an answer that took follow-up questions also keeps the exchange, word for word, as its discussion.
+- **Done** (the screen types `done`, or you say it): every question answered posts the decision, closes the ticket,
+  adds its line under Settled on the map, and starts `/grillo-prd` when no open ticket and no fog are left. Questions
+  still open release the ticket back to the pool, unlocked, with the open ones named. The agent then stops.
+- **`/grillo-answer pickup`** (typed by "Pick up GitHub comments" on ticket management, when that control lands):
+  every plain comment members wrote on an open ticket in GitHub's web or phone app becomes the answer to the question
+  it answers. The source is the comment word for word, with its author and date ("GitHub comment <id> on ticket
+  #<n>"); the answer is marked `via: github`, names the comment in `from:`, and names you as the one who recorded it.
+  It works on tickets someone else holds and never changes who holds them. A comment that answers no question is left
+  as it is. A ticket left with every question answered is closed as Done does.
+- **Undo a picked-up answer:** delete its answer comment; the plain comment waits for the next pickup.
+- **Run it by hand (developers):** in a clone of a made-up test project with a map, tickets and `.grillo/` on `main`,
+  copy `resources/skills/grillo-wayfinder/`, `resources/skills/grillo-prd/` and `resources/skills/grillo-answer/` into
+  `.claude/skills/`, start `claude` there and type `/grillo-answer <ticket number>` or `/grillo-answer pickup`. Never
+  use real comments or customer text.
+- **Developers:** `npx vitest run resources/skills/grillo-answer` checks the skill's frontmatter and its two commands
+  against the catalogue, the screen messages it handles against the catalogue's protocol, the sources and answer it
+  teaches against grillo-wayfinder's record-answer reference and the store's own parsers, and five fixtures (before,
+  after done with a question open, after done with all answered, after a pickup, after the pickup that completes the
+  map) against the store layout and the rules of each run.
+
 ## Nudges
 
 Grillo reminds you of tickets you took, or were sent, that have had no answer for days. There is no screen: it is
