@@ -1,0 +1,19 @@
+/*
+ * An agent's tab, laid out as the UX prototype's agent screens (docs/ux/prototypes/grillo/index.html: the meeting
+ * screen's `.split`, the generic agent tab's full-width terminal). Every value comes from theme/tokens.css.
+ */
+
+/* The window fits the app's height while an agent tab is open, so the terminal takes the height that is left. */
+.shell:has(.agent-tab) { height: 100vh; }
+.window-body:has(> .screen > .agent-tab) { align-content: stretch; }
+.screen:has(> .agent-tab) { display: flex; min-height: 0; }
+.agent-tab { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+.agent-tab.with-controls { grid-template-columns: var(--size-side-column) minmax(0, 1fr); align-items: start; }
+.agent-tab-body { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--space-3); min-height: 0; align-self: stretch; }
+.agent-tab-gone { padding: var(--space-5); }
+.agent-tab-gone p { margin: 0; }
+.tab .tab-panel { display: inline-flex; align-items: center; }
+
+@media (max-width: 760px) {
+  .agent-tab.with-controls { grid-template-columns: minmax(0, 1fr); }
+}

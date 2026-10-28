@@ -16,7 +16,10 @@ Every screen sits in one window: the title bar ("Grillo" and where you are), the
   text stays readable. To preview it, open the developer tools console and run
   `document.body.classList.add('no-glass')`.
 - **Developers.** A new screen is a new folder `src/renderer/screens/<name>/index.ts` exporting `id`, `title` and
-  `mount(el, params, shell)`; no shared file changes. Every colour and spacing value is a `var(--...)` token from
+  `mount(el, params, shell)`; no shared file changes. It may also export `start(shell)`, run once when the shell
+  starts (for work that outlives the screen; it may return a cleanup function), and `shell.onAgentTabs(listener)`
+  tells it the agent tabs now and after every change, once each tab's header slot (`shell.agentTabHeader(id)`)
+  exists. Every colour and spacing value is a `var(--...)` token from
   `src/renderer/theme/tokens.css`, an exact copy of the UX prototype's token file: the token lint test fails on a
   literal value, and on a copy that differs from the prototype.
 
@@ -124,7 +127,7 @@ The map and ticket screens arrive with their own stories. What already works und
 
 ## Agents
 
-The agent runtime is in place; the tab that shows an agent's terminal arrives with its own story.
+Each agent shows in its own tab: click the agent's name on the tab bar.
 
 - **Claude Code must be installed and on PATH.** Each agent is your own `claude`, started with no extra flags
   in the project folder. Without it, starting an agent fails with "Claude Code was not found: there is no
@@ -138,6 +141,26 @@ The agent runtime is in place; the tab that shows an agent's terminal arrives wi
 - **Several agents run at once**; stopping one leaves the others running. Closing Grillo stops them all.
 - **The waiting dot:** an agent counts as waiting for you once it has printed nothing for 3 seconds after
   printing something, and stops waiting as soon as it prints again.
+
+### The agent tab
+
+- **The tab shows the agent's own Claude Code terminal** (release 1; the chat view comes in release 2). It fills
+  the window and follows its size.
+- **Typing is always available.** Click into the terminal and type, exactly as in a normal terminal (arrow keys,
+  Esc and Enter included). Or use the box under it ("Type to the agent…"): Enter or Send types the line into the
+  agent, then presses Enter. Send on an empty box presses Enter alone.
+- **Nothing is lost when you switch tabs.** An agent keeps its terminal from the moment its tab appears: what it
+  prints while you are on another tab, and any half-typed text in the box, are still there when you come back.
+- **When an agent stops**, its tab goes away. Opening it from an old link says "This agent is not running."
+- **Developers: tab panels.** A story adds to the agent tab with a file `src/renderer/screens/<name>/tab-panel.ts`
+  that exports as `default` one panel or an array of panels, each `{ kinds, slot, priority, mount }`: `kinds` is
+  `'all'` or a list of agent kinds; `slot` is `body` (the main view: only the highest priority shows; the built-in
+  terminal has priority 0), `controls` (a column beside the body, as on the meeting screen) or `header` (inside the
+  agent's tab on the tab bar, beside its name and dot, such as the Channel switch); higher priority comes first.
+  `mount(el, context)` runs once per agent when its tab appears and may return `shown()` (each time the tab is
+  opened), `dispose()` (when the agent stops) and, for a body, `setInput(text)`. `context.setInput(text)` puts text
+  into the type box. A malformed `tab-panel.ts`, or two body panels tied for one kind, stops Grillo at start with
+  the folder named; a panel that throws is logged and the rest of the tab still works.
 
 ## Meeting
 

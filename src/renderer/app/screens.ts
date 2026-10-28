@@ -1,5 +1,5 @@
-import type { GrilloApi } from '../../shared/ipc';
-import type { AgentId } from '../../shared/agents';
+import type { GrilloApi, Unsubscribe } from '../../shared/ipc';
+import type { AgentId, AgentInfo } from '../../shared/agents';
 
 /** What a screen is opened with, such as `{ agentId: 'a1' }` for an agent's tab. */
 export type ScreenParams = Readonly<Record<string, string>>;
@@ -12,6 +12,11 @@ export interface ShellContext {
   navigate(screenId: string, params?: ScreenParams): void;
   /** The empty element inside an agent's tab, beside its name and waiting dot, where a header control mounts. */
   agentTabHeader(agentId: AgentId): HTMLElement | undefined;
+  /**
+   * Calls `listener` with the agent tabs the tab bar shows now, then again after every change, once the tab bar has
+   * drawn them (so `agentTabHeader` finds each one).
+   */
+  onAgentTabs(listener: (agents: readonly AgentInfo[]) => void): Unsubscribe;
 }
 
 /**
@@ -22,6 +27,11 @@ export interface ScreenModule {
   id: string;
   title: string;
   mount(el: HTMLElement, params: ScreenParams, shell: ShellContext): void | (() => void);
+  /**
+   * Optional: runs once when the shell starts, for work that outlives the screen (such as decorating every agent
+   * tab). It may return a function the shell calls when it is disposed.
+   */
+  start?(shell: ShellContext): void | (() => void);
 }
 
 export type ScreenRegistry = ReadonlyMap<string, ScreenModule>;
@@ -42,7 +52,8 @@ function isScreenModule(module: unknown): module is ScreenModule {
     typeof candidate?.id === 'string' &&
     candidate.id !== '' &&
     typeof candidate.title === 'string' &&
-    typeof candidate.mount === 'function'
+    typeof candidate.mount === 'function' &&
+    (candidate.start === undefined || typeof candidate.start === 'function')
   );
 }
 

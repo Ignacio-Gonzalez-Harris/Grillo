@@ -1,0 +1,1 @@
+Every agent's tab now shows its live Claude Code terminal with a type box, kept across tab switches, and other stories add meeting controls, tab headers or the chat view through `tab-panel.ts` files without touching the agent tab.

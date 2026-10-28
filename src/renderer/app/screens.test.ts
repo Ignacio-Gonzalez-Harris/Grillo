@@ -18,6 +18,7 @@ describe('screen discovery', () => {
     ['an empty id', { id: '', title: 'T', mount }],
     ['no title', { id: 'x', mount }],
     ['no mount function', { id: 'x', title: 'T', mount: 'not a function' }],
+    ['a start that is not a function', { id: 'x', title: 'T', mount, start: 'soon' }],
     ['nothing at all', null],
   ])('names the folder whose index.ts exports %s', (_case, module) => {
     expect(() => registerScreens({ '/src/renderer/screens/broken/index.ts': module })).toThrow(
