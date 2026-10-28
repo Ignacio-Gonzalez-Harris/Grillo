@@ -1,0 +1,66 @@
+/*
+ * Own-time answering, ported from the UX prototype's screen-own-time-answering (docs/ux/prototypes/grillo/index.html).
+ * The prototype's helper classes this screen needs, kept under .own-time so no other screen is touched.
+ * Every colour, spacing, radius and size comes from theme/tokens.css.
+ */
+.own-time { display: grid; gap: var(--space-5); align-content: start; }
+.own-time .strong { font-weight: var(--font-weight-strong); }
+.own-time .m0 { margin: 0; }
+.own-time .fill { flex: 1; min-width: 0; }
+.own-time .card > :last-child { margin-bottom: 0; }
+
+/* ---------- Question rows: the text takes the room, the badge stays on the right ---------- */
+.own-time .rows > li > span:first-child { flex: 1; min-width: 0; }
+.own-time .rows.card { padding: 0 var(--space-4); }
+
+/* ---------- Domain tags ---------- */
+.own-time .tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); color: var(--color-text); white-space: nowrap; }
+.own-time .tag.d1 { background: var(--color-tag-1); }
+.own-time .tag.d2 { background: var(--color-tag-2); }
+.own-time .tag.d3 { background: var(--color-tag-3); }
+.own-time .tag.d4 { background: var(--color-tag-4); }
+.own-time .tag.none { background: var(--color-tag-none); }
+
+/* ---------- With a grilling agent / In a form ---------- */
+.own-time .seg { display: inline-flex; justify-self: start; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
+.own-time .seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
+.own-time .seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
+.own-time .seg button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+
+/* ---------- Answer fields ---------- */
+.own-time textarea { font: inherit; color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-textarea-min); width: 100%; resize: vertical; }
+.own-time textarea:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
+.own-time .file-input, .own-time [hidden] { display: none; }
+
+/* ---------- Notes ---------- */
+.own-time .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.own-time .note.warn { background: var(--color-warning-soft); }
+.own-time .note.err { background: var(--color-danger-soft); }
+.own-time .note.ok { background: var(--color-success-soft); }
+
+/*
+ * On the agent tab of an agent this screen started (the prototype's `.split.rev`): the ticket's heading row above
+ * the terminal, the questions card and Done in the column on the right. The panel's wrappers step aside
+ * (`display: contents`) so its two parts take their places in the agent tab's grid.
+ */
+.agent-tab.with-controls:has(.own-time-panel:not([hidden])) {
+  grid-template-columns: minmax(0, 1fr) var(--size-side-column);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "head side" "body side";
+}
+.agent-tab:has(.own-time-panel:not([hidden])) .agent-tab-controls,
+.agent-tab:has(.own-time-panel:not([hidden])) .agent-tab-control,
+.own-time-panel:not([hidden]) { display: contents; }
+.agent-tab:has(.own-time-panel:not([hidden])) > .agent-tab-body { grid-area: body; }
+.own-time-panel .own-time-head { grid-area: head; }
+.own-time-panel .own-time-side { grid-area: side; align-self: start; }
+
+/* A grilling agent this screen did not start keeps its tab as it was: no empty column. */
+.own-time-panel[hidden] { display: none; }
+.agent-tab-controls:has(> .agent-tab-control:only-child > .own-time-panel[hidden]) { display: none; }
+.agent-tab.with-controls:has(> .agent-tab-controls > .agent-tab-control:only-child > .own-time-panel[hidden]) { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .agent-tab.with-controls:has(.own-time-panel:not([hidden])) { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "body" "side"; grid-template-rows: auto minmax(0, 1fr) auto; }
+}
