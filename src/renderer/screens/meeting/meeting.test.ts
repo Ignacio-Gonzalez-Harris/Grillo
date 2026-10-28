@@ -469,7 +469,7 @@ describe('meeting screen: another grilling agent', () => {
 });
 
 describe('meeting agents: the list the panels share', () => {
-  it('remembers each agent once, in the order started, marks the extra ones, and ignores unknown ids', () => {
+  it('remembers each agent once, marks the extra ones, and ignores unknown ids', () => {
     const agents = createMeetingAgents();
     const changes = vi.fn();
     agents.onChange(changes);
