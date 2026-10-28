@@ -1,3 +1,4 @@
+import { type FirstFrameProbe, openMacLoopback } from '../../main/features/audio-mac/loopback-check';
 import type { CaptureSource, InputDevice, StartCaptureResult } from '../../shared/audio';
 import type { GrilloApi } from '../../shared/ipc';
 
@@ -31,6 +32,8 @@ export interface AudioCaptureDeps<S extends CaptureStream> {
   grillo: Pick<GrilloApi, 'invoke'>;
   mediaDevices: CaptureMediaDevices<S>;
   openSliceSource: OpenSliceSource<S>;
+  /** Confirms the call audio's first frame arrives, where main asks for it (a Mac). */
+  firstLoopbackFrame?: FirstFrameProbe<ReturnType<S['getAudioTracks']>[number]>;
 }
 
 export interface AudioCapture {
@@ -93,6 +96,10 @@ export function createAudioCapture<S extends CaptureStream>(deps: AudioCaptureDe
   async function openCallAudio(): Promise<S | Failure> {
     const support = await grillo.invoke('audio:call-support', undefined);
     if (!support.supported) return failure('unsupported', support.reason);
+    if (support.confirmFramesArrive) {
+      const mac = await openMacLoopback(() => mediaDevices.getDisplayMedia({ video: true, audio: true }), deps.firstLoopbackFrame);
+      return mac.ok ? mac.stream : failure(mac.reason === 'permissionMissing' ? 'permission-denied' : 'unsupported', mac.message);
+    }
     let stream: S;
     try {
       // Chromium only shares display audio together with a video track; the video is dropped at once.
