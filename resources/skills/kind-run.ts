@@ -84,8 +84,8 @@ export function checkKindRun(beforeFiles: Record<string, string>, afterFiles: Re
     }
   }
   for (const path of Object.keys(afterFiles).filter((name) => !(name in beforeFiles))) {
-    if (!COMMENT_FILE.test(path) && !SOURCE_FILE.test(path)) {
-      problems.push(`the run wrote the file ${path}, which is no source and no comment`);
+    if (!COMMENT_FILE.test(path) && !SOURCE_FILE.test(path) && !TICKET_BODY.test(path)) {
+      problems.push(`the run wrote the file ${path}, which is no source, comment or ticket`);
     } else if (MACHINE_PATH.test(afterFiles[path])) {
       problems.push(`the run wrote an absolute machine path into ${path}`);
     }

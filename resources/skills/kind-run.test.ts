@@ -44,7 +44,23 @@ function withoutComment(files: Record<string, string>, id: string): Record<strin
   return Object.fromEntries(Object.entries({ ...files, [MANIFEST]: JSON.stringify(manifest) }).filter(([path]) => path !== body));
 }
 
+/** A fixture with one more open grilling ticket hung under the map, as a run's Drift or Done step opens one. */
+function withNewTicket(files: Record<string, string>, why: string): Record<string, string> {
+  const manifest = JSON.parse(files[MANIFEST]) as { tickets: unknown[] };
+  manifest.tickets.push({ number: 4, title: 'How a group pays for a room', labels: ['wayfinder:grilling'], state: 'open', assignee: null, parent: 1, blockedBy: [], body: 'issues/4.md', comments: [] });
+  const body = ['### Question', 'How does a group pay for a room?', '', '### Why it matters', why, '', '### Assumptions', '', '### Questions', '- Q4.1 How does a group pay for a room?', '', '### Blocked by', ''].join('\n');
+  return { ...files, [MANIFEST]: JSON.stringify(manifest), 'issues/4.md': body };
+}
+
 describe('the kind agent run check', () => {
+  it('accepts a run that opens a new ticket, as its Drift and Done steps may, and checks its body for machine paths', () => {
+    const opened = withNewTicket(research.after, 'Flows: writing bookings needs the paid plan the research found.');
+    const leaked = withNewTicket(research.after, 'Flows: the price list in C:\\Users\\ada-example\\prices.txt decides it.');
+
+    expect(checkKindRun(research.before, opened, RESEARCH_RUN).problems).toEqual([]);
+    expect(checkKindRun(research.before, leaked, RESEARCH_RUN).problems).toEqual(['the run wrote an absolute machine path into issues/4.md']);
+  });
+
   it('passes each kind agent run its fixtures show', () => {
     expect(checkKindRun(research.before, research.after, RESEARCH_RUN).problems).toEqual([]);
     expect(checkKindRun(prototype.before, prototype.after, PROTOTYPE_RUN).problems).toEqual([]);
