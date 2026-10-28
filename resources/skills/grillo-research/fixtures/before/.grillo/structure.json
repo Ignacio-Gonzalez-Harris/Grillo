@@ -1,0 +1,16 @@
+{
+  "sections": [
+    {
+      "name": "Problem",
+      "note": "What goes wrong today, and the outcomes wanted"
+    },
+    {
+      "name": "Flows",
+      "note": "The steps people take"
+    },
+    {
+      "name": "Build decisions",
+      "note": "What the app is built on"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "map": {
+    "number": 1,
+    "title": "Map",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "state": "open",
+    "body": "issues/1.md"
+  },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "Export a sample of last month's sign-ups",
+      "labels": [
+        "wayfinder:task",
+        "domain:developer"
+      ],
+      "state": "closed",
+      "assignee": "ben-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": [
+        {
+          "id": "2001",
+          "author": "ben-example",
+          "createdAt": "2026-10-26T16:02:00.000Z",
+          "body": "comments/2001.md"
+        },
+        {
+          "id": "2002",
+          "author": "ben-example",
+          "createdAt": "2026-10-26T16:02:00.000Z",
+          "body": "comments/2002.md"
+        },
+        {
+          "id": "2003",
+          "author": "ben-example",
+          "createdAt": "2026-10-27T10:22:00.000Z",
+          "body": "comments/2003.md"
+        },
+        {
+          "id": "2004",
+          "author": "ben-example",
+          "createdAt": "2026-10-27T10:25:00.000Z",
+          "body": "comments/2004.md"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Why volunteers miss their shifts",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:product"
+      ],
+      "state": "closed",
+      "assignee": "ada-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/3.md",
+      "comments": [
+        {
+          "id": "3001",
+          "author": "ada-example",
+          "createdAt": "2026-10-25T09:01:00.000Z",
+          "body": "comments/3001.md"
+        },
+        {
+          "id": "3002",
+          "author": "ada-example",
+          "createdAt": "2026-10-25T09:05:00.000Z",
+          "body": "comments/3002.md"
+        }
+      ]
+    }
+  ]
+}

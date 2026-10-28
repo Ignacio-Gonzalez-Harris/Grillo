@@ -1,0 +1,16 @@
+{
+  "sections": [
+    {
+      "name": "Problem",
+      "note": "What goes wrong today, and the outcomes wanted"
+    },
+    {
+      "name": "Screens",
+      "note": "What members see"
+    },
+    {
+      "name": "Flows",
+      "note": "The steps people take"
+    }
+  ]
+}
