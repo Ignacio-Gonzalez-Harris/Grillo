@@ -1,0 +1,57 @@
+/*
+ * Project creation and invites, ported from the UX prototype's screen-project-creation
+ * (docs/ux/prototypes/grillo/index.html). The prototype's helper classes this screen needs, kept under
+ * .project-creation so no other screen is touched. Every colour, spacing, radius and size comes from theme/tokens.css.
+ */
+.project-creation { display: grid; gap: var(--space-5); align-content: start; }
+.project-creation .strong { font-weight: var(--font-weight-strong); }
+.project-creation .m0 { margin: 0; }
+.project-creation .fill { flex: 1; min-width: 0; }
+.project-creation .full { flex-basis: 100%; }
+.project-creation .card > :last-child { margin-bottom: 0; }
+.project-creation .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+
+/* ---------- Fields ---------- */
+.project-creation input[type="text"], .project-creation input[type="search"], .project-creation select, .project-creation textarea { font: inherit; color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); width: 100%; }
+.project-creation textarea { min-height: var(--size-textarea-min); resize: vertical; }
+.project-creation input:disabled, .project-creation select:disabled, .project-creation textarea:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
+.project-creation .field { display: grid; gap: var(--space-1); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
+.project-creation .file-input { display: none; }
+.project-creation .reason { font-size: var(--font-size-s); color: var(--color-warning); }
+
+/* ---------- New repository / Connect an existing one, and the idea's format ---------- */
+.project-creation .seg { display: inline-flex; justify-self: start; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
+.project-creation .seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
+.project-creation .seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
+.project-creation .seg button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+
+/* ---------- Domain and file tags ---------- */
+.project-creation .tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); font-weight: var(--font-weight-regular); color: var(--color-text); white-space: nowrap; }
+.project-creation .tag.d1 { background: var(--color-tag-1); }
+.project-creation .tag.d2 { background: var(--color-tag-2); }
+.project-creation .tag.d3 { background: var(--color-tag-3); }
+.project-creation .tag.d4 { background: var(--color-tag-4); }
+.project-creation .tag.none { background: var(--color-tag-none); }
+.project-creation .tag-remove { font: inherit; border: 0; background: none; padding: 0; color: var(--color-text-muted); cursor: pointer; }
+
+/* ---------- Rows: projects, invitations, sections, members and the creating steps ---------- */
+.project-creation .rows .grow { flex: 1; min-width: 0; }
+.project-creation .rows > li.selected { background: var(--color-accent-soft); border-radius: var(--radius-s); padding-left: var(--space-2); padding-right: var(--space-2); }
+.project-creation .rows.card { padding: 0 var(--space-4); }
+.project-creation .rows.structure > li { align-items: center; }
+.project-creation .sdot { display: inline-block; width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-disabled); flex: none; }
+.project-creation .sdot.ok { background: var(--color-success); }
+.project-creation .sdot.warn { background: var(--color-warning); }
+.project-creation .sdot.err { background: var(--color-danger); }
+
+/* ---------- Notes ---------- */
+.project-creation .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.project-creation .note.warn { background: var(--color-warning-soft); }
+.project-creation .note.err { background: var(--color-danger-soft); }
+.project-creation .note.ok { background: var(--color-success-soft); }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .project-creation .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .project-creation .rows .grow { flex-basis: 100%; }
+}

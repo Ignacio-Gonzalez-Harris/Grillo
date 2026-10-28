@@ -96,6 +96,35 @@ The project screens arrive with their own stories. What already works underneath
   refused until someone reopens it.
 - **The project list** is the recent projects on this laptop (opened before), minus any whose repository is gone.
 
+### The project screen
+
+The Project tab. It opens on **Your projects** (the projects opened on this laptop, last opened first, each with
+Open) and **Pending invitations** (each with Accept).
+
+- **Accept** takes the GitHub repository invite in one click, then asks for your role (free text) and domains,
+  pre-filled from the last project you joined. "Save and open the project" saves them and opens the map.
+- **New project** opens the form, in four cards:
+  1. **Repository.** "Create a new repository": a project name (it suggests the repository name), the
+     organisation (the GitHub organisations your sign-in belongs to) and the repository name. "Connect an existing
+     one": type `owner/repository` and press "Check access". With write access only, inviting is greyed out with the
+     reason; admin access allows it.
+  2. **PRD structure.** "Start from" Grillo's default of 13 sections or an earlier project's structure, then move
+     sections up or down, rename them, change their notes, remove them or add new ones. When connecting, it is
+     folded until you press Edit.
+  3. **Members.** Type a GitHub login and press Invite; invites are sent when the project is created. Set your own
+     role and domains (pre-filled from the last project you joined).
+  4. **The idea.** Write or paste text, with documents attached (text files), or paste or upload a transcript.
+- **Create project** (or "Connect and start") lists each step as it runs: the repository with Grillo's labels and
+  folder, your role and domains, the invites, the idea saved as source S1 (attached documents as S2, S3, …), then a
+  grilling agent started in the project folder with `/grillo-wayfinder .grillo/sources/S1.md`. A failed step shows
+  its reason; "Try again" carries on from that step. Then open the map or the grilling agent.
+- **A repository that already holds a Grillo project** is not connected twice: "Open it" opens that project. One
+  that cannot be connected (issues turned off, read access only) says why, with "Check again".
+- **Editing the structure later.** The PRD view's "Edit structure and regenerate" opens this screen with the
+  project (`{ project: '<owner>/<repo>' }`): edit the sections, then "Save and regenerate" saves
+  `.grillo/structure.json` and starts a grilling agent with `/grillo-prd regenerate`; Cancel goes back unsaved.
+- **Your last role and domains** are kept in the app data folder's `settings.json` under `lastMembership`.
+
 ## Map and tickets
 
 The map and ticket screens arrive with their own stories. What already works underneath them, through `gh`:
