@@ -197,6 +197,35 @@ The meeting screen's record button arrives with its own story; the capture under
 - **Call audio on Windows** needs no permission and shows no picker; it captures every sound the computer plays,
   including notification sounds.
 
+## Grilling engine
+
+The grilling engine is the skill `grillo-wayfinder`, shipped into the project folder with the other Grillo skills.
+The screen that starts it arrives with the project creation story; until then a developer can run it by hand.
+
+- **What it does:** `/grillo-wayfinder .grillo/sources/S1.md` reads the idea from that source file and, with no
+  questions asked, creates the map issue (destination always "A PRD for ..."), the tickets with their numbered
+  questions (`Q<ticket>.<k>`), the fog and the out-of-scope lines. Tickets start with no domain: run the tagging
+  round next.
+- **Every PRD structure section is covered:** at the start of every session, a section of `.grillo/structure.json`
+  with no settled decision, no open ticket and no fog line gets a ticket or a fog line. A ticket's "Why it matters"
+  and a fog line start with the section's name and ": ", which is how the engine tells sections apart.
+- **Recording an answer** always runs in this order: the contradiction check (the agent re-reads the map and the
+  related tickets; on a clash it asks you follow-up questions and records nothing until you settle it), then the
+  source file `.grillo/sources/S<n>.md` pushed to `main`, then the answer comment.
+- **Taking a ticket:** the agent assigns you, re-reads the assignees, and backs off when someone else was assigned
+  first.
+- **The map-done rule:** after every ticket the agent closes or merges, it re-reads the map; with no open ticket and no
+  fog left it says the map is done and starts `/grillo-prd`.
+- **Release 1 runs grilling agents only.** Research, prototype and task tickets are created, and you work them as
+  grilling (tell the agent what you found, built or saw) until release 3.
+- **Run it by hand (developers):** in a clone of a made-up test project with `.grillo/sources/S1.md` and
+  `.grillo/structure.json` on `main`, copy `resources/skills/grillo-wayfinder/` into `.claude/skills/`, start
+  `claude` there and type `/grillo-wayfinder .grillo/sources/S1.md`. Never use a real transcript or customer text.
+- **Developers:** `npx vitest run resources/skills/grillo-wayfinder` checks the skill's frontmatter and command
+  against the catalogue, every record format it teaches against the store's own parsers and
+  `docs/store-layout.md`, and its fixture of a session's output with `resources/skills/fixture-check.ts`, the checker
+  other skills' tests reuse for their own fixtures.
+
 ## Own-time answering
 
 Nothing to do yet: own-time answering arrives with its own story.

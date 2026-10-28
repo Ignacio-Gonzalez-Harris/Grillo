@@ -152,6 +152,10 @@ Free text.
 Settled holds one line per closed ticket, `- #<ticket issue number> <gist>`. Fog and out of scope hold one
 `- ` line per item.
 
+A fog line an engine skill writes starts with the name of the PRD structure section it belongs to, exactly as
+`structure.json` spells it, then `: ` (`- Problem: pricing is unclear`), so a skill can tell which sections are
+covered.
+
 ## Ticket issues
 
 Every ticket is a native sub-issue of the map. Its title is the ticket's title; its kind and domains are
@@ -181,6 +185,9 @@ Every screen needs a member.
   is known only once the issue exists, so the questions are written by an edit right after the issue is
   created. A removed question keeps its line as `- Q<n>.<k> (removed)`, so the next question takes the
   highest `k` plus one and a code is never reused.
+- **Why it matters:** on a ticket an engine skill writes, it starts with the name of the PRD structure section
+  its answers feed, exactly as `structure.json` spells it, then `: ` (`Users and roles: every screen needs a
+  member.`).
 - **Answered:** a question is answered when an answer comment on the ticket names its code in `question:`.
 - **Blocked by:** one `- #<issue number>` line per blocker, set together with GitHub's native "blocked by"
   relation; the two always agree.
