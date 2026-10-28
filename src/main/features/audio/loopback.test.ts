@@ -20,9 +20,10 @@ function host(screens: () => Promise<string[]>) {
 }
 
 describe('call audio', () => {
-  it('is supported on Windows only; a Mac gets a typed unsupported answer', () => {
+  it('is supported on Windows and on macOS 14.2+; an older Mac gets a typed unsupported answer', () => {
     expect(callAudioSupport('win32')).toEqual({ supported: true });
-    expect(callAudioSupport('darwin')).toEqual({ supported: false, reason: expect.stringContaining('Mac') });
+    expect(callAudioSupport('darwin', '14.2')).toMatchObject({ supported: true });
+    expect(callAudioSupport('darwin', '14.1')).toEqual({ supported: false, reason: expect.stringContaining('Mac') });
   });
 
   it('on Windows answers display-media requests with loopback audio and the first screen', async () => {
@@ -44,9 +45,9 @@ describe('call audio', () => {
     await expect(failing.request()).resolves.toBeNull();
   });
 
-  it('installs nothing on a Mac', () => {
+  it('installs nothing on a Mac older than macOS 14.2', () => {
     const { fake } = host(async () => ['screen:1']);
-    installCallAudioHandler('darwin', fake);
+    installCallAudioHandler('darwin', fake, '14.1');
 
     expect(fake.setDisplayMediaRequestHandler).not.toHaveBeenCalled();
   });
