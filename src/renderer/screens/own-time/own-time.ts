@@ -176,6 +176,7 @@ export function mountOwnTime(container: HTMLElement, params: ScreenParams, deps:
       const agentId = agents.agentFor(id, await runningAgents(grillo));
       if (agentId !== undefined) {
         await sendDone(grillo, agentId);
+        agents.markDone(agentId);
         doneSentToAgent = true;
         return;
       }
@@ -245,6 +246,8 @@ export function mountOwnTime(container: HTMLElement, params: ScreenParams, deps:
     try {
       const view = await readTicketView(store, id);
       const reason = unavailableReason(view);
+      // Taking the ticket back from the pool starts a fresh answer: an agent that already finished it no longer counts.
+      if (reason === null && view.ticket.assignee === null) agents.retireFinished(id);
       set(reason === null ? { name: 'form', view: await takeTicket(store, view) } : { name: 'unavailable', message: reason });
     } catch (error) {
       set({ name: 'failed', message: messageOf(error) });

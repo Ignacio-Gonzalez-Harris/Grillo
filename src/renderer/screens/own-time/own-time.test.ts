@@ -467,6 +467,23 @@ describe('own-time answering: with a grilling agent', () => {
     expect(buttonNamed(content(), 'Done')?.disabled).toBe(true);
   });
 
+  it('stops counting an agent that finished the ticket once the member takes it back: the form closes it itself', async () => {
+    const { store, ticket, ptys, content, code, open } = await app();
+    await open();
+    await click(content(), 'With a grilling agent');
+    await click(panel(content()) as HTMLElement, 'Done');
+    // The agent releases the ticket with its questions open; its Claude Code keeps running.
+    await store.releaseTicket(ticket.id);
+    for (const k of [1, 2, 3]) await store.createAnswer(ticket.id, answerFrom(code(k), 'Sample answer.'));
+
+    await click(panel(content()) as HTMLElement, 'In a form');
+    await click(content(), 'Done');
+
+    expect(ptys[0].written).toEqual(['done', '\r']);
+    expect((await store.getTicket(ticket.id)).state).toBe('closed');
+    expect(text(content().querySelector('.note.ok'))).toBe('All questions answered. Sample ticket 4 is closed.');
+  });
+
   it('refreshes the answered states when the agent goes quiet after recording an answer', async () => {
     const { store, ticket, ptys, content, code, open } = await app();
     await open();

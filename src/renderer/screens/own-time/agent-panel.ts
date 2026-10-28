@@ -131,6 +131,8 @@ export function ownTimePanel({ agents }: OwnTimePanelOptions): TabPanel {
           loadError = null;
           if (doneSent && view.ticket.state === 'closed') outcome = 'closed';
           else if (doneSent && view.ticket.assignee === null) outcome = 'released';
+          // The agent has finished the ticket: it no longer answers it, though its tab stays open.
+          if (outcome !== null) agents.forget(agent.id);
         } catch (error) {
           loadError = messageOf(error);
         }
@@ -163,6 +165,7 @@ export function ownTimePanel({ agents }: OwnTimePanelOptions): TabPanel {
       function pressDone(): Promise<void> {
         return act(async () => {
           await sendDone(grillo, agent.id);
+          agents.markDone(agent.id);
           doneSent = true;
           return DONE_SENT;
         });
