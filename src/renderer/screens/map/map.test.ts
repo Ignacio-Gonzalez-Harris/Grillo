@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registerAgentChannels } from '../../../main/features/agents/channels';
 import { FakePty } from '../../../main/features/agents/fake-pty';
 import { WAITING_AFTER_MS } from '../../../main/features/agents/runtime';
+import { createSliceBus } from '../../../main/features/audio/slices';
+import { registerSessionChannels } from '../../../main/features/session/channels';
+import { createSessionHost } from '../../../main/features/session/session';
 import { registerStoreIpc } from '../../../main/features/store/ipc';
 import { createMainIpc } from '../../../main/ipc/bridge';
 import { createFakeIpc } from '../../../main/ipc/fake-ipc';
@@ -16,6 +19,12 @@ import type { GrilloApi } from '../../../shared/ipc';
 import { StoreError } from '../../../shared/store';
 import { registerScreens, type ScreenModule } from '../../app/screens';
 import { createShell, type Shell } from '../../app/shell';
+import { FakeTerminalView } from '../../components/terminal/fake-terminal-view';
+import { createAgentTabs, type AgentTabs } from '../agent-tab/agent-tabs';
+import { registerTabPanels } from '../agent-tab/tab-panels';
+import { terminalPanel } from '../agent-tab/terminal-panel';
+import { MEETING_AGENT_TITLE, MEETING_COMMAND } from '../meeting/meeting-agents';
+import meetingTabPanels from '../meeting/tab-panel';
 import { PRD_COMMAND, PRD_WRITER_TITLE, TAGGING_COMMAND, TAGGING_TITLE } from './agents';
 import * as mapScreen from './index';
 import { readMapView } from './map-data';
@@ -50,6 +59,8 @@ interface Setup {
   writeOnly?: boolean;
   /** No fog line on the map. */
   noFog?: boolean;
+  /** The live session in main and the agent tab with the meeting screen's panels, as the app wires them. */
+  meeting?: boolean;
 }
 
 /**
@@ -60,7 +71,7 @@ async function app(setup: Setup = {}) {
   const fake = createFakeIpc();
   const ipc = createMainIpc(fake.main, () => [fake.window]);
   const ptys: FakePty[] = [];
-  registerAgentChannels(ipc, {
+  const runtime = registerAgentChannels(ipc, {
     findClaude: () => '/opt/made-up/bin/claude',
     shipSkills: async () => undefined,
     spawnPty: (file, args, spawnOptions) => {
@@ -72,6 +83,11 @@ async function app(setup: Setup = {}) {
   });
   const store: MemoryStore = createMemoryStore({ now: () => NOW });
   registerStoreIpc(ipc, store, createMemorySettings());
+  if (setup.meeting) {
+    registerSessionChannels(ipc, createSessionHost({ store, slices: createSliceBus(), transcriber: { transcribe: async () => '' }, agents: runtime }));
+    // The speech model stays in preparation: these tests never record.
+    ipc.handle('transcription:ensure-model', () => new Promise<void>(() => undefined));
+  }
 
   const bridge = createGrilloApi(fake.renderer);
   const starts: StartAgentRequest[] = [];
@@ -100,10 +116,21 @@ async function app(setup: Setup = {}) {
 
   const root = document.createElement('div');
   document.body.append(root);
-  shell = createShell(root, {
-    grillo,
-    screens: registerScreens({ '/src/renderer/screens/map/index.ts': mapScreen as ScreenModule }),
-  });
+  const screens: Record<string, ScreenModule> = { '/src/renderer/screens/map/index.ts': mapScreen as ScreenModule };
+  if (setup.meeting) {
+    let tabs: AgentTabs | undefined;
+    const panels = registerTabPanels({}, [terminalPanel(() => new FakeTerminalView()), ...meetingTabPanels]);
+    screens['/src/renderer/screens/agent-tab/index.ts'] = {
+      id: 'agent-tab',
+      title: 'Agent',
+      start(shellContext) {
+        tabs = createAgentTabs(shellContext, panels);
+        return () => tabs?.dispose();
+      },
+      mount: (el, params) => (tabs as AgentTabs).show(el, params['agentId'] ?? ''),
+    };
+  }
+  shell = createShell(root, { grillo, screens: registerScreens(screens) });
 
   const content = () => root.querySelector('main') as HTMLElement;
   return {
@@ -235,6 +262,66 @@ describe('the map screen: tickets untagged', () => {
     expect(text(card(content(), 'Tickets')?.querySelector('.note'))).toContain('The tagging round runs in its own tab.');
     await click(content(), 'Open the tagging round');
     expect(document.querySelector('.tab.active')?.textContent).toContain(TAGGING_TITLE);
+  });
+});
+
+describe('the map screen: starting a live meeting', () => {
+  const meetingPanel = () => document.querySelector<HTMLElement>('.agent-tab .meeting-panel');
+  const ticketsHead = (content: HTMLElement) => card(content, 'Tickets')?.querySelector('.row') as HTMLElement;
+
+  it('"Start meeting" sits beside Add ticket and Run tagging round, starts a meeting agent with /grillo-meeting and opens its tab on the meeting panel', async () => {
+    const { store, project, starts, content, open } = await app({ meeting: true });
+    await sampleTickets(store, project);
+    await open();
+
+    expect(texts(ticketsHead(content()).querySelectorAll('button'))).toEqual(['Add ticket', 'Run tagging round', 'Start meeting']);
+    expect(buttonNamed(content(), 'Start meeting')?.className).toBe(buttonNamed(content(), 'Add ticket')?.className);
+    await click(content(), 'Start meeting');
+
+    expect(starts).toEqual([{ kind: 'grilling', folder: FOLDER, firstMessage: MEETING_COMMAND, title: MEETING_AGENT_TITLE }]);
+    expect(document.querySelector('.tab.active')?.textContent).toContain(MEETING_AGENT_TITLE);
+    expect(meetingPanel()?.hidden).toBe(false);
+  });
+
+  it('opens the running meeting agent’s tab instead of starting a second one, and starts a new one once it has stopped', async () => {
+    const { store, project, grillo, starts, content, open } = await app({ meeting: true });
+    await sampleTickets(store, project);
+    await open();
+    await click(content(), 'Run tagging round');
+    await click(content(), 'Start meeting');
+    const [, meeting] = await grillo.invoke('agents:list', undefined);
+
+    await open();
+    await click(content(), 'Start meeting');
+
+    expect(starts.map(({ firstMessage }) => firstMessage)).toEqual([TAGGING_COMMAND, MEETING_COMMAND]);
+    expect(document.querySelector('.tab.active')?.textContent).toContain(MEETING_AGENT_TITLE);
+    expect(meetingPanel()?.hidden).toBe(false);
+
+    await grillo.invoke('agents:stop', { id: meeting.id });
+    await settle();
+    await open();
+    await click(content(), 'Start meeting');
+
+    expect(starts.map(({ firstMessage }) => firstMessage)).toEqual([TAGGING_COMMAND, MEETING_COMMAND, MEETING_COMMAND]);
+    expect(meetingPanel()?.hidden).toBe(false);
+  });
+
+  it('opens the meeting agent another project is running instead of starting a second one on this laptop', async () => {
+    const { store, project, starts, content, open } = await app({ meeting: true });
+    await sampleTickets(store, project);
+    const other = await store.createProject({ newRepository: { organisation: 'example-org', name: 'sample-project-2' } });
+    await store.createMap(other.id, { destination: 'A PRD for Sample project 2.', notes: '', fog: [], outOfScope: [] });
+    await store.createTicket(other.id, ticketInput('Sample ticket 9'));
+    await open();
+    await click(content(), 'Start meeting');
+
+    await open({ project: other.id });
+    await click(content(), 'Start meeting');
+
+    expect(starts.map(({ firstMessage }) => firstMessage)).toEqual([MEETING_COMMAND]);
+    expect(document.querySelector('.tab.active')?.textContent).toContain(MEETING_AGENT_TITLE);
+    expect(meetingPanel()?.hidden).toBe(false);
   });
 });
 
@@ -480,6 +567,7 @@ describe('the map screen: closing and reopening the project', () => {
     expect(card(content(), 'Project')).toBeUndefined();
     expect(buttonNamed(content(), 'Add ticket')?.disabled).toBe(true);
     expect(buttonNamed(content(), 'Run tagging round')?.disabled).toBe(true);
+    expect(buttonNamed(content(), 'Start meeting')).toBeUndefined();
     expect(text(card(content(), 'Tickets')?.querySelector('.reason'))).toBe('Archived: reopen the project to change anything.');
     expect(rowOf(content(), 'Sample ticket 1').querySelectorAll('button')).toHaveLength(0);
     expect(card(content(), 'Sources')).toBeDefined();
@@ -489,6 +577,7 @@ describe('the map screen: closing and reopening the project', () => {
     expect((await store.getProject(project)).archived).toBe(false);
     expect(content().querySelector('.note.warn')).toBeNull();
     expect(buttonNamed(content(), 'Add ticket')?.disabled).toBe(false);
+    expect(buttonNamed(content(), 'Start meeting')?.disabled).toBe(false);
   });
 
   it('greys out Close project with the reason when the member is not a repository admin', async () => {

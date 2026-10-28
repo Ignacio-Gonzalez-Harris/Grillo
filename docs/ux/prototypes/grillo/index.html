@@ -748,7 +748,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The member sees where the project stands (destination, settled, fog, out of scope) and the ticket list, and runs the tagging round.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 3 · flows 4.2 steps 6 and 7 · 4.3 (Routing a question)</dd>
-      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; per ticket Edit, Merge, Close as out of scope; Sources list (code, kind, who, when, where) with Open to read a source's full text; Close project; Reopen on an archived project.</dd>
+      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; Start meeting (starts the live session's meeting agent and opens its tab on the meeting screen, or opens the running one's tab; hidden on an archived project); per ticket Edit, Merge, Close as out of scope; Sources list (code, kind, who, when, where) with Open to read a source's full text; Close project; Reopen on an archived project.</dd>
       <dt>States</dt><dd>Engine building the map (loading) · Tickets untagged · Tagged and assigned, with sources · Source opened · Map done · Closed project, archived</dd>
     </dl>
   </header>
@@ -796,7 +796,7 @@ Sample transcript line 2: a made-up reply.</textarea>
             <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
           </div>
           <div class="card stack">
-            <div class="row"><h3 class="m0">Tickets</h3><span class="spacer"></span><button class="btn">Add ticket</button><button class="btn primary">Run tagging round</button></div>
+            <div class="row"><h3 class="m0">Tickets</h3><span class="spacer"></span><button class="btn">Add ticket</button><button class="btn primary">Run tagging round</button><a class="btn" href="#screen-meeting/preparing">Start meeting</a></div>
             <p class="small muted">An agent gives every open ticket one or more domains from the members' domains: product, developer, platform.</p>
             <div class="table-wrap"><table>
               <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th><th>Blocked by</th><th></th></tr>
@@ -823,7 +823,7 @@ Sample transcript line 2: a made-up reply.</textarea>
             <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
           </div>
           <div class="card stack">
-            <div class="row"><h3 class="m0">Tickets</h3><span class="spacer"></span><div class="seg" role="group" aria-label="Filter"><button aria-pressed="false">All</button><button aria-pressed="true">My domains first</button></div><button class="btn">Add ticket</button><button class="btn">Run tagging round</button></div>
+            <div class="row"><h3 class="m0">Tickets</h3><span class="spacer"></span><div class="seg" role="group" aria-label="Filter"><button aria-pressed="false">All</button><button aria-pressed="true">My domains first</button></div><button class="btn">Add ticket</button><button class="btn">Run tagging round</button><a class="btn" href="#screen-meeting/preparing">Start meeting</a></div>
             <p class="small muted">Last tagging round: 2026-10-22, run by member-a. Rerun it when members join.</p>
             <div class="table-wrap"><table>
               <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th><th>Blocked by</th><th></th></tr>
@@ -1037,7 +1037,7 @@ Sample transcript line 2: a made-up reply.</textarea>
 <section id="screen-meeting" class="screen">
   <header class="screen-head glass">
     <h2>Meeting screen (on the grilling agent's tab)</h2>
-    <p class="purpose">The host runs a live grilling session from the grilling agent's own tab: ticks who is present, records consent, records, and lets the room answer each question by Listen or Type.</p>
+    <p class="purpose">The host runs a live grilling session from the grilling agent's own tab: ticks who is present, records consent, records, and lets the room answer each question by Listen or Type. Reached from Start meeting on the map.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 5 · flows 4.5 (Live grilling session) · 4.6 items 2 to 4 (tabs, typing, controls on the tab)</dd>
       <dt>Controls</dt><dd>Agent tabs named "kind · ticket" with a dot for "waiting for you" and an Open channel switch on each; "+" for a generic agent; present-member ticks; consent tick and read-aloud script; global Record switch; red Recording banner; Listen or Type per question; Use it; Skip question; Jump to ticket; running transcript strip; import a transcript; type box; terminal panel (release 1).</dd>
