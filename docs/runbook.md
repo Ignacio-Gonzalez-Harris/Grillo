@@ -125,6 +125,31 @@ The map and ticket screens arrive with their own stories. What already works und
 - **A closed (archived) project** can still be read; every change to the map or a ticket is refused.
 - Issues without Grillo's labels, and pull requests, are ignored.
 
+### The map screen
+
+The Map tab shows where the project stands. It opens the project it was opened for, or else the project you opened
+last on this laptop; with neither it says to open a project from the Project tab.
+
+- **The four map cards:** the destination, settled (one line per closed ticket: its title and the decision's gist),
+  fog and out of scope.
+- **While the engine builds the map** (no map yet, or a map with no ticket yet) the screen says so, and the tickets
+  appear as they are created. The screen reads GitHub again whenever an agent goes quiet (its tab's dot) or stops.
+- **The ticket list** shows every open ticket with its kind, domain tags (or "untagged", or "no domain"), who holds
+  it ("Locked") and the tickets it waits for. "My domains first" puts your own tickets, those of your domains and the
+  "no domain" ones first; "All" keeps issue order.
+- **Run tagging round** opens a grilling agent in its own tab that types `/grillo-tagging`; the tags appear when it
+  goes quiet. It is the main action until the first round has tagged a ticket.
+- **Add ticket** asks for a title, a kind, the question, why it matters and the questions, one per line (none: the
+  question itself is the only one). **Edit** changes the title, kind, question and why it matters.
+- **Merge** and **Close as out of scope** show only on tickets nobody holds. Merge closes the ticket as a duplicate
+  of the open ticket you pick. Close as out of scope writes a line under Out of scope, `<title>: <why> (#<number>)`,
+  then closes the ticket with no decision.
+- **Map done:** when a close or merge from this screen leaves no open ticket and no fog, Grillo starts the PRD writer
+  (a grilling agent typing `/grillo-prd`) and says so, with buttons to open it and the PRD tab.
+- **Sources** lists every source with its code, kind, who, the day and where; **Open** shows its full text.
+- **Close project** archives the repository; the map then shows "archived", greys out every change, and **Reopen**
+  unarchives it. Both need repository admin rights; without them the button is greyed out with the reason.
+
 ## Agents
 
 Each agent shows in its own tab: click the agent's name on the tab bar.
