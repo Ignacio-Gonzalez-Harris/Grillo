@@ -1,0 +1,18 @@
+/*
+ * The generic agent tab's naming dialog, ported from the UX prototype's screen-generic-agent-tab
+ * (docs/ux/prototypes/grillo/index.html). The prototype's helper classes this screen needs, kept under
+ * .generic-agent so no other screen is touched. Every colour, spacing, radius and size comes from theme/tokens.css.
+ */
+.generic-agent { display: grid; gap: var(--space-5); align-content: start; }
+.generic-agent .card > :last-child { margin-bottom: 0; }
+
+/* ---------- The tab name field ---------- */
+.generic-agent input[type="text"] { font: inherit; color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); width: 100%; }
+.generic-agent input:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
+.generic-agent .field { display: grid; gap: var(--space-1); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
+
+/* ---------- Notes ---------- */
+.generic-agent .status:empty { display: none; }
+.generic-agent .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.generic-agent .note.warn { background: var(--color-warning-soft); }
+.generic-agent .note.err { background: var(--color-danger-soft); }
