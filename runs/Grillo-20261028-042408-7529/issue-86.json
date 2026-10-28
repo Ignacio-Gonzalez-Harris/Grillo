@@ -1,0 +1,45 @@
+{
+  "run_id": "Grillo-20261028-042408-7529",
+  "issue": 86,
+  "title": "Nudges on tickets taken but silent for days",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T04:24:08Z",
+  "finished_at": "2026-10-28T04:45:30Z",
+  "outcome": "merged",
+  "pr": 137,
+  "summary": "Grillo now shows a system notification on open and once a day naming the member's taken tickets with no answer for N days (default 3); the nudges share the app's one store so pulls of a project folder stay serialised.",
+  "agents": [
+    {
+      "name": "dev-86",
+      "model": "opus",
+      "tokens_total": 147556
+    },
+    {
+      "name": "review-86-r1",
+      "model": "opus",
+      "tokens_total": 122387
+    },
+    {
+      "name": "review-86-r2",
+      "model": "opus",
+      "tokens_total": 115069
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 468,
+    "review_seconds": 529,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [
+    "CI could not start on any pull request (GitHub billing: no Actions minutes); every merge used the full local gate on Windows by the user's word, so no Mac build or test ran on these four merges"
+  ],
+  "lessons_learned": [
+    "A main-process feature that needs the store must reuse the store feature's instance (appStore): a second GitHub store gets its own folder queue and races git pulls in the same project folder"
+  ],
+  "deferred": []
+}

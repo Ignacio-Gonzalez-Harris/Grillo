@@ -1,0 +1,50 @@
+{
+  "run_id": "Grillo-20261028-042408-7529",
+  "issue": 83,
+  "title": "PRD view screen: versions, Markdown/HTML export, appendix, regenerate",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 138,
+  "merged_at": "2026-10-28T04:50:15Z",
+  "merge_commit": "a9c6f8dc500cccaa9e8e59ee4044c9846daa73a1",
+  "seam": "src/renderer/screens/prd/",
+  "story": "The PRD tab used to say 'PRD is not built yet'; it now shows the PRD of the project opened last. It shows 'No PRD yet' with what is left on the map, 'Writing version N' while a PRD writer works (including the agent that closed the last ticket, in its own tab), and otherwise the latest version with linked trace codes and its audit appendix. Every kept version opens and downloads as Markdown or self-contained HTML, and Regenerate, Talk to an agent about this PRD and Edit structure and regenerate start the PRD agents or open the structure editor.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/prd/no-version",
+      "criterion": "The No version yet state",
+      "steps": "Open a made-up project with open tickets and fog but no PRD version, then press the PRD tab. Press Open the map.",
+      "expected": "'No PRD yet', then 'Grillo writes the PRD automatically the moment the map is done. Still left: N open tickets and M fog items.' Open the map opens the Map tab."
+    },
+    {
+      "key": "src/renderer/screens/prd/writing",
+      "criterion": "The Writing state; Regenerate starts /grillo-prd regenerate",
+      "steps": "On a made-up project with at least one version, open the PRD tab and press Regenerate.",
+      "expected": "A new 'Grilling · PRD' agent tab typing /grillo-prd regenerate, a 'Writing version N+1 · Working…' card with Open the writer, Regenerate greyed; once the writer goes quiet the new version shows with 'Latest'."
+    },
+    {
+      "key": "src/renderer/screens/prd/writing-after-map-done",
+      "criterion": "The Writing state when the agent that closed the last ticket writes the PRD in its own tab",
+      "steps": "In a made-up project with no PRD version, answer the last open ticket with a grilling agent until it closes and the map is done, then open the PRD tab while that agent works.",
+      "expected": "'Writing version 1 · Working…'; Open the writer opens that ticket's agent tab; when the agent goes quiet, version 1 shows with 'Latest'."
+    },
+    {
+      "key": "src/renderer/screens/prd/versions",
+      "criterion": "The Versions list, version 1 kept beside version 2",
+      "steps": "Open a made-up project with two versions, press the PRD tab, then press Open on Version 1.",
+      "expected": "'PRD · version 2' with the 'Latest' badge and date; code chips such as [S2, Q2.1] jump to their appendix entries; [no source] in amber; Versions card lists Version 2 (Latest) and Version 1, each with Open, Markdown and HTML; Open on Version 1 shows its text."
+    },
+    {
+      "key": "src/renderer/screens/prd/export",
+      "criterion": "Markdown download is the stored file; HTML download is one self-contained file",
+      "steps": "On the versions view press Download Markdown, then Download HTML, save both. Open the .html file in a browser with the network off.",
+      "expected": "<repo>-prd-v<n>.md identical to .grillo/prd/v<n>.md in the repository; the .html opens with the liquid-glass colours, working code links and the appendix, and loads nothing from the network."
+    },
+    {
+      "key": "src/renderer/screens/prd/feedback-and-structure",
+      "criterion": "Talk to an agent starts /grillo-prd feedback; Edit structure goes to the project screen's editor",
+      "steps": "Press Talk to an agent about this PRD, then return to the PRD tab and press Edit structure and regenerate.",
+      "expected": "A 'Grilling · PRD feedback' agent tab opens and types /grillo-prd feedback; Edit structure opens the Project tab on the structure editor."
+    }
+  ],
+  "no_qa_reason": null
+}

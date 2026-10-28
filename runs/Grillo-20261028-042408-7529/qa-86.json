@@ -1,0 +1,26 @@
+{
+  "run_id": "Grillo-20261028-042408-7529",
+  "issue": 86,
+  "title": "Nudges on tickets taken but silent for days",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 137,
+  "merged_at": "2026-10-28T04:45:30Z",
+  "merge_commit": "6956bdaddf8e577d993e1066975dc971a3251e1c",
+  "seam": "src/main/features/nudges/",
+  "story": "Grillo now shows a system notification when it opens, and once a day after that, naming the tickets you took or were sent that have had no answer for 3 days. It adds no screen; the only new controls are the nudgeAfterDays setting and Grillo's own nudgeHeldSince notes in settings.json. Nothing earlier was replaced.",
+  "checks": [
+    {
+      "key": "src/main/features/nudges/silent-ticket-notification",
+      "criterion": "On open and once a day, one system notification names the member's taken tickets with no answer for N days (default 3, a setting)",
+      "steps": "Quit Grillo. In the app data folder's settings.json set \"nudgeAfterDays\": 0.0001 (about 9 seconds). Start Grillo and open a made-up project such as example-org/nudge-demo. Take one ticket, e.g. 'Sample ticket 1', and leave it unanswered. Quit, wait 15 seconds, start Grillo again.",
+      "expected": "One notification titled 'Tickets waiting for your answer' saying 'No answer for 0.0001 days or more:' and naming '#<n> Sample ticket 1 (example-org/nudge-demo)'."
+    },
+    {
+      "key": "src/main/features/nudges/answered-ticket-quiet",
+      "criterion": "A ticket with an answer newer than N days is not named",
+      "steps": "Continue from the check above. Answer one question of 'Sample ticket 1' in the own-time form. Quit Grillo, then start it again within 5 seconds.",
+      "expected": "No nudge notification appears."
+    }
+  ],
+  "no_qa_reason": null
+}

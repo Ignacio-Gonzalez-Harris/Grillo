@@ -1,0 +1,49 @@
+{
+  "run_id": "Grillo-20261028-042408-7529",
+  "issue": 81,
+  "title": "Map and tickets screen with Sources, tagging round, close/reopen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T04:24:08Z",
+  "finished_at": "2026-10-28T04:55:05Z",
+  "outcome": "merged",
+  "pr": 140,
+  "summary": "The Map tab now shows the four map cards, open tickets with tags, holders and blockers, and the Sources list; members can run the tagging round, add, edit, merge or close tickets as out of scope, close or reopen the project, and closing the last ticket with no fog starts the PRD writer.",
+  "agents": [
+    {
+      "name": "dev-81",
+      "model": "opus",
+      "tokens_total": 268448
+    },
+    {
+      "name": "review-81-r1",
+      "model": "opus",
+      "tokens_total": 146562
+    },
+    {
+      "name": "review-81-r2",
+      "model": "opus",
+      "tokens_total": 149630
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1570,
+    "review_seconds": 523,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/",
+      "what": "Close as out of scope uses store.closeTicket, which writes the ticket's latest decision gist under Settled; a ticket that already carries a decision (merged, then reopened) lands under both Out of scope and Settled with its old gist, which the PRD writer reads as a decision",
+      "why": "Needs a store option to close without settling, outside the map screen seam",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

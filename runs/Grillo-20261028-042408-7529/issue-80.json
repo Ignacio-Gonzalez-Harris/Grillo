@@ -1,0 +1,68 @@
+{
+  "run_id": "Grillo-20261028-042408-7529",
+  "issue": 80,
+  "title": "Project creation and invites screen with the structure editor",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T04:24:08Z",
+  "finished_at": "2026-10-28T04:59:05Z",
+  "outcome": "merged",
+  "pr": 139,
+  "summary": "The Project tab now lists recent projects and pending invitations and creates or connects a project with a PRD structure editor, invites, role, domains and the idea saved as S1, which starts the first grilling agent; a refused invite no longer blocks creation.",
+  "agents": [
+    {
+      "name": "dev-80",
+      "model": "opus",
+      "tokens_total": 242122
+    },
+    {
+      "name": "review-80-r1",
+      "model": "opus",
+      "tokens_total": 160879
+    },
+    {
+      "name": "review-80-r2",
+      "model": "opus",
+      "tokens_total": 146464
+    },
+    {
+      "name": "review-80-r3",
+      "model": "opus",
+      "tokens_total": 148949
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 956,
+    "review_seconds": 815,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 3,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/",
+      "what": "The connect flow asks for a typed owner/repository instead of the prototype's searchable repository list, because the store has no method that lists the member's repositories",
+      "why": "Needs a new store method outside this story's scope",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/memory/",
+      "what": "The in-memory store only answers for repositories that are already projects, so under GRILLO_STORE=memory Check access on example-org/team-code shows Access not known and saving after accepting the seeded invitation fails with not found, breaking the demo and QA path",
+      "why": "Fix is in the memory store, outside the screen folder",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/project-creation/",
+      "what": "The creation run lives only in the mounted screen; if agents:start refuses and the member leaves the screen, the project exists with S1 saved but nothing in the interface starts /grillo-wayfinder for it again",
+      "why": "Needs a start-the-grilling-agent entry point outside this screen's in-memory run, a design call beyond this story",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

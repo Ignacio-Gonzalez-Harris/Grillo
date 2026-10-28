@@ -1,0 +1,56 @@
+{
+  "run_id": "Grillo-20261028-042408-7529",
+  "issue": 80,
+  "title": "Project creation and invites screen with the structure editor",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 139,
+  "merged_at": "2026-10-28T04:59:05Z",
+  "merge_commit": "6dc6b42be5029a99210ed8942bdc829987d9ddcb",
+  "seam": "src/renderer/screens/project-creation/",
+  "story": "The Project tab now holds screen 2 instead of the 'not built yet' placeholder. It lists recent projects and pending invitations (Accept in one click, then role and domains), and creates or connects a project with a PRD structure editor, invites, role, domains and the idea. Saving the idea as source S1 starts the first grilling agent with /grillo-wayfinder; an invite GitHub refuses is reported but does not block that. The PRD view's Edit structure and regenerate opens the same screen on that project's structure editor.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/project-creation/recent-and-invitations",
+      "criterion": "Recent projects and pending invitations, accepted in one click",
+      "steps": "Start Grillo with GRILLO_STORE=memory. Open the Project tab. Press Accept on the invitation. Type 'platform' and press Add domain.",
+      "expected": "'Your projects' card with New project; 'Pending invitations' row 'example-org/kickoff-notes · invited by ben-example on 2026-10-20' with Accept; after Accept 'You joined kickoff-notes' with badge 'Invite accepted' and role and domains fields; Add domain adds the tag and empties the field."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/new-repository",
+      "criterion": "New repository, structure editor, invites, role and domains, idea saved as S1, grilling agent started",
+      "steps": "Project tab, New project, name 'Sample project 1', move the first section down, add section 'Sample added section', invite ben-example, role 'Sample role A', domain product, type a made-up idea, Create project.",
+      "expected": "Repository name suggested as sample-project-1; five step rows ending 'The idea saved as source S1' (Done) and 'Grilling agent started; it is building the map and tickets' (Working…); agent tab 'Grilling · Sample project 1' whose first message is /grillo-wayfinder .grillo/sources/S1.md."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/refused-invite",
+      "criterion": "An invite GitHub refuses does not stop creation",
+      "steps": "In the new-repository flow invite a made-up login with no GitHub account as well as ben-example, then Create project.",
+      "expected": "Invites row 'Invites sent to ben-example' with badge 'Partly done' and a line 'Not invited (invite them later from the project): <login>: …'; the idea row and the grilling agent still complete."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/prefill",
+      "criterion": "Role and domains pre-filled from the last project joined",
+      "steps": "After the new-repository flow, go back to the Project tab and press New project.",
+      "expected": "Role 'Sample role A', tag product, and 'Pre-filled from the last project you joined, example-org/sample-project-1.'"
+    },
+    {
+      "key": "src/renderer/screens/project-creation/connect-existing",
+      "criterion": "Connect an existing repository, admin-only actions greyed",
+      "steps": "New project, Connect an existing one, type example-org/team-code, Check access, pick Paste or upload a transcript, paste made-up lines, Connect and start.",
+      "expected": "Invite field and button greyed with a line starting 'Inviting needs admin rights on example-org/team-code'; structure folded as 'Grillo default · 13 sections' with Edit; then the creating steps and a grilling agent."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/connect-problems",
+      "criterion": "A repository that already holds a project is not connected twice",
+      "steps": "Repeat the connect flow on example-org/team-code with an idea typed. Press Open it.",
+      "expected": "'Already holds a Grillo project' and 'Open it', which opens the Map tab for that project."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/edit-structure",
+      "criterion": "Structure editor reachable from the PRD view, saves structure.json",
+      "steps": "On a project's PRD tab press Edit structure and regenerate, add and name a section, press Save and regenerate.",
+      "expected": "That project's sections with move up/down, name, note and Remove; after saving, the PRD tab plus an agent tab 'Grilling · PRD' running /grillo-prd regenerate."
+    }
+  ],
+  "no_qa_reason": null
+}

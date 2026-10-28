@@ -1,0 +1,49 @@
+{
+  "run_id": "Grillo-20261028-042408-7529",
+  "issue": 83,
+  "title": "PRD view screen: versions, Markdown/HTML export, appendix, regenerate",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T04:24:08Z",
+  "finished_at": "2026-10-28T04:50:15Z",
+  "outcome": "merged",
+  "pr": 138,
+  "summary": "The PRD tab now shows the latest PRD with linked trace codes and audit appendix, a Writing state (including the agent that closed the last ticket), every kept version, and Markdown or self-contained HTML downloads, plus Regenerate, feedback and Edit structure.",
+  "agents": [
+    {
+      "name": "dev-83",
+      "model": "opus",
+      "tokens_total": 230942
+    },
+    {
+      "name": "review-83-r1",
+      "model": "opus",
+      "tokens_total": 138279
+    },
+    {
+      "name": "review-83-r2",
+      "model": "opus",
+      "tokens_total": 118925
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 801,
+    "review_seconds": 496,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/app/",
+      "what": "The shell has no current-project context, so the PRD, Map and Project tabs each show the project opened last; with two projects open a member can see one project's PRD or map while working in the other",
+      "why": "Needs a shell-wide project context outside the screen seams",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

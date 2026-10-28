@@ -1,0 +1,56 @@
+{
+  "run_id": "Grillo-20261028-042408-7529",
+  "issue": 81,
+  "title": "Map and tickets screen with Sources, tagging round, close/reopen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 140,
+  "merged_at": "2026-10-28T04:55:05Z",
+  "merge_commit": "fc202302224d6f379076866f6f4307110299fd6d",
+  "seam": "src/renderer/screens/map/",
+  "story": "The Map tab, which used to say 'Map is not built yet.', now shows the project's map: the four map cards, the open tickets with tags, holders and blockers, and the Sources list where each source can be read in full. From it a member can run the tagging round, add, edit, merge or close tickets as out of scope, and close or reopen the project. Closing the last open ticket here, with no fog left, starts the PRD writer.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/map/building",
+      "criterion": "The Engine building the map state",
+      "steps": "Create a new project from the Project tab with a made-up idea. Open the Map tab while the grilling agent still works.",
+      "expected": "Four cards (Destination, Settled, Fog, Out of scope) and the note 'The grilling agent is building the map and tickets from your idea…'; tickets appear once the agent goes quiet, with no reload."
+    },
+    {
+      "key": "src/renderer/screens/map/untagged-and-tagging",
+      "criterion": "Run tagging round starts an agent with /grillo-tagging",
+      "steps": "Open the Map tab of a project whose made-up tickets have no tags. Press Run tagging round, then Open the tagging round.",
+      "expected": "Each ticket with its kind, 'untagged', a '—' assignee and blockers by title; Run tagging round is the green button; a new tab 'Grilling · Tagging round' typed /grillo-tagging; back on Map, tags appear when that agent goes quiet."
+    },
+    {
+      "key": "src/renderer/screens/map/tagged-list",
+      "criterion": "Tagged and assigned tickets show their state, with a filter",
+      "steps": "After a tagging round, send one ticket to another member from the Tickets tab. Open Map and switch between All and My domains first.",
+      "expected": "Coloured domain tags, 'no domain' where it applies, the holder's login with a 'Locked' badge; locked rows show only Edit, free rows Edit, Merge and Close as out of scope; My domains first puts own, own-domain and no-domain tickets first."
+    },
+    {
+      "key": "src/renderer/screens/map/sources",
+      "criterion": "The Sources list opens a source in a glass panel",
+      "steps": "In a project with at least one made-up source, press Open on a source row, then Close.",
+      "expected": "Code chip, kind, who, day and where per source; Open shows a raised glass panel with Kind, Who, When (UTC), Where and the full text line by line; Close returns to the map."
+    },
+    {
+      "key": "src/renderer/screens/map/ticket-actions",
+      "criterion": "Add ticket, Edit, Merge and Close as out of scope",
+      "steps": "Add ticket with Title 'Sample ticket X', Question 'A made-up question?' and two question lines. Edit its title and save. Merge another free ticket into an open one. Close a third ticket as out of scope with reason 'beyond this PRD'.",
+      "expected": "The new ticket is listed; the new title shows; the merged ticket leaves the list; Out of scope gains '<title>: beyond this PRD (#<number>)' and that ticket leaves the list."
+    },
+    {
+      "key": "src/renderer/screens/map/map-done",
+      "criterion": "A mapDone result starts an agent with /grillo-prd",
+      "steps": "In a project with no fog and one open ticket, press Close as out of scope on that ticket and confirm.",
+      "expected": "The green note 'The map is done: no open tickets and no fog. Grillo is writing the PRD now.' with Open the PRD writer and Open the PRD; a 'Grilling · PRD' tab typed /grillo-prd; Fog reads 'No fog left.'"
+    },
+    {
+      "key": "src/renderer/screens/map/close-reopen",
+      "criterion": "Close and reopen call the store; the archived state shows",
+      "steps": "As a repository admin open Map and read the Project card, press Close project, then Reopen. As a member with write access only, open Map.",
+      "expected": "Hint 'Closing archives the repository: everything stays readable and nothing can change. A repository admin can reopen it.'; after closing, the orange 'The repository is archived…' note with Reopen, Add ticket and Run tagging round greyed with 'Archived: reopen the project to change anything.', rows without actions; Reopen restores everything; a write-only member sees Close project greyed with 'Only a repository admin can close the project; you have write access.'"
+    }
+  ],
+  "no_qa_reason": null
+}
