@@ -1,0 +1,5 @@
+[
+  { "login": "ada-example", "role": "product", "domains": ["product"] },
+  { "login": "ben-example", "role": "developer", "domains": ["developer"] },
+  { "login": "cleo-example", "role": "platform", "domains": ["platform"] }
+]

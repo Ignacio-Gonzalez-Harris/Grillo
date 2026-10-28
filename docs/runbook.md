@@ -278,7 +278,30 @@ Nothing to do yet: own-time answering arrives with its own story.
 
 ## PRD
 
-Nothing to do yet: the PRD view arrives with its own story.
+The PRD writer is the skill `grillo-prd`, shipped into the project folder beside `grillo-wayfinder`. The PRD view
+(screen 8) and its export arrive with their own story; until then the versions are files you open in the repository.
+
+- **When it runs:** by itself the moment the map is done (no open ticket, no fog): the agent that closed the last
+  ticket starts `/grillo-prd`. `/grillo-prd regenerate` writes a new version on demand, in the current PRD structure,
+  even while other tickets are open; their answers stay out until they close.
+- **What it writes:** the next version `.grillo/prd/v<n>.md` on `main`, numbered and dated. An earlier version is
+  never changed; when another laptop saves a version at the same moment, yours takes the next number and both are
+  kept.
+- **Codes:** every statement ends with the codes of the answers it rests on, `[S4, Q12.3]` (source 4, question 3 of
+  ticket 12), or `[no source]` when no answer supports it. The audit appendix at the end lists every cited source and
+  question with who, when, where and the exact words, then every `[no source]` statement under Unsourced.
+- **A PRD section with no decision is not written:** the writer opens a ticket or a fog line for it, writes no
+  version, and says the map is not done. The PRD is written when that ticket or fog line is settled.
+- **Feedback:** `/grillo-prd feedback` asks what is wrong, one point at a time. Wording fixes and removing a
+  `[no source]` statement become one new version. Confirming a `[no source]` statement or changing a decision opens
+  a ticket (`Confirm: ...` or `Revisit: ...`); when those close, the PRD is written again as a new version.
+- **Run it by hand (developers):** in a clone of a made-up test project whose map is done, copy
+  `resources/skills/grillo-prd/` and `resources/skills/grillo-wayfinder/` into `.claude/skills/`, start `claude`
+  there and type `/grillo-prd`. Never use a real transcript or customer text.
+- **Developers:** `npx vitest run resources/skills/grillo-prd` checks the skill's frontmatter and commands against
+  the catalogue, the version format it teaches, and its fixture of a project after one round of feedback with
+  `resources/skills/grillo-prd/prd-check.ts`: version numbers, codes on every statement, sections resting on
+  decisions, and an appendix listing every cited code word for word.
 
 ## Updates
 
