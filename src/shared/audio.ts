@@ -36,8 +36,11 @@ export interface MicrophoneAccess {
   instruction: string;
 }
 
-/** Whether this computer can capture the call audio. Mac call audio arrives with its own story. */
-export type CallAudioSupport = { supported: true } | { supported: false; reason: string };
+/**
+ * Whether this computer can capture the call audio. `confirmFramesArrive` (a Mac) means a missing permission
+ * gives no error, so the capture must see the first frame arrive before it records.
+ */
+export type CallAudioSupport = { supported: true; confirmFramesArrive?: true } | { supported: false; reason: string };
 
 /** Why a capture could not start. */
 export type CaptureFailure = 'unsupported' | 'permission-denied' | 'no-device' | 'already-capturing' | 'failed';

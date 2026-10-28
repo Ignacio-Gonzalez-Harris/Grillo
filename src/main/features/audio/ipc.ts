@@ -8,14 +8,19 @@ import { audioSlices } from './slices';
 /** Audio capture: the renderer captures, main checks the microphone permission and serves the call audio. */
 export function register({ ipc, settings }: FeatureContext): void {
   const { platform } = process;
-  installCallAudioHandler(platform, {
-    setDisplayMediaRequestHandler: (handler) => session.defaultSession.setDisplayMediaRequestHandler(handler),
-    getScreenSources: () => desktopCapturer.getSources({ types: ['screen'] }),
-  });
+  const systemVersion = process.getSystemVersion();
+  installCallAudioHandler(
+    platform,
+    {
+      setDisplayMediaRequestHandler: (handler) => session.defaultSession.setDisplayMediaRequestHandler(handler),
+      getScreenSources: () => desktopCapturer.getSources({ types: ['screen'] }),
+    },
+    systemVersion,
+  );
   registerAudioChannels(ipc, {
     settings,
     microphoneAccess: () => checkMicrophoneAccess(platform, systemPreferences),
-    callAudioSupport: () => callAudioSupport(platform),
+    callAudioSupport: () => callAudioSupport(platform, systemVersion),
     deliverSlice: audioSlices.publish,
   });
 }

@@ -266,9 +266,10 @@ The meeting screen arrives with its own story. What already works underneath it:
 The meeting screen's record button arrives with its own story; the capture underneath it works on its own.
 
 - **What is captured:** the room microphone (Windows and Mac), or the call audio, meaning whatever the speakers play
-  (Windows only). Audio becomes 5-second slices of 16 kHz mono 16-bit sound, the format the speech model reads,
-  and stays on the laptop. Stopping a capture sends what is left as one last, shorter slice.
-- **Mac call audio is not available yet.** Choosing it on a Mac says so; record the room microphone instead.
+  (Windows, and a Mac with macOS 14.2 or later). Audio becomes 5-second slices of 16 kHz mono 16-bit sound, the
+  format the speech model reads, and stays on the laptop. Stopping a capture sends what is left as one last,
+  shorter slice.
+- **Mac call audio** has its own subsection below.
 - **Microphone permission:** a Mac asks the first time Grillo records. If it was refused, Grillo says where to
   turn it on: System Settings > Privacy & Security > Microphone, then restart Grillo. On Windows a switched-off
   microphone is reported the same way: Settings > Privacy & security > Microphone, with "Let desktop apps access
@@ -278,6 +279,18 @@ The meeting screen's record button arrives with its own story; the capture under
   is unplugged, recording says so instead of silently using another one.
 - **Call audio on Windows** needs no permission and shows no picker; it captures every sound the computer plays,
   including notification sounds.
+
+### Mac call audio
+
+- **Needs macOS 14.2 or later.** On an older Mac, choosing call audio says macOS 14.2 is needed; record the room
+  microphone instead. Like Windows, it shows no picker and captures every sound the Mac plays.
+- **Permission:** the Mac does not report a missing permission, it just gives silence. So Grillo waits up to
+  2 seconds for the first sound frame; if none arrives (or the Mac refused the capture), it records nothing and
+  says where to grant it: System Settings > Privacy & Security > Screen & System Audio Recording, turn on Grillo,
+  then restart Grillo.
+- **If the Mac has no call audio to give** (no audio track at all), Grillo says so; record the room microphone.
+- **Not yet tried on a real Mac.** Whether macOS also asks for Screen Recording, and the exact name of the
+  settings pane, are still to be confirmed by the first Mac run.
 
 ### Grilling session
 
