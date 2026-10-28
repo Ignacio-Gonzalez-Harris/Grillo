@@ -1,0 +1,138 @@
+{
+  "map": {
+    "number": 1,
+    "title": "Map",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "state": "open",
+    "body": "issues/1.md"
+  },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "How members borrow tools",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:product"
+      ],
+      "state": "closed",
+      "assignee": "ada-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": [
+        {
+          "id": "2001",
+          "author": "ada-example",
+          "createdAt": "2026-10-24T09:11:00.000Z",
+          "body": "comments/2001.md"
+        },
+        {
+          "id": "2002",
+          "author": "ada-example",
+          "createdAt": "2026-10-24T09:21:00.000Z",
+          "body": "comments/2002.md"
+        },
+        {
+          "id": "2003",
+          "author": "ada-example",
+          "createdAt": "2026-10-24T09:21:00.000Z",
+          "body": "comments/2003.md"
+        },
+        {
+          "id": "2004",
+          "author": "ada-example",
+          "createdAt": "2026-10-24T09:25:00.000Z",
+          "body": "comments/2004.md"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Who may lend tools",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:none"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [
+        2
+      ],
+      "body": "issues/3.md",
+      "comments": [
+        {
+          "id": "3001",
+          "author": "cleo-example",
+          "createdAt": "2026-10-24T12:00:00.000Z",
+          "body": "comments/3001.md"
+        },
+        {
+          "id": "3002",
+          "author": "ben-example",
+          "createdAt": "2026-10-24T13:01:00.000Z",
+          "body": "comments/3002.md"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "How many tools go missing",
+      "labels": [
+        "wayfinder:research",
+        "domain:platform"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/4.md",
+      "comments": []
+    },
+    {
+      "number": 5,
+      "title": "A phone app for borrowing",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "state": "closed",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/5.md",
+      "comments": []
+    },
+    {
+      "number": 6,
+      "title": "How members give tools back",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:developer"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [
+        3
+      ],
+      "body": "issues/6.md",
+      "comments": []
+    },
+    {
+      "number": 7,
+      "title": "Late tools",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:product"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/7.md",
+      "comments": []
+    }
+  ]
+}
