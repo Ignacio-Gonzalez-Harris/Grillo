@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import type { AgentInfo } from '../../shared/agents';
 import type { EventChannel, EventPayload, GrilloApi } from '../../shared/ipc';
 import { createShell, type Shell } from './shell';
-import { loadScreens, registerScreens, type ScreenModule, type ScreenRegistry } from './screens';
+import { loadScreens, registerScreens, type ScreenModule, type ScreenRegistry, type ShellContext } from './screens';
 
 function agent(id: string, title: string, waiting = false): AgentInfo {
   return { id, kind: 'grilling', title, folder: '/projects/sample-1', waiting };
@@ -179,6 +179,55 @@ describe('app shell', () => {
     await flush();
     expect(failing.querySelectorAll('[data-agent-id]')).toHaveLength(0);
     expect(warn).toHaveBeenCalledWith('Grillo could not read the agent list; the agent tabs stay empty.', expect.any(Error));
+    warn.mockRestore();
+  });
+
+  it("runs each screen's start once when the shell starts, with the shell context, and its cleanup on dispose", () => {
+    const stop = vi.fn();
+    const decorator = { ...screen('decorator', 'Decorator'), start: vi.fn<NonNullable<ScreenModule['start']>>(() => stop) };
+    start(registry(decorator, screen('plain', 'Plain')), fakeGrillo().grillo);
+
+    expect(decorator.start).toHaveBeenCalledTimes(1);
+    expect(typeof decorator.start.mock.calls[0][0].onAgentTabs).toBe('function');
+    expect(stop).not.toHaveBeenCalled();
+
+    shell?.dispose();
+    shell = undefined;
+
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells agent-tab listeners the current tabs at once and after every change, once each tab header exists', async () => {
+    const { grillo, emit } = fakeGrillo(Promise.resolve([agent('a1', 'Grilling · Map')]));
+    const seen: Array<{ ids: string[]; headers: boolean[] }> = [];
+    const watcher = {
+      ...screen('watcher', 'Watcher'),
+      start(context: ShellContext) {
+        context.onAgentTabs((list) =>
+          seen.push({ ids: list.map(({ id }) => id), headers: list.map(({ id }) => context.agentTabHeader(id) !== undefined) }),
+        );
+      },
+    };
+    const warn = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const failing = {
+      ...screen('failing', 'Failing'),
+      start(context: ShellContext) {
+        context.onAgentTabs((list) => {
+          if (list.length > 0) throw new Error('made-up listener failure');
+        });
+      },
+    };
+    const root = start(registry(failing, watcher), grillo);
+    await flush();
+    emit('agents:list-changed', [agent('a2', 'Task · Sample ticket 5')]);
+
+    expect(seen).toEqual([
+      { ids: [], headers: [] },
+      { ids: ['a1'], headers: [true] },
+      { ids: ['a2'], headers: [true] },
+    ]);
+    expect(agentTab(root, 'a2')).not.toBeNull();
+    expect(warn).toHaveBeenCalledWith('An agent-tab listener failed; the other listeners still ran.', expect.any(Error));
     warn.mockRestore();
   });
 

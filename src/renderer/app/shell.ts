@@ -64,10 +64,26 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
   frame.append(appWindow);
   root.replaceChildren(frame);
 
+  const agentTabListeners = new Set<(list: readonly AgentInfo[]) => void>();
+  function tellAgentTabListeners(listener: (list: readonly AgentInfo[]) => void): void {
+    try {
+      listener(agents);
+    } catch (error) {
+      console.error('An agent-tab listener failed; the other listeners still ran.', error);
+    }
+  }
+
   const shellContext: ShellContext = {
     grillo,
     navigate: (screenId, params) => navigate(screenId, params),
     agentTabHeader: (agentId) => tabBar.agentTabHeader(agentId),
+    onAgentTabs(listener) {
+      agentTabListeners.add(listener);
+      tellAgentTabListeners(listener);
+      return () => {
+        agentTabListeners.delete(listener);
+      };
+    },
   };
 
   function activeTabFor(screenId: string, params: ScreenParams): ActiveTab {
@@ -106,6 +122,7 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
   function showAgents(list: readonly AgentInfo[]): void {
     agents = list;
     tabBar.setAgents(list);
+    [...agentTabListeners].forEach(tellAgentTabListeners);
     // An agent renames its tab as it moves on; the title bar follows when that tab is open.
     context.textContent = titleFor(current.screenId, current.params);
   }
@@ -121,6 +138,8 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
     (error: unknown) => console.warn('Grillo could not read the agent list; the agent tabs stay empty.', error),
   );
 
+  const stopScreens = [...screens.values()].flatMap((screen) => screen.start?.(shellContext) ?? []);
+
   navigate(START_SCREEN);
 
   return {
@@ -130,6 +149,8 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
       stopListening();
       closeScreen?.();
       closeScreen = undefined;
+      stopScreens.forEach((stop) => stop());
+      agentTabListeners.clear();
     },
   };
 }
