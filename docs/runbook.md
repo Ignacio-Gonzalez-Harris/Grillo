@@ -703,8 +703,10 @@ The **PRD** tab shows the PRD of the project opened last (a screen may open it o
   mark (a badge, green from 8, amber at 5 or below, and a bar) and one comment per quality criterion and per section of
   the PRD structure. Each version in the list shows "Score <n.n>" once scored; one not scored yet says so. **Rerun**
   starts `/grillo-score` in a new "Grilling · PRD score" tab and shows "Scoring…" until that tab goes quiet, then the
-  new score. Rerun is offered only on the latest version, the only one `/grillo-score` scores. A stored score Grillo
-  cannot read shows as an error in the score panel; the PRD stays readable.
+  new score. Rerun is offered only on the latest version, the only one `/grillo-score` scores. A score file with a
+  mark outside 0 to 10 or an empty name shows as an error in the score panel, and the PRD stays readable. A score
+  file that is not JSON, or lacks a field, is refused by the store while it reads the versions, so the whole PRD tab
+  shows only that error until the file is fixed or `/grillo-score` is run again in an agent tab.
 - **Developers:** the screen's id is `prd`, opened with no parameters or `{ project: '<owner>/<repo>' }`; Edit
   structure opens `project-creation` with `{ project, view: 'structure' }`. `npx vitest run src/renderer/screens/prd`
   runs its tests against the in-memory store.
