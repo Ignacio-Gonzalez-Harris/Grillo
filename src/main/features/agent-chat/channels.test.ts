@@ -4,22 +4,27 @@ import type { ChatMessage } from '../../../shared/agent-chat';
 import { createMainIpc } from '../../ipc/bridge';
 import { createFakeIpc } from '../../ipc/fake-ipc';
 import { registerAgentChatChannels } from './channels';
+import type { ChatDriverEvents } from './driver';
 import { FakeChatProcess } from './fake-process';
 import { PERMISSION_REQUEST_ID, QUESTION_REQUEST_ID, recorded } from './recorded-events';
 
-function connect() {
+function connect(also?: ChatDriverEvents) {
   const fake = createFakeIpc();
   const processes: FakeChatProcess[] = [];
-  registerAgentChatChannels(createMainIpc(fake.main, () => [fake.window]), {
-    findClaude: () => '/opt/made-up/bin/claude',
-    shipSkills: async () => undefined,
-    spawnProcess: (file, args, options) => {
-      const process = new FakeChatProcess(file, args, options);
-      processes.push(process);
-      return process;
+  registerAgentChatChannels(
+    createMainIpc(fake.main, () => [fake.window]),
+    {
+      findClaude: () => '/opt/made-up/bin/claude',
+      shipSkills: async () => undefined,
+      spawnProcess: (file, args, options) => {
+        const process = new FakeChatProcess(file, args, options);
+        processes.push(process);
+        return process;
+      },
+      env: {},
     },
-    env: {},
-  });
+    also,
+  );
   const grillo = createGrilloApi(fake.renderer);
   const messages: Array<{ id: string; message: ChatMessage }> = [];
   const raw: Array<{ id: string; line: string }> = [];
@@ -80,5 +85,20 @@ describe('agent chat IPC channels', () => {
       { type: 'user', message: { role: 'user', content: '[from Support, for Ada] Check this' } },
     ]);
     expect(processes[0].stopped).toBe(true);
+  });
+
+  it('hands every driver event to another listener too, such as the agent runtime', async () => {
+    const seen: string[] = [];
+    const { grillo, processes } = connect({
+      message: (id, message) => seen.push(`${id} message ${message.type}`),
+      raw: (id) => seen.push(`${id} raw`),
+      exited: (id, exitCode) => seen.push(`${id} exited ${exitCode}`),
+    });
+
+    const id = await grillo.invoke('agent-chat:start', start);
+    processes[0].emit(recorded.assistantText('Hi there'));
+    processes[0].exit(0);
+
+    expect(seen).toEqual([`${id} message user`, `${id} raw`, `${id} message assistant`, `${id} exited 0`]);
   });
 });

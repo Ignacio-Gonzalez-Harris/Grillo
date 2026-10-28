@@ -216,23 +216,39 @@ built the map.
 
 Each agent shows in its own tab: click the agent's name on the tab bar.
 
-- **Claude Code must be installed and on PATH.** Each agent is your own `claude`, started with no extra flags
-  in the project folder. Without it, starting an agent fails with "Claude Code was not found: there is no
-  `claude` command on PATH".
-- **Answer Claude Code's own startup questions yourself.** The first time it opens a folder it asks whether
+- **Two runtimes, one choice: chat (the default) or terminal.** Every agent tab is a **chat agent**: your own
+  `claude` in machine-readable mode (see Agent chat protocol below), exactly one Claude Code process per tab, and
+  the tab's id is the chat agent's id. The release-1 **terminal agent** stays as a working fallback until the Agent
+  SDK terms are confirmed. To use it, set the environment variable `GRILLO_AGENT_RUNTIME=terminal` before starting
+  Grillo (`GRILLO_AGENT_RUNTIME=chat`, or leaving it unset, gives chat). Any other value keeps chat and logs a
+  warning naming the variable. The choice applies to every agent tab until Grillo restarts.
+- **Until the chat view arrives, a chat tab shows the raw event stream** (one JSON line per event) in the terminal
+  area, and typing there does nothing (the type box and keystrokes are refused: a chat agent has no terminal).
+  Clickable options and permission prompts cannot be answered on screen yet, so an agent that asks one waits. Use
+  `GRILLO_AGENT_RUNTIME=terminal` to work with agents before the chat view story lands.
+- **Messages from the screens are one chat message each.** The meeting's "use it", own-time's "use it" and Done,
+  and the meeting's control lines (`session:`, `mode:`, `present:`, `skip`, `jump`) each reach a chat agent as one
+  message. With the Open channel on, the live transcript is held by Grillo (a chat agent has no input box) and goes
+  out as the first lines of the next such message, the control line last.
+- **Claude Code must be installed and on PATH.** Each agent is your own `claude`, started in the project folder
+  (a terminal agent with no extra flags). Without it, starting an agent fails with "Claude Code was not found:
+  there is no `claude` command on PATH".
+- **Answer Claude Code's own startup questions yourself** (terminal agents only). The first time it opens a folder it asks whether
   you trust it. Grillo waits; it types the agent's first message, then Enter, only once the message box appears.
 - **Grillo's skills are copied in on every start.** Every `grillo-*` skill goes into the project folder's
   `.claude/skills/`, so updates arrive. A copy the project's repository tracks is never overwritten: Grillo
   skips it and logs a warning. The copied folders are listed in `.git/info/exclude`, so they never show as
   changes. Grillo writes no `CLAUDE.md`; your own user-level `CLAUDE.md` still applies.
 - **Several agents run at once**; stopping one leaves the others running. Closing Grillo stops them all.
-- **The waiting dot:** an agent counts as waiting for you once it has printed nothing for 3 seconds after
-  printing something, and stops waiting as soon as it prints again.
+- **The waiting dot:** a chat agent counts as waiting for you once its turn ends or it asks a question or a
+  permission, and stops waiting when it starts a turn, says something or is sent a message. A terminal agent counts
+  as waiting once it has printed nothing for 3 seconds after printing something, and stops waiting as soon as it
+  prints again.
 
 ### The agent tab
 
-- **The tab shows the agent's own Claude Code terminal** (release 1; the chat view comes in release 2). It fills
-  the window and follows its size.
+- **The tab shows the agent's own Claude Code terminal** (terminal runtime; on the chat runtime it shows the raw
+  event stream until the chat view comes in release 2). It fills the window and follows its size.
 - **Typing is always available.** Click into the terminal and type, exactly as in a normal terminal (arrow keys,
   Esc and Enter included). Or use the box under it ("Type to the agent…"): Enter or Send types the line into the
   agent, then presses Enter. Send on an empty box presses Enter alone.
@@ -251,7 +267,9 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
 
 ### Agent chat protocol (release 2, no screen yet)
 
-The chat view's engine. Nothing on screen uses it yet; the chat view arrives with its own story.
+The chat view's engine, and what every agent tab runs on under the chat runtime. The chat view arrives with its
+own story. Its `agent-chat:*` channels take a tab's id, since the tab and its chat agent share it; stop a tab with
+`agents:stop`, which also takes it off the tab bar.
 
 - **A chat agent is your own `claude` with no terminal**, started in the project folder with fixed flags:
   `claude -p --input-format stream-json --output-format stream-json --verbose --permission-prompt-tool stdio

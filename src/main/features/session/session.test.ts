@@ -34,8 +34,9 @@ class FakeTranscriber implements Transcriber {
   }
 }
 
-/** The running agents and what was typed into each of them, write by write. */
+/** Terminal agents: what was typed into each of them, write by write. The terminal path types; it never sends. */
 class FakeAgents {
+  readonly choice = 'terminal';
   readonly typed = new Map<string, string[]>();
   private readonly running = new Set<string>();
 
@@ -57,6 +58,10 @@ class FakeAgents {
   write(id: string, text: string): void {
     if (!this.running.has(id)) throw new Error(`No agent with id '${id}'`);
     this.typed.get(id)?.push(text);
+  }
+
+  send(): Promise<void> {
+    return Promise.reject(new Error('A terminal agent is typed into, never sent to'));
   }
 
   text(id: string): string {
