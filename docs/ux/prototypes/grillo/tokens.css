@@ -12,37 +12,37 @@
 
 :root {
   /* ---------- Backdrop (the coloured layer the glass sits on) ---------- */
-  --color-backdrop-1: #dfe9fb;            /* Backdrop gradient, top-left stop: pale blue. */
-  --color-backdrop-2: #efe4f7;            /* Backdrop gradient, middle stop: pale lilac. */
-  --color-backdrop-3: #e1f3ee;            /* Backdrop gradient, bottom-right stop: pale mint. */
-  --color-backdrop-glow: rgba(120, 160, 255, 0.35); /* Soft light blob behind the panels, gives the glass something to blur. */
+  --color-backdrop-1: #e2f1e6;            /* Backdrop gradient, top-left stop: pale leaf green. */
+  --color-backdrop-2: #f6f4ea;            /* Backdrop gradient, middle stop: the logo's cream. */
+  --color-backdrop-3: #dcefe8;            /* Backdrop gradient, bottom-right stop: pale mint. */
+  --color-backdrop-glow: rgba(60, 170, 100, 0.3); /* Soft light blob behind the panels, gives the glass something to blur. */
 
   /* ---------- Glass panels ---------- */
   --color-glass-fill: rgba(255, 255, 255, 0.55);          /* Standard frosted panel fill (with blur). */
   --color-glass-fill-strong: rgba(255, 255, 255, 0.78);   /* Raised panel fill: pop-overs, active tab, cards on cards. */
-  --color-glass-fill-fallback: rgba(248, 250, 253, 0.96); /* Panel fill when backdrop-filter is off (Windows fallback). */
+  --color-glass-fill-fallback: rgba(249, 251, 247, 0.96); /* Panel fill when backdrop-filter is off (Windows fallback). */
   --color-glass-fill-strong-fallback: #ffffff;            /* Raised panel fill when backdrop-filter is off. */
   --color-glass-border: rgba(255, 255, 255, 0.75);        /* Light rim along a panel's edge, the "glass edge". */
-  --color-glass-border-fallback: rgba(27, 34, 51, 0.14);  /* Panel edge when backdrop-filter is off (needs contrast, not light). */
-  --color-glass-shadow: rgba(30, 40, 80, 0.14);           /* Drop shadow under panels. */
+  --color-glass-border-fallback: rgba(24, 38, 30, 0.14);  /* Panel edge when backdrop-filter is off (needs contrast, not light). */
+  --color-glass-shadow: rgba(20, 60, 35, 0.14);           /* Drop shadow under panels. */
   --color-glass-highlight: rgba(255, 255, 255, 0.9);      /* Inner top highlight line on a panel. */
 
   /* ---------- Text ---------- */
-  --color-text: #1b2233;          /* Body text and headings. */
-  --color-text-muted: #545e72;    /* Secondary text: hints, dates, one-line notes. */
-  --color-text-disabled: #8e97a8; /* Text of a disabled control. */
+  --color-text: #18261e;          /* Body text and headings. */
+  --color-text-muted: #52615a;    /* Secondary text: hints, dates, one-line notes. */
+  --color-text-disabled: #8d9a93; /* Text of a disabled control. */
   --color-text-on-accent: #ffffff; /* Text on an accent-filled button. */
   --color-text-on-danger: #ffffff; /* Text on the red Recording banner and danger buttons. */
 
   /* ---------- Lines ---------- */
-  --color-divider: rgba(27, 34, 51, 0.1);   /* Hairline between rows and sections. */
-  --color-input-border: rgba(27, 34, 51, 0.2); /* Border of text fields, selects and checkboxes. */
+  --color-divider: rgba(24, 38, 30, 0.1);   /* Hairline between rows and sections. */
+  --color-input-border: rgba(24, 38, 30, 0.2); /* Border of text fields, selects and checkboxes. */
   --color-input-fill: rgba(255, 255, 255, 0.7); /* Fill of text fields on glass. */
 
   /* ---------- Accent and status ---------- */
-  --color-accent: #2f6fed;                    /* Primary action, links, selected item. */
-  --color-accent-hover: #2459c4;              /* Primary action on hover. */
-  --color-accent-soft: rgba(47, 111, 237, 0.13); /* Selected row, active tab underlay, info notes. */
+  --color-accent: #18803d;                    /* Primary action, links, selected item: the logo green, a shade deeper so white text on it reads. */
+  --color-accent-hover: #136832;              /* Primary action on hover. */
+  --color-accent-soft: rgba(27, 141, 68, 0.13); /* Selected row, active tab underlay, info notes. */
   --color-success: #1d8a4c;                   /* "Signed in", "answered", all-green. */
   --color-success-soft: rgba(29, 138, 76, 0.13); /* Success badge background. */
   --color-warning: #b36b00;                   /* Needs attention, but not broken: update offer, greyed-out reason. */
@@ -50,18 +50,18 @@
   --color-danger: #d42a2a;                    /* Error, missing requirement, the Recording banner. */
   --color-danger-soft: rgba(212, 42, 42, 0.12); /* Error badge background. */
   --color-attention-dot: #f08c00;             /* The dot on an agent tab: "this agent is waiting for you". */
-  --color-focus-ring: rgba(47, 111, 237, 0.45); /* Keyboard focus outline. */
-  --color-disabled-fill: rgba(27, 34, 51, 0.06); /* Fill of a disabled control. */
+  --color-focus-ring: rgba(27, 141, 68, 0.45); /* Keyboard focus outline. */
+  --color-disabled-fill: rgba(24, 38, 30, 0.06); /* Fill of a disabled control. */
 
   /* ---------- Domain tag chips (one hue per declared domain, cycled in order) ---------- */
   --color-tag-1: rgba(47, 111, 237, 0.14);   /* First declared domain. */
   --color-tag-2: rgba(140, 70, 220, 0.14);   /* Second declared domain. */
   --color-tag-3: rgba(20, 150, 120, 0.15);   /* Third declared domain. */
   --color-tag-4: rgba(220, 120, 30, 0.15);   /* Fourth declared domain. */
-  --color-tag-none: rgba(27, 34, 51, 0.08);  /* The "no domain" tag. */
+  --color-tag-none: rgba(24, 38, 30, 0.08);  /* The "no domain" tag. */
 
   /* ---------- Terminal panel (release 1 agent view) ---------- */
-  --color-terminal-bg: rgba(16, 20, 32, 0.9);  /* Terminal background: dark smoked glass. */
+  --color-terminal-bg: rgba(14, 24, 18, 0.9);  /* Terminal background: dark smoked glass. */
   --color-terminal-text: #dbe4f1;              /* Terminal text. */
   --color-terminal-muted: #8794a8;             /* Terminal secondary text. */
   --color-terminal-prompt: #7cc4ff;            /* Prompt sign and the member's own input. */
@@ -104,6 +104,7 @@
   --size-switch-height: 20px;   /* Toggle switch track height. */
   --size-switch-knob: 14px;     /* Toggle switch knob diameter. */
   --size-dot: 8px;              /* Status dot and the "waiting for you" tab dot. */
+  --size-logo: 20px;            /* The Grillo logo beside the name in the title bar. */
   --size-terminal-min: 260px;   /* Minimum height of a terminal panel. */
   --size-textarea-min: 96px;    /* Minimum height of a multi-line text field. */
   /* --breakpoint-narrow: 760px;   Phone-width layout below this. Media queries cannot read custom

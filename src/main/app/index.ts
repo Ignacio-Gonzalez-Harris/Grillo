@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, shell } from 'electron';
+import icon from '../../../build/icon.png?asset';
 import { mainIpc } from '../ipc';
 import { loadFeatures } from './features';
 import { isAppPage, webUrlToOpenOutside } from './navigation';
@@ -14,6 +15,7 @@ function createWindow(): void {
     width: WINDOW_WIDTH,
     height: WINDOW_HEIGHT,
     title: 'Grillo',
+    icon,
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
