@@ -130,8 +130,10 @@ After done, **an own-time agent stops**: report, and take no other ticket.
 A member may answer from GitHub's web or phone app by writing a plain comment on a ticket. Any member's pickup turns
 it into the recorded answer, marked `via: github`, even on a ticket taken by or sent to someone else.
 
-1. Run grillo-wayfinder's Step 0 (`grillo-wayfinder`, "Step 0: check GitHub and the project folder"). When the
-   `git pull --ff-only` is refused, say so in one line and stop: no source can be saved.
+1. Run grillo-wayfinder's Step 0 and its structure-section step (`grillo-wayfinder`, "Step 0: check GitHub and the
+   project folder" and "The structure-section step"), so a section added to the structure mid-project has a ticket
+   or a fog line before a close can make the map look done. When the `git pull --ff-only` is refused, say so in one
+   line and stop: no source can be saved.
 2. Read the runner's login and `.grillo/members.json`.
 3. **List every open ticket**, every page, of the four kinds (`grillo-wayfinder`, "Making and changing issues"), and
    read each one's body and every comment with its numeric id, author and `created_at`. Closed tickets are left out:
@@ -188,7 +190,9 @@ Only the rider who booked the slot, or a volunteer on shift, may cancel a bookin
 
 Together they say "cleo-example, via GitHub, 2026-10-24" (the source's `who:` and `when:`, the answer's `via:`), and
 the answer's `who:` names ada-example as the member who recorded it. **Undo** is deleting the answer comment: the
-plain comment waits again for the next pickup.
+plain comment waits again for the next pickup. When that pickup also closed the ticket, a member also reopens it
+(on the map screen), which takes its Settled line off; the pickup leaves closed tickets out, so until then the comment
+does not wait again.
 
 ## Guardrails
 

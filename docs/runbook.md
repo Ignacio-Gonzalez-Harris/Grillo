@@ -373,7 +373,9 @@ check, then the source file pushed to `main`, then the answer comment.
   #<n>"); the answer is marked `via: github`, names the comment in `from:`, and names you as the one who recorded it.
   It works on tickets someone else holds and never changes who holds them. A comment that answers no question is left
   as it is. A ticket left with every question answered is closed as Done does.
-- **Undo a picked-up answer:** delete its answer comment; the plain comment waits for the next pickup.
+- **Undo a picked-up answer:** delete its answer comment; the plain comment waits for the next pickup. When that
+  pickup also closed the ticket, reopen the ticket too (on the map screen), which takes its line off Settled: the
+  pickup leaves closed tickets out, so the comment waits again only once the ticket is open.
 - **Run it by hand (developers):** in a clone of a made-up test project with a map, tickets and `.grillo/` on `main`,
   copy `resources/skills/grillo-wayfinder/`, `resources/skills/grillo-prd/` and `resources/skills/grillo-answer/` into
   `.claude/skills/`, start `claude` there and type `/grillo-answer <ticket number>` or `/grillo-answer pickup`. Never
