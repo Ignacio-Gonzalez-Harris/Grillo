@@ -367,7 +367,7 @@ describe('meeting screen: its states', () => {
 });
 
 describe('meeting screen: the controls call the session', () => {
-  it('starts the session with the host present, then types present and mode once the agent is ready', async () => {
+  it('starts the session with the host present, then types the session file, present and mode once the agent is ready', async () => {
     const { host, store, panel, startMeeting } = await app();
 
     const { pty } = await startMeeting();
@@ -375,7 +375,8 @@ describe('meeting screen: the controls call the session', () => {
     const state = host.state();
     expect(state).toMatchObject({ project: PROJECT, present: [HOST] });
     expect((await store.getSession(PROJECT, state!.id)).present).toEqual([HOST]);
-    expect(typedAfterCommand(pty)).toEqual([`present: ${HOST}`, ENTER, 'mode: type', ENTER]);
+    // resources/skills/README.md, Session row: every meeting agent is told the session file, channel open or not.
+    expect(typedAfterCommand(pty)).toEqual([`session: ${state!.file}`, ENTER, `present: ${HOST}`, ENTER, 'mode: type', ENTER]);
     const present = cardNamed(panel(), 'Present');
     expect([...present.querySelectorAll('label')].map(text)).toEqual([
       `${HOST} · Ada Example productHost`,
@@ -428,6 +429,22 @@ describe('meeting screen: the controls call the session', () => {
 
     expect(pty.written).toEqual(['Sample pasted line.\nSample reply.\nuse it', ENTER]);
     expect(text(panel().querySelector('.note.ok'))).toBe('Transcript sent with "use it": the agent takes the answer from it.');
+  });
+
+  it('shows the channel as the session holds it when no session runs: it stays on, and turns off again', async () => {
+    const { host, grillo, folder } = await app();
+    const generic = await grillo.invoke('agents:start', { kind: 'generic', folder, firstMessage: '/grillo-generic', title: 'Generic · Sample notes' });
+    await settle();
+    const channel = document.querySelector<HTMLInputElement>(`nav .tab[data-agent-id="${generic}"] .tab-header input`) as HTMLInputElement;
+
+    await flip(channel, true);
+    expect(host.state()).toBeNull();
+    expect(host.channels()).toEqual([generic]);
+    expect(channel.checked).toBe(true);
+    await flip(channel, false);
+
+    expect(host.channels()).toEqual([]);
+    expect(channel.checked).toBe(false);
   });
 
   it("opens and closes any agent's channel from the switch in its tab", async () => {

@@ -2,7 +2,6 @@
  * The "Open channel" switch inside every agent's tab, beside its name and waiting dot (prototype `screen-meeting`):
  * while it is on, the live session writes each transcribed slice into that agent's input box (PRD 4.5 item 5).
  */
-import type { SessionState } from '../../../shared/session';
 import { createSessionClient } from '../../../shared/session-ipc';
 import { toggle } from '../../theme/components';
 import type { TabPanel } from '../agent-tab/tab-panels';
@@ -25,9 +24,14 @@ export function channelSwitchPanel(): TabPanel {
       root.title = CHANNEL_HINT;
       container.append(root);
 
-      function show(state: SessionState | null): void {
-        if (disposed) return;
-        input.checked = state?.channels.includes(agent.id) ?? false;
+      /** Reads the open channels from the host itself: a channel may be open before any session runs. */
+      function show(): void {
+        session.channels().then(
+          (open) => {
+            if (!disposed) input.checked = open.includes(agent.id);
+          },
+          () => undefined,
+        );
       }
 
       async function setChannel(open: boolean): Promise<void> {
@@ -44,7 +48,7 @@ export function channelSwitchPanel(): TabPanel {
       }
 
       const stop = grillo.on('session:changed', show);
-      session.state().then(show, () => undefined);
+      show();
 
       return {
         dispose() {

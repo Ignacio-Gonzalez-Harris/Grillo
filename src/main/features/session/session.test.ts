@@ -677,6 +677,42 @@ describe('grilling session: per-agent channels', () => {
     expect(host.state()?.channels).toEqual(['a1']);
   });
 
+  it('tells a meeting agent the session file once, even with its channel closed, and not again when it opens', async () => {
+    const { host, agents } = await channelRig('a1');
+    const { file } = host.state()!;
+
+    for (let time = 0; time < 2; time += 1) {
+      const telling = host.tellSession('a1');
+      await settle();
+      await telling;
+    }
+    await host.setChannel('a1', true);
+    await settle();
+
+    expect(agents.typed.get('a1')).toEqual([`session: ${file}`, ENTER]);
+  });
+
+  it('refuses to tell an agent the session file when no session runs', async () => {
+    const setup = await rig();
+    setup.agents.add('a1');
+
+    expect(await refusal(setup.host.tellSession('a1'))).toBe('no-session');
+    expect(setup.agents.typed.get('a1')).toEqual([]);
+  });
+
+  it('lists the open channels with no session running as well as during one', async () => {
+    const setup = await rig();
+    setup.agents.add('a1', 'a2');
+
+    await setup.host.setChannel('a2', true);
+    await setup.host.setChannel('a1', true);
+    expect(setup.host.channels()).toEqual(['a2', 'a1']);
+    await setup.host.startSession(PROJECT);
+    await setup.host.setChannel('a2', false);
+
+    expect(setup.host.channels()).toEqual(['a1']);
+  });
+
   it('tells agents whose channel is already open about a session started later, once each', async () => {
     const setup = await rig();
     setup.agents.add('a1');

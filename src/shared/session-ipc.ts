@@ -14,6 +14,8 @@ export const SESSION_METHODS = [
   'setRecording',
   'endSession',
   'setChannel',
+  'channels',
+  'tellSession',
   'useIt',
   'typeMode',
   'typePresent',

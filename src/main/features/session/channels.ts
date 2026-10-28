@@ -4,6 +4,9 @@ import type { MainIpc } from '../../ipc/bridge';
 import type { Transcriber } from '../transcription/transcriber';
 import type { SessionHost } from './session';
 
+/** The calls that only read the session, so they announce nothing. */
+const READS: ReadonlySet<SessionMethod> = new Set(['state', 'channels']);
+
 type AnyHostMethod = (...args: unknown[]) => unknown;
 type AnyHandle = (channel: string, fn: (args: unknown) => Promise<SessionResult<unknown>>) => void;
 
@@ -20,7 +23,7 @@ async function settle(host: SessionHost, method: SessionMethod, args: unknown): 
 
 /**
  * Puts every `SessionHost` method on `session:<method>`, and sends `session:changed` after every call that may have
- * changed the session (all but `state`), whether it succeeded or was refused.
+ * changed the session (all but the reads, `state` and `channels`), whether it succeeded or was refused.
  */
 export function registerSessionChannels(ipc: MainIpc, host: SessionHost): void {
   const handle = ipc.handle as unknown as AnyHandle;
@@ -29,7 +32,7 @@ export function registerSessionChannels(ipc: MainIpc, host: SessionHost): void {
       try {
         return await settle(host, method, args);
       } finally {
-        if (method !== 'state') ipc.send('session:changed', host.state());
+        if (!READS.has(method)) ipc.send('session:changed', host.state());
       }
     });
   }

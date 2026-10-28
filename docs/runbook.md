@@ -337,7 +337,8 @@ separate session screen. **No screen starts a meeting agent yet**: that control 
 calls `startMeetingAgent` from `src/renderer/screens/meeting/meeting-agents.ts`.
 
 - **Opening the tab** starts the live session for the project if none is running, ticks the host present, and once
-  the agent has gone quiet after starting types `present: <host>` and `mode: type` into it.
+  the agent has gone quiet after starting types `session: <session file>`, `present: <host>` and `mode: type` into
+  it, so every answer it records cites the session, channel open or not.
 - **Present:** one tick per member, with their domains and a Host badge on the member signed in. Each tick is
   written to the session file and typed into the agent as a new `present:` message.
 - **Preparing speech model:** before the first recording on a laptop the speech model downloads, with its progress.
@@ -352,7 +353,8 @@ calls `startMeetingAgent` from `src/renderer/screens/meeting/meeting-agents.ts`.
   `jump <number>`. **Import a transcript** pastes or uploads a text file and sends it with `use it`.
 - **The transcript strip** under the terminal shows each transcribed line with the time it appeared.
 - **Channel**, the switch inside every agent's tab, opens or closes that agent's channel; while open, the live
-  transcript goes into its type box.
+  transcript goes into its type box. It can be turned on before any session runs: the agent is then told the
+  session file when one starts.
 - **Stopping the last meeting agent** ends the session, its transcript saved.
 - **Developers:** `npx vitest run src/renderer/screens/meeting src/main/features/session` runs the panel against the
   real session, agent runtime and in-memory store, with fake terminals, a fake transcriber and no microphone.

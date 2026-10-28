@@ -460,11 +460,15 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         });
       }
 
-      /** Once the agent has said it is ready, it hears who is present and the mode the screen shows. */
+      /**
+       * Once the agent has said it is ready, it hears the session file (every meeting agent, channel open or not:
+       * `resources/skills/README.md`, Session row), who is present and the mode the screen shows.
+       */
       async function greet(): Promise<void> {
         if (greeted || !waiting || state === null || host === null) return;
         greeted = true;
         try {
+          await session.tellSession(agent.id);
           await session.typePresent(agent.id, presentLogins());
           await session.typeMode(agent.id, mode);
         } catch (error) {
