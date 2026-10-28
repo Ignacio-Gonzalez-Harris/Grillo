@@ -1,0 +1,1 @@
+A research, prototype or task ticket on the Tickets tab now gets a "Launch <kind> agent" button that opens its agent with the catalogue command, so release 3 agents start from the ticket instead of by hand.
