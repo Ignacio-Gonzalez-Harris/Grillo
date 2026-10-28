@@ -1,0 +1,102 @@
+{
+  "map": {
+    "number": 1,
+    "title": "Map",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "state": "open",
+    "body": "issues/1.md"
+  },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "How members book a repair",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "state": "closed",
+      "assignee": "ana-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": [
+        {
+          "id": "2001",
+          "author": "ana-example",
+          "createdAt": "2026-10-24T09:20:00.000Z",
+          "body": "comments/2001.md"
+        },
+        {
+          "id": "2002",
+          "author": "ana-example",
+          "createdAt": "2026-10-24T09:21:00.000Z",
+          "body": "comments/2002.md"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Which roles the app has",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:product"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/3.md",
+      "comments": []
+    },
+    {
+      "number": 4,
+      "title": "Where the booking data is kept",
+      "labels": [
+        "wayfinder:research",
+        "domain:developer"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/4.md",
+      "comments": []
+    },
+    {
+      "number": 5,
+      "title": "Which repairs need the workshop's tools",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:workshop"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/5.md",
+      "comments": []
+    },
+    {
+      "number": 6,
+      "title": "How a booking is cancelled",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:developer"
+      ],
+      "state": "open",
+      "assignee": "ben-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/6.md",
+      "comments": [
+        {
+          "id": "6001",
+          "author": "ben-example",
+          "createdAt": "2026-10-24T15:00:00.000Z",
+          "body": "comments/6001.md"
+        }
+      ]
+    }
+  ]
+}

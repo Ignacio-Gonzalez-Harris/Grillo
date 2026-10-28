@@ -13,11 +13,12 @@ others. The records themselves are PRD section 6.1; the interface over them is `
 5. [The map issue](#the-map-issue)
 6. [Ticket issues](#ticket-issues)
 7. [Comment markers](#comment-markers)
-8. [Codes: S, Q and v](#codes-s-q-and-v)
-9. [The claim rule](#the-claim-rule)
-10. [Saves to a protected main](#saves-to-a-protected-main)
-11. [Merging and reopening tickets](#merging-and-reopening-tickets)
-12. [Recent projects](#recent-projects)
+8. [Tags set by hand](#tags-set-by-hand)
+9. [Codes: S, Q and v](#codes-s-q-and-v)
+10. [The claim rule](#the-claim-rule)
+11. [Saves to a protected main](#saves-to-a-protected-main)
+12. [Merging and reopening tickets](#merging-and-reopening-tickets)
+13. [Recent projects](#recent-projects)
 
 ## One project, one repository
 
@@ -228,6 +229,33 @@ Sign in with GitHub only.
 
 A comment with no marker is a plain member comment: one written in GitHub's web or phone app. It waits to be
 turned into an answer until an answer comment names its id in `from:`; deleting that answer puts it back.
+
+## Tags set by hand
+
+A tagging round (`/grillo-tagging`) gives every open ticket its domain labels, and is run again as members
+join. A member who sets a ticket's domain labels by hand protects them from every later round with a
+**tags-by-hand marker**: a comment on the ticket, written right after the labels change, whose first line is
+`<!-- grillo:tags-by-hand -->`, followed by these header lines (see [Header lines](#header-lines)):
+
+- `who:` the login who set the tags; the comment's author.
+- `when:` the moment they were set.
+- `domains:` the domains set (`product, platform`), or `none` for the "no domain" tag. Never empty, never
+  `none` together with a domain.
+
+```
+<!-- grillo:tags-by-hand -->
+who: ada-example
+when: 2026-10-25T10:00:00.000Z
+domains: product, platform
+
+```
+
+- A ticket with a tags-by-hand marker is **hand-tagged**: a tagging round never adds, removes or changes its
+  domain labels. Its labels are the ones the latest marker names.
+- Setting the tags by hand again writes a new marker; the latest one counts.
+- **Undo:** deleting every tags-by-hand marker on the ticket hands its tags back to the next tagging round.
+- The app's comment list ignores this marker, as it does every Grillo marker that is not an answer, a
+  discussion or a decision.
 
 ## Codes: S, Q and v
 

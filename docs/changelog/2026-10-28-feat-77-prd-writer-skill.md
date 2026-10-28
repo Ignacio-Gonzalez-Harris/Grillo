@@ -1,0 +1,1 @@
+Grillo's PRD writer ships as the grillo-prd skill: it writes each numbered PRD version with source codes on every decision, [no source] marks and an audit appendix, leaves undecided sections to new tickets or fog, and turns member feedback into edits or tickets.

@@ -275,6 +275,30 @@ describe('checkProjectFixture', () => {
     expect(() => checkProjectFixture(files)).toThrow(mentions);
   });
 
+  it('reads the tags a member set by hand from the latest tags-by-hand marker on a ticket', () => {
+    const files = handTagged(['wayfinder:grilling', 'domain:product'], tagsByHandOf('ada-example', '2026-10-25T10:00:00.000Z', 'none'));
+    files['comments/3002.md'] = tagsByHandOf('ada-example', '2026-10-25T11:00:00.000Z', 'product');
+    files['issues.json'] = files['issues.json'].replace(
+      '"body":"comments/3001.md"}]',
+      '"body":"comments/3001.md"},{"id":"3002","author":"ada-example","createdAt":"2026-10-25T11:00:00.000Z","body":"comments/3002.md"}]',
+    );
+    const fixture = checkProjectFixture(files);
+
+    expect(fixture.tickets[1].tagsByHand).toEqual({ who: 'ada-example', when: '2026-10-25T11:00:00.000Z', domains: ['product'], noDomain: false });
+    expect(fixture.tickets[0].tagsByHand).toBeNull();
+  });
+
+  it.each<[string, Record<string, string>, string]>([
+    ['a tags-by-hand marker its author did not write', handTagged(['wayfinder:grilling', 'domain:product'], tagsByHandOf('ben-example', '2026-10-25T10:00:00.000Z', 'product')), 'author'],
+    ['a tags-by-hand marker at a moment that is not ISO 8601 in UTC', handTagged(['wayfinder:grilling', 'domain:product'], tagsByHandOf('ada-example', 'today', 'product')), 'today'],
+    ['a tags-by-hand marker naming no domain', handTagged(['wayfinder:grilling'], tagsByHandOf('ada-example', '2026-10-25T10:00:00.000Z', '')), 'comment 3001'],
+    ['a hand-tagged ticket whose labels differ from its marker', handTagged(['wayfinder:grilling', 'domain:none'], tagsByHandOf('ada-example', '2026-10-25T10:00:00.000Z', 'product')), 'by hand'],
+    ['a ticket tagged no domain by hand that lost its tag', handTagged(['wayfinder:grilling'], tagsByHandOf('ada-example', '2026-10-25T10:00:00.000Z', 'none')), 'by hand'],
+  ])('refuses %s', (_what, files, mentions) => {
+    expect(() => checkProjectFixture(files)).toThrow(FixtureError);
+    expect(() => checkProjectFixture(files)).toThrow(mentions);
+  });
+
   it('reports the map done when no ticket is open and no fog is left', () => {
     const files = withManifest((m) => {
       m.tickets = [ticket(m, 0)];
@@ -362,3 +386,17 @@ describe('readFixtureFolder', () => {
     }
   });
 });
+
+/** The valid fixture with open ticket #3 carrying `labels` and one tags-by-hand marker, comment 3001, written by ada-example. */
+function handTagged(labels: string[], marker: string): Record<string, string> {
+  const files = withManifest((m) => {
+    ticket(m, 1).labels = labels;
+    ticket(m, 1).comments = [{ id: '3001', author: 'ada-example', createdAt: '2026-10-25T10:00:00.000Z', body: 'comments/3001.md' }];
+  });
+  files['comments/3001.md'] = marker;
+  return files;
+}
+
+function tagsByHandOf(who: string, when: string, domains: string): string {
+  return ['<!-- grillo:tags-by-hand -->', `who: ${who}`, `when: ${when}`, domains === '' ? 'domains:' : `domains: ${domains}`, '', ''].join('\n');
+}
