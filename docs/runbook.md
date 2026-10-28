@@ -226,6 +226,31 @@ The screen that starts it arrives with the project creation story; until then a 
   `docs/store-layout.md`, and its fixture of a session's output with `resources/skills/fixture-check.ts`, the checker
   other skills' tests reuse for their own fixtures.
 
+## Tagging round
+
+The tagging round is the skill `grillo-tagging`, shipped into the project folder with the other Grillo skills. The
+"Run tagging round" button on the map screen arrives with that screen's story; until then a developer can run it by
+hand.
+
+- **What it does:** `/grillo-tagging` reads the domains every member declared in `.grillo/members.json` and gives
+  every open ticket one or more of them as `domain:<name>` labels, creating any label that is missing. A ticket that
+  fits nobody gets `domain:none`, the visible "no domain" tag: anyone may answer it. Closed tickets and every label
+  that does not start with `domain:` are left alone; nothing else on the ticket changes.
+- **Run it again as members join:** each round looks at every open ticket afresh against the domains declared now,
+  so a new member's domain can replace "no domain", and a domain nobody declares any more is taken off.
+- **Tags you set by hand stay yours:** a ticket with a comment that starts with the hidden line
+  `<!-- grillo:tags-by-hand -->` (header lines `who:`, `when:`, `domains:`) keeps its domain labels in every later
+  round. Ask the tagging agent to set a ticket's tags by hand and it writes both the labels and that comment.
+  Changing the labels only in GitHub's own label menu writes no such comment, so the next round may change them back.
+  **Undo:** delete the ticket's tags-by-hand comments and the next round tags it again.
+- **Run it by hand (developers):** in a clone of a made-up test project with a map, tickets and
+  `.grillo/members.json` on `main`, copy `resources/skills/grillo-tagging/` into `.claude/skills/`, start `claude`
+  there and type `/grillo-tagging`.
+- **Developers:** `npx vitest run resources/skills/grillo-tagging` checks the skill's frontmatter and command against
+  the catalogue, the labels and the tags-by-hand marker it teaches against `docs/store-layout.md` and the store's own
+  parser, and three fixtures (before the first round, after it, and after a member joined and the round ran again)
+  against the store layout and the rules of a round.
+
 ## Own-time answering
 
 Nothing to do yet: own-time answering arrives with its own story.

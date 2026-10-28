@@ -318,3 +318,47 @@ export function parseComment(raw: RawComment): IssueComment {
     return { kind, ...header, question, session: orNull(checked(values.session, (value) => value === '' || isSessionFile(value), 'session')), transcript: body };
   });
 }
+
+// The tags-by-hand marker: the domain tags a member set by hand, which a tagging round never changes.
+
+export const TAGS_BY_HAND_MARKER = marker('tags-by-hand');
+const TAGS_BY_HAND_HEADERS = ['who', 'when', 'domains'] as const;
+/** The `domains:` value that stands for the "no domain" tag. */
+const NO_DOMAIN_VALUE = domainOf(NO_DOMAIN_LABEL);
+
+export interface TagsByHand {
+  who: Login;
+  when: IsoDateTime;
+  /** The domains the member set; empty when they set the "no domain" tag. */
+  domains: string[];
+  /** The member set the "no domain" tag (`domain:none`). */
+  noDomain: boolean;
+}
+
+/** Whether a comment body is a tags-by-hand marker: its first line is the marker. */
+export const isTagsByHand = (body: string): boolean => unixLines(body).split('\n')[0] === TAGS_BY_HAND_MARKER;
+
+export function formatTagsByHand({ who, when, domains, noDomain }: TagsByHand): string {
+  return `${TAGS_BY_HAND_MARKER}\n${formatHeader([['who', who], ['when', when], ['domains', noDomain ? NO_DOMAIN_VALUE : domains.join(LIST_SEPARATOR)]], '')}`;
+}
+
+export function parseTagsByHand(body: string, what: string): TagsByHand {
+  return reading(what, () => {
+    if (!isTagsByHand(body)) {
+      malformed(`the first line is not '${TAGS_BY_HAND_MARKER}'`);
+    }
+    const { values } = parseHeader(unixLines(body).split('\n').slice(1).join('\n'), TAGS_BY_HAND_HEADERS);
+    const domains = values.domains === '' ? [] : values.domains.split(',').map((domain) => domain.trim());
+    if (domains.length === 0) {
+      malformed(`'domains' names no domain; '${NO_DOMAIN_VALUE}' is the "no domain" tag`);
+    }
+    if (domains.some((domain) => domain === '' || isDomainLabel(domain)) || new Set(domains).size !== domains.length) {
+      malformed(`'${values.domains}' is not a list of domain names, each once`);
+    }
+    const noDomain = domains.includes(NO_DOMAIN_VALUE);
+    if (noDomain && domains.length > 1) {
+      malformed(`'${NO_DOMAIN_VALUE}' is the "no domain" tag and never comes with a domain`);
+    }
+    return { who: checked(values.who, isLogin, 'who'), when: values.when, domains: noDomain ? [] : domains, noDomain };
+  });
+}
