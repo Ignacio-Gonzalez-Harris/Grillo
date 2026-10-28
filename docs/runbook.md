@@ -179,6 +179,34 @@ last on this laptop; with neither it says to open a project from the Project tab
 - **Close project** archives the repository; the map then shows "archived", greys out every change, and **Reopen**
   unarchives it. Both need repository admin rights; without them the button is greyed out with the reason.
 
+### The tickets screen
+
+The Tickets tab is where you work through tickets one by one. It opens the same project the Map tab would, and the
+ticket it was opened for, or else the first ticket of your list. With no ticket yet it says the grilling agent has not
+built the map.
+
+- **Your list** comes in groups: taken by you or sent to you, then your domains (tickets nobody holds in one of your
+  domains, or tagged "no domain"), then everything else (held by someone else, shown with their login, in other
+  domains, or not tagged yet), then the closed ones. Nothing is hidden. **Search** keeps the tickets whose title or
+  questions contain what you type.
+- **The open ticket** shows its kind and who holds it: "Not assigned", "Assigned to you", or "Locked · assigned to
+  <login>". A locked ticket greys out Take and says who holds it; you can still read it.
+- **Take** assigns the ticket to you, and **Send** to the member you pick. If someone else took it on another laptop
+  first, the refusal shows and the ticket shows as locked to them. **Release** (on your own ticket) puts it back in
+  the pool, unlocked. **Reassign** moves a held ticket to any member until it has an answer.
+- **Domains:** remove a tag with its ×, or add one from "Add a domain…" (the members' declared domains, and "no
+  domain", which replaces every other tag).
+- **Questions** show Open or Answered. An answer shows its text, who recorded it and when, and its source codes; an
+  answer made from a GitHub comment shows "Source: <who>, via GitHub, <date> · recorded by <login>". **Undo** deletes
+  a recorded answer, so the question is open again (and a GitHub comment waits to be picked up again).
+- **Show discussion (word for word)** shows each recorded discussion of the ticket in full.
+- **Edit**, **Merge** and **Close as out of scope** work as on the map, on tickets nobody else holds. When a merge or
+  close leaves no open ticket and no fog, Grillo starts the PRD writer (`/grillo-prd`) and says so.
+- **Answer now** opens the own-time screen on the ticket; a ticket someone else holds has none, since only they answer it.
+- **Pick up GitHub comments** shows while members' plain comments on open tickets wait to be recorded. It opens a
+  grilling agent in its own tab that types `/grillo-answer pickup`; the answers appear when the agent goes quiet.
+- **An archived project** stays readable here, with every change control gone.
+
 ## Agents
 
 Each agent shows in its own tab: click the agent's name on the tab bar.
@@ -271,6 +299,36 @@ The meeting panel's controls arrive with their own story; the session logic unde
   (`resources/skills/README.md`). While an agent is in Type mode no transcript goes into its box. An agent whose
   channel opens during a session is first told the session file. Several channels can be open at once; an agent
   that has stopped simply loses its channel.
+
+### Meeting grilling skill
+
+The agent that runs a live session is the skill `grillo-meeting`, shipped into the project folder with the other
+Grillo skills. Grillo types `/grillo-meeting` when the host starts a live session; the meeting panel's controls then
+drive it by typing the protocol messages (`resources/skills/README.md`).
+
+- **Which ticket comes next:** the open ticket with the lowest number whose blockers are all closed and whose domains
+  match someone ticked present. "No domain", and a ticket not tagged yet, count as everyone's. Tickets of absent
+  domains stay on the map. A presence change applies from the next ticket; with nobody present the agent waits.
+- **Questions one at a time.** **Type:** the next message a member types is the answer, with no discussion.
+  **Listen:** the room talks; at "Use it" the agent writes the answer from the transcript and keeps the whole talk,
+  word for word, as the question's discussion, which names the session file.
+- **Every answer's source** is a meeting source: the session file, the moment of "Use it" or of typing, and the
+  members present. Before the session is started, a "Use it" chunk is recorded as pasted text instead.
+- **Skip** leaves the question open and asks the next; after the last one the ticket is left as Done leaves it.
+  **Jump** leaves the ticket at hand and takes the one picked, whatever its domains; a closed ticket or one someone
+  else holds is refused. **Done** closes the ticket with its decision when every question is answered (and starts
+  the PRD writer once the map is done), or else releases it with its open questions. Talk above Skip, Jump or Done
+  is never recorded. A ticket left with questions open is not picked again in the same session.
+- **Drift:** what else the room says may add a question to the ticket, a new ticket (with no domain until the next
+  tagging round), a fog line or an out-of-scope line. The agent says what it added.
+- **Run it by hand (developers):** in a clone of a made-up test project with a map and tagged tickets on `main`, copy
+  `resources/skills/grillo-wayfinder/` and `resources/skills/grillo-meeting/` into `.claude/skills/`, start `claude`
+  there and type `/grillo-meeting`, then the messages one at a time: `present: <your login>`, `mode: type`, an
+  answer, `done`. Never use a real transcript.
+- **Developers:** `npx vitest run resources/skills/grillo-meeting` checks the skill's frontmatter and command against
+  the catalogue, that it follows exactly the protocol messages the catalogue gives it, its example records against
+  the store's parsers, and two fixtures (a project before and after a live session) against the store layout and the
+  rules of a session.
 
 ## Grilling engine
 
