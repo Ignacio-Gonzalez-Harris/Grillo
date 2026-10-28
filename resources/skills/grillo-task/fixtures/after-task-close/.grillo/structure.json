@@ -1,0 +1,12 @@
+{
+  "sections": [
+    {
+      "name": "Problem",
+      "note": "What goes wrong today, and the outcomes wanted"
+    },
+    {
+      "name": "Data model",
+      "note": "The records the app keeps"
+    }
+  ]
+}

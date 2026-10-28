@@ -1,0 +1,43 @@
+{
+  "map": {
+    "number": 1,
+    "title": "Map",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "state": "open",
+    "body": "issues/1.md"
+  },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "Whether the shared calendar can hold the bookings",
+      "labels": [
+        "wayfinder:research",
+        "domain:developer"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": []
+    },
+    {
+      "number": 3,
+      "title": "How groups book a room",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:product"
+      ],
+      "state": "open",
+      "assignee": "cleo-example",
+      "parent": 1,
+      "blockedBy": [
+        2
+      ],
+      "body": "issues/3.md",
+      "comments": []
+    }
+  ]
+}

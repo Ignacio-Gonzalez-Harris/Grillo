@@ -1,0 +1,41 @@
+{
+  "map": {
+    "number": 1,
+    "title": "Map",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "state": "open",
+    "body": "issues/1.md"
+  },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "How the watering rota looks",
+      "labels": [
+        "wayfinder:prototype",
+        "domain:product"
+      ],
+      "state": "open",
+      "assignee": "ada-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": []
+    },
+    {
+      "number": 3,
+      "title": "How members sign up for a shift",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:platform"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/3.md",
+      "comments": []
+    }
+  ]
+}

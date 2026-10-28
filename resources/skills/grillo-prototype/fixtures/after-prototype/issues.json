@@ -1,0 +1,72 @@
+{
+  "map": {
+    "number": 1,
+    "title": "Map",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "state": "open",
+    "body": "issues/1.md"
+  },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "How the watering rota looks",
+      "labels": [
+        "wayfinder:prototype",
+        "domain:product"
+      ],
+      "state": "closed",
+      "assignee": "ada-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": [
+        {
+          "id": "2001",
+          "author": "ada-example",
+          "createdAt": "2026-10-26T14:06:00.000Z",
+          "body": "comments/2001.md"
+        },
+        {
+          "id": "2002",
+          "author": "ada-example",
+          "createdAt": "2026-10-26T14:06:00.000Z",
+          "body": "comments/2002.md"
+        },
+        {
+          "id": "2003",
+          "author": "ada-example",
+          "createdAt": "2026-10-26T14:15:00.000Z",
+          "body": "comments/2003.md"
+        },
+        {
+          "id": "2004",
+          "author": "ada-example",
+          "createdAt": "2026-10-26T14:15:00.000Z",
+          "body": "comments/2004.md"
+        },
+        {
+          "id": "2005",
+          "author": "ada-example",
+          "createdAt": "2026-10-26T14:18:00.000Z",
+          "body": "comments/2005.md"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "How members sign up for a shift",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:platform"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/3.md",
+      "comments": []
+    }
+  ]
+}
