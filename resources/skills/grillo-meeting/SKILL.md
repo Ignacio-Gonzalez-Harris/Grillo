@@ -159,8 +159,10 @@ Every answer follows `.claude/skills/grillo-wayfinder/references/record-answer.m
    asked after its other open questions), a new ticket, a fog line or an out-of-scope line, as grillo-wayfinder does
    (`grillo-wayfinder`, "Working a ticket" and "Ticket, fog or out of scope"), with its duplicate search first. A new
    ticket has no domain label: the next tagging round gives it one. Say in one line what you added.
-8. Ask the ticket's next open question. None left: say every question is answered and that the host may press
-   "Done".
+8. Ask the ticket's next open question after this one. None left after it: re-read the ticket's answer comments
+   and count its live questions that still have no answer (the ones skipped). None: say every question is answered
+   and that the host may press "Done", which closes the ticket. Some: say how many stay open, naming their codes,
+   and that "Done" now releases the ticket with them open.
 
 ## Leaving a ticket
 
