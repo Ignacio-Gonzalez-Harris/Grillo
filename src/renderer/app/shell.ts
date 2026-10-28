@@ -3,9 +3,16 @@ import logoUrl from '../assets/grillo-logo.png';
 import type { AgentId, AgentInfo } from '../../shared/agents';
 import type { GrilloApi } from '../../shared/ipc';
 import { glassPanel } from '../theme/components';
-import { AGENT_SCREEN, GENERIC_AGENT_SCREEN, START_SCREEN, UNBUILT_SCREEN_NAMES } from './navigation';
+import {
+  AGENT_SCREEN,
+  GENERIC_AGENT_SCREEN,
+  SETUP_CHECK_SCREEN,
+  START_SCREEN,
+  UNBUILT_SCREEN_NAMES,
+} from './navigation';
 import type { ScreenParams, ScreenRegistry, ShellContext } from './screens';
 import { createTabBar, type ActiveTab } from './tab-bar';
+import { createUpdatePopup } from './update-popup';
 
 export interface ShellOptions {
   grillo: GrilloApi;
@@ -34,7 +41,8 @@ function emptyState(title: string): HTMLElement {
 
 /**
  * The frame every screen sits in: the app window with its title bar, the tab bar and the content area. Screens come
- * from the registry; agent tabs come from the agent runtime's list (`agents:list`, then `agents:list-changed`).
+ * from the registry; agent tabs come from the agent runtime's list (`agents:list`, then `agents:list-changed`). The
+ * update pop-up covers the whole window when a newer version is found.
  */
 export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions): Shell {
   let agents: readonly AgentInfo[] = [];
@@ -62,8 +70,14 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
   const content = document.createElement('main');
   content.className = 'window-body';
 
-  const appWindow = glassPanel([titlebar, tabBar.el, content]);
-  appWindow.classList.add('window');
+  const updatePopup = createUpdatePopup({
+    grillo,
+    screenShowsOffer: () => current.screenId === SETUP_CHECK_SCREEN,
+    behind: [tabBar.el, content],
+  });
+
+  const appWindow = glassPanel([titlebar, tabBar.el, content, updatePopup.root]);
+  appWindow.classList.add('window', 'overlay-host');
   const frame = document.createElement('div');
   frame.className = 'shell';
   frame.append(appWindow);
@@ -152,6 +166,7 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
     agentTabHeader: (agentId) => tabBar.agentTabHeader(agentId),
     dispose() {
       stopListening();
+      updatePopup.dispose();
       closeScreen?.();
       closeScreen = undefined;
       stopScreens.forEach((stop) => stop());
