@@ -1,4 +1,5 @@
 import './shell.css';
+import logoUrl from '../assets/grillo-logo.png';
 import type { AgentId, AgentInfo } from '../../shared/agents';
 import type { GrilloApi } from '../../shared/ipc';
 import { glassPanel } from '../theme/components';
@@ -42,11 +43,15 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
 
   const context = document.createElement('span');
   context.className = 'context';
+  const logo = document.createElement('img');
+  logo.className = 'logo';
+  logo.src = logoUrl;
+  logo.alt = '';
   const brand = document.createElement('strong');
   brand.textContent = 'Grillo';
   const titlebar = document.createElement('header');
   titlebar.className = 'titlebar';
-  titlebar.append(brand, context);
+  titlebar.append(logo, brand, context);
 
   const tabBar = createTabBar({
     openScreen: (screenId) => navigate(screenId),

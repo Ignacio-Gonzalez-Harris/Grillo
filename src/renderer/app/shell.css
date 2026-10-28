@@ -8,6 +8,7 @@
 .window { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 .titlebar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); color: var(--color-text-muted); flex-wrap: wrap; }
 .titlebar strong { color: var(--color-text); }
+.titlebar .logo { width: var(--size-logo); height: var(--size-logo); }
 .window-body { flex: 1; min-height: 0; overflow: auto; padding: var(--space-5); display: grid; gap: var(--space-5); align-content: start; }
 .empty-screen { padding: var(--space-5); }
 .empty-screen p { margin: 0; }

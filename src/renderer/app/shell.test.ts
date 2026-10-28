@@ -69,6 +69,15 @@ describe('app shell', () => {
     expect(content(root).textContent).toContain('Setup is not built yet.');
   });
 
+  it('shows the Grillo logo before the name in the title bar', () => {
+    const root = start(registry(), fakeGrillo().grillo);
+
+    const logo = root.querySelector<HTMLImageElement>('.titlebar img.logo');
+    expect(logo?.getAttribute('src')).toMatch(/grillo-logo.*\.png$|^data:image\/png/);
+    expect(logo?.alt).toBe('');
+    expect(logo?.nextElementSibling?.textContent).toBe('Grillo');
+  });
+
   it('opens the registered screen of a fixed tab and closes the screen it leaves', () => {
     const setup = screen('setup-check', 'Setup check');
     const cleanup = vi.fn();
