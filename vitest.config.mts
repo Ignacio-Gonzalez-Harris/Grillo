@@ -25,5 +25,8 @@ export default defineConfig({
     include: ['**/*.test.ts'],
     exclude: ['**/node_modules/**', 'out/**', 'dist/**', '.claude/**', ...testsNeedingTheSpeechModel],
     environment: 'node',
+    // A stylesheet imported as text (`?raw`, such as the tokens inlined into the exported PRD) keeps its content in
+    // tests, as it does in the build; every other stylesheet import stays empty.
+    css: { include: [/\.css\?raw$/] },
   },
 });

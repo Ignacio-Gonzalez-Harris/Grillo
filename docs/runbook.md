@@ -350,8 +350,8 @@ one system notification, "Tickets waiting for your answer", naming each ticket a
 
 ## PRD
 
-The PRD writer is the skill `grillo-prd`, shipped into the project folder beside `grillo-wayfinder`. The PRD view
-(screen 8) and its export arrive with their own story; until then the versions are files you open in the repository.
+The PRD writer is the skill `grillo-prd`, shipped into the project folder beside `grillo-wayfinder`. Read, export
+and regenerate the PRD on the PRD tab ([The PRD view](#the-prd-view) below).
 
 - **When it runs:** by itself the moment the map is done (no open ticket, no fog): the agent that closed the last
   ticket starts `/grillo-prd`. `/grillo-prd regenerate` writes a new version on demand, in the current PRD structure,
@@ -374,6 +374,31 @@ The PRD writer is the skill `grillo-prd`, shipped into the project folder beside
   the catalogue, the version format it teaches, and its fixture of a project after one round of feedback with
   `resources/skills/grillo-prd/prd-check.ts`: version numbers, codes on every statement, sections resting on
   decisions, and an appendix listing every cited code word for word.
+
+### The PRD view
+
+The **PRD** tab shows the PRD of the project opened last (a screen may open it on another project).
+
+- **No PRD yet:** says the PRD is written the moment the map is done, and what is still left (open tickets and fog
+  items). **Open the map** goes to the map.
+- **Writing:** the screen shows "Writing version <n>" with **Open the writer** while a "Grilling · PRD" tab of this
+  project is still working (no waiting dot), and also when the map is done, no version is kept yet and any agent of
+  this project runs: the agent that closed the last ticket writes the PRD in its own tab. When an agent of the
+  project goes quiet or stops, the screen reads the versions again and shows the new one. Earlier versions stay
+  readable below. With the map done, no version and no agent running, it shows "No PRD yet" with nothing left.
+- **The version on show:** the latest one first, with its date and "Latest". Every code chip `[S4, Q12.3]` links to
+  its entry in the audit appendix; `[no source]` is marked in amber. Raw HTML in a version is shown as text, and
+  images as links: nothing in a PRD runs or loads.
+- **Versions:** every kept version, numbered and dated, each with **Open**, **Markdown** and **HTML**.
+- **Export:** **Download Markdown** saves the stored file `.grillo/prd/v<n>.md` as it is; **Download HTML** saves one
+  self-contained page (styles inlined from the liquid glass tokens, nothing fetched) that opens in any browser. Files
+  are named `<repo>-prd-v<n>.md` and `.html`; Grillo asks where to save them.
+- **Regenerate** starts `/grillo-prd regenerate` in a new "Grilling · PRD" tab and shows Writing; it is greyed while
+  a writer is working. **Edit structure and regenerate** opens the structure editor on the Project tab.
+  **Talk to an agent about this PRD** starts `/grillo-prd feedback` in a "Grilling · PRD feedback" tab and opens it.
+- **Developers:** the screen's id is `prd`, opened with no parameters or `{ project: '<owner>/<repo>' }`; Edit
+  structure opens `project-creation` with `{ project, view: 'structure' }`. `npx vitest run src/renderer/screens/prd`
+  runs its tests against the in-memory store.
 
 ## Updates
 
