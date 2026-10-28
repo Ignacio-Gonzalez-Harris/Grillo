@@ -1,0 +1,67 @@
+{
+  "run_id": "Grillo-20261028-024651-318e",
+  "issue": 84,
+  "title": "Grilling session: presence, consent record, recording switch, transcript file, per-agent channel",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T02:46:51Z",
+  "finished_at": "2026-10-28T03:16:19Z",
+  "outcome": "merged",
+  "pr": 134,
+  "summary": "Adds the host laptop's grilling session logic in the main process: presence, consent tick, recording switch writing the session transcript file through the store, and per-agent open channels with use it / type / skip / jump; 76 new tests, all with fakes. Not yet reachable from the app: the meeting panel story wires it.",
+  "agents": [
+    {
+      "name": "dev-84",
+      "model": "opus",
+      "tokens_total": 170583
+    },
+    {
+      "name": "review-84",
+      "model": "opus",
+      "tokens_total": 148460
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 939,
+    "review_seconds": 452,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [
+    "CI cannot run on this account (no GitHub Actions minutes; both jobs fail in 2 s), so by the person's word both merges were gated on the full gate run locally on the merged result; main has no CI record for these merges until minutes return"
+  ],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/features/session/",
+      "what": "Nothing in the app can reach the session yet: no IPC channels and not registered at startup; the agent runtime, store and transcriber it needs are created privately inside other features",
+      "why": "Out of scope; the meeting panel story wires it",
+      "owner": "issue #91 (meeting panel)"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/features/session/",
+      "what": "That a line break (Ctrl+J) adds a line in Claude Code's input box without sending is tested only against a fake terminal, never real Claude Code",
+      "why": "Needs a live run",
+      "owner": "issue #91 (meeting panel)"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/features/session/",
+      "what": "The 15 s outlier clock starts when the previous slice is dropped while the real one-at-a-time transcriber is still busy with that outlier, so healthy slices behind a long outlier are dropped too (meeting words lost from the session record); an engine call that never answers drops every later slice",
+      "why": "Needs a decision on when the clock starts (the Transcriber interface does not say) and a test over the sequential transcriber",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/features/session/",
+      "what": "Opening a channel right after startAgent types 'session: <file>' and Enter into the pty before Claude Code's prompt is up, so the Enter can answer a startup question and the agent records use-it answers as pasted text instead of citing the session",
+      "why": "The runtime has no ready signal yet; the meeting panel decides when channels open",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

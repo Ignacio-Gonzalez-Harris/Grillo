@@ -1,0 +1,50 @@
+{
+  "run_id": "Grillo-20261028-024651-318e",
+  "issue": 92,
+  "title": "Own-time answering screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 135,
+  "merged_at": "2026-10-28T03:35:09Z",
+  "merge_commit": "5ac8cc857c0a54e9c88f8efd7708da6743ce60ed",
+  "seam": "src/renderer/screens/own-time/",
+  "story": "I can now answer a ticket in my own time from one screen. I can type answers into a form and press Done, or start a grilling agent whose tab shows my questions and a Done button beside the terminal. I can also paste or upload a meeting transcript for the ticket and the agent uses it. Before this, the own-time screen showed 'not built yet'.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/own-time/form-answer",
+      "criterion": "Form answers go through the store with the answer markers",
+      "steps": "From Tickets, open made-up 'Sample ticket 4', which has 3 questions. Type 'Sample answer.' under the second question and press Save answer.",
+      "expected": "That question turns 'Answered' and shows 'Sample answer.', and the heading shows 'Taken by you'."
+    },
+    {
+      "key": "src/renderer/screens/own-time/form-done-open",
+      "criterion": "Done with open questions releases the ticket",
+      "steps": "Answer only some questions of 'Sample ticket 4', then press Done.",
+      "expected": "'Sample ticket 4 is back in the pool, unlocked. N question(s) … still open and visible to everyone.' and the list of questions with their badges."
+    },
+    {
+      "key": "src/renderer/screens/own-time/form-done-all",
+      "criterion": "Done with all answered closes the ticket, and mapDone starts /grillo-prd",
+      "steps": "Answer every question of the last open ticket (no fog left), then press Done.",
+      "expected": "'All questions answered. Sample ticket 4 is closed…', a 'Map done' row, and a new 'Grilling · PRD' tab."
+    },
+    {
+      "key": "src/renderer/screens/own-time/agent",
+      "criterion": "The agent variant is hosted in the agent tab",
+      "steps": "On the ticket, press 'With a grilling agent'.",
+      "expected": "The tab 'Grilling · Sample ticket 4' opens with the terminal typing '/grillo-answer <n>', the ticket heading above it and the Questions card with Done on the right."
+    },
+    {
+      "key": "src/renderer/screens/own-time/agent-done",
+      "criterion": "Done types done into the agent",
+      "steps": "In that tab press Done.",
+      "expected": "'done' appears in the terminal, the note 'Done sent…' shows, and Done greys out; after the agent finishes, the outcome note appears. Then 'In a form' and Done closes or releases the ticket itself."
+    },
+    {
+      "key": "src/renderer/screens/own-time/transcript",
+      "criterion": "A pasted or uploaded transcript is submitted with use it",
+      "steps": "In the agent tab press 'Import a transcript (paste or upload)'. Paste two made-up lines, or upload a .txt file, then press Use it.",
+      "expected": "The lines appear in the terminal followed by 'use it', then the note 'Transcript sent with \"use it\"…'."
+    }
+  ],
+  "no_qa_reason": null
+}
