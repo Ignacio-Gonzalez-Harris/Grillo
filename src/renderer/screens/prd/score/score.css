@@ -1,0 +1,14 @@
+/*
+ * The score panel of the PRD view, ported from the UX prototype's screen-prd-view state `score`
+ * (docs/ux/prototypes/grillo/index.html). The prototype's helper classes it needs, kept under .prd-score so no other
+ * screen is touched. Every colour, spacing and size comes from theme/tokens.css.
+ */
+.prd-score .score-big { font-size: var(--font-size-xl); font-weight: var(--font-weight-strong); }
+.prd-score .mark { display: grid; gap: var(--space-1); min-width: var(--space-7); }
+.prd-score .progress { width: 100%; height: var(--size-dot); accent-color: var(--color-accent); }
+
+/* ---------- Criterion and section tables ---------- */
+.prd-score .table-wrap { overflow-x: auto; }
+.prd-score table { width: 100%; border-collapse: collapse; }
+.prd-score th, .prd-score td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: var(--border-width) solid var(--color-divider); vertical-align: top; }
+.prd-score th { font-size: var(--font-size-s); color: var(--color-text-muted); font-weight: var(--font-weight-strong); white-space: nowrap; }

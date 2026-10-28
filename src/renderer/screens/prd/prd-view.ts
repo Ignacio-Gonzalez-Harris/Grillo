@@ -4,8 +4,8 @@
  * export of the version on show, Regenerate, Edit structure and regenerate, and Talk to an agent about this PRD.
  * Opened with `{ project: '<owner>/<repo>' }`, or with nothing for the project opened last.
  *
- * Its three states follow the prototype: No version yet, Writing (a PRD writer of this project is still working),
- * and the Versions list.
+ * Its states follow the prototype: No version yet, Writing (a PRD writer of this project is still working), the
+ * Versions list, and the Score of the version on show (PRD section 4.7 item 7, `score/`).
  */
 import './prd-doc.css';
 import './prd-view.css';
@@ -21,6 +21,7 @@ import { agentsOfProject, startFeedback, startRegenerate, workingWriters } from 
 import { projectFolder, projectToShow, readLeftOnMap, readVersions, type LeftOnMap } from './data';
 import { dayOf, exportFile, versionTitle, type ExportFile, type ExportFormat } from './export';
 import { renderPrdVersion } from './render';
+import { scoreBadge, scoreCard, startScore, workingScorers } from './score/score';
 
 /** The screen and parameters "Edit structure and regenerate" opens: the structure editor on the project screen. */
 export const STRUCTURE_EDITOR = { screenId: 'project-creation', view: 'structure' } as const;
@@ -31,6 +32,7 @@ export const NO_PROJECT = 'Open a project from the Project tab to read its PRD h
 const WRITING_TEXT = "Working through every answer, discussion and session transcript in stages, in this project's PRD structure.";
 const NO_VERSION_TEXT = 'Grillo writes the PRD automatically the moment the map is done.';
 const KEPT_TEXT = 'Every version is kept, numbered and dated.';
+const SCORE_KEPT_TEXT = 'Each version keeps its own score. Rerun replaces the score of the latest version.';
 
 export interface PrdViewDeps {
   store: Store;
@@ -80,6 +82,8 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
   let actionError: string | null = null;
   /** A writer this screen started that the agent list does not show yet: it counts as writing meanwhile. */
   let startedWriter: AgentId | null = null;
+  /** A scorer this screen started that the agent list does not show yet: it counts as scoring meanwhile. */
+  let startedScorer: AgentId | null = null;
   /** The agents of the project's folder that were working at the last look; one going quiet may have written a version. */
   let working = new Set<AgentId>();
 
@@ -149,6 +153,18 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
     });
   }
 
+  function rerunScore(project: Project): Promise<void> {
+    return act(async () => {
+      const scorer = await startScore(grillo, project.folder);
+      startedScorer = agents.some(({ id }) => id === scorer) ? null : scorer;
+      working.add(scorer);
+    });
+  }
+
+  function isScoring(project: Project): boolean {
+    return startedScorer !== null || workingScorers(agents, project.folder).length > 0;
+  }
+
   function talkToAgent(project: Project): Promise<void> {
     return act(async () => {
       const agentId = await startFeedback(grillo, project.folder);
@@ -208,7 +224,14 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
 
   function versionRow(project: Project, version: PrdVersion, latest: boolean, selected: boolean): HTMLLIElement {
     const name = el('span', 'strong', [`Version ${version.number}`]);
-    const about = el('div', 'grow full', [name, ...(latest ? [' ', badge('Latest', 'info')] : []), el('br', ''), el('span', 'muted', [dayOf(version.date)])]);
+    const score = scoreBadge(version.score);
+    const about = el('div', 'grow full', [
+      name,
+      ...(latest ? [' ', badge('Latest', 'info')] : []),
+      ...(score ? [' ', score] : []),
+      el('br', ''),
+      el('span', 'muted', [dayOf(version.date)]),
+    ]);
     const actions = el('span', 'row', [
       button('Open', {
         small: true,
@@ -247,7 +270,15 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
       button('Download Markdown', { variant: 'primary', small: true, onClick: () => download(project, version, 'markdown') }),
       button('Download HTML', { variant: 'primary', small: true, onClick: () => download(project, version, 'html') }),
     ]);
-    const main = el('div', 'stack', [heading, exportRow, ...(actionError ? [note(actionError, 'err')] : []), documentOf(version)]);
+    const score = scoreCard({
+      version: version.number,
+      score: version.score,
+      canRerun: isLatest,
+      scoring: isScoring(project),
+      disabled: busy,
+      onRerun: () => void rerunScore(project),
+    });
+    const main = el('div', 'stack', [heading, exportRow, ...(actionError ? [note(actionError, 'err')] : []), score, documentOf(version)]);
 
     const rows = el(
       'ul',
@@ -255,7 +286,7 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
       project.versions.map((each) => versionRow(project, each, each.number === latest.number, each.number === version.number)),
     );
     rows.setAttribute('aria-label', 'Versions');
-    const side = el('div', 'card stack', [el('h4', '', ['Versions']), rows, el('p', 'small muted', [KEPT_TEXT])]);
+    const side = el('div', 'card stack', [el('h4', '', ['Versions']), rows, el('p', 'small muted', [KEPT_TEXT]), el('p', 'small muted', [SCORE_KEPT_TEXT])]);
     return el('div', 'split rev', [main, side]);
   }
 
@@ -288,6 +319,7 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
     if (phase.name !== 'ready') return;
     const { project } = phase;
     if (startedWriter !== null && list.some(({ id }) => id === startedWriter)) startedWriter = null;
+    if (startedScorer !== null && list.some(({ id }) => id === startedScorer)) startedScorer = null;
     const now = workingIn(project.folder);
     const finished = [...working].some((id) => !now.has(id));
     working = now;

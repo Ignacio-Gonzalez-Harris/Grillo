@@ -699,15 +699,20 @@ The **PRD** tab shows the PRD of the project opened last (a screen may open it o
 - **Regenerate** starts `/grillo-prd regenerate` in a new "Grilling · PRD" tab and shows Writing; it is greyed while
   a writer is working. **Edit structure and regenerate** opens the structure editor on the Project tab.
   **Talk to an agent about this PRD** starts `/grillo-prd feedback` in a "Grilling · PRD feedback" tab and opens it.
+- **Score (release 3):** above the document, the score of the version on show: the overall mark out of 10, then one
+  mark (a badge, green from 8, amber at 5 or below, and a bar) and one comment per quality criterion and per section of
+  the PRD structure. Each version in the list shows "Score <n.n>" once scored; one not scored yet says so. **Rerun**
+  starts `/grillo-score` in a new "Grilling · PRD score" tab and shows "Scoring…" until that tab goes quiet, then the
+  new score. Rerun is offered only on the latest version, the only one `/grillo-score` scores. A stored score Grillo
+  cannot read shows as an error in the score panel; the PRD stays readable.
 - **Developers:** the screen's id is `prd`, opened with no parameters or `{ project: '<owner>/<repo>' }`; Edit
   structure opens `project-creation` with `{ project, view: 'structure' }`. `npx vitest run src/renderer/screens/prd`
   runs its tests against the in-memory store.
 
 ## PRD grader
 
-The PRD grader is the skill `grillo-score` (release 3), shipped into the project folder beside `grillo-prd`. The
-score's place on the PRD view, with its "Rerun" button, arrives with that screen's story; until then the score is the
-file below.
+The PRD grader is the skill `grillo-score` (release 3), shipped into the project folder beside `grillo-prd`. The PRD
+view shows its score, with a **Rerun** button ([The PRD view](#the-prd-view) above); the score is the file below.
 
 - **When it runs:** the PRD writer runs `/grillo-score` in the same agent after it saves each version, so every
   generation is scored. Run it again at any time with `/grillo-score`: it scores the latest version and replaces that
