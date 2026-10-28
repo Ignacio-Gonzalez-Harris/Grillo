@@ -1,0 +1,1 @@
+The grilling session logic: presence, the consent tick, the recording switch that writes the transcript file, and per-agent channels that feed the live transcript to agents, so the meeting panel has a working engine underneath it.
