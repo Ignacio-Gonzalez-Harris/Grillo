@@ -745,12 +745,17 @@ view shows its score, with a **Rerun** button ([The PRD view](#the-prd-view) abo
 
 ## Updates
 
-The update card on the setup screen arrives with that screen's story. Underneath it, Grillo already looks for a newer
-version on its GitHub Releases page when it starts and then every hour while it is open. It never shows a pop-up
-window of its own: the setup screen draws the offer.
+Grillo looks for a newer version on its GitHub Releases page when it starts and then every hour while it is open. It
+never opens a separate system window: the offer is the update card, drawn inside Grillo.
+
+- **Where the offer shows.** On the setup screen, the update card below the rows. On any other screen, the same card
+  as a pop-up over the whole window, which blurs the screen behind it and blocks it until the member answers.
+- **Once per version.** The pop-up opens once for each new version found since Grillo started. A version first
+  offered while the setup screen was open does not pop up again on the other screens. The pop-up stays open while the
+  update downloads (with its percent) and once it is ready ("Restart and install").
 
 - **Download and install** downloads the new version, then closes Grillo, installs it and opens it again.
-- **Later** hides that version until Grillo starts again; a newer version is still offered.
+- **Later** hides that version until Grillo starts again, and closes the pop-up; a newer version is still offered.
 - **App updates switch** (`autoUpdate` in the app data folder's `settings.json`, off by default): when on, Grillo
   downloads a new version quietly and installs it the next time Grillo closes.
 - **On a Mac, Grillo installs updates itself only once the app is signed.** Until then the update state carries
