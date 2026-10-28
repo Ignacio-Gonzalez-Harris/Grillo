@@ -3,9 +3,12 @@ import { StoreError } from '../../store';
 import {
   formatComment,
   formatMapBody,
+  formatTagsByHand,
   formatTicketBody,
+  isTagsByHand,
   parseComment,
   parseMapBody,
+  parseTagsByHand,
   parseTicketBody,
   type MapBody,
   type TicketBody,
@@ -157,5 +160,39 @@ describe('issue bodies: comment markers', () => {
     ['a session outside the sessions folder', '<!-- grillo:discussion -->\nwho: ada-example\nwhen: x\nsources:\nvia:\nquestion: Q12.1\nsession: ../secret.md\n\ntext'],
   ])('refuses a marked comment with %s as a backend error naming the comment', (_case, body) => {
     expect(backendRefusal(() => parseComment({ id: '42', body, author: 'ada-example', createdAt: header.when })).message).toContain('comment 42');
+  });
+});
+
+describe('issue bodies: the tags-by-hand marker', () => {
+  const record = { who: 'ada-example', when: '2026-10-25T10:00:00.000Z', domains: ['product', 'platform'], noDomain: false };
+
+  it('writes the tags a member set by hand exactly as docs/store-layout.md shows it, and reads them back', () => {
+    const body = formatTagsByHand(record);
+
+    expect(body).toBe('<!-- grillo:tags-by-hand -->\nwho: ada-example\nwhen: 2026-10-25T10:00:00.000Z\ndomains: product, platform\n\n');
+    expect(isTagsByHand(body)).toBe(true);
+    expect(parseTagsByHand(body, 'comment 9')).toEqual(record);
+  });
+
+  it('writes the "no domain" tag as none, reads Windows line ends, and leaves every other comment alone', () => {
+    const none = { ...record, domains: [], noDomain: true };
+
+    expect(formatTagsByHand(none)).toContain('\ndomains: none\n');
+    expect(parseTagsByHand(formatTagsByHand(none).replace(/\n/g, '\r\n'), 'comment 9')).toEqual(none);
+    expect(parseComment({ id: '9', body: formatTagsByHand(none), author: 'ada-example', createdAt: record.when })).toEqual({ kind: 'other', id: '9' });
+    expect([formatComment({ kind: 'decision', who: 'ada-example', when: record.when, sources: [], via: null, gist: 'g', text: 't' }), 'plain text', ''].map(isTagsByHand)).toEqual([false, false, false]);
+  });
+
+  it.each([
+    ['another marker', '<!-- grillo:decision -->\nwho: ada-example\nwhen: x\ndomains: product\n\n'],
+    ['a missing header line', '<!-- grillo:tags-by-hand -->\nwho: ada-example\ndomains: product\n\n'],
+    ['a who that is not a login', '<!-- grillo:tags-by-hand -->\nwho: ada example\nwhen: x\ndomains: product\n\n'],
+    ['no domain at all', '<!-- grillo:tags-by-hand -->\nwho: ada-example\nwhen: x\ndomains:\n\n'],
+    ['none together with a domain', '<!-- grillo:tags-by-hand -->\nwho: ada-example\nwhen: x\ndomains: none, product\n\n'],
+    ['an empty domain between commas', '<!-- grillo:tags-by-hand -->\nwho: ada-example\nwhen: x\ndomains: product,, platform\n\n'],
+    ['one domain twice', '<!-- grillo:tags-by-hand -->\nwho: ada-example\nwhen: x\ndomains: product, product\n\n'],
+    ['a domain written as its label', '<!-- grillo:tags-by-hand -->\nwho: ada-example\nwhen: x\ndomains: domain:product\n\n'],
+  ])('refuses a tags-by-hand marker with %s as a backend error naming the comment', (_case, body) => {
+    expect(backendRefusal(() => parseTagsByHand(body, 'comment 42')).message).toContain('comment 42');
   });
 });
