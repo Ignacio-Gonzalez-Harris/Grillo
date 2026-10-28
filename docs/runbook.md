@@ -493,6 +493,24 @@ by hand.
   clashed with a recorded answer, and after the run) against the store layout and the generic agent's rules: every
   change marked, every answer followed by its discussion, nothing earlier rewritten.
 
+## Generic agent tab
+
+"+" on the tab bar opens the "New generic agent" dialog: you name the tab, and Grillo starts a generic agent
+(`/grillo-generic`, above) in the project folder.
+
+- **Name the tab:** type a name in "Tab name" (for example "Sample customer email"). "Open agent" stays locked
+  while the name is empty or only spaces. Enter in the field does the same as "Open agent".
+- **Open agent** starts the agent in the folder of the project opened last (or the project the screen was opened
+  with), in a tab named "Generic · <your name>", and opens that tab. From there it is an ordinary agent tab: the
+  agent's terminal and the box under it ("Type to the agent…"); paste the material and say where it came from.
+- **No project open:** the dialog says "Open a project from the Project tab to start a generic agent in it." and
+  "Open agent" stays locked.
+- **The agent did not start** (for example Claude Code is not installed): the dialog says why in red, keeps the
+  name, and "Open agent" can be pressed again.
+- **Cancel** goes back to the project's map, or to the Project screen when no project is open. Nothing is started.
+- **Developers:** the screen is `src/renderer/screens/generic-agent/`, registered as `generic-agent`;
+  `npx vitest run src/renderer/screens/generic-agent` checks it.
+
 ## PRD
 
 The PRD writer is the skill `grillo-prd`, shipped into the project folder beside `grillo-wayfinder`. Read, export
