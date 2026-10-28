@@ -1,0 +1,1 @@
+The PRD view shows the score of the version on show (overall, per criterion and per section, each with its comment) and a Rerun button that starts `/grillo-score`, so members see what to improve without opening the score file.

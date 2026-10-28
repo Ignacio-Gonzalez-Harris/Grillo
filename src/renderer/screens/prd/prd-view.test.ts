@@ -405,3 +405,80 @@ describe('PRD view: refusals', () => {
     ]);
   });
 });
+
+describe('PRD view: Score', () => {
+  // A made-up score of the made-up PRD above.
+  const score = (overall: number, comment: string) => ({
+    overall,
+    criteria: [{ name: 'Clear', mark: 8, comment: `${comment} Suggestion: none.` }],
+    sections: [{ name: 'Sample section 1', mark: 5, comment: 'Sample section comment. Suggestion: add an outcome.' }],
+  });
+
+  async function scored() {
+    const context = await app();
+    await context.store.createPrdVersion(PROJECT, V1);
+    await context.store.createPrdVersion(PROJECT, V2);
+    await context.store.setScore(PROJECT, 1, score(5.8, 'Sample comment on version 1.'));
+    await context.store.setScore(PROJECT, 2, score(6.3, 'Sample comment on version 2.'));
+    await context.openPrdTab();
+    return context;
+  }
+  const panel = (content: HTMLElement) => content.querySelector('.split > .stack > [role="region"]') as HTMLElement;
+
+  it('shows the score of the version on show beside it, and each version its score in the list', async () => {
+    const { content } = await scored();
+
+    expect(panel(content()).getAttribute('aria-label')).toBe('Score of version 2');
+    expect(text(panel(content()).querySelector('.score-big'))).toBe('6.3');
+    expect(text(panel(content()))).toContain('Sample comment on version 2.');
+    expect(panel(content()).nextElementSibling?.matches('article.prd-doc')).toBe(true);
+    expect(texts(versionRow(content(), 2).querySelectorAll('.badge'))).toEqual(['Latest', 'Score 6.3']);
+    expect(texts(versionRow(content(), 1).querySelectorAll('.badge'))).toEqual(['Score 5.8']);
+
+    await click(versionRow(content(), 1), 'Open');
+
+    expect(panel(content()).getAttribute('aria-label')).toBe('Score of version 1');
+    expect(text(panel(content()))).toContain('Sample comment on version 1.');
+    expect(buttonNamed(panel(content()), 'Rerun')).toBeUndefined();
+  });
+
+  it('Rerun starts /grillo-score, holds itself while the scorer works, then shows the new score', async () => {
+    const { content, starts, store, setAgents } = await scored();
+
+    await click(panel(content()), 'Rerun');
+
+    expect(starts).toEqual([{ kind: 'grilling', folder: FOLDER, firstMessage: '/grillo-score', title: 'Grilling · PRD score' }]);
+    expect(buttonNamed(panel(content()), 'Rerun')?.disabled).toBe(true);
+    expect(text(panel(content()).querySelector('.badge.warn'))).toBe('Scoring…');
+
+    await store.setScore(PROJECT, 2, score(7.4, 'Sample comment after the rerun.'));
+    setAgents([]);
+    await flush();
+
+    expect(text(panel(content()).querySelector('.score-big'))).toBe('7.4');
+    expect(text(panel(content()))).toContain('Sample comment after the rerun.');
+    expect(buttonNamed(panel(content()), 'Rerun')?.disabled).toBe(false);
+  });
+
+  it('labels only the latest version Scoring while a Rerun runs, since an earlier score does not change', async () => {
+    const { content } = await scored();
+
+    await click(panel(content()), 'Rerun');
+    await click(versionRow(content(), 1), 'Open');
+
+    expect(panel(content()).getAttribute('aria-label')).toBe('Score of version 1');
+    expect(text(panel(content()))).not.toContain('Scoring…');
+  });
+
+  it('shows a score it cannot read as an error in the panel, and keeps the PRD on show', async () => {
+    const { store, content, openPrdTab } = await app();
+    await store.createPrdVersion(PROJECT, V1);
+    const [version] = await store.listPrdVersions(PROJECT);
+    vi.spyOn(store, 'listPrdVersions').mockResolvedValue([{ ...version, score: { overall: 6, criteria: null } as never }]);
+    await openPrdTab();
+
+    expect(text(panel(content()).querySelector('.note.err'))).toBe('Grillo could not read the score of version 1 from the store.');
+    expect(text(content().querySelector('article.prd-doc'))).toContain('Sample decision statement one.');
+    expect(texts(versionRow(content(), 1).querySelectorAll('.badge'))).toEqual(['Latest']);
+  });
+});
