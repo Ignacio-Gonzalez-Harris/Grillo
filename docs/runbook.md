@@ -179,6 +179,34 @@ last on this laptop; with neither it says to open a project from the Project tab
 - **Close project** archives the repository; the map then shows "archived", greys out every change, and **Reopen**
   unarchives it. Both need repository admin rights; without them the button is greyed out with the reason.
 
+### The tickets screen
+
+The Tickets tab is where you work through tickets one by one. It opens the same project the Map tab would, and the
+ticket it was opened for, or else the first ticket of your list. With no ticket yet it says the grilling agent has not
+built the map.
+
+- **Your list** comes in groups: taken by you or sent to you, then your domains (tickets nobody holds in one of your
+  domains, or tagged "no domain"), then everything else (held by someone else, shown with their login, in other
+  domains, or not tagged yet), then the closed ones. Nothing is hidden. **Search** keeps the tickets whose title or
+  questions contain what you type.
+- **The open ticket** shows its kind and who holds it: "Not assigned", "Assigned to you", or "Locked · assigned to
+  <login>". A locked ticket greys out Take and says who holds it; you can still read it.
+- **Take** assigns the ticket to you, and **Send** to the member you pick. If someone else took it on another laptop
+  first, the refusal shows and the ticket shows as locked to them. **Release** (on your own ticket) puts it back in
+  the pool, unlocked. **Reassign** moves a held ticket to any member until it has an answer.
+- **Domains:** remove a tag with its ×, or add one from "Add a domain…" (the members' declared domains, and "no
+  domain", which replaces every other tag).
+- **Questions** show Open or Answered. An answer shows its text, who recorded it and when, and its source codes; an
+  answer made from a GitHub comment shows "Source: <who>, via GitHub, <date> · recorded by <login>". **Undo** deletes
+  a recorded answer, so the question is open again (and a GitHub comment waits to be picked up again).
+- **Show discussion (word for word)** shows each recorded discussion of the ticket in full.
+- **Edit**, **Merge** and **Close as out of scope** work as on the map, on tickets nobody else holds. When a merge or
+  close leaves no open ticket and no fog, Grillo starts the PRD writer (`/grillo-prd`) and says so.
+- **Answer now** opens the own-time screen on the ticket; a ticket someone else holds has none, since only they answer it.
+- **Pick up GitHub comments** shows while members' plain comments on open tickets wait to be recorded. It opens a
+  grilling agent in its own tab that types `/grillo-answer pickup`; the answers appear when the agent goes quiet.
+- **An archived project** stays readable here, with every change control gone.
+
 ## Agents
 
 Each agent shows in its own tab: click the agent's name on the tab bar.

@@ -1,0 +1,55 @@
+/*
+ * Ticket-and-question management, ported from the UX prototype's screen-ticket-management
+ * (docs/ux/prototypes/grillo/index.html). The prototype's helper classes this screen needs, kept under .tickets-screen
+ * so no other screen is touched. Every colour, spacing, radius, blur and size comes from theme/tokens.css.
+ */
+.tickets-screen { display: grid; gap: var(--space-5); align-content: start; }
+.tickets-screen .m0 { margin: 0; }
+.tickets-screen .fill { flex: 1; min-width: 0; }
+.tickets-screen .strong { font-weight: var(--font-weight-strong); }
+.tickets-screen .card > :last-child { margin-bottom: 0; }
+.tickets-screen .reason { margin: 0; font-size: var(--font-size-s); color: var(--color-warning); }
+.tickets-screen h4 { margin: 0; }
+
+/* ---------- List beside the open ticket ---------- */
+.tickets-screen .split { display: grid; grid-template-columns: var(--size-side-column) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.tickets-screen .list-head { font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); margin: var(--space-3) 0 0; }
+.tickets-screen .rows .grow { flex: 1; min-width: 0; }
+.tickets-screen .ticket-list > li { cursor: pointer; }
+.tickets-screen .rows > li.selected { background: var(--color-accent-soft); border-radius: var(--radius-s); padding-left: var(--space-2); padding-right: var(--space-2); }
+.tickets-screen .ticket-list button.pick { font: inherit; color: inherit; text-align: left; border: 0; background: none; padding: 0; cursor: pointer; flex: 1; min-width: 0; }
+
+/* ---------- Notes ---------- */
+.tickets-screen .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.tickets-screen .note.warn { background: var(--color-warning-soft); }
+.tickets-screen .note.err { background: var(--color-danger-soft); }
+.tickets-screen .note.ok { background: var(--color-success-soft); }
+.tickets-screen .note > :last-child { margin-bottom: 0; }
+
+/* ---------- Domain tags and source codes ---------- */
+.tickets-screen .tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); color: var(--color-text); white-space: nowrap; }
+.tickets-screen .tag.d1 { background: var(--color-tag-1); }
+.tickets-screen .tag.d2 { background: var(--color-tag-2); }
+.tickets-screen .tag.d3 { background: var(--color-tag-3); }
+.tickets-screen .tag.d4 { background: var(--color-tag-4); }
+.tickets-screen .tag.none { background: var(--color-tag-none); }
+.tickets-screen .tag button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+.tickets-screen .tag button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+.tickets-screen .code-chip { font-family: var(--font-family-mono); font-size: var(--font-size-s); color: var(--color-accent); background: var(--color-accent-soft); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); white-space: nowrap; }
+
+/* ---------- Discussion word for word ---------- */
+.tickets-screen .transcript { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); max-height: calc(var(--size-textarea-min) + var(--space-6)); overflow-y: auto; }
+.tickets-screen .transcript p { margin: 0 0 var(--space-1); }
+
+/* ---------- Search, pickers and dialog fields ---------- */
+.tickets-screen .field { display: grid; gap: var(--space-1); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
+.tickets-screen input[type="text"], .tickets-screen input[type="search"], .tickets-screen select, .tickets-screen textarea { font: inherit; font-size: var(--font-size-m); font-weight: var(--font-weight-regular); color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); width: 100%; }
+.tickets-screen select.w-auto { width: auto; }
+.tickets-screen textarea { min-height: var(--size-textarea-min); resize: vertical; }
+.tickets-screen input:disabled, .tickets-screen select:disabled, .tickets-screen textarea:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .tickets-screen .split { grid-template-columns: minmax(0, 1fr); }
+  .tickets-screen .rows .grow { flex-basis: 100%; }
+}
