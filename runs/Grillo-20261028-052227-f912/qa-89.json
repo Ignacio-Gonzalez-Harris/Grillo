@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261028-052227-f912",
+  "issue": 89,
+  "title": "Generic agent skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 141,
+  "merged_at": "2026-10-28T05:38:06Z",
+  "merge_commit": "66a6557c4aafa3374e7e57597633e01bd37e0ca2",
+  "seam": "resources/skills/grillo-generic/",
+  "story": "The project gains /grillo-generic, the skill the '+' generic agent tab runs. A member pastes an email or a document, or tells something in their own words; the agent keeps it word for word as a source, shows every clash with recorded answers, and changes tickets, answers, fog and out of scope only after the member's yes, marking each change. Nothing earlier was replaced; the tab screen itself is a separate story.",
+  "checks": [
+    {
+      "key": "grillo-generic/pasted-email-clash",
+      "criterion": "/grillo-generic asks for the material's origin, writes the source file, runs the contradiction check before any change, and marks changes via: generic-agent",
+      "steps": "In a made-up test project with a map, start the generic agent with '+'. Paste a made-up email whose request clashes with an answer recorded on an open ticket. Say who wrote it, when and how it arrived. Choose 'the new answer stands', then say yes to the listed changes.",
+      "expected": "The clash is shown before anything is written, quoting the earlier answer and naming its ticket. A new .grillo/sources/S<n>.md holds the email word for word; the words that settled the clash are a second source. A new answer comment carries via: generic-agent and the member's login, followed by a discussion comment with the chat. The earlier answer is unchanged."
+    },
+    {
+      "key": "grillo-generic/own-words-source",
+      "criterion": "With no written source, the member's own words are the source (name, date, how they heard it, exact words)",
+      "steps": "Start the generic agent. Say you have no email and tell a made-up fact in your own words. Answer when and how you heard it. Say yes.",
+      "expected": "A source with kind: own-time-answer, your name and role under who:, how you heard it under where:, and your exact words."
+    },
+    {
+      "key": "grillo-generic/marked-map-changes",
+      "criterion": "Every change is marked '<member>, via generic agent, <date>'",
+      "steps": "Paste made-up material that makes a fog line precise. Say yes to turning it into a ticket.",
+      "expected": "The new ticket's 'Why it matters' ends with (<login>, via generic agent, <YYYY-MM-DD>); the fog line is gone and the map's Notes has a marked 'Fog line taken off: ...' line."
+    }
+  ],
+  "no_qa_reason": null
+}

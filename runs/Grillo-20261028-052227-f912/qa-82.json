@@ -1,0 +1,62 @@
+{
+  "run_id": "Grillo-20261028-052227-f912",
+  "issue": 82,
+  "title": "Ticket-and-question management screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 143,
+  "merged_at": "2026-10-28T05:48:37Z",
+  "merge_commit": "a510f1f5ce6716cc24c769e0a5afa2b120ed2c2a",
+  "seam": "src/renderer/screens/tickets/",
+  "story": "The Tickets tab used to show a placeholder; it now shows the ticket-and-question management screen. Members see their own list first, open a ticket to see each question's answered state and source, take, send, reassign or release it, change its tags, undo a recorded answer and pick up answers written as GitHub comments. Edit, Merge and Close as out of scope work as on the Map, and a merge or close that completes the map starts the PRD writer.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/tickets/own-list-groups",
+      "criterion": "The member's own list comes first",
+      "steps": "Open a project with tagged tickets. Take one ticket on the Tickets tab. Have another member hold a ticket in your domain.",
+      "expected": "In order: 'Taken by you or sent to you', 'Your domains' (pool tickets in your domains or 'no domain'), 'Everything else' with the held ticket shown with its holder, then 'Closed'. Search narrows the list."
+    },
+    {
+      "key": "src/renderer/screens/tickets/take-send-release",
+      "criterion": "Take, Send and Release follow the store's claim rule",
+      "steps": "Open an unassigned ticket, click Take, then Release; pick a member under 'Send to...' and click Send.",
+      "expected": "'Assigned to you', then 'Not assigned', then 'Locked · assigned to <member>'. Send stays greyed out until a member is picked."
+    },
+    {
+      "key": "src/renderer/screens/tickets/locked-by-other",
+      "criterion": "A locked ticket shows its owner and stays readable",
+      "steps": "Open a ticket another member holds that has no answers.",
+      "expected": "Take is greyed out with 'Assigned to <login>. You can still read and discuss it.'; questions are visible; no 'Answer now' button; Reassign to yourself works; once an answer exists Reassign is gone with a line saying why."
+    },
+    {
+      "key": "src/renderer/screens/tickets/tags-by-hand",
+      "criterion": "Tags can be changed by hand",
+      "steps": "Open a ticket, remove a tag with x, add one from 'Add a domain...', then add 'no domain'.",
+      "expected": "Each change shows at once, and 'no domain' replaces every other tag."
+    },
+    {
+      "key": "src/renderer/screens/tickets/github-answer-undo",
+      "criterion": "An answer picked up from a GitHub comment can be undone",
+      "steps": "Comment an answer on a ticket in GitHub's web app, have the pickup agent record it, open the ticket.",
+      "expected": "'Source: <author>, via GitHub, <date> · recorded by <login>' with the source code and an Undo button; Undo turns the question back to Open."
+    },
+    {
+      "key": "src/renderer/screens/tickets/pickup-trigger",
+      "criterion": "'Pick up GitHub comments' starts /grillo-answer pickup",
+      "steps": "Leave a plain comment on an open ticket in GitHub, then open the Tickets tab.",
+      "expected": "A note '1 comment written in GitHub waits...' with a button; clicking it opens an agent tab typing /grillo-answer pickup. With no waiting comments, no button."
+    },
+    {
+      "key": "src/renderer/screens/tickets/merge-map-done",
+      "criterion": "Merge calls mergeTicket and a map-done result starts /grillo-prd",
+      "steps": "On a map with no fog and two open tickets, Merge one into the other, then 'Close as out of scope' on the last one.",
+      "expected": "After the merge the badge reads 'Closed · merged into <title>'; after the last close a note says the map is done and a PRD writer tab runs /grillo-prd."
+    },
+    {
+      "key": "src/renderer/screens/tickets/empty-list",
+      "criterion": "Empty list state",
+      "steps": "Open the Tickets tab on a project with no tickets.",
+      "expected": "'No tickets yet. They appear here once the grilling agent has built the map.'"
+    }
+  ],
+  "no_qa_reason": null
+}

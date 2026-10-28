@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261028-052227-f912",
+  "issue": 89,
+  "title": "Generic agent skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T05:22:27Z",
+  "finished_at": "2026-10-28T05:38:06Z",
+  "outcome": "merged",
+  "pr": 141,
+  "summary": "Adds /grillo-generic, the skill behind the '+' generic agent tab: pasted material or the member's own words become a source, clashes with recorded answers are shown first, and every change is marked 'via generic agent'; 19 new tests over fixtures.",
+  "agents": [
+    {
+      "name": "dev-89",
+      "model": "opus",
+      "tokens_total": 189999
+    },
+    {
+      "name": "review-89",
+      "model": "opus",
+      "tokens_total": 117866
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 503,
+    "review_seconds": 205,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 0
+  },
+  "friction": [
+    "No GitHub Actions minutes: CI checks fail on billing, so every merge ran on the local gate under the user's standing instruction of 2026-10-28; the written rules (CLAUDE.md section 4, BASE_CLAUDE.md, merge-and-ci.md) still say 'no checks reported is red', so an unattended run without that instruction would release every story as needs-human — the rule and ci.yml need a decision while minutes are out"
+  ],
+  "lessons_learned": [],
+  "deferred": []
+}

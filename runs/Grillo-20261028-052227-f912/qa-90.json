@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261028-052227-f912",
+  "issue": 90,
+  "title": "Own-time answer and GitHub comment pickup skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 144,
+  "merged_at": "2026-10-28T05:50:07Z",
+  "merge_commit": "2ab8efe6c856fa53f74596d73d07ac5f2ba6b51d",
+  "seam": "resources/skills/grillo-answer/",
+  "story": "This adds the agent behind own-time answering. 'With a grilling agent' on the own-time screen now starts a real chat that settles the ticket and closes or releases it on Done. It also adds /grillo-answer pickup, which turns answers members wrote as GitHub comments into recorded answers; the Tickets tab's 'Pick up GitHub comments' button starts it. Nothing earlier is removed.",
+  "checks": [
+    {
+      "key": "grillo-answer/own-time-chat-close",
+      "criterion": "Done with every question answered posts a decision, closes the ticket, adds its Settled line, then applies the map-done rule",
+      "steps": "Open a made-up test project with one open ticket that has two questions. On the own-time screen choose 'With a grilling agent', answer both questions in the chat, press Done.",
+      "expected": "Each question shows Answered; answer comments cite new own-time-answer sources; a decision comment; the ticket is closed and under Settled. If it was the last open ticket and there is no fog, /grillo-prd starts in the same agent."
+    },
+    {
+      "key": "grillo-answer/own-time-chat-release",
+      "criterion": "Done with questions still open returns the ticket to the pool, unlocked",
+      "steps": "As above, but answer only the first question, then press Done.",
+      "expected": "The ticket stays open with no assignee and no decision; the agent names the open question by code and stops."
+    },
+    {
+      "key": "grillo-answer/pickup",
+      "criterion": "Plain GitHub comments become answers marked via: github, naming who recorded them, even on a ticket someone else holds",
+      "steps": "Member B takes a one-question ticket and writes the answer as a plain comment in GitHub's web app. Member A runs /grillo-answer pickup.",
+      "expected": "A new source holds B's comment word for word (who: B, when: the comment date, where: GitHub comment <id> on ticket #N). The answer comment has who: A, via: github and from: <id>. The ticket closes with a via: github decision and stays assigned to B. A comment that answers no question stays as it is."
+    }
+  ],
+  "no_qa_reason": null
+}

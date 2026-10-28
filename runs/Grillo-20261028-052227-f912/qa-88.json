@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261028-052227-f912",
+  "issue": 88,
+  "title": "Meeting grilling skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 142,
+  "merged_at": "2026-10-28T05:46:20Z",
+  "merge_commit": "08b4db23a06283273d4751019001f79d35d4b33d",
+  "seam": "resources/skills/grillo-meeting/",
+  "story": "Before this, the live session had controls but no agent behind them. Now /grillo-meeting answers the meeting panel's messages (present, session, mode, use it, skip, jump, done): it picks tickets for the people in the room, records each answer with the session as its source, and in Listen mode keeps the whole talk as the question's discussion. No screen changed.",
+  "checks": [
+    {
+      "key": "grillo-meeting/type-answer",
+      "criterion": "In Type mode a typed answer is recorded with a meeting source and no discussion",
+      "steps": "In a made-up test project with a map and tagged tickets, start a live session as host and tick yourself present. Leave the mode on Type and type an answer to the first question.",
+      "expected": "An answer comment on that ticket and no discussion comment; a new source file of kind meeting names the session file, your login and the moment you typed."
+    },
+    {
+      "key": "grillo-meeting/listen-use-it",
+      "criterion": "In Listen mode 'Use it' records an answer plus a word-for-word discussion naming the session file",
+      "steps": "Give consent, switch Record on, switch to Listen, say a made-up answer aloud, press 'Use it'.",
+      "expected": "An answer comment, then a discussion comment with the same question code and source holding exactly the transcript lines and naming .grillo/sessions/<date>-<time>.md."
+    },
+    {
+      "key": "grillo-meeting/presence-pick",
+      "criterion": "The agent only picks tickets whose domain matches someone present; no domain counts as everyone's",
+      "steps": "Tick only a member with domain product, on a map with one open domain:platform ticket and one domain:product ticket.",
+      "expected": "The agent takes the product ticket and never offers the platform one."
+    },
+    {
+      "key": "grillo-meeting/skip-jump-done",
+      "criterion": "Skip, jump and done behave as the catalogue says",
+      "steps": "Press 'Skip question' on every question of a ticket, then pick another ticket under 'Jump to ticket', answer all its questions and press 'Done'.",
+      "expected": "The skipped ticket goes back to the pool unassigned with questions open; the jumped-to ticket is claimed; after Done it is closed with a decision and its gist line is under Settled. After a skip, the agent never says 'every question is answered' while one is still open."
+    },
+    {
+      "key": "grillo-meeting/drift",
+      "criterion": "Off-topic talk becomes new questions or new tickets",
+      "steps": "In Listen mode, mention a new topic alongside the answer, then press 'Use it'.",
+      "expected": "The agent says what it added: a new question with the next code, or a new ticket with no domain label."
+    }
+  ],
+  "no_qa_reason": null
+}

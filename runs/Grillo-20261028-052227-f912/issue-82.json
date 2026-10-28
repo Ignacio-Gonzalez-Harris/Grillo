@@ -1,0 +1,49 @@
+{
+  "run_id": "Grillo-20261028-052227-f912",
+  "issue": 82,
+  "title": "Ticket-and-question management screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T05:22:27Z",
+  "finished_at": "2026-10-28T05:48:37Z",
+  "outcome": "merged",
+  "pr": 143,
+  "summary": "Replaces the Tickets tab placeholder with the ticket-and-question management screen: own list first, questions with answered state, take/send/reassign/release, tags by hand, merge, out-of-scope close, undo, the GitHub-comment pickup trigger and the PRD writer on map-done; 32 new tests.",
+  "agents": [
+    {
+      "name": "dev-82",
+      "model": "opus",
+      "tokens_total": 221702
+    },
+    {
+      "name": "review-82",
+      "model": "opus",
+      "tokens_total": 130529
+    },
+    {
+      "name": "review-82-r2",
+      "model": "opus",
+      "tokens_total": 135006
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 819,
+    "review_seconds": 515,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/tickets/",
+      "what": "Every load and refresh calls listPickupComments once per open ticket; with the GitHub store that is one gh call per ticket, so a project with many tickets loads the Tickets tab slowly",
+      "why": "Needs a project-wide pickup listing in the store, a store contract change outside this story's folder",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

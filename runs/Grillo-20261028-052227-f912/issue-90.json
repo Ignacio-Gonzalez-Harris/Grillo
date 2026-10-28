@@ -1,0 +1,41 @@
+{
+  "run_id": "Grillo-20261028-052227-f912",
+  "issue": 90,
+  "title": "Own-time answer and GitHub comment pickup skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T05:22:27Z",
+  "finished_at": "2026-10-28T05:50:07Z",
+  "outcome": "merged",
+  "pr": 144,
+  "summary": "Adds /grillo-answer: an own-time grilling chat on one ticket that closes or releases it on Done, and a pickup mode that turns plain GitHub comments into recorded answers marked via: github; five fixtures and a per-run checker.",
+  "agents": [
+    {
+      "name": "dev-90",
+      "model": "opus",
+      "tokens_total": 219462
+    },
+    {
+      "name": "review-90",
+      "model": "opus",
+      "tokens_total": 135070
+    },
+    {
+      "name": "review-90-r2",
+      "model": "opus",
+      "tokens_total": 144585
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 812,
+    "review_seconds": 585,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

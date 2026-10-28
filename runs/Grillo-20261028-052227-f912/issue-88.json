@@ -1,0 +1,49 @@
+{
+  "run_id": "Grillo-20261028-052227-f912",
+  "issue": 88,
+  "title": "Meeting grilling skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T05:22:27Z",
+  "finished_at": "2026-10-28T05:46:20Z",
+  "outcome": "merged",
+  "pr": 142,
+  "summary": "Adds /grillo-meeting, the agent behind the live meeting panel: it picks tickets for the people present, follows Type and Listen modes, records answers with the session as source and keeps Listen talk as discussion; 24 new tests including the catalogue protocol table.",
+  "agents": [
+    {
+      "name": "dev-88",
+      "model": "opus",
+      "tokens_total": 197096
+    },
+    {
+      "name": "review-88",
+      "model": "opus",
+      "tokens_total": 129183
+    },
+    {
+      "name": "review-88-r2",
+      "model": "opus",
+      "tokens_total": 120192
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 700,
+    "review_seconds": 525,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "resources/skills/grillo-meeting/",
+      "what": "Two /grillo-meeting agents under one login (the host's second grilling agent) both pick the same lowest-numbered ticket, because the claim rule treats a ticket assigned to the member as theirs; both ask the same question and can record duplicate answers or close it twice",
+      "why": "Telling 'claimed by my other agent' from 'sent to me' is a design choice that also depends on whether the meeting panel sends present: to a second agent",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
