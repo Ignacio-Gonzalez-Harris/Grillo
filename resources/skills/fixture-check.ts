@@ -17,6 +17,10 @@ import {
   kindLabel,
   isDomainLabel,
   domainOf,
+  domainLabel,
+  isTagsByHand,
+  parseTagsByHand,
+  type TagsByHand,
 } from '../../src/main/store/github/issues/bodies';
 import { parseMembers, parseSession, parseSource, parseStructure } from '../../src/main/store/github/repo/records';
 import { isLogin, isSessionId, sameLogin, sourceNumberOf } from '../../src/main/store/github/repo/names';
@@ -26,8 +30,8 @@ import type { Source, TicketKind, TicketState } from '../../src/main/store/types
  * Checks a skill's fixture, a made-up snapshot of a Grillo project as a skill leaves it, against
  * `docs/store-layout.md` and the engine rules every Grillo skill follows. Bodies, comments and Grillo-folder files
  * are read with the store's own parsers, so a fixture passes only if the app could read it; the rules a parser does
- * not check (labels, sub-issue and blocker links, question numbering, sources, settled lines, structure coverage) are
- * checked here.
+ * not check (labels, sub-issue and blocker links, question numbering, sources, settled lines, structure coverage,
+ * hand-set tags) are checked here.
  *
  * A fixture folder holds `issues.json` (the issues: number, title, labels, state, assignee, parent, native blockers,
  * and the paths of their bodies and comments), those body and comment files, and a `.grillo/` folder.
@@ -50,6 +54,8 @@ export interface CheckedTicket {
   assignee: string | null;
   body: TicketBody;
   comments: IssueComment[];
+  /** The latest tags-by-hand marker: the tags a member set by hand, which a tagging round never changes. */
+  tagsByHand: TagsByHand | null;
 }
 
 export interface CheckedFixture {
@@ -324,11 +330,38 @@ export function checkProjectFixture(input: Record<string, string>): CheckedFixtu
       parsing(() => parseComment({ id: entry.id, author: entry.author, createdAt: entry.createdAt, body: fileOf(files, entry.body) })),
     );
     raw.comments.forEach((entry, index) => checkComment(raw, body, comments.slice(0, index), comments[index], entry, comments));
-    return { number: raw.number, title: raw.title, kind: kinds[0], state: raw.state, labels: raw.labels, assignee: raw.assignee, body, comments };
+    const tagsByHand = latestTagsByHand(raw);
+    if (tagsByHand !== null) {
+      const set = tagsByHand.noDomain ? [NO_DOMAIN_LABEL] : tagsByHand.domains.map(domainLabel);
+      const carried = raw.labels.filter(isDomainLabel);
+      if ([...set].sort().join(', ') !== [...carried].sort().join(', ')) {
+        fail(`${name} carries [${carried.join(', ')}] where its latest tags-by-hand marker set [${set.join(', ')}] by hand`);
+      }
+    }
+    return { number: raw.number, title: raw.title, kind: kinds[0], state: raw.state, labels: raw.labels, assignee: raw.assignee, body, comments, tagsByHand };
+  }
+
+  /** The latest of a ticket's tags-by-hand markers, each checked; null when no member set its tags by hand. */
+  function latestTagsByHand(raw: RawIssue): TagsByHand | null {
+    const markers = raw.comments
+      .filter((entry) => isTagsByHand(fileOf(files, entry.body)))
+      .map((entry) => {
+        const name = `comment ${entry.id} (${entry.body})`;
+        const marker = parsing(() => parseTagsByHand(fileOf(files, entry.body), name));
+        if (!sameLogin(marker.who, entry.author)) {
+          fail(`${name}: who '${marker.who}' is not its author '${entry.author}'`);
+        }
+        momentOf(marker.when, `${name} when`);
+        return marker;
+      });
+    return markers.at(-1) ?? null;
   }
 
   function checkComment(raw: RawIssue, body: TicketBody, earlier: IssueComment[], comment: IssueComment, entry: RawCommentEntry, all: IssueComment[]): void {
     const name = `comment ${entry.id} (${entry.body})`;
+    if (comment.kind === 'other' && isTagsByHand(fileOf(files, entry.body))) {
+      return;
+    }
     if (comment.kind === 'other') {
       fail(`${name} carries a marker Grillo does not write`);
     }

@@ -1,0 +1,16 @@
+{
+  "sections": [
+    {
+      "name": "Problem",
+      "note": "What goes wrong today, and the outcomes wanted"
+    },
+    {
+      "name": "Users and roles",
+      "note": "Who uses it and what each role may do"
+    },
+    {
+      "name": "Flows",
+      "note": "The steps people take"
+    }
+  ]
+}
