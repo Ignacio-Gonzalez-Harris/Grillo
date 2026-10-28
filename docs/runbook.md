@@ -563,6 +563,34 @@ The **PRD** tab shows the PRD of the project opened last (a screen may open it o
   structure opens `project-creation` with `{ project, view: 'structure' }`. `npx vitest run src/renderer/screens/prd`
   runs its tests against the in-memory store.
 
+## PRD grader
+
+The PRD grader is the skill `grillo-score` (release 3), shipped into the project folder beside `grillo-prd`. The
+score's place on the PRD view, with its "Rerun" button, arrives with that screen's story; until then the score is the
+file below.
+
+- **When it runs:** the PRD writer runs `/grillo-score` in the same agent after it saves each version, so every
+  generation is scored. Run it again at any time with `/grillo-score`: it scores the latest version and replaces that
+  version's earlier score.
+- **What it writes:** only `.grillo/prd/v<n>.score.json` on `main`, beside the version it scores: an overall mark
+  from 0 to 10, then one mark and one comment for each of eight quality criteria (clear, complete, verifiable, tied
+  to objectives, consistent, feasible, needs not solutions, scope and priorities) and for each section of the PRD
+  structure (does it hold real decisions or gaps). Each comment says what is weak, why, and ends with
+  `Suggestion:` and a concrete change.
+- **How the overall is worked out:** quality and coverage weigh half each, every criterion and every section the
+  same: (mean of the criteria + mean of the sections) / 2, to one decimal. A structure section the version does not
+  write is marked 0.
+- **Guidance, not a gate:** nothing happens after a low score. The grader opens no ticket, adds no fog, changes no
+  PRD version and starts nothing; to act on a comment, use "Talk to an agent about this PRD" on the PRD view.
+- **Run it by hand (developers):** in a clone of a made-up test project with at least one PRD version on `main`,
+  copy `resources/skills/grillo-score/`, `resources/skills/grillo-prd/` and `resources/skills/grillo-wayfinder/`
+  into `.claude/skills/`, start `claude` there and type `/grillo-score`. Never use a real transcript or customer text.
+- **Developers:** `npx vitest run resources/skills/grillo-score` checks the skill's frontmatter and command against
+  the catalogue, the score file it teaches against the store's `Score` type, that it writes only the score file, the
+  one line in `grillo-prd` that starts it, and its fixture of a project with two scored versions with
+  `resources/skills/grillo-score/score-check.ts`: the eight criteria in order, every written section scored, whole
+  marks from 0 to 10, a suggestion in every comment, only codes the version cites, and the overall the halves give.
+
 ## Updates
 
 The update card on the setup screen arrives with that screen's story. Underneath it, Grillo already looks for a newer

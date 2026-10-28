@@ -131,6 +131,9 @@ other versions cite it.
    --body "Grillo could not save PRD version v<n> straight to main, which is protected. Merge this pull request to
    keep it."`) and tell the member that the version waits for that pull request.
 
+After writing a version, once it is on `main`, run `/grillo-score` in this same agent: the score is guidance, and
+nothing waits on it.
+
 ## Feedback: `/grillo-prd feedback`
 
 A member says what is wrong with the PRD. You change the PRD only where no decision changes; a decision changes only
