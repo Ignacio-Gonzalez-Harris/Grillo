@@ -1,0 +1,57 @@
+/*
+ * The map and its tickets, ported from the UX prototype's screen-map-and-tickets (docs/ux/prototypes/grillo/index.html).
+ * The prototype's helper classes this screen needs, kept under .map-screen so no other screen is touched.
+ * Every colour, spacing, radius, blur and size comes from theme/tokens.css.
+ */
+.map-screen { display: grid; gap: var(--space-5); align-content: start; }
+.map-screen .m0 { margin: 0; }
+.map-screen .fill { flex: 1; min-width: 0; }
+.map-screen .full { flex-basis: 100%; }
+.map-screen .card > :last-child { margin-bottom: 0; }
+.map-screen .card ul.small { margin: 0; padding-left: var(--space-5); }
+.map-screen .reason { margin: 0; font-size: var(--font-size-s); color: var(--color-warning); }
+
+/* ---------- The four map cards ---------- */
+.map-screen .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+
+/* ---------- Notes ---------- */
+.map-screen .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.map-screen .note.warn { background: var(--color-warning-soft); }
+.map-screen .note.err { background: var(--color-danger-soft); }
+.map-screen .note.ok { background: var(--color-success-soft); }
+.map-screen .note > :last-child { margin-bottom: 0; }
+
+/* ---------- Tables ---------- */
+.map-screen .table-wrap { overflow-x: auto; }
+.map-screen table { width: 100%; border-collapse: collapse; }
+.map-screen th, .map-screen td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: var(--border-width) solid var(--color-divider); vertical-align: top; }
+.map-screen th { font-size: var(--font-size-s); color: var(--color-text-muted); font-weight: var(--font-weight-strong); white-space: nowrap; }
+
+/* ---------- Domain tags and source codes ---------- */
+.map-screen .tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); color: var(--color-text); white-space: nowrap; }
+.map-screen .tag.d1 { background: var(--color-tag-1); }
+.map-screen .tag.d2 { background: var(--color-tag-2); }
+.map-screen .tag.d3 { background: var(--color-tag-3); }
+.map-screen .tag.d4 { background: var(--color-tag-4); }
+.map-screen .tag.none { background: var(--color-tag-none); }
+.map-screen .code-chip { font-family: var(--font-family-mono); font-size: var(--font-size-s); color: var(--color-accent); background: var(--color-accent-soft); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); white-space: nowrap; }
+
+/* ---------- All / My domains first ---------- */
+.map-screen .seg { display: inline-flex; justify-self: start; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
+.map-screen .seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
+.map-screen .seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
+
+/* ---------- The source opened to read ---------- */
+.map-screen .transcript { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); max-height: calc(var(--size-textarea-min) + var(--space-6)); overflow-y: auto; }
+.map-screen .transcript p { margin: 0 0 var(--space-1); }
+
+/* ---------- Dialog fields: add, edit, merge, close as out of scope ---------- */
+.map-screen .field { display: grid; gap: var(--space-1); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
+.map-screen input[type="text"], .map-screen select, .map-screen textarea { font: inherit; font-size: var(--font-size-m); font-weight: var(--font-weight-regular); color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); width: 100%; }
+.map-screen textarea { min-height: var(--size-textarea-min); resize: vertical; }
+.map-screen input:disabled, .map-screen select:disabled, .map-screen textarea:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .map-screen .grid-2 { grid-template-columns: minmax(0, 1fr); }
+}
