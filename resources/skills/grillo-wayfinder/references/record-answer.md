@@ -81,8 +81,10 @@ words; cite it instead of writing a copy.
 4. **Push rejected because someone pushed first** (`fetch first` or `non-fast-forward`): undo your commit and file,
    keeping the text (`git reset --soft HEAD~1`, `git rm --cached -q .grillo/sources/S<n>.md`, then delete the file),
    and start again at step 1 with the next free number.
-5. **Push refused because `main` is protected:** push the commit to a branch `grillo/source-S<n>`, open a pull request
-   for it (`gh pr create --base main --head grillo/source-S<n>`), and tell the member that the source waits for that
+5. **Push refused because `main` is protected:** push the commit to a branch of its own with a unique name,
+   `grillo/save-<milliseconds since 1970>` (`git push origin HEAD:refs/heads/grillo/save-<ms>`). Then undo the local
+   commit and file exactly as in step 4, so your local `main` never drifts from GitHub's. Open a pull request for the
+   branch (`gh pr create --base main --head grillo/save-<ms>`), and tell the member that the source waits for that
    pull request.
 
 ## Step 3: the answer comment

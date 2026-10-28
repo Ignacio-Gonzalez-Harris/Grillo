@@ -270,10 +270,12 @@ member with the store's claim rule, through `gh`:
    holds it, write nothing on it, and take the next ticket on the frontier (or stop, when the member named this
    ticket). Already assigned to the member (they took it or were sent it): it is yours; carry on.
 2. **Assign yourself**: `gh issue edit <N> --add-assignee @me`.
-3. **Re-read the assignees.** If another login is also assigned, the earlier `assigned` event wins: read them oldest
-   first with `gh api repos/{owner}/{repo}/issues/<N>/timeline --paginate --jq '.[] | select(.event == "assigned") |
-   .assignee.login'`. When the other login's event comes first, unassign yourself (`gh issue edit <N>
-   --remove-assignee @me`) and take the next ticket; otherwise the ticket is yours.
+3. **Re-read the assignees.** If another login is also assigned, the earlier assignment wins, judged by each login's
+   **latest** `assigned` event (an earlier assignment that was undone does not count). Read the events oldest first
+   with `gh api repos/{owner}/{repo}/issues/<N>/timeline --paginate --jq '.[] | select(.event == "assigned") |
+   .assignee.login'` and find the last line naming each login. When the other login's latest event comes before
+   yours, unassign yourself (`gh issue edit <N> --remove-assignee @me`) and take the next ticket; otherwise the ticket
+   is yours.
 
 ## The map-done rule
 
