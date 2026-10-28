@@ -569,6 +569,90 @@ describe('the tickets screen: discussion, edit, merge and close as out of scope'
   });
 });
 
+describe('the tickets screen: launching a research, prototype or task agent (release 3)', () => {
+  /** The action row under the tags: the buttons in their order. */
+  const actionRow = (content: HTMLElement) => texts(detailCard(content).querySelectorAll('.row')[2]?.querySelectorAll('button') ?? []);
+  const launchHint = (content: HTMLElement) => text(detailCard(content).querySelector('.row + p.small.muted, .row + p.reason'));
+
+  it('a research ticket nobody holds offers "Launch research agent" first, as the primary action, and says what it runs', async () => {
+    const { store, project, content, open } = await app();
+    const ticket = await store.createTicket(project, ticketInput('Sample ticket 1', { kind: 'research' }));
+    await open();
+
+    expect(heading(content())).toEqual(['Sample ticket 1', 'research', 'Not assigned']);
+    expect(actionRow(content())).toEqual(['Launch research agent', 'Take', 'Send', 'Edit', 'Merge', 'Close as out of scope']);
+    expect(buttonNamed(detailCard(content()), 'Launch research agent')?.classList.contains('primary')).toBe(true);
+    expect(buttonNamed(detailCard(content()), 'Take')?.classList.contains('primary')).toBe(false);
+    expect(launchHint(content())).toBe(
+      `Opens a Research tab that runs /grillo-research ${ticket.id.number}. The agent assigns the ticket to itself, works it as wayfinder does and records its finding as an answer with its sources.`,
+    );
+    expect(detailCard(content()).querySelector('code')?.textContent).toBe(`/grillo-research ${ticket.id.number}`);
+  });
+
+  it.each([
+    ['research', 'Launch research agent', 'Research'],
+    ['prototype', 'Launch prototype agent', 'Prototype'],
+    ['task', 'Launch task agent', 'Task'],
+  ] as const)('launching a %s ticket starts that agent with its catalogue command, in a tab named after the ticket, and opens the tab', async (kind, label, tabWord) => {
+    const { store, project, starts, content, open } = await app();
+    const ticket = await store.createTicket(project, ticketInput('Sample ticket 1', { kind }));
+    await open();
+    await click(detailCard(content()), label);
+
+    expect(starts).toEqual([{ kind, folder: FOLDER, firstMessage: `/grillo-${kind} ${ticket.id.number}`, title: `${tabWord} · Sample ticket 1` }]);
+    expect(content().querySelector('.tickets-screen')).toBeNull();
+    expect(text(document.querySelector('.tab.active'))).toContain(`${tabWord} · Sample ticket 1`);
+  });
+
+  it('while its tab runs the launch is greyed out and names the tab, so the ticket is never launched twice', async () => {
+    const { store, project, starts, content, open } = await app();
+    await store.createTicket(project, ticketInput('Sample ticket 1', { kind: 'prototype' }));
+    await open();
+    await click(detailCard(content()), 'Launch prototype agent');
+    await open();
+
+    expect(buttonNamed(detailCard(content()), 'Launch prototype agent')?.disabled).toBe(true);
+    expect(launchHint(content())).toBe('Running in the Prototype · Sample ticket 1 tab.');
+    expect(starts).toHaveLength(1);
+  });
+
+  it('a ticket held by a member, me included, greys out the launch and says who holds it', async () => {
+    const { store, project, content, open } = await app();
+    const mine = await store.createTicket(project, ticketInput('Sample ticket 1', { kind: 'task' }));
+    const theirs = await store.createTicket(project, ticketInput('Sample ticket 2', { kind: 'task' }));
+    await store.claimTicket(mine.id);
+    await store.sendTicket(theirs.id, 'ben-example');
+
+    await open({ project, ticket: String(mine.id.number) });
+    expect(buttonNamed(detailCard(content()), 'Launch task agent')?.disabled).toBe(true);
+    expect(text(detailCard(content()).querySelector('p.reason'))).toBe('Assigned to you. A ticket already held by an agent or a member cannot be launched again.');
+
+    await open({ project, ticket: String(theirs.id.number) });
+    expect(buttonNamed(detailCard(content()), 'Launch task agent')?.disabled).toBe(true);
+    expect(texts(detailCard(content()).querySelectorAll('p.reason'))).toContain(
+      'Assigned to ben-example. A ticket already held by an agent or a member cannot be launched again.',
+    );
+  });
+
+  it('a grilling ticket, a closed ticket and an archived project show no launch control', async () => {
+    const { store, project, content, open } = await app();
+    const grilling = await store.createTicket(project, ticketInput('Sample ticket 1'));
+    const closed = await store.createTicket(project, ticketInput('Sample ticket 2', { kind: 'research' }));
+    const research = await store.createTicket(project, ticketInput('Sample ticket 3', { kind: 'research' }));
+    await store.closeTicket(closed.id);
+    const launchButtons = () => texts(detailCard(content()).querySelectorAll('button')).filter((label) => label.startsWith('Launch'));
+
+    await open({ project, ticket: String(grilling.id.number) });
+    expect(launchButtons()).toEqual([]);
+    await open({ project, ticket: String(closed.id.number) });
+    expect(launchButtons()).toEqual([]);
+
+    await store.archiveProject(project);
+    await open({ project, ticket: String(research.id.number) });
+    expect(launchButtons()).toEqual([]);
+  });
+});
+
 describe('the tickets screen: archived project and what it cannot read', () => {
   it('an archived project stays readable and offers no change: no claim, tags, Undo or pickup', async () => {
     const { store, project, content, open } = await app();
