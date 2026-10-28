@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261028-024357-63bc",
+  "issue": 77,
+  "title": "PRD writer skill: write, regenerate and feedback, codes, [no source], audit appendix, versions, sections without decisions",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T02:43:57Z",
+  "finished_at": "2026-10-28T03:05:38Z",
+  "outcome": "merged",
+  "pr": 133,
+  "summary": "Adds the /grillo-prd skill that writes numbered, dated PRD versions with source codes, [no source] marks and an audit appendix, with regenerate and feedback modes and a fixture checker; 54 new tests.",
+  "agents": [
+    {
+      "name": "dev-77",
+      "model": "opus",
+      "tokens_total": 215033
+    },
+    {
+      "name": "review-77",
+      "model": "opus",
+      "tokens_total": 148030
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 809,
+    "review_seconds": 298,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "resources/skills/grillo-prd/",
+      "what": "SKILL.md sets disable-model-invocation: true, which stops an agent from starting /grillo-prd through the Skill tool, yet grillo-wayfinder's map-done rule tells the agent that closes the last ticket to run /grillo-prd in the same agent, so the automatic PRD write after map-done may not happen",
+      "why": "Needs a cross-skill decision (flip the flag or reword the map-done rule) and only a live model run shows it",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

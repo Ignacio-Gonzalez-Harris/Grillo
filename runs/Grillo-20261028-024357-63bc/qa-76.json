@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261028-024357-63bc",
+  "issue": 76,
+  "title": "Tagging round skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 132,
+  "merged_at": "2026-10-28T03:01:12Z",
+  "merge_commit": "0434e7058bb1f0f661c0bb6df11b1742e9313ce4",
+  "seam": "resources/skills/grillo-tagging/",
+  "story": "A member can now run a tagging round. The new /grillo-tagging skill gives every open ticket on GitHub one or more of the members' declared domains as labels, or the no-domain label, and it can be run again whenever someone joins. Tags a member set by hand are protected by a hidden marker comment, and deleting that comment hands the ticket back to the round. Before this, tickets stayed untagged after the grilling engine created them.",
+  "checks": [
+    {
+      "key": "resources/skills/grillo-tagging/first-round",
+      "criterion": "/grillo-tagging gives every open ticket one or more declared domains, or domain:none, and creates any missing label",
+      "steps": "In a made-up test repository with a map, three open untagged tickets and a .grillo/members.json declaring product and developer on main, start claude in the clone. Type /grillo-tagging.",
+      "expected": "Every open ticket carries domain:product, domain:developer or domain:none on GitHub, and the missing labels exist. Closed tickets, kind labels, bodies and comments are unchanged, and the agent reports each ticket by title."
+    },
+    {
+      "key": "resources/skills/grillo-tagging/hand-tags-kept",
+      "criterion": "The round never touches tags a member set by hand, which a <!-- grillo:tags-by-hand --> comment records",
+      "steps": "Ask the tagging agent to tag one ticket developer by hand, then check it posted the marker comment. Type /grillo-tagging again.",
+      "expected": "That ticket still carries only domain:developer, and the report lists it as left alone. After deleting its marker comment and running again, the round chooses its domains like any other ticket's."
+    },
+    {
+      "key": "resources/skills/grillo-tagging/member-joins",
+      "criterion": "The round can be run again as members join",
+      "steps": "Add a made-up member to .grillo/members.json on main with a new domain such as workshop that fits a ticket now tagged domain:none. Type /grillo-tagging.",
+      "expected": "That ticket now carries domain:workshop instead of domain:none, and the other tickets keep sensible domains."
+    }
+  ],
+  "no_qa_reason": null
+}

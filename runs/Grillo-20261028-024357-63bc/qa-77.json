@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261028-024357-63bc",
+  "issue": 77,
+  "title": "PRD writer skill: write, regenerate and feedback, codes, [no source], audit appendix, versions, sections without decisions",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 133,
+  "merged_at": "2026-10-28T03:05:38Z",
+  "merge_commit": "0fe9b883560a22e3f432bdc0eb47b2749beade1f",
+  "seam": "resources/skills/grillo-prd/",
+  "story": "Grillo now ships a PRD writer skill beside the grilling engine. When the map is done it writes the next numbered, dated PRD version, with source codes on every decision, [no source] marks and an audit appendix. A PRD section with nothing decided gets a ticket or a fog line instead of being written. Regenerate writes a new version on demand, and talking to an agent about the PRD turns feedback into edits or tickets. Before this, nothing wrote the PRD after the map-done rule fired.",
+  "checks": [
+    {
+      "key": "resources/skills/grillo-prd/write-on-map-done",
+      "criterion": "Writes prd/v<n>.md with codes, [no source] marks and the audit appendix, and never overwrites an earlier version",
+      "steps": "Make a made-up test repository whose map is done and whose .grillo/prd/v1.md already exists. Copy resources/skills/grillo-prd/ and resources/skills/grillo-wayfinder/ into .claude/skills/. Run claude there and type /grillo-prd.",
+      "expected": "A new .grillo/prd/v2.md on main, with v1 unchanged. Every statement ends with [S.., Q..] or [no source]. The appendix lists every cited code with who, when, where and the exact words, and every [no source] statement sits under Unsourced."
+    },
+    {
+      "key": "resources/skills/grillo-prd/section-without-decision",
+      "criterion": "A structure section with no decision is not written",
+      "steps": "In the same test repository, add a section Costs to .grillo/structure.json and push it. Type /grillo-prd regenerate.",
+      "expected": "No new version file, plus a new ticket or a fog line starting 'Costs: ', and the agent saying the map is not done."
+    },
+    {
+      "key": "resources/skills/grillo-prd/feedback",
+      "criterion": "Feedback edits the PRD or opens tickets, and the PRD is written again when those close",
+      "steps": "Type /grillo-prd feedback. Ask for one wording fix. Confirm one [no source] statement and answer its ticket in the same chat.",
+      "expected": "One new version holding only the wording edit, then a Confirm: ticket opened, answered and closed, then a further version that cites the new answer's codes."
+    }
+  ],
+  "no_qa_reason": null
+}

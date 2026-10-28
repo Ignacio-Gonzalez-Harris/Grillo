@@ -1,0 +1,46 @@
+{
+  "run_id": "Grillo-20261028-024357-63bc",
+  "issue": 76,
+  "title": "Tagging round skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T02:43:57Z",
+  "finished_at": "2026-10-28T03:01:12Z",
+  "outcome": "merged",
+  "pr": 132,
+  "summary": "Adds the /grillo-tagging skill that labels every open ticket with the members' declared domains or domain:none, protecting hand-set tags with a tags-by-hand marker comment; 30 new tests.",
+  "agents": [
+    {
+      "name": "dev-76",
+      "model": "opus",
+      "tokens_total": 190521
+    },
+    {
+      "name": "review-76",
+      "model": "opus",
+      "tokens_total": 122137
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 702,
+    "review_seconds": 177,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [
+    "CI did not run (no GitHub Actions minutes on the account); by the user's word the merge was gated on the local Windows gate only, so nothing has checked these merges on Mac until CI minutes return"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "updateTicket sets domain labels when a member changes tags by hand on the ticket screen but writes no <!-- grillo:tags-by-hand --> marker, so the next tagging round silently replaces the member's hand-set tags",
+      "why": "Outside the tagging skill's seam (store, and issue #82's renderer-only screen); who writes the marker is a design choice",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
