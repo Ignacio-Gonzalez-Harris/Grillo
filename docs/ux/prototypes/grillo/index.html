@@ -318,6 +318,32 @@ ol.steps li { margin-bottom: var(--space-1); }
 .doc h3:first-child { margin-top: 0; }
 .doc p { line-height: 1.6; }
 
+/* ---------- Chat view (release 2 agent view) ---------- */
+.chat { display: grid; gap: var(--space-3); }
+.chat-head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.msgs { display: grid; gap: var(--space-3); align-content: start; }
+.bubble { justify-self: start; margin-right: var(--space-7); padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-glass-border); box-shadow: 0 var(--border-width) var(--space-2) var(--color-glass-shadow); }
+.bubble.me { justify-self: end; margin-right: 0; margin-left: var(--space-7); background: var(--color-accent-soft); border-color: transparent; box-shadow: none; }
+.bubble > :last-child { margin-bottom: 0; }
+.bubble .who { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); margin: 0 0 var(--space-1); }
+.chat-event { justify-self: center; font-size: var(--font-size-s); color: var(--color-text-muted); }
+.options { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+.opt { font: inherit; text-align: left; display: grid; gap: var(--space-0); padding: var(--space-2) var(--space-3); border-radius: var(--radius-s); border: var(--border-width) solid var(--color-input-border); background: var(--color-glass-fill-strong); color: var(--color-text); cursor: pointer; }
+.opt:hover { border-color: var(--color-accent); }
+.opt[aria-pressed="true"] { background: var(--color-accent-soft); border-color: var(--color-accent); }
+.opt .small { color: var(--color-text-muted); }
+.msgbox { display: flex; gap: var(--space-2); align-items: center; }
+
+/* ---------- Pop-up over a screen (update offer) ---------- */
+.overlay-host { position: relative; }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-6); -webkit-backdrop-filter: blur(var(--blur-glass)); backdrop-filter: blur(var(--blur-glass)); }
+.overlay > .card { width: 100%; max-width: calc(var(--size-side-column) + var(--size-side-column)); box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow); }
+body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* ---------- Score (PRD view, release 3) ---------- */
+.score-big { font-size: var(--font-size-xl); font-weight: var(--font-weight-strong); }
+.mark { display: grid; gap: var(--space-1); min-width: var(--space-7); }
+
 /* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
 @media (max-width: 760px) {
   .app { grid-template-columns: minmax(0, 1fr); padding: var(--space-4); gap: var(--space-4); }
@@ -330,6 +356,9 @@ ol.steps li { margin-bottom: var(--space-1); }
   .meta { grid-template-columns: minmax(0, 1fr); }
   .meta dd { margin-bottom: var(--space-2); }
   .rows .grow { flex-basis: 100%; }
+  .bubble { margin-right: var(--space-5); }
+  .bubble.me { margin-left: var(--space-5); }
+  .overlay { padding: var(--space-4); }
 }
 </style>
 </head>
@@ -338,7 +367,7 @@ ol.steps li { margin-bottom: var(--space-1); }
 
 <nav class="proto-nav glass" aria-label="Screens">
   <h1>Grillo prototype</h1>
-  <p class="small muted">PRD v1 · release 1 · liquid glass theme. Fake data only.</p>
+  <p class="small muted">PRD v1 · releases 1 to 3 · liquid glass theme. Fake data only.</p>
   <ol>
     <li><a href="#screen-setup-check"><span class="num">1</span>Setup check</a></li>
     <li><a href="#screen-project-creation"><span class="num">2</span>Project creation and invites</a></li>
@@ -349,6 +378,8 @@ ol.steps li { margin-bottom: var(--space-1); }
     <li><a href="#screen-generic-agent-tab"><span class="num">7</span>Generic agent tab</a></li>
     <li><a href="#screen-prd-view"><span class="num">8</span>PRD view with versions and export</a></li>
     <li><a href="#screen-download-site"><span class="num">9</span>Download site (GitHub Pages)</a></li>
+    <li><a href="#screen-chat-view"><span class="num">10</span>Chat view (release 2)</a></li>
+    <li><a href="#screen-support-agent-tab"><span class="num">11</span>Support agent tab (release 2)</a></li>
   </ol>
   <label class="switch small"><input type="checkbox" id="toggle-fallback"> Windows fallback (no frosted blur)</label>
   <p class="small muted">Turn it on to check every screen still reads well where the frosted effect is unavailable.</p>
@@ -748,8 +779,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The member sees where the project stands (destination, settled, fog, out of scope) and the ticket list, and runs the tagging round.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 3 · flows 4.2 steps 6 and 7 · 4.3 (Routing a question)</dd>
-      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; Start meeting (starts the live session's meeting agent and opens its tab on the meeting screen, or opens the running one's tab; hidden on an archived project); per ticket Edit, Merge, Close as out of scope; Sources list (code, kind, who, when, where) with Open to read a source's full text; Close project; Reopen on an archived project.</dd>
-      <dt>States</dt><dd>Engine building the map (loading) · Tickets untagged · Tagged and assigned, with sources · Source opened · Map done · Closed project, archived</dd>
+      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; Start meeting (starts the live session's meeting agent and opens its tab on the meeting screen, or opens the running one's tab; hidden on an archived project); per ticket Edit, Merge, Close as out of scope; Sources list (code, kind, who, when, where) with Open to read a source's full text; Close project; Reopen on an archived project. Over this screen (and any other): the update pop-up with Download and install and Later, the setup check screen's offer card with its phases (available, downloading with the percent, ready with Restart and install).</dd>
+      <dt>States</dt><dd>Engine building the map (loading) · Tickets untagged · Tagged and assigned, with sources · Source opened · Map done · Closed project, archived · Update pop-up over the map · Update pop-up, downloading · Update pop-up, ready to install · Update pop-up, unsigned Mac</dd>
     </dl>
   </header>
   <div class="states">
@@ -760,6 +791,10 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="source-open">Source opened</button>
       <button class="btn sm" data-state="done">Map done</button>
       <button class="btn sm" data-state="archived">Closed project, archived</button>
+      <button class="btn sm" data-state="update-popup">Update pop-up over the map</button>
+      <button class="btn sm" data-state="update-downloading">Update pop-up, downloading</button>
+      <button class="btn sm" data-state="update-ready">Update pop-up, ready to install</button>
+      <button class="btn sm" data-state="update-popup-mac">Update pop-up, unsigned Mac</button>
     </div>
 
     <div class="state" data-state="building">
@@ -923,6 +958,170 @@ Sample transcript line 2: a made-up reply.</textarea>
         </div>
       </div>
     </div>
+
+    <div class="state" data-state="update-popup">
+      <p class="state-caption">State: Update pop-up over the map (the hourly check found a newer version while Grillo is open; the same pop-up shows over any screen)</p>
+      <div class="window glass overlay-host">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body" aria-hidden="true">
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 1.</p></div>
+            <div class="card"><h4>Settled</h4><ul class="small"><li>Sample ticket 0: sample decision gist, one line.</li></ul></div>
+            <div class="card"><h4>Fog</h4><ul class="small"><li>Sample fog item 1: cannot be asked precisely yet.</li></ul></div>
+            <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
+          </div>
+          <div class="card stack">
+            <h3>Tickets</h3>
+            <div class="table-wrap"><table>
+              <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th></tr>
+              <tr><td>Sample ticket 1</td><td><span class="badge">grilling</span></td><td><span class="tag d1">product</span></td><td>—</td></tr>
+              <tr><td>Sample ticket 3</td><td><span class="badge">grilling</span></td><td><span class="tag d2">developer</span></td><td>Grilling agent (member-a) <span class="badge warn">Locked</span></td></tr>
+              <tr><td>Sample ticket 5</td><td><span class="badge">research</span></td><td><span class="tag none">no domain</span></td><td>—</td></tr>
+            </table></div>
+          </div>
+        </div>
+        <div class="overlay">
+          <div class="card glass-strong stack" role="dialog" aria-modal="true" aria-label="Update offer">
+            <div class="row"><span class="badge warn">Update</span><span class="strong">Grillo 1.1.0 is available. You have 1.0.0.</span></div>
+            <div class="grid-2">
+              <div class="stack">
+                <span class="small strong muted">App updates</span>
+                <label class="switch small"><input type="checkbox"> Install automatically on the next restart</label>
+                <p class="small muted">On Mac, automatic install works only once Grillo is signed.</p>
+              </div>
+              <div class="stack">
+                <span class="small strong muted">Speech model updates</span>
+                <div class="seg" role="group" aria-label="Speech model updates"><button aria-pressed="false">Automatic</button><button aria-pressed="true">Ask</button><button aria-pressed="false">Never</button></div>
+                <p class="small muted">The local speech model that transcribes meetings on this laptop.</p>
+              </div>
+            </div>
+            <div class="row"><button class="btn primary sm">Download and install</button><a class="btn sm" href="#screen-map-and-tickets/tagged">Later</a><span class="spacer"></span><span class="small muted">Shown once per version. Later hides it until Grillo restarts.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="update-downloading">
+      <p class="state-caption">State: Update pop-up, downloading (after Download and install; the setup check card's downloading phase)</p>
+      <div class="window glass overlay-host">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body" aria-hidden="true">
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 1.</p></div>
+            <div class="card"><h4>Settled</h4><ul class="small"><li>Sample ticket 0: sample decision gist, one line.</li></ul></div>
+            <div class="card"><h4>Fog</h4><ul class="small"><li>Sample fog item 1: cannot be asked precisely yet.</li></ul></div>
+            <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
+          </div>
+          <div class="card stack">
+            <h3>Tickets</h3>
+            <div class="table-wrap"><table>
+              <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th></tr>
+              <tr><td>Sample ticket 1</td><td><span class="badge">grilling</span></td><td><span class="tag d1">product</span></td><td>—</td></tr>
+              <tr><td>Sample ticket 3</td><td><span class="badge">grilling</span></td><td><span class="tag d2">developer</span></td><td>Grilling agent (member-a) <span class="badge warn">Locked</span></td></tr>
+              <tr><td>Sample ticket 5</td><td><span class="badge">research</span></td><td><span class="tag none">no domain</span></td><td>—</td></tr>
+            </table></div>
+          </div>
+        </div>
+        <div class="overlay">
+          <div class="card glass-strong stack" role="dialog" aria-modal="true" aria-label="Update offer">
+            <div class="row"><span class="badge warn">Update</span><span class="strong">Downloading Grillo 1.1.0: 42%.</span></div>
+            <div class="grid-2">
+              <div class="stack">
+                <span class="small strong muted">App updates</span>
+                <label class="switch small"><input type="checkbox"> Install automatically on the next restart</label>
+                <p class="small muted">On Mac, automatic install works only once Grillo is signed.</p>
+              </div>
+              <div class="stack">
+                <span class="small strong muted">Speech model updates</span>
+                <div class="seg" role="group" aria-label="Speech model updates"><button aria-pressed="false">Automatic</button><button aria-pressed="true">Ask</button><button aria-pressed="false">Never</button></div>
+                <p class="small muted">The local speech model that transcribes meetings on this laptop.</p>
+              </div>
+            </div>
+            <div class="row"><button class="btn primary sm" disabled>Download and install</button><a class="btn sm" href="#screen-map-and-tickets/tagged">Later</a><span class="spacer"></span><span class="small muted">Shown once per version. Later hides it until Grillo restarts.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="update-ready">
+      <p class="state-caption">State: Update pop-up, ready to install (the download finished; the setup check card's ready phase)</p>
+      <div class="window glass overlay-host">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body" aria-hidden="true">
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 1.</p></div>
+            <div class="card"><h4>Settled</h4><ul class="small"><li>Sample ticket 0: sample decision gist, one line.</li></ul></div>
+            <div class="card"><h4>Fog</h4><ul class="small"><li>Sample fog item 1: cannot be asked precisely yet.</li></ul></div>
+            <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
+          </div>
+          <div class="card stack">
+            <h3>Tickets</h3>
+            <div class="table-wrap"><table>
+              <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th></tr>
+              <tr><td>Sample ticket 1</td><td><span class="badge">grilling</span></td><td><span class="tag d1">product</span></td><td>—</td></tr>
+              <tr><td>Sample ticket 3</td><td><span class="badge">grilling</span></td><td><span class="tag d2">developer</span></td><td>Grilling agent (member-a) <span class="badge warn">Locked</span></td></tr>
+              <tr><td>Sample ticket 5</td><td><span class="badge">research</span></td><td><span class="tag none">no domain</span></td><td>—</td></tr>
+            </table></div>
+          </div>
+        </div>
+        <div class="overlay">
+          <div class="card glass-strong stack" role="dialog" aria-modal="true" aria-label="Update offer">
+            <div class="row"><span class="badge ok">Ready</span><span class="strong">Grillo 1.1.0 is downloaded. Restart Grillo to install it.</span></div>
+            <div class="grid-2">
+              <div class="stack">
+                <span class="small strong muted">App updates</span>
+                <label class="switch small"><input type="checkbox"> Install automatically on the next restart</label>
+                <p class="small muted">On Mac, automatic install works only once Grillo is signed.</p>
+              </div>
+              <div class="stack">
+                <span class="small strong muted">Speech model updates</span>
+                <div class="seg" role="group" aria-label="Speech model updates"><button aria-pressed="false">Automatic</button><button aria-pressed="true">Ask</button><button aria-pressed="false">Never</button></div>
+                <p class="small muted">The local speech model that transcribes meetings on this laptop.</p>
+              </div>
+            </div>
+            <div class="row"><button class="btn primary sm">Restart and install</button><a class="btn sm" href="#screen-map-and-tickets/tagged">Later</a><span class="spacer"></span><span class="small muted">Shown once per version. Later hides it until Grillo restarts.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="update-popup-mac">
+      <p class="state-caption">State: Update pop-up, unsigned Mac (Grillo cannot install by itself, so it offers the manual route)</p>
+      <div class="window glass overlay-host">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body" aria-hidden="true">
+          <div class="grid-2">
+            <div class="card"><h4>Destination</h4><p>A PRD for Sample project 1.</p></div>
+            <div class="card"><h4>Settled</h4><ul class="small"><li>Sample ticket 0: sample decision gist, one line.</li></ul></div>
+            <div class="card"><h4>Fog</h4><ul class="small"><li>Sample fog item 1: cannot be asked precisely yet.</li></ul></div>
+            <div class="card"><h4>Out of scope</h4><ul class="small"><li>Sample out-of-scope item 1</li></ul></div>
+          </div>
+        </div>
+        <div class="overlay">
+          <div class="card glass-strong stack" role="dialog" aria-modal="true" aria-label="Update offer">
+            <div class="row"><span class="badge warn">Update</span><span class="strong">Grillo 1.1.0 is available. You have 1.0.0.</span></div>
+            <p class="small muted">Grillo cannot install updates by itself on this Mac until it is signed. Download and install opens the release page: download the new version there, then drag it into Applications.</p>
+            <div class="grid-2">
+              <div class="stack">
+                <span class="small strong muted">App updates</span>
+                <label class="switch small"><input type="checkbox"> Install automatically on the next restart</label>
+                <p class="small muted">On Mac, automatic install works only once Grillo is signed.</p>
+              </div>
+              <div class="stack">
+                <span class="small strong muted">Speech model updates</span>
+                <div class="seg" role="group" aria-label="Speech model updates"><button aria-pressed="false">Automatic</button><button aria-pressed="true">Ask</button><button aria-pressed="false">Never</button></div>
+                <p class="small muted">The local speech model that transcribes meetings on this laptop.</p>
+              </div>
+            </div>
+            <div class="row"><button class="btn primary sm">Download and install</button><a class="btn sm" href="#screen-map-and-tickets/tagged">Later</a><span class="spacer"></span><span class="small muted">Shown once per version. Later hides it until Grillo restarts.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -933,8 +1132,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The member works through their own list first, opens a ticket, sees its questions and their answered state, changes its tags, and takes, sends or reassigns it.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 4 · flows 4.3 (Routing) · 4.4 steps 1 and 5 (own list, answers from GitHub)</dd>
-      <dt>Controls</dt><dd>Own list grouped: taken by or sent to me, my domains, everything else; search; ticket detail with tags changed by hand; Take; Send to a member; Reassign (unanswered tickets); Edit; Merge; Close as out of scope; questions with answered state and source; Undo on a recorded answer; Answer now.</dd>
-      <dt>States</dt><dd>Unassigned ticket · Locked by another member · Answer picked up from a GitHub comment · Empty list</dd>
+      <dt>Controls</dt><dd>Own list grouped: taken by or sent to me, my domains, everything else; search; ticket detail with tags changed by hand; Take; Send to a member; Reassign (unanswered tickets); Edit; Merge; Close as out of scope; questions with answered state and source; Undo on a recorded answer; Answer now. Release 3: on a research, prototype or task ticket, Launch research agent, Launch prototype agent or Launch task agent, which opens an agent tab running the matching command.</dd>
+      <dt>States</dt><dd>Unassigned ticket · Locked by another member · Answer picked up from a GitHub comment · Empty list · Launch an agent (release 3)</dd>
     </dl>
   </header>
   <div class="states">
@@ -943,6 +1142,7 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="locked">Locked by another member</button>
       <button class="btn sm" data-state="from-github">Answer from a GitHub comment</button>
       <button class="btn sm" data-state="empty">Empty list</button>
+      <button class="btn sm" data-state="launch">Launch an agent (release 3)</button>
     </div>
 
     <div class="state" data-state="unassigned">
@@ -1030,6 +1230,47 @@ Sample transcript line 2: a made-up reply.</textarea>
         </div>
       </div>
     </div>
+
+    <div class="state" data-state="launch">
+      <p class="state-caption">State: Launch an agent (release 3: a research, prototype or task ticket gets a launch control)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab active">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Prototype · Sample ticket 6<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split">
+          <div class="card">
+            <input type="search" placeholder="Search tickets" aria-label="Search tickets">
+            <p class="list-head">Your domains</p>
+            <ul class="rows small"><li class="selected"><span>Sample ticket 5 <span class="badge">research</span></span><span class="tag none">no domain</span></li><li><span>Sample ticket 1 <span class="badge">grilling</span></span><span class="tag d1">product</span></li></ul>
+            <p class="list-head">Everything else</p>
+            <ul class="rows small"><li><span>Sample ticket 6 <span class="badge">prototype</span> <span class="muted">· Prototype agent (member-a)</span></span><span class="tag d2">developer</span></li><li><span>Sample ticket 7 <span class="badge">task</span></span><span class="tag d3">platform</span></li></ul>
+          </div>
+          <div class="stack">
+            <div class="card stack">
+              <div class="row"><h3 class="m0">Sample ticket 5</h3><span class="badge">research</span><span class="badge">Not assigned</span></div>
+              <div class="row"><span class="small strong muted">Domains</span><span class="tag none">no domain ×</span><select class="w-auto" aria-label="Add a domain tag"><option>Add a domain…</option><option>product</option><option>developer</option><option>platform</option></select></div>
+              <div class="row"><button class="btn primary">Launch research agent</button><button class="btn">Take</button><select class="w-auto" aria-label="Send to"><option>Send to…</option><option>member-b</option><option>member-c</option></select><button class="btn">Send</button><span class="spacer"></span><button class="btn sm">Edit</button><button class="btn sm">Merge</button><button class="btn sm">Close as out of scope</button></div>
+              <p class="small muted">Opens a Research tab that runs <code>/grillo-research 5</code>. The agent assigns the ticket to itself, works it as wayfinder does and records its finding as an answer with its sources.</p>
+              <h4>Questions</h4>
+              <ul class="rows">
+                <li><span class="grow">Sample question 5.1: a made-up question to research.</span><span class="badge">Open</span></li>
+                <li><span class="grow">Sample question 5.2: a made-up question to research.</span><span class="badge">Open</span></li>
+              </ul>
+            </div>
+            <div class="card stack">
+              <div class="row"><h4 class="m0">Legend: launch controls by ticket kind</h4><span class="badge info">Prototype only</span></div>
+              <p class="small muted">Not a panel to build. It shows which ticket kinds get which launch control; in Grillo the control sits only in the ticket detail above.</p>
+              <ul class="rows small">
+                <li><span class="grow"><span class="badge">research</span> Sample ticket 5</span><button class="btn sm primary">Launch research agent</button></li>
+                <li><span class="grow"><span class="badge">prototype</span> Sample ticket 6 <span class="muted">· running in the Prototype · Sample ticket 6 tab</span></span><button class="btn sm" disabled>Launch prototype agent</button></li>
+                <li><span class="grow"><span class="badge">task</span> Sample ticket 7</span><button class="btn sm primary">Launch task agent</button></li>
+                <li><span class="grow"><span class="badge">grilling</span> Sample ticket 1 <span class="muted">· no launch control: answer it with Answer now or in a meeting</span></span></li>
+              </ul>
+              <p class="reason">A ticket already held by an agent or a member cannot be launched again.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1040,8 +1281,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The host runs a live grilling session from the grilling agent's own tab: ticks who is present, records consent, records, and lets the room answer each question by Listen or Type. Reached from Start meeting on the map.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 5 · flows 4.5 (Live grilling session) · 4.6 items 2 to 4 (tabs, typing, controls on the tab)</dd>
-      <dt>Controls</dt><dd>Agent tabs named "kind · ticket" with a dot for "waiting for you" and an Open channel switch on each; "+" for a generic agent; present-member ticks; consent tick and read-aloud script; global Record switch; red Recording banner; Listen or Type per question; Use it; Skip question; Jump to ticket; running transcript strip; import a transcript; type box; terminal panel (release 1).</dd>
-      <dt>States</dt><dd>Preparing speech model (downloading, before the first recording) · Before consent (Record disabled) · Recording, Listen · Recording, Type</dd>
+      <dt>Controls</dt><dd>Agent tabs named "kind · ticket" with a dot for "waiting for you" and an Open channel switch on each; "+" for a generic agent; present-member ticks; consent tick and read-aloud script; global Record switch; red Recording banner; Listen or Type per question; Use it; Skip question; Jump to ticket; running transcript strip; import a transcript; type box; terminal panel (release 1); Grilling agents card with Open another grilling agent (starts one more grilling agent with <code>/grillo-meeting</code> in the running session, in its own tab with its own Open channel switch; each agent claims a different ticket).</dd>
+      <dt>States</dt><dd>Preparing speech model (downloading, before the first recording) · Before consent (Record disabled) · Recording, Listen · Recording, Type · Another grilling agent opened</dd>
     </dl>
   </header>
   <div class="states">
@@ -1050,6 +1291,7 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="before-consent">Before consent</button>
       <button class="btn sm" data-state="listen">Recording, Listen</button>
       <button class="btn sm" data-state="type">Recording, Type</button>
+      <button class="btn sm" data-state="extra-agent">Another grilling agent opened</button>
     </div>
 
     <div class="state" data-state="preparing">
@@ -1182,6 +1424,15 @@ Sample transcript line 2: a made-up reply.</textarea>
               <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
               <button class="btn sm">Import a transcript (paste or upload)</button>
             </div>
+            <div class="card stack">
+              <h4>Grilling agents</h4>
+              <ul class="rows small">
+                <li><span>Grilling · Sample ticket 3</span><span class="badge ok">Channel open</span></li>
+                <li><span>Grilling · Sample ticket 1</span><span class="badge ok">Channel open</span></li>
+              </ul>
+              <a class="btn sm" href="#screen-meeting/extra-agent">Open another grilling agent</a>
+              <p class="small muted">Grills one more ticket in parallel, in this session. Each agent takes a different ticket.</p>
+            </div>
           </div>
           <div class="stack">
             <div class="card stack">
@@ -1245,6 +1496,61 @@ Sample transcript line 2: a made-up reply.</textarea>
 <span class="t-prompt">❯</span> </pre>
             <div class="typebox"><input type="text" value="Sample typed answer" aria-label="Type to the agent"><button class="btn primary">Send</button></div>
             <div class="transcript"><p><span class="muted">10:15:01</span> Sample transcript line: the session recording keeps running.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="extra-agent">
+      <p class="state-caption">State: Another grilling agent opened (a third grilling agent joins the running session in its own tab, channel still closed)</p>
+      <div class="window glass">
+        <div class="rec-banner"><span class="sdot"></span>Recording<span class="small">· audio and transcription stay on this laptop</span><span class="spacer"></span><span class="small">00:18:21</span></div>
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span>
+          <span class="tab">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <span class="tab">Grilling · Sample ticket 1<label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <span class="tab active">Grilling · Sample ticket 8<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+          <button class="tab add" aria-label="Open a generic agent">+</button>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+              <label class="check"><input type="checkbox"> member-c · Carla <span class="tag d3">platform</span></label>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+            </div>
+            <div class="card stack">
+              <h4>Grilling agents</h4>
+              <ul class="rows small">
+                <li><span>Grilling · Sample ticket 3</span><span class="badge ok">Channel open</span></li>
+                <li><span>Grilling · Sample ticket 1</span><span class="badge ok">Channel open</span></li>
+                <li class="selected"><span>Grilling · Sample ticket 8 <span class="badge info">New</span></span><span class="badge">Channel closed</span></li>
+              </ul>
+              <button class="btn sm">Open another grilling agent</button>
+              <p class="small muted">Each agent receives the transcript only while its own Channel switch is on.</p>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card stack">
+              <div class="row"><span class="strong">Sample ticket 8</span><span class="tag d1">product</span><span class="muted small">Question 1 of 2</span></div>
+              <p>Sample question 8.1: a made-up question for the room.</p>
+              <div class="row"><div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="false">Listen</button><button aria-pressed="true">Type</button></div><button class="btn">Skip question</button><select class="w-auto" aria-label="Jump to ticket"><option>Jump to ticket…</option></select></div>
+              <p class="reason">Listen needs this tab's channel open.</p>
+            </div>
+<pre class="terminal"><span class="t-muted">Grilling agent · Sample project 1 · joined the running session</span>
+<span class="t-muted">Sample ticket 3 and Sample ticket 1 are held by the other grilling agents in this session.</span>
+<span class="t-ok">✓ Assigned Sample ticket 8 to this agent (re-read: no other agent holds it).</span>
+
+<span class="t-hl">Sample question 8.1: a made-up question for the room.</span>
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
           </div>
         </div>
       </div>
@@ -1459,8 +1765,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The member reads the latest PRD with its source codes and audit appendix, opens or downloads any kept version, exports it, and talks to an agent about it.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 8 · flows 4.7 (Writing, tracing and grading the PRD)</dd>
-      <dt>Controls</dt><dd>Version list numbered and dated, earlier versions kept, each with Open, Markdown and HTML downloads; Export: Download Markdown, Download HTML; Edit structure and regenerate (opens the structure editor on screen-project-creation); Regenerate; Talk to an agent about this PRD; source codes like [S4, Q12] linking to the audit appendix; [no source] marks and the unsourced list; audit appendix table.</dd>
-      <dt>States</dt><dd>No version yet (empty) · Writing (loading) · Versions list</dd>
+      <dt>Controls</dt><dd>Version list numbered and dated, earlier versions kept, each with Open, Markdown and HTML downloads; Export: Download Markdown, Download HTML; Edit structure and regenerate (opens the structure editor on screen-project-creation); Regenerate; Talk to an agent about this PRD; source codes like [S4, Q12] linking to the audit appendix; [no source] marks and the unsourced list; audit appendix table. Release 3: the version's score (overall 0 to 10, one mark and comment per criterion and per section) with Rerun, which starts <code>/grillo-score</code> in an agent tab.</dd>
+      <dt>States</dt><dd>No version yet (empty) · Writing (loading) · Versions list · Score (release 3)</dd>
     </dl>
   </header>
   <div class="states">
@@ -1468,6 +1774,7 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="no-version">No version yet</button>
       <button class="btn sm" data-state="writing">Writing</button>
       <button class="btn sm" data-state="versions">Versions list</button>
+      <button class="btn sm" data-state="score">Score (release 3)</button>
     </div>
 
     <div class="state" data-state="no-version">
@@ -1535,6 +1842,56 @@ Sample transcript line 2: a made-up reply.</textarea>
               <li><div class="grow full"><span class="strong">Version 1</span><br><span class="muted">2026-10-21</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Markdown</button><button class="btn sm">HTML</button></span></li>
             </ul>
             <p class="small muted">Every version is kept, numbered and dated.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="score">
+      <p class="state-caption">State: Score (release 3: every version is scored when it is written, and can be rerun)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab active">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split rev">
+          <div class="stack">
+            <div class="row"><h3 class="m0">PRD · version 2</h3><span class="badge info">Latest</span><span class="muted small">2026-10-22</span><span class="spacer"></span><button class="btn">Talk to an agent about this PRD</button><a class="btn" href="#screen-project-creation/structure">Edit structure and regenerate</a><a class="btn" href="#screen-prd-view/writing">Regenerate</a></div>
+            <div class="card stack" role="region" aria-label="Score of version 2">
+              <div class="row"><h3 class="m0">Score</h3><span class="score-big">6.3</span><span class="muted">out of 10</span><span class="spacer"></span><button class="btn">Rerun</button></div>
+              <p class="small muted">Quality and coverage weigh half each, and every criterion and section weighs the same. The score is guidance, not a gate: nothing happens by itself after a low mark.</p>
+              <h4>Quality</h4>
+              <div class="table-wrap"><table class="small">
+                <tr><th>Criterion</th><th>Mark</th><th>Comment</th></tr>
+                <tr><td class="strong">Clear</td><td><div class="mark"><span class="badge ok">8</span><progress class="progress" value="8" max="10" aria-label="Clear: 8 of 10">8</progress></div></td><td>Sample comment: what is weak, why, and a concrete suggestion. Suggestion: define the made-up term in one statement.</td></tr>
+                <tr><td class="strong">Complete</td><td><div class="mark"><span class="badge">6</span><progress class="progress" value="6" max="10" aria-label="Complete: 6 of 10">6</progress></div></td><td>Sample comment: a flow starts but never says how it ends. Suggestion: ask the members how it ends and add it as a statement.</td></tr>
+                <tr><td class="strong">Verifiable</td><td><div class="mark"><span class="badge">7</span><progress class="progress" value="7" max="10" aria-label="Verifiable: 7 of 10">7</progress></div></td><td>Sample comment: "right now" sets no time, so no test can pass it. Suggestion: say how soon.</td></tr>
+                <tr><td class="strong">Tied to objectives</td><td><div class="mark"><span class="badge warn">5</span><progress class="progress" value="5" max="10" aria-label="Tied to objectives: 5 of 10">5</progress></div></td><td>Sample comment: the problem is stated but no goal is set. Suggestion: decide a target and say which flows serve it.</td></tr>
+                <tr><td class="strong">Consistent</td><td><div class="mark"><span class="badge ok">9</span><progress class="progress" value="9" max="10" aria-label="Consistent: 9 of 10">9</progress></div></td><td>Sample comment: no two statements contradict each other. Suggestion: use one word for one role throughout.</td></tr>
+                <tr><td class="strong">Feasible</td><td><div class="mark"><span class="badge ok">8</span><progress class="progress" value="8" max="10" aria-label="Feasible: 8 of 10">8</progress></div></td><td>Sample comment: nothing says the made-up device has power. Suggestion: confirm it with the members.</td></tr>
+                <tr><td class="strong">Needs, not solutions</td><td><div class="mark"><span class="badge">6</span><progress class="progress" value="6" max="10" aria-label="Needs, not solutions: 6 of 10">6</progress></div></td><td>Sample comment: a statement fixes the how before the need. Suggestion: state the need first.</td></tr>
+                <tr><td class="strong">Scope and priorities</td><td><div class="mark"><span class="badge warn">4</span><progress class="progress" value="4" max="10" aria-label="Scope and priorities: 4 of 10">4</progress></div></td><td>Sample comment: nothing says what is left out. Suggestion: ask what is out of scope and add it.</td></tr>
+              </table></div>
+              <h4>Coverage, per section of the PRD structure</h4>
+              <div class="table-wrap"><table class="small">
+                <tr><th>Section</th><th>Mark</th><th>Comment</th></tr>
+                <tr><td class="strong">Sample section 1</td><td><div class="mark"><span class="badge ok">8</span><progress class="progress" value="8" max="10" aria-label="Sample section 1: 8 of 10">8</progress></div></td><td>Sample comment: two decided statements, one open point. Suggestion: ask the open point and say so.</td></tr>
+                <tr><td class="strong">Sample section 2</td><td><div class="mark"><span class="badge warn">3</span><progress class="progress" value="3" max="10" aria-label="Sample section 2: 3 of 10">3</progress></div></td><td>Sample comment: its only statement has no source. Suggestion: confirm it with a member or remove it.</td></tr>
+                <tr><td class="strong">Sample added section</td><td><div class="mark"><span class="badge">7</span><progress class="progress" value="7" max="10" aria-label="Sample added section: 7 of 10">7</progress></div></td><td>Sample comment: one decision, traced to an email. Suggestion: add who it affects.</td></tr>
+              </table></div>
+            </div>
+            <article class="card doc">
+              <h3>Sample section 1</h3>
+              <p>Sample decision statement one, written from the answers. <span class="code-chip">[S4, Q12]</span></p>
+              <h3>Sample section 2</h3>
+              <p>Sample statement that no answer supports. <span class="code-chip nosrc">[no source]</span></p>
+            </article>
+          </div>
+          <div class="card stack">
+            <h4>Versions</h4>
+            <ul class="rows small">
+              <li class="selected"><div class="grow full"><span class="strong">Version 2</span> <span class="badge info">Latest</span> <span class="badge">Score 6.3</span><br><span class="muted">2026-10-22 · after a structure edit</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Markdown</button><button class="btn sm">HTML</button></span></li>
+              <li><div class="grow full"><span class="strong">Version 1</span> <span class="badge">Score 5.8</span><br><span class="muted">2026-10-21</span></div><span class="row"><button class="btn sm">Open</button><button class="btn sm">Markdown</button><button class="btn sm">HTML</button></span></li>
+            </ul>
+            <p class="small muted">Each version keeps its own score. Rerun replaces the score of the version shown.</p>
           </div>
         </div>
       </div>
@@ -1643,6 +2000,271 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
           </div>
           <p class="small muted">"What Grillo is", "What you need first" and "How to use it" stay as in the pilot state.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 10 -->
+<section id="screen-chat-view" class="screen">
+  <header class="screen-head glass">
+    <h2>Chat view with the "show terminal" switch (release 2)</h2>
+    <p class="purpose">From release 2 every agent tab shows its agent as a chat: message bubbles, clickable answer buttons and a message box. A "show terminal" switch reveals the agent's raw event stream underneath. It restyles the agent tab bodies of the meeting screen, own-time answering and the generic agent tab (screens 5, 6 and 7), and is the body of the support agent tab.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>4.6 item 1 (chat view, "show terminal" switch) · 4.5 item 5 (live transcript in the message box) · 5 last paragraph · 9 (the chat view is the everyday face of an agent) · 12 release 2</dd>
+      <dt>Controls</dt><dd>Agent tabs as in release 1 (name, waiting dot, Open channel switch), plus the Support tab, always first among the agent tabs from release 2 (screen-support-agent-tab); Show terminal switch in the chat header; agent and member bubbles; clickable answer buttons (one per option, with its description) and Something else; permission prompt with Allow and Deny; recorded-answer notes; message box with Send; with a channel open, live transcript words in the message box and Use it; the release-1 meeting and own-time controls beside the chat, unchanged.</dd>
+      <dt>States</dt><dd>Own-time answering, as a chat · Show terminal on · Meeting, as a chat · Generic agent with a clash, as a chat · Permission prompt</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="own-time">Own-time answering, as a chat</button>
+      <button class="btn sm" data-state="show-terminal">Show terminal on</button>
+      <button class="btn sm" data-state="meeting">Meeting, as a chat</button>
+      <button class="btn sm" data-state="generic">Generic agent with a clash</button>
+      <button class="btn sm" data-state="permission">Permission prompt</button>
+    </div>
+
+    <div class="state" data-state="own-time">
+      <p class="state-caption">State: Own-time answering, as a chat (screen 6 restyled; the agent waits for a click)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Support<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><span class="tab active">Grilling · Sample ticket 4<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split rev">
+          <div class="stack">
+            <div class="row"><h3 class="m0">Sample ticket 4</h3><span class="tag d2">developer</span><span class="badge warn">Taken by you</span><span class="spacer"></span><div class="seg" role="group" aria-label="Answer with"><button aria-pressed="true">With a grilling agent</button><button aria-pressed="false">In a form</button></div></div>
+            <div class="card chat">
+              <div class="chat-head"><span class="strong">Grilling agent</span><span class="small muted">· Sample ticket 4</span><span class="spacer"></span><label class="switch small"><input type="checkbox"> Show terminal</label></div>
+              <div class="msgs" role="log" aria-label="Chat with the grilling agent">
+                <div class="bubble"><p class="who">Grilling agent</p><p>Sample question 4.1: a made-up question for a developer.</p>
+                  <div class="options"><button class="opt" aria-pressed="true"><span class="strong">Sample option A</span><span class="small">A made-up description of option A.</span></button><button class="opt"><span class="strong">Sample option B</span><span class="small">A made-up description of option B.</span></button></div></div>
+                <div class="bubble me"><p class="who">member-b</p><p>Sample option A, for a sample reason.</p></div>
+                <p class="chat-event">Re-read the map and 2 related tickets for clashes: none found.</p>
+                <p class="note ok small">Recorded answer to question 4.1 (own-time answer, member-b, 2026-10-22).</p>
+                <div class="bubble"><p class="who">Grilling agent</p><p>Sample question 4.2: a made-up follow-up question.</p>
+                  <div class="options"><button class="opt"><span class="strong">Sample option A</span><span class="small">A made-up description of option A.</span></button><button class="opt"><span class="strong">Sample option B</span><span class="small">A made-up description of option B.</span></button><button class="opt"><span class="strong">Something else</span><span class="small">Type your own answer in the message box.</span></button></div></div>
+              </div>
+              <div class="msgbox"><input type="text" placeholder="Write to the agent…" aria-label="Write to the agent"><button class="btn primary">Send</button></div>
+            </div>
+          </div>
+          <div class="card stack">
+            <h4>Questions</h4>
+            <ul class="rows small">
+              <li><span>4.1 Sample question</span><span class="badge ok">Answered</span></li>
+              <li><span>4.2 Sample question</span><span class="badge">Open</span></li>
+              <li><span>4.3 Sample question</span><span class="badge">Open</span></li>
+            </ul>
+            <button class="btn primary">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="show-terminal">
+      <p class="state-caption">State: Show terminal on (the raw event stream underneath the chat; read-only, there is no terminal to type into)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Support<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><span class="tab active">Grilling · Sample ticket 4<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card chat">
+            <div class="chat-head"><span class="strong">Grilling agent</span><span class="small muted">· Sample ticket 4</span><span class="spacer"></span><label class="switch small"><input type="checkbox" checked> Show terminal</label></div>
+            <div class="msgs" role="log" aria-label="Chat with the grilling agent">
+              <div class="bubble"><p class="who">Grilling agent</p><p>Sample question 4.2: a made-up follow-up question.</p>
+                <div class="options"><button class="opt"><span class="strong">Sample option A</span><span class="small">A made-up description of option A.</span></button><button class="opt"><span class="strong">Sample option B</span><span class="small">A made-up description of option B.</span></button></div></div>
+            </div>
+<pre class="terminal" aria-label="Raw event stream"><span class="t-muted">Raw event stream · Claude Code in machine-readable mode · read-only</span>
+
+{"type":"system","subtype":"init","session_id":"00000000-0000-4000-8000-000000000001","model":"sample-model","tools":["AskUserQuestion","Bash","Read"]}
+<span class="t-prompt">{"type":"user","message":{"role":"user","content":"/grillo-answer 4"}}</span>
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"gh issue view 4 --json title,body,labels,comments"}}]}}
+<span class="t-ok">{"type":"user","message":{"content":[{"type":"tool_result","content":"(sample ticket text)"}]}}</span>
+<span class="t-hl">{"type":"control_request","request_id":"11111111-1111-4111-8111-111111111111","request":{"subtype":"can_use_tool","tool_name":"AskUserQuestion","input":{"questions":[{"question":"Sample question 4.2","header":"4.2","options":[{"label":"Sample option A"},{"label":"Sample option B"}],"multiSelect":false}]}}}</span>
+<span class="t-muted">Waiting for the answer…</span></pre>
+            <div class="msgbox"><input type="text" placeholder="Write to the agent…" aria-label="Write to the agent"><button class="btn primary">Send</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="meeting">
+      <p class="state-caption">State: Meeting, as a chat (screen 5 restyled; live transcript words fill the message box while the channel is open)</p>
+      <div class="window glass">
+        <div class="rec-banner"><span class="sdot"></span>Recording<span class="small">· audio and transcription stay on this laptop</span><span class="spacer"></span><span class="small">00:12:40</span></div>
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Support<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+          <span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <span class="tab">Grilling · Sample ticket 1<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <button class="tab add" aria-label="Open a generic agent">+</button>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+              <label class="check"><input type="checkbox"> member-c · Carla <span class="tag d3">platform</span></label>
+            </div>
+            <div class="card stack">
+              <h4>Consent</h4>
+              <label class="check"><input type="checkbox" checked> Everyone here agreed</label>
+              <p class="small muted">Ticked by member-a at 10:02.</p>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+              <button class="btn sm">Import a transcript (paste or upload)</button>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card stack">
+              <div class="row"><span class="strong">Sample ticket 3</span><span class="tag d2">developer</span><span class="tag d1">product</span><span class="muted small">Question 2 of 3</span></div>
+              <div class="row"><div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="true">Listen</button><button aria-pressed="false">Type</button></div><button class="btn primary">Use it</button><button class="btn">Skip question</button><select class="w-auto" aria-label="Jump to ticket"><option>Jump to ticket…</option><option>Sample ticket 1</option><option>Sample ticket 5</option></select></div>
+            </div>
+            <div class="card chat">
+              <div class="chat-head"><span class="strong">Grilling agent</span><span class="badge ok">Channel open</span><span class="small muted">· receiving the transcript live</span><span class="spacer"></span><label class="switch small"><input type="checkbox"> Show terminal</label></div>
+              <div class="msgs" role="log" aria-label="Chat with the grilling agent">
+                <p class="note ok small">Recorded answer to question 3.1 (typed by member-b).</p>
+                <div class="bubble"><p class="who">Grilling agent</p><p>Sample question 3.2: a made-up question for the room.</p><p class="small muted">Listening…</p></div>
+              </div>
+              <div class="msgbox"><input type="text" value="…sample live transcript words appear here while the channel is open" aria-label="Write to the agent"><button class="btn">Send</button></div>
+              <p class="small muted">Use it sends what the message box holds as one message; the agent distils the answer and keeps the whole talk as the question's discussion.</p>
+            </div>
+            <div class="transcript">
+              <p><span class="muted">10:13:05</span> Sample transcript line: a made-up remark about the question.</p>
+              <p><span class="muted">10:13:10</span> Sample transcript line: a made-up reply, no speaker names.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="generic">
+      <p class="state-caption">State: Generic agent with a clash, as a chat (screen 7 restyled)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Support<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><span class="tab active">Generic · Sample customer email<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card chat">
+            <div class="chat-head"><span class="strong">Generic agent</span><span class="small muted">· Sample customer email</span><span class="spacer"></span><label class="switch small"><input type="checkbox"> Show terminal</label></div>
+            <div class="msgs" role="log" aria-label="Chat with the generic agent">
+              <div class="bubble me"><p class="who">member-b</p><p>(pasted) From: sample-customer@example.com · "Sample email text asking for sample rule B."</p><p>Source: an email from a sample customer, sent to me on 2026-10-21.</p></div>
+              <p class="chat-event">Re-read the map and related tickets.</p>
+              <div class="bubble"><p class="who">Generic agent <span class="badge warn">Clash</span></p><p>Sample ticket 2, question 2.1 was answered "sample rule A" (<span class="code-chip">S4</span>, member-c, 2026-10-22). The email asks for "sample rule B". What should happen?</p>
+                <div class="options"><button class="opt"><span class="strong">Change the answer</span><span class="small">Change the recorded answer to sample rule B.</span></button><button class="opt"><span class="strong">Keep the answer</span><span class="small">Keep it, and save the email as a source only.</span></button><button class="opt"><span class="strong">Open a new ticket</span><span class="small">Discuss it in a new ticket.</span></button></div></div>
+            </div>
+            <div class="msgbox"><input type="text" placeholder="Write to the agent…" aria-label="Write to the agent"><button class="btn primary">Send</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="permission">
+      <p class="state-caption">State: Permission prompt (the agent asks before it runs a tool; the tab shows its waiting dot)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-b</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Support<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><span class="tab active">Generic · Sample customer email<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card chat">
+            <div class="chat-head"><span class="strong">Generic agent</span><span class="small muted">· Sample customer email</span><span class="spacer"></span><label class="switch small"><input type="checkbox"> Show terminal</label></div>
+            <div class="msgs" role="log" aria-label="Chat with the generic agent">
+              <div class="bubble me"><p class="who">member-b</p><p>Change the answer.</p></div>
+              <div class="bubble"><p class="who">Generic agent <span class="badge warn">Asks permission</span></p><p>Run a command: <code>gh issue comment 2 --body-file (sample answer file)</code></p><p class="small muted">Records the changed answer to 2.1 as a comment on Sample ticket 2.</p>
+                <div class="row"><button class="btn sm primary">Allow</button><button class="btn sm">Deny</button></div></div>
+            </div>
+            <div class="msgbox"><input type="text" placeholder="Write to the agent…" aria-label="Write to the agent"><button class="btn primary">Send</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================= 11 -->
+<section id="screen-support-agent-tab" class="screen">
+  <header class="screen-head glass">
+    <h2>Support agent tab (release 2)</h2>
+    <p class="purpose">The member asks the support agent, in its own tab, about the project and the other agents, or has it pass a message to another agent. The support agent shows the exact message and the tab it goes to and waits for Send; Grillo then posts it into that tab's chat marked "from Support, for" the member.</p>
+    <dl class="meta">
+      <dt>PRD section</dt><dd>5 last paragraph (support agent tab) · 4.6 item 7 (relay) · 3 (Agent: support) · 12 release 2</dd>
+      <dt>Controls</dt><dd>Support tab, always on the tab bar from release 2 as the first agent tab (the way in: opening it the first time makes Grillo start the support agent with <code>/grillo-support</code>; "+" still opens only a generic agent), with its Open channel switch; the chat view and its Show terminal switch; relay card with the exact message, the target tab, Send and Cancel; relayed note with Back to Support; in the target tab, the relayed message marked "from Support, for &lt;member&gt;".</dd>
+      <dt>States</dt><dd>Answering about the project · Relay waiting for Send · Relayed, seen in the target tab</dd>
+    </dl>
+  </header>
+  <div class="states">
+    <div class="state-tabs"><span class="label">States:</span>
+      <button class="btn sm" data-state="answering">Answering about the project</button>
+      <button class="btn sm" data-state="relay">Relay waiting for Send</button>
+      <button class="btn sm" data-state="relayed">Relayed, seen in the target tab</button>
+    </div>
+
+    <div class="state" data-state="answering">
+      <p class="state-caption">State: Answering about the project (the Support tab, first opened: Grillo starts the agent with /grillo-support; it reads GitHub and the project folder and writes nothing)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab active">Support<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><span class="tab">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card chat">
+            <div class="chat-head"><span class="strong">Support agent</span><span class="small muted">· tips, side questions and messages to other agents</span><span class="spacer"></span><label class="switch small"><input type="checkbox"> Show terminal</label></div>
+            <div class="msgs" role="log" aria-label="Chat with the support agent">
+              <p class="chat-event">Opened the Support tab: Grillo started the support agent with <code>/grillo-support</code>.</p>
+              <div class="bubble"><p class="who">Support agent</p><p>Ask me about the project or the other agents, or tell me a message to pass on to another agent. I read GitHub fresh and record nothing myself.</p></div>
+              <div class="bubble me"><p class="who">member-a</p><p>Who holds Sample ticket 2, and what is still open on it?</p></div>
+              <p class="chat-event">Read Sample ticket 2 fresh from GitHub.</p>
+              <div class="bubble"><p class="who">Support agent</p><p>Sample ticket 2 is assigned to member-c, sent by member-a. Questions <span class="code-chip">Q2.1</span> and <span class="code-chip">Q2.2</span> are both still open.</p><p class="small muted">Nothing said here is recorded. To make it an answer, the agent that holds the ticket records it.</p></div>
+            </div>
+            <div class="msgbox"><input type="text" placeholder="Write to the support agent…" aria-label="Write to the support agent"><button class="btn primary">Send</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="relay">
+      <p class="state-caption">State: Relay waiting for Send (the exact message and the tab it goes to, before anything is posted)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab active">Support<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><span class="tab">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card chat">
+            <div class="chat-head"><span class="strong">Support agent</span><span class="spacer"></span><label class="switch small"><input type="checkbox"> Show terminal</label></div>
+            <div class="msgs" role="log" aria-label="Chat with the support agent">
+              <div class="bubble me"><p class="who">member-a</p><p>Tell the grilling agent on Sample ticket 3 to ask about the sample edge case before it moves on.</p></div>
+              <div class="bubble"><p class="who">Support agent</p><p>I will pass this on. Check it before I send it:</p>
+                <div class="card glass-strong stack" role="group" aria-label="Relay to check">
+                  <div class="row"><span class="small strong muted">To</span><span class="strong">Grilling · Sample ticket 3</span></div>
+                  <div class="row"><span class="small strong muted">Message</span><span class="badge info">from Support, for member-a</span></div>
+                  <p class="m0">Before you move on from Sample ticket 3, please also ask the room about the sample edge case.</p>
+                </div>
+                <div class="options"><button class="opt"><span class="strong">Send</span><span class="small">Post it into that tab's chat.</span></button><button class="opt"><span class="strong">Change it</span><span class="small">Say what to change in the message box.</span></button><button class="opt"><span class="strong">Cancel</span><span class="small">Nothing is sent.</span></button></div></div>
+            </div>
+            <div class="msgbox"><input type="text" placeholder="Write to the support agent…" aria-label="Write to the support agent"><button class="btn primary">Send</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="relayed">
+      <p class="state-caption">State: Relayed, seen in the target tab (the message arrives as an ordinary message, marked for whom; the reply stays in that tab)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Support<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split rev">
+          <div class="card chat">
+            <div class="chat-head"><span class="strong">Grilling agent</span><span class="small muted">· Sample ticket 3</span><span class="spacer"></span><label class="switch small"><input type="checkbox"> Show terminal</label></div>
+            <div class="msgs" role="log" aria-label="Chat with the grilling agent">
+              <div class="bubble"><p class="who">Grilling agent</p><p>Sample question 3.2: a made-up question for the room.</p></div>
+              <div class="bubble me"><p class="who"><span class="badge info">from Support, for member-a</span></p><p>Before you move on from Sample ticket 3, please also ask the room about the sample edge case.</p></div>
+              <div class="bubble"><p class="who">Grilling agent</p><p>Noted. I will add a question about the sample edge case to Sample ticket 3 before the next ticket.</p></div>
+            </div>
+            <div class="msgbox"><input type="text" placeholder="Write to the agent…" aria-label="Write to the agent"><button class="btn primary">Send</button></div>
+          </div>
+          <div class="card stack">
+            <h4>Support tab</h4>
+            <p class="note ok small">Relayed to Grilling · Sample ticket 3.</p>
+            <p class="small muted">The reply shows in that tab only. The support agent says a message went through only once Grillo confirms it.</p>
+            <a class="btn sm" href="#screen-support-agent-tab/answering">Back to Support</a>
+          </div>
         </div>
       </div>
     </div>
