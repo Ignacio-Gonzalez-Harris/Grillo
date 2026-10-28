@@ -228,7 +228,28 @@ The screen that starts it arrives with the project creation story; until then a 
 
 ## Own-time answering
 
-Nothing to do yet: own-time answering arrives with its own story.
+Answer a ticket on your own, with a grilling agent or in a form, then press **Done**. The screen opens on one ticket
+(the Tickets screen's "Answer now" opens it when that screen lands); a ticket in the pool is taken for you as it
+opens. A closed ticket, or one someone else holds, is shown with the reason and is left as it is.
+
+- **In a form:** type under a question and press **Save answer**. Your words are saved word for word as an
+  own-time source (`S<n>`, "Grillo, own-time form on ticket #<n>"), then as the answer citing it, and the question
+  turns "Answered". **Edit** changes an answer the same way: the new answer is saved first, then the old one is
+  deleted. A save that fails says why and keeps what you typed.
+- **With a grilling agent:** starts `/grillo-answer <ticket>` in the project folder and opens its tab: the ticket's
+  heading above the terminal, the questions with their answered state beside it. They refresh when the agent goes
+  quiet and when you come back to the tab. Pressing it again opens the agent already answering that ticket.
+  **In a form** goes back to the form; the agent keeps running.
+- **A transcript for the ticket** (Granola, Teams, a file): in the agent's tab press **Import a transcript (paste or
+  upload)**, paste it or press **Upload transcript file**, then **Use it**. Grillo types the transcript into the
+  agent with `use it` on its last line, then Enter; the agent takes the answers from it (treated as Listen without
+  the recording).
+- **Done:** in the form, every question answered closes the ticket ("All questions answered…"); questions still
+  open return it to the pool, unlocked, with the open ones listed. When closing it leaves no open ticket and no fog,
+  Grillo starts the PRD writer (`/grillo-prd`) in a new tab. With an agent, Done only types `done`: the agent
+  closes or releases the ticket and starts the PRD writer itself, and the panel shows the outcome once it has.
+- **Developers:** the screen's id is `own-time`, opened with `{ project: '<owner>/<repo>', ticket: '<number>' }`.
+  `npx vitest run src/renderer/screens/own-time` runs its tests against the in-memory store and fake terminals.
 
 ## PRD
 
