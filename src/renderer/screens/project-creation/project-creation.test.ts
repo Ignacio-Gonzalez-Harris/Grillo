@@ -141,6 +141,7 @@ describe('project creation: your projects and invitations', () => {
 
     type(root, 'input[aria-label="Add a domain"]', 'platform');
     click(root, 'Add domain');
+    expect(root.querySelector<HTMLInputElement>('input[aria-label="Add a domain"]')?.value).toBe('');
     click(root, 'Save and open the project');
     await until(() => navigate.mock.calls.length > 0, 'the project to open');
 

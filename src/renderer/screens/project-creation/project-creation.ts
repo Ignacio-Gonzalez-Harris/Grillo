@@ -613,8 +613,10 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
       },
     });
     const add = () => {
-      onChange(cleanDomains([...domains, domainDraft]));
+      const typed = domainDraft;
+      // Cleared before onChange redraws, so the redrawn field starts empty.
       domainDraft = '';
+      onChange(cleanDomains([...domains, typed]));
     };
     adding.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') add();
