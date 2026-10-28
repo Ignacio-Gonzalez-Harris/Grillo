@@ -25,6 +25,13 @@ const FENCE_OPEN = /^(`{3,}|~{3,})(.*)$/;
 /** The mark in any spelling a model might fake: any case, any spacing. */
 const MARK = /\[\s*from\s+support\s*,\s*for\b/i;
 const WHITESPACE_RUN = /\s+/g;
+/**
+ * A control line of the screen-to-agent protocol (`resources/skills/README.md`, "How a message is built" rule 1): the
+ * last line of a message that presses a screen button in the agent, such as `done`. A relayed message ending in one
+ * would press it in the target agent, so any spelling of these keywords, with any value, is refused. The test file
+ * derives every control line from the README's table and checks that each is refused.
+ */
+const CONTROL_LINE = /^(?:(?:present|session|mode)\s*:.*|use\s+it|skip|done|jump(?:\s.*)?)$/i;
 
 const refused = (reason: string): RelayRequest => ({ ok: false, reason });
 
@@ -54,6 +61,10 @@ function requestOf(lines: string[]): RelayRequest {
   }
   if (MARK.test(message)) {
     return refused('The message writes the mark [from Support, for …] itself; Grillo adds the mark, so leave it out');
+  }
+  const lastLine = message.split('\n').at(-1)?.trim() ?? '';
+  if (CONTROL_LINE.test(lastLine)) {
+    return refused(`The message ends with the control line '${lastLine}', which would press a screen button in the other agent; end it with a line of the member's own words`);
   }
   return { ok: true, to, text: message };
 }

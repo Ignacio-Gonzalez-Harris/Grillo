@@ -592,7 +592,8 @@ run it by hand.
   an empty line, the message, and ` ``` `. The support agent tab reads it with `readRelayRequests` from
   `resources/skills/grillo-support/relay-request.ts`, hands each good one to the agent chat protocol's relay
   (`agent-chat:relay`), and types back one line: `relayed: <tab name>`, or `not relayed: <reason>` (an unknown tab,
-  the support tab itself, or a malformed request; a message that writes the mark itself is refused).
+  the support tab itself, or a malformed request; a message that writes the mark itself, or whose last line is a
+  screen control line such as `done`, is refused so a relay can never press a screen button in the other agent).
 - **Run it by hand (developers):** in a clone of a made-up test project with a map on GitHub and `.grillo/` on
   `main`, copy `resources/skills/grillo-wayfinder/` and `resources/skills/grillo-support/` into `.claude/skills/`,
   start `claude` there and type `/grillo-support`. Without the tab nothing reads a relay request, so nothing is

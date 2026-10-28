@@ -91,6 +91,11 @@ When you are not sure of something, say so and say where the member can check it
 A fenced block whose info string is `grillo-relay`, its fences at the very start of their lines. Its first line is
 `to:` and the tab name exactly as the tab bar shows it; then one empty line; then the message, one or more lines,
 word for word as the member said yes to it. Nothing else goes in the block: no mark, no login, no other header line.
+When the message holds a line of three or more backticks of its own, open and close the block with more backticks
+than any such line (````` ````grillo-relay `````), or the block ends early and the rest of the message is lost. The
+message's last line must be the member's own words, never a screen's control line (`done`, `use it`, `skip`,
+`jump <N>`, `present:`, `session:`, `mode:`): in the other agent it would press that screen button, so Grillo
+refuses it.
 
 ```grillo-relay
 to: Grilling · Who may lend tools
