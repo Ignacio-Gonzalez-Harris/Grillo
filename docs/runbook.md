@@ -401,6 +401,36 @@ one system notification, "Tickets waiting for your answer", naming each ticket a
   notifier. The nudges read the app's one store (`appStore` in `src/main/features/store/ipc.ts`), the same
   instance the screens reach over IPC, so one queue guards each project folder.
 
+## Generic agent
+
+The generic agent is the skill `grillo-generic`, shipped into the project folder beside `grillo-wayfinder`. "+" on
+the tab bar starts it; the generic agent tab screen arrives with its own story, and until then a developer can run it
+by hand.
+
+- **What it does:** `/grillo-generic` asks you to paste the material (a customer email, a document) or tell it in
+  your own words, then asks who it is from, when, and how it reached you. It saves the material word for word as a
+  source `.grillo/sources/S<n>.md`; with no written source, your own words are the source (your name, the date, how
+  you heard it, your exact words).
+- **Every clash first:** before changing anything, it runs the contradiction check and shows every clash with a
+  recorded answer or decision, quoting it, and asks you how to settle it. Your words that settle a clash become a
+  source of their own.
+- **Nothing changes without your yes:** it lists the changes (sources, new tickets or questions, answers recorded or
+  changed, fog and out-of-scope lines, finished tickets) and writes only the ones you say yes to.
+- **Every change is marked** "<login>, via generic agent, <date>": answers, discussions and decisions carry
+  `via: generic-agent` in their header lines; a new ticket's "Why it matters", an added question, assumption, fog or
+  out-of-scope line ends with `(<login>, via generic agent, <YYYY-MM-DD>)`; a fog line taken off or a question removed
+  leaves a marked line in the map's Notes. Earlier answers and sources are never edited: a changed answer is a new
+  answer comment, and a clash with a closed ticket opens a `Revisit: <title>` ticket instead of reopening it.
+- **The conversation is kept:** every answer it records is followed by a discussion comment holding the chat word for
+  word, the pasted material shown as `(pasted: source S<n>)`.
+- **Run it by hand (developers):** in a clone of a made-up test project with a map and tickets on GitHub, copy
+  `resources/skills/grillo-generic/` and `resources/skills/grillo-wayfinder/` into `.claude/skills/`, start `claude`
+  there, type `/grillo-generic` and paste a made-up email. Never use a real customer email.
+- **Developers:** `npx vitest run resources/skills/grillo-generic` checks the skill's frontmatter and command against
+  the catalogue, the records it teaches against the store's own parsers, and two fixtures (before a pasted email that
+  clashed with a recorded answer, and after the run) against the store layout and the generic agent's rules: every
+  change marked, every answer followed by its discussion, nothing earlier rewritten.
+
 ## PRD
 
 The PRD writer is the skill `grillo-prd`, shipped into the project folder beside `grillo-wayfinder`. Read, export
