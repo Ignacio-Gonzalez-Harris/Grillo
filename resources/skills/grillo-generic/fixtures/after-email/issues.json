@@ -1,0 +1,57 @@
+{
+  "map": { "number": 1, "title": "Map", "labels": ["wayfinder:map"], "state": "open", "body": "issues/1.md" },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "How members borrow tools",
+      "labels": ["wayfinder:grilling", "domain:product"],
+      "state": "closed",
+      "assignee": "ada-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": [
+        { "id": "2001", "author": "ada-example", "createdAt": "2026-10-24T09:11:00.000Z", "body": "comments/2001.md" },
+        { "id": "2002", "author": "ada-example", "createdAt": "2026-10-24T09:25:00.000Z", "body": "comments/2002.md" }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Who may lend tools",
+      "labels": ["wayfinder:grilling", "domain:none"],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [2],
+      "body": "issues/3.md",
+      "comments": [
+        { "id": "3001", "author": "cleo-example", "createdAt": "2026-10-24T12:00:00.000Z", "body": "comments/3001.md" },
+        { "id": "3002", "author": "ben-example", "createdAt": "2026-10-24T13:01:00.000Z", "body": "comments/3002.md" },
+        { "id": "3003", "author": "ben-example", "createdAt": "2026-10-26T10:07:00.000Z", "body": "comments/3003.md" },
+        { "id": "3004", "author": "ben-example", "createdAt": "2026-10-26T10:07:00.000Z", "body": "comments/3004.md" }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "How many tools go missing",
+      "labels": ["wayfinder:research", "domain:platform"],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/4.md",
+      "comments": []
+    },
+    {
+      "number": 5,
+      "title": "Whether guests from partner gardens may borrow",
+      "labels": ["wayfinder:grilling"],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/5.md",
+      "comments": []
+    }
+  ]
+}
