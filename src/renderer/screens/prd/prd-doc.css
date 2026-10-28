@@ -1,0 +1,64 @@
+/*
+ * A PRD version as a document: on the PRD view (inside the card `.prd-doc`) and, inlined with tokens.css, as the
+ * whole style of the exported HTML file (`body.prd-export`). Ported from the prototype's `.doc`, `.code-chip` and
+ * table rules (docs/ux/prototypes/grillo/index.html, screen-prd-view). Every colour, spacing, radius and size comes
+ * from theme/tokens.css.
+ */
+
+/* ---------- The exported file's page: the app's backdrop, type and width ---------- */
+body.prd-export {
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-m);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.45;
+  color: var(--color-text);
+  background: linear-gradient(135deg, var(--color-backdrop-1), var(--color-backdrop-2) 50%, var(--color-backdrop-3));
+  min-height: 100vh;
+}
+body.prd-export *, body.prd-export *::before, body.prd-export *::after { box-sizing: border-box; }
+body.prd-export .prd-doc {
+  max-width: var(--size-content-max);
+  margin: 0 auto;
+  padding: var(--space-5);
+  background: var(--color-glass-fill-strong-fallback);
+  border: var(--border-width) solid var(--color-glass-border-fallback);
+  border-radius: var(--radius-l);
+}
+body.prd-export a { color: var(--color-accent); }
+
+/* ---------- The document ---------- */
+.prd-doc { overflow-wrap: anywhere; }
+.prd-doc h1, .prd-doc h2, .prd-doc h3, .prd-doc h4, .prd-doc h5, .prd-doc h6 { font-weight: var(--font-weight-strong); line-height: 1.25; margin: var(--space-5) 0 var(--space-3); }
+.prd-doc h1 { font-size: var(--font-size-xl); }
+.prd-doc h2 { font-size: var(--font-size-l); }
+.prd-doc h3, .prd-doc h4, .prd-doc h5, .prd-doc h6 { font-size: var(--font-size-m); }
+.prd-doc > :first-child, .prd-doc .appendix > :first-child { margin-top: 0; }
+.prd-doc p, .prd-doc li { line-height: 1.6; }
+.prd-doc p { margin: 0 0 var(--space-2); }
+.prd-doc ul, .prd-doc ol { margin: 0 0 var(--space-3); padding-left: var(--space-5); }
+.prd-doc blockquote { margin: 0 0 var(--space-3); padding: var(--space-1) var(--space-3); border-left: var(--focus-ring-width) solid var(--color-divider); color: var(--color-text-muted); }
+.prd-doc code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); }
+.prd-doc pre { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-3); border-radius: var(--radius-s); overflow-x: auto; }
+.prd-doc pre code { background: none; padding: 0; }
+.prd-doc hr { border: 0; border-top: var(--border-width) solid var(--color-divider); margin: var(--space-5) 0; }
+
+/* The audit appendix starts below a hairline, so where the PRD ends is plain. */
+.prd-doc .appendix { margin-top: var(--space-6); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-divider); }
+
+/* ---------- Trace codes: [S4, Q12.3] and [no source] ---------- */
+.prd-doc .code-chip { font-family: var(--font-family-mono); font-size: var(--font-size-s); color: var(--color-accent); background: var(--color-accent-soft); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); white-space: nowrap; }
+.prd-doc .code-chip a { color: inherit; }
+.prd-doc .code-chip.nosrc { color: var(--color-warning); background: var(--color-warning-soft); }
+
+/* ---------- Tables ---------- */
+.prd-doc table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 0 0 var(--space-3); font-size: var(--font-size-s); }
+.prd-doc th, .prd-doc td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: var(--border-width) solid var(--color-divider); vertical-align: top; }
+.prd-doc th { color: var(--color-text-muted); font-weight: var(--font-weight-strong); white-space: nowrap; }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  body.prd-export { padding: var(--space-4); }
+  body.prd-export .prd-doc { padding: var(--space-4); }
+}
