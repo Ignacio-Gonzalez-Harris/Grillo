@@ -121,8 +121,9 @@ export function scoreCard(options: ScoreCardOptions): HTMLElement {
 
   const head = el('div', 'row', [el('h3', 'm0', ['Score'])]);
   if (score !== null) head.append(el('span', 'score-big', [overallText(score.overall)]), el('span', 'muted', [`out of ${HIGHEST_MARK}`]));
-  if (options.scoring) head.append(badge('Scoring…', 'warn'));
+  // A scorer only ever scores the latest version, so only its panel is labelled Scoring and offers Rerun.
   if (options.canRerun) {
+    if (options.scoring) head.append(badge('Scoring…', 'warn'));
     head.append(el('span', 'spacer'), button('Rerun', { disabled: options.disabled || options.scoring, onClick: options.onRerun }));
   }
 

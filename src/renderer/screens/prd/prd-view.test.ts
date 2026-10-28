@@ -460,6 +460,16 @@ describe('PRD view: Score', () => {
     expect(buttonNamed(panel(content()), 'Rerun')?.disabled).toBe(false);
   });
 
+  it('labels only the latest version Scoring while a Rerun runs, since an earlier score does not change', async () => {
+    const { content } = await scored();
+
+    await click(panel(content()), 'Rerun');
+    await click(versionRow(content(), 1), 'Open');
+
+    expect(panel(content()).getAttribute('aria-label')).toBe('Score of version 1');
+    expect(text(panel(content()))).not.toContain('Scoring…');
+  });
+
   it('shows a score it cannot read as an error in the panel, and keeps the PRD on show', async () => {
     const { store, content, openPrdTab } = await app();
     await store.createPrdVersion(PROJECT, V1);
