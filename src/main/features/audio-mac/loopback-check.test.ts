@@ -142,6 +142,32 @@ describe('firstFrameArrives', () => {
     expect(copy.stop).toHaveBeenCalled();
   });
 
+  it.each<[string, TrackProcessorConstructor]>([
+    [
+      'the processor cannot be built',
+      vi.fn(function () {
+        throw new DOMException('track not supported', 'NotSupportedError');
+      }) as unknown as TrackProcessorConstructor,
+    ],
+    [
+      'its reader cannot be opened',
+      vi.fn(function () {
+        return {
+          readable: {
+            getReader: () => {
+              throw new TypeError('stream locked');
+            },
+          },
+        };
+      }) as unknown as TrackProcessorConstructor,
+    ],
+  ])('throws when %s, leaving the copy of the track stopped', async (_name, Processor) => {
+    const { copy, original } = cloneableTrack();
+
+    await expect(firstFrameArrives(original, FIRST_FRAME_TIMEOUT_MS, Processor)).rejects.toThrow();
+    expect(copy.stop).toHaveBeenCalled();
+  });
+
   it('throws when the page has no track processor, which the caller reports as unsupported', async () => {
     await expect(firstFrameArrives(cloneableTrack().original, FIRST_FRAME_TIMEOUT_MS, undefined)).rejects.toThrow(
       /MediaStreamTrackProcessor/,

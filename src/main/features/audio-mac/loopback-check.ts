@@ -103,23 +103,26 @@ export async function firstFrameArrives(
 ): Promise<boolean> {
   if (Processor === undefined) throw new Error('This page has no MediaStreamTrackProcessor to read audio frames');
   const copy = track.clone();
-  const reader = new Processor({ track: copy }).readable.getReader();
+  let reader: ReturnType<InstanceType<TrackProcessorConstructor>['readable']['getReader']> | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timedOut = new Promise<false>((resolve) => {
-    timer = setTimeout(() => resolve(false), timeoutMs);
-  });
-  const frame = reader.read().then(
-    ({ done, value }) => {
-      value?.close();
-      return !done;
-    },
-    () => false,
-  );
   try {
+    // Built inside the `try`, so a processor or reader that cannot open still leaves the copy stopped.
+    const opened = new Processor({ track: copy }).readable.getReader();
+    reader = opened;
+    const timedOut = new Promise<false>((resolve) => {
+      timer = setTimeout(() => resolve(false), timeoutMs);
+    });
+    const frame = opened.read().then(
+      ({ done, value }) => {
+        value?.close();
+        return !done;
+      },
+      () => false,
+    );
     return await Promise.race([frame, timedOut]);
   } finally {
     clearTimeout(timer);
-    reader.cancel().catch(() => undefined);
+    reader?.cancel().catch(() => undefined);
     copy.stop();
   }
 }
