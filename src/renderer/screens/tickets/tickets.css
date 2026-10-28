@@ -35,6 +35,7 @@
 .tickets-screen .tag.none { background: var(--color-tag-none); }
 .tickets-screen .tag button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
 .tickets-screen .tag button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+.tickets-screen code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); }
 .tickets-screen .code-chip { font-family: var(--font-family-mono); font-size: var(--font-size-s); color: var(--color-accent); background: var(--color-accent-soft); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); white-space: nowrap; }
 
 /* ---------- Discussion word for word ---------- */

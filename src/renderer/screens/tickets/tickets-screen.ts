@@ -3,7 +3,8 @@
  * `screen-ticket-management`): the member's own list first (taken by or sent to them, their domains, everything else),
  * then per ticket its questions with their answered state and source, tags changed by hand, Take, Send, Reassign and
  * Release under the store's claim rule, Edit, Merge, Close as out of scope, Undo on a recorded answer, and Answer now.
- * "Pick up GitHub comments" starts the agent that turns members' GitHub comments into answers.
+ * "Pick up GitHub comments" starts the agent that turns members' GitHub comments into answers. Release 3: a research,
+ * prototype or task ticket gets a launch control that opens an agent tab running its catalogue command (`launch/`).
  *
  * A merge or close from here involves no agent, so a `mapDone` result starts the PRD writer (the map-done rule). The
  * screen reads the store afresh whenever an agent goes quiet, since agents answer, tag and close tickets as they work.
@@ -29,6 +30,7 @@ import { choice, codeChip, domainTags, el, kindBadge, kindChoice, messageOf, not
 import { OWN_TIME_SCREEN } from '../own-time/agent-panel';
 import type { QuestionView } from '../own-time/ticket';
 import { startCommentPickup, startPrdWriter } from './agents';
+import { launchControl, launchState, startKindAgent, type Launch } from './launch/launch';
 import {
   answerLine,
   firstTicket,
@@ -110,6 +112,8 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
   let pickupAgent: AgentId | null = null;
   let prdWriter: AgentId | null = null;
   let prdError: string | null = null;
+  /** The running agent tabs, so a ticket whose agent still runs is not launched twice. */
+  let agents: readonly AgentInfo[] = [];
   /** Bumped on every detail read, so a slower earlier read never overwrites a later one. */
   let detailRead = 0;
 
@@ -294,6 +298,14 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
     });
   }
 
+  /** Starts the ticket's research, prototype or task agent and opens its tab. */
+  function launchAgent(ticket: Ticket, launch: Launch): Promise<void> {
+    return act(async (project) => {
+      const agentId = await startKindAgent(grillo, await projectFolder(store, project), ticket, launch);
+      if (!disposed) navigate(AGENT_SCREEN, { agentId });
+    });
+  }
+
   // ---------- The list ----------
 
   function listRow(ticket: Ticket, view: TicketsView, declared: string[]): HTMLElement {
@@ -413,24 +425,40 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
   function claimRows(ticket: Ticket, view: TicketsView, answered: boolean): HTMLElement[] {
     const { member, project } = view;
     const others = project.members.filter((candidate) => !sameLogin(candidate.login, member.login));
+    const launch = launchControl(launchState(ticket, member, agents), ticket, { busy, onLaunch: (chosen) => void launchAgent(ticket, chosen) });
+    const first: HTMLElement[] = launch.button ? [launch.button] : [];
+    const hint: HTMLElement[] = launch.hint ? [launch.hint] : [];
     if (ticket.assignee === null) {
-      const take = button('Take', { variant: 'primary', disabled: busy, onClick: () => void write(() => store.claimTicket(ticket.id)) });
+      const take = button('Take', {
+        variant: launch.button ? undefined : 'primary',
+        disabled: busy,
+        onClick: () => void write(() => store.claimTicket(ticket.id)),
+      });
       const send = memberAction('Send', 'Send to…', others, member, (login) => store.sendTicket(ticket.id, login));
-      return [el('div', 'row', [take, ...send, el('span', 'spacer'), ...manageActions(ticket, view)])];
+      return [el('div', 'row', [...first, take, ...send, el('span', 'spacer'), ...manageActions(ticket, view)]), ...hint];
     }
 
     const rows: HTMLElement[] = [];
     if (isMine(ticket, member)) {
       const release = button('Release', { disabled: busy, onClick: () => void write(() => store.releaseTicket(ticket.id)) });
       rows.push(
-        el('div', 'row', [release, el('span', 'small muted', ['Back to the pool, unlocked.']), el('span', 'spacer'), ...manageActions(ticket, view)]),
+        el('div', 'row', [
+          ...first,
+          release,
+          el('span', 'small muted', ['Back to the pool, unlocked.']),
+          el('span', 'spacer'),
+          ...manageActions(ticket, view),
+        ]),
+        ...hint,
       );
     } else {
       rows.push(
         el('div', 'row', [
+          ...first,
           button('Take', { disabled: true }),
           el('span', 'reason', [`Assigned to ${ticket.assignee}. You can still read and discuss it.`]),
         ]),
+        ...hint,
       );
     }
     if (answered) {
@@ -617,13 +645,18 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
   }
 
   let waiting = new Map<AgentId, boolean>();
+  /** The running tabs by kind and name: what decides whether a ticket's agent still runs. */
+  const tabNames = (list: readonly AgentInfo[]): string => list.map((agent) => `${agent.kind}:${agent.title}`).join('\n');
   const stopTabs = deps.onAgentTabs((list) => {
     const now = new Map(list.map((agent) => [agent.id, agent.waiting === true]));
     // An agent that went quiet after working, or that stopped, may have answered, tagged or closed tickets.
     const quieted =
       [...now].some(([id, isWaiting]) => isWaiting && waiting.get(id) === false) || [...waiting.keys()].some((id) => !now.has(id));
     waiting = now;
+    const tabsChanged = tabNames(list) !== tabNames(agents);
+    agents = list;
     if (quieted) void refresh();
+    else if (tabsChanged) draw();
   });
 
   async function load(): Promise<void> {

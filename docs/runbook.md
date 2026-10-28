@@ -205,6 +205,11 @@ built the map.
 - **Answer now** opens the own-time screen on the ticket; a ticket someone else holds has none, since only they answer it.
 - **Pick up GitHub comments** shows while members' plain comments on open tickets wait to be recorded. It opens a
   grilling agent in its own tab that types `/grillo-answer pickup`; the answers appear when the agent goes quiet.
+- **Launch research agent**, **Launch prototype agent** or **Launch task agent** (release 3) sits first on an open
+  research, prototype or task ticket, with a line saying the command it runs. It opens an agent of that kind in a tab
+  named "<Kind> · <ticket title>" that types `/grillo-research <n>`, `/grillo-prototype <n>` or `/grillo-task <n>`,
+  and shows that tab. A grilling ticket has no launch control. The control is greyed out, saying why, while that
+  ticket's tab still runs or while any member (you included) holds the ticket: release it first to launch it.
 - **An archived project** stays readable here, with every change control gone.
 
 ## Agents
@@ -619,8 +624,8 @@ run it by hand.
 ## Research, prototype and task agents
 
 Release 3 adds one agent for each of the other three ticket kinds: the skills `grillo-research`, `grillo-prototype`
-and `grillo-task`, shipped into the project folder beside `grillo-wayfinder`. The launch control on ticket management
-arrives with its own story; until then a developer can run them by hand. You may still work such a ticket as grilling
+and `grillo-task`, shipped into the project folder beside `grillo-wayfinder`. Launch one from its ticket on the Tickets tab (see
+"The tickets screen"); a developer can also run them by hand. You may still work such a ticket as grilling
 with `/grillo-answer <ticket number>`.
 
 - **Each command works one ticket of its own kind**: `/grillo-research <ticket number>`, `/grillo-prototype <ticket
