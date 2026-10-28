@@ -121,7 +121,9 @@ export function createAgentTabs(shell: ShellContext, panels: TabPanels): AgentTa
   function close(agentId: AgentId, session: Session): void {
     session.mounted.forEach((panel) => safely(agentId, 'close', () => panel.dispose?.()));
     session.headerSlots.forEach((slot) => slot.remove());
-    session.root.remove();
+    // An agent that stops while its tab is open leaves the message, never an empty screen.
+    if (session.root.isConnected) session.root.replaceWith(notRunning());
+    else session.root.remove();
     sessions.delete(agentId);
   }
 

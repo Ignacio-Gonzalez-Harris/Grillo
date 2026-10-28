@@ -16,7 +16,10 @@ Every screen sits in one window: the title bar ("Grillo" and where you are), the
   text stays readable. To preview it, open the developer tools console and run
   `document.body.classList.add('no-glass')`.
 - **Developers.** A new screen is a new folder `src/renderer/screens/<name>/index.ts` exporting `id`, `title` and
-  `mount(el, params, shell)`; no shared file changes. Every colour and spacing value is a `var(--...)` token from
+  `mount(el, params, shell)`; no shared file changes. It may also export `start(shell)`, run once when the shell
+  starts (for work that outlives the screen; it may return a cleanup function), and `shell.onAgentTabs(listener)`
+  tells it the agent tabs now and after every change, once each tab's header slot (`shell.agentTabHeader(id)`)
+  exists. Every colour and spacing value is a `var(--...)` token from
   `src/renderer/theme/tokens.css`, an exact copy of the UX prototype's token file: the token lint test fails on a
   literal value, and on a copy that differs from the prototype.
 

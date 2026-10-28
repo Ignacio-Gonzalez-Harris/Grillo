@@ -196,6 +196,19 @@ describe('agent tab', () => {
     expect(views).toHaveLength(0);
   });
 
+  it('says the agent is not running, in place of its panels, when it stops while its tab is open', async () => {
+    const { grillo, startAgent } = runtime();
+    const { panel } = fakeTerminalBody();
+    const root = open(screenWith([panel]), grillo);
+    const { id } = await startAgent('task', 'Task · Sample ticket 5');
+    shell?.navigate('agent-tab', { agentId: id });
+
+    await grillo.invoke('agents:stop', { id });
+
+    expect(content(root).querySelector('.agent-tab')).toBeNull();
+    expect(content(root).textContent).toBe('This agent is not running.');
+  });
+
   it("takes an agent's panels down when it stops, and says so if its tab is opened after", async () => {
     const { grillo, startAgent } = runtime();
     const { panel, views } = fakeTerminalBody();
