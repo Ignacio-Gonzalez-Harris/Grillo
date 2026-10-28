@@ -1,0 +1,1 @@
+The UX prototype gains the release 2 and 3 screens (chat view, support agent tab, PRD score, agent launch on tickets), the extra grilling agent control and the update pop-up, so the front-end stories waiting on them have a design to follow.
