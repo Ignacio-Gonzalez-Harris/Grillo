@@ -1,0 +1,67 @@
+{
+  "overall": 6.8,
+  "criteria": [
+    {
+      "name": "Clear",
+      "mark": 8,
+      "comment": "Short statements in plain words, but taking a tool out \"for good\" [S5, Q3.2] is never defined, so readers may take it to mean sold, binned or retired. Suggestion: say in one statement what happens to a tool taken out for good, such as it leaves the list of tools."
+    },
+    {
+      "name": "Complete",
+      "mark": 6,
+      "comment": "A loan starts and has a week limit [S3, Q2.3], but nothing says how a tool comes back or what happens when the week runs out, so a builder cannot finish the borrowing flow. Suggestion: ask the members how a member returns a tool and what happens to a late one, and add both as statements."
+    },
+    {
+      "name": "Verifiable",
+      "mark": 6,
+      "comment": "Most statements can be checked, but the one saying the shed screen shows who has each tool is [no source], so nobody has confirmed it is wanted, let alone how fast it must update. Suggestion: confirm or remove it through \"Talk to an agent about this PRD\" on the PRD view."
+    },
+    {
+      "name": "Tied to objectives",
+      "mark": 5,
+      "comment": "The Problem states the loss, 6 of 40 tools [S6, Q4.1], but sets no goal, so no statement can be checked against an outcome. Suggestion: decide a target such as at most one missing tool at the next autumn count, and say which flows serve it."
+    },
+    {
+      "name": "Consistent",
+      "mark": 9,
+      "comment": "No two statements contradict each other, and the shed keeper's powers agree across Users and roles and Permissions. Suggestion: say \"key-card holder\" wherever only key-card holders are meant, since Permissions narrows \"member\" to them."
+    },
+    {
+      "name": "Feasible",
+      "mark": 8,
+      "comment": "A key-card reader and one shed screen are ordinary hardware for a community garden, but no statement says the shed has power or a network. Suggestion: confirm with the members that the shed can run a screen and a reader, and add it as a statement."
+    },
+    {
+      "name": "Needs, not solutions",
+      "mark": 6,
+      "comment": "The key-card reader [S2, Q2.1] fixes how members borrow before the need behind it is stated, so a cheaper way could never be weighed. Suggestion: state the need first, such as only known members can borrow, and keep the reader as the chosen way to meet it."
+    },
+    {
+      "name": "Scope and priorities",
+      "mark": 4,
+      "comment": "Nothing says what the first version must do or what is left out, so a builder cannot tell a must from a nice-to-have. Suggestion: ask the members what is out of scope and which flows the first version needs, and add both as statements."
+    }
+  ],
+  "sections": [
+    {
+      "name": "Problem",
+      "mark": 6,
+      "comment": "One decided fact, the loss at the autumn count [S6, Q4.1], but not who it hurts or what outcome the garden wants. Suggestion: add the outcome the garden wants, such as fewer missing tools at the next count."
+    },
+    {
+      "name": "Users and roles",
+      "mark": 8,
+      "comment": "Both roles are decided [S7, Q6.1], but not whether the shed keeper also borrows like any member. Suggestion: ask whether the shed keeper borrows like everyone else, and say so."
+    },
+    {
+      "name": "Flows",
+      "mark": 5,
+      "comment": "Borrowing and the week limit are decided, but one of the three statements is [no source] and returning a tool is missing. Suggestion: confirm the shed screen statement with the members and add the return flow."
+    },
+    {
+      "name": "Permissions",
+      "mark": 9,
+      "comment": "Who may lend and who may take a tool out for good are both decided [S4, Q3.1] [S5, Q3.2]. Suggestion: say who may add a tool to the list or take one off it."
+    }
+  ]
+}
