@@ -12,6 +12,8 @@ export const PRD_COMMAND = '/grillo-prd';
 /** The control lines this screen types (`resources/skills/README.md`, The messages). */
 export const DONE_LINE = 'done';
 export const USE_IT_LINE = 'use it';
+/** What the member sees once Done has been typed into the agent answering the ticket. */
+export const DONE_SENT = 'Done sent. The agent closes the ticket, or returns it to the pool with its open questions, then stops.';
 /** The PRD writer's tab name. */
 export const PRD_WRITER_TITLE = agentTitle('grilling', 'PRD');
 

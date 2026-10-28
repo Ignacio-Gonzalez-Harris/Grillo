@@ -14,7 +14,7 @@ import type { GrilloApi } from '../../../shared/ipc';
 import { AGENT_SCREEN } from '../../app/navigation';
 import type { ScreenParams } from '../../app/screens';
 import { badge, button } from '../../theme/components';
-import { startAnsweringAgent, startPrdWriter, type OwnTimeAgents } from './agents';
+import { DONE_SENT, sendDone, startAnsweringAgent, startPrdWriter, type OwnTimeAgents } from './agents';
 import {
   finishTicket,
   projectFolder,
@@ -72,6 +72,8 @@ export function mountOwnTime(container: HTMLElement, params: ScreenParams, deps:
   let phase: Phase = { name: 'loading' };
   let busy = false;
   let actionError: string | null = null;
+  /** True once Done went to the agent answering this ticket instead of to the store. */
+  let doneSentToAgent = false;
   /** What the member has typed per question and not yet saved; it survives every redraw. */
   const drafts = new Map<string, string>();
   /** Answered questions the member is changing. */
@@ -169,6 +171,14 @@ export function mountOwnTime(container: HTMLElement, params: ScreenParams, deps:
 
   function done(id: TicketId): Promise<void> {
     return act(async () => {
+      // An agent this screen started is still answering the ticket: it closes or releases it, so Done goes to it
+      // (the map-done rule: one path per close, never both).
+      const agentId = agents.agentFor(id, await runningAgents(grillo));
+      if (agentId !== undefined) {
+        await sendDone(grillo, agentId);
+        doneSentToAgent = true;
+        return;
+      }
       const result = await finishTicket(store, id);
       let prdWriter: AgentId | null = null;
       let prdError: string | null = null;
@@ -187,9 +197,14 @@ export function mountOwnTime(container: HTMLElement, params: ScreenParams, deps:
     const choose = (choice: AnswerWith) => {
       if (choice === 'agent') void answerWithAgent(view);
     };
-    const doneButton = button('Done', { variant: 'primary', disabled: busy, onClick: () => void done(view.ticket.id) });
+    const doneButton = button('Done', {
+      variant: 'primary',
+      disabled: busy || doneSentToAgent,
+      onClick: () => void done(view.ticket.id),
+    });
     return [
       headingRow(view, 'form', choose),
+      ...(doneSentToAgent ? [note(DONE_SENT)] : []),
       ...(actionError ? [note(actionError, 'err')] : []),
       ...view.questions.map((question) => questionCard(view, question)),
       el('div', 'row', [el('span', 'spacer'), el('span', 'small muted', [DONE_HINT]), doneButton]),

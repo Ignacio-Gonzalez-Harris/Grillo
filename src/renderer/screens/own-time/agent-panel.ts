@@ -13,7 +13,7 @@ import type { AgentInfo } from '../../../shared/agents';
 import { createStoreClient } from '../../../shared/store';
 import { button } from '../../theme/components';
 import type { TabPanel } from '../agent-tab/tab-panels';
-import { sendDone, sendUseIt, type OwnTimeAgents } from './agents';
+import { DONE_SENT, sendDone, sendUseIt, type OwnTimeAgents } from './agents';
 import { readTicketView, type TicketView } from './ticket';
 import { closedOutcome, el, headingRow, messageOf, note, questionRows, releasedOutcome } from './view';
 
@@ -22,7 +22,6 @@ export const OWN_TIME_SCREEN = 'own-time';
 /** Above other grilling controls, so the questions come first in the column. */
 export const OWN_TIME_PANEL_PRIORITY = 10;
 
-const DONE_SENT = 'Done sent. The agent closes the ticket, or returns it to the pool with its open questions, then stops.';
 const TRANSCRIPT_SENT = 'Transcript sent with "use it": the agent takes the answers from it and records them.';
 const TRANSCRIPT_FILES = '.txt,.md,.vtt,.srt,text/plain';
 

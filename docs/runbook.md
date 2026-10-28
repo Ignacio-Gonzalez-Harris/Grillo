@@ -273,6 +273,8 @@ opens. A closed ticket, or one someone else holds, is shown with the reason and 
   open return it to the pool, unlocked, with the open ones listed. When closing it leaves no open ticket and no fog,
   Grillo starts the PRD writer (`/grillo-prd`) in a new tab. With an agent, Done only types `done`: the agent
   closes or releases the ticket and starts the PRD writer itself, and the panel shows the outcome once it has.
+  The form's Done does the same while the agent it started for that ticket is still running, so the ticket is
+  never closed twice.
 - **Developers:** the screen's id is `own-time`, opened with `{ project: '<owner>/<repo>', ticket: '<number>' }`.
   `npx vitest run src/renderer/screens/own-time` runs its tests against the in-memory store and fake terminals.
 

@@ -449,6 +449,24 @@ describe('own-time answering: with a grilling agent', () => {
     );
   });
 
+  it("sends the form's Done to the agent still answering the ticket instead of closing it a second way", async () => {
+    const { store, ticket, ptys, starts, content, code, open } = await app();
+    for (const k of [1, 2, 3]) await store.createAnswer(ticket.id, answerFrom(code(k), 'Sample answer.'));
+    await open();
+    await click(content(), 'With a grilling agent');
+    await click(panel(content()) as HTMLElement, 'In a form');
+
+    await click(content(), 'Done');
+
+    expect(ptys[0].written).toEqual(['done', '\r']);
+    expect(await store.getTicket(ticket.id)).toMatchObject({ state: 'open', assignee: 'ada-example' });
+    expect(starts).toHaveLength(1);
+    expect(text(content().querySelector('.own-time > .note'))).toBe(
+      'Done sent. The agent closes the ticket, or returns it to the pool with its open questions, then stops.',
+    );
+    expect(buttonNamed(content(), 'Done')?.disabled).toBe(true);
+  });
+
   it('refreshes the answered states when the agent goes quiet after recording an answer', async () => {
     const { store, ticket, ptys, content, code, open } = await app();
     await open();
