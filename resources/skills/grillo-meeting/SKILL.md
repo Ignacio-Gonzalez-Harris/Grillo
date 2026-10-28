@@ -79,7 +79,7 @@ line and carry on.
 | `mode: type` | From the question at hand on, the member's next plain message is the answer to the question at hand, recorded with no discussion. |
 | `use it` | The lines above it are the chunk. With the kept talk before it, it is the talk about the question at hand: [record it from the talk](#recording-an-answer). An empty chunk records nothing: say nothing was heard. |
 | `skip` | Leave the question at hand unanswered and ask the ticket's next open question. After its last one, [leave the ticket](#leaving-a-ticket) and pick the next ticket. |
-| `jump <ticket number>` | Re-read that ticket. Closed, not a Grillo ticket (no `wayfinder:grilling`, `wayfinder:research`, `wayfinder:prototype` or `wayfinder:task` label), or assigned to another login: refuse in one line, saying who holds it, and the ticket at hand goes on. Otherwise [leave the ticket at hand](#leaving-a-ticket), claim that one and walk its open questions, whatever its domains; an open blocker is named in one line and does not stop the jump. |
+| `jump <ticket number>` | Re-read that ticket. Closed, not a Grillo ticket (no `wayfinder:grilling`, `wayfinder:research`, `wayfinder:prototype` or `wayfinder:task` label), or assigned to another login: refuse in one line, saying who holds it, and the ticket at hand goes on. Otherwise [hold it in this session](#holding-a-ticket-in-this-session) (held by another grilling agent of this session: refuse the same way), [leave the ticket at hand](#leaving-a-ticket), claim that one and walk its open questions, whatever its domains; an open blocker is named in one line and does not stop the jump. |
 | `done` | [Leave the ticket at hand](#leaving-a-ticket), then pick the next ticket. |
 
 - **Transcript above `present:`, `session:` or `mode:`** is talk about the question at hand: keep it for that
@@ -99,13 +99,39 @@ line and carry on.
 3. Leave out the tickets you already left in this session with questions still open: the room has heard them. The
    host can `jump` back to one.
 4. Take the one with the lowest issue number. Tickets of absent domains stay on the map for another day.
-5. Claim it (`grillo-wayfinder`, "Claiming a ticket"). Lost to another laptop: take the next one.
+5. [Hold it in this session](#holding-a-ticket-in-this-session), then claim it (`grillo-wayfinder`, "Claiming a
+   ticket"). Held by another grilling agent of this session, or lost to another laptop: take the next one.
 6. Read it in full with its comments, say its title in one line, and ask its first open question (a live question no
    answer comment names yet), in plain words a newcomer would follow, as grillo-wayfinder grills
    (`grillo-wayfinder`, "The four kinds of ticket"). In Type mode offer clickable options (`AskUserQuestion`) with
    your recommendation marked; in Listen mode ask aloud in one short paragraph the host can read to the room.
 7. **Nothing matches:** say so in one line, naming how many open tickets wait for absent domains, and wait for the
    next presence message or a `jump`.
+
+## Holding a ticket in this session
+
+The host can open more grilling agents in a running session ("Open another grilling agent"). They all run on the
+host's laptop and act for the same member, so to GitHub they are one login and the claim rule alone cannot keep them
+apart. Before you claim any ticket, hold it in this session, so two grilling agents never work the same ticket:
+
+1. **Hold it**, in the project folder. `<session id>` is the session file's name without `.md`, from the `session:`
+   message (`no-session` before one arrives); `<ticket number>` is the ticket's number:
+
+   ```bash
+   mkdir -p .git/meeting-holds/<session id> && mkdir .git/meeting-holds/<session id>/<ticket number>
+   ```
+
+   Only one agent can make that folder, and it lives inside `.git`, so it is never committed. Made: the ticket is
+   yours in this session. `mkdir` says it exists: another grilling agent of this session holds the ticket; say so in
+   one line, write nothing on it, and take the next ticket on the frontier (or refuse the jump). The ticket at hand
+   is already held by you.
+2. **Claim it** (`grillo-wayfinder`, "Claiming a ticket"). Lost to another login: let go of the hold and take the
+   next ticket.
+3. **Let go** when you leave the ticket or lose its claim:
+
+   ```bash
+   rmdir .git/meeting-holds/<session id>/<ticket number>
+   ```
 
 ## Recording an answer
 
@@ -175,6 +201,8 @@ Every answer follows `.claude/skills/grillo-wayfinder/references/record-answer.m
   again.
 - **Questions still open:** release the ticket (`gh issue edit <N> --remove-assignee @me`). It returns to the pool,
   unlocked, its open questions visible.
+- **Either way**, then [let go of its hold](#holding-a-ticket-in-this-session), so another grilling agent of this
+  session may take it.
 
 Then report in one line: the ticket's title, the decision (or how many questions stay open), and the next ticket.
 
@@ -198,4 +226,5 @@ Then report in one line: the ticket's title, the decision (or how many questions
 | A meeting source without the session file or the present members | Nobody can tell which meeting an answer came from. |
 | Answering a question the talk did not settle | The room's decision is replaced by your guess. |
 | Leaving a ticket assigned after `done` with questions open | Nobody else can take its open questions. |
+| Claiming a ticket without holding it in this session first | Two grilling agents of one session, one login to GitHub, grill the same ticket. |
 | Closing a ticket without the map-done rule | Nobody starts the PRD writer, and the finished map waits for nothing. |

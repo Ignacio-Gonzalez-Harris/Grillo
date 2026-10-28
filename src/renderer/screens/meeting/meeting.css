@@ -17,6 +17,9 @@
 .meeting .seg button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
 .meeting .reason { font-size: var(--font-size-s); color: var(--color-warning); }
 
+/* ---------- The session's grilling agents, this tab's agent selected ---------- */
+.meeting .rows > li.selected { background: var(--color-accent-soft); border-radius: var(--radius-s); padding-left: var(--space-2); padding-right: var(--space-2); }
+
 /* ---------- Domain tags ---------- */
 .meeting .tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); color: var(--color-text); white-space: nowrap; }
 .meeting .tag.d1 { background: var(--color-tag-1); }

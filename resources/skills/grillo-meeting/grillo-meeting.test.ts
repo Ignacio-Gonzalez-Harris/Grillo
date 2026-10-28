@@ -1,5 +1,7 @@
-import { existsSync } from 'node:fs';
+import { execFile, execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join, normalize, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -397,5 +399,94 @@ describe('the fixtures of a live session', () => {
 
     expect(sessionProblems(before, after)).toEqual([expect.stringContaining('ticket #7 was worked although nobody present declares domain:platform')]);
     expect(sessionProblems(before, after, [7])).toEqual([]);
+  });
+});
+
+/** Where Git for Windows puts its bash by default. */
+const GIT_BASH = 'C:\\Program Files\\Git\\bin\\bash.exe';
+
+/**
+ * Bash as the agents run it: Git for Windows' own on Windows (the `bash` on PATH may be another one there), found
+ * beside git when it is not in its default place; the system's elsewhere.
+ */
+function findBash(): string {
+  if (process.platform !== 'win32') return 'bash';
+  if (existsSync(GIT_BASH)) return GIT_BASH;
+  const gitRoot = join(execFileSync('git', ['--exec-path'], { encoding: 'utf8' }).trim(), '..', '..', '..');
+  const bundled = join(gitRoot, 'bin', 'bash.exe');
+  return existsSync(bundled) ? bundled : 'bash';
+}
+
+/** Runs a script in the project folder, as an agent's shell would, and gives back what it printed, one line each. */
+function runInProject(script: string, cwd: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    execFile(findBash(), ['-c', script], { cwd }, (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout.split('\n').filter((line) => line !== ''));
+    });
+  });
+}
+
+describe('holding a ticket in a live session', () => {
+  // Every grilling agent of one session acts for the host's login, so to GitHub they are one member.
+  const SESSION = '2026-10-26-140000';
+  const EARLIER_SESSION = '2026-10-25-090000';
+  const HOLDING = 'Holding a ticket in this session';
+  const fill = (command: string, session: string, ticket: number) =>
+    command.replaceAll('<session id>', session).replaceAll('<ticket number>', String(ticket));
+
+  async function holdCommands(): Promise<{ hold: string; release: string }> {
+    const blocks = codeBlocksOf(sectionOf(await read('SKILL.md'), HOLDING)).map((block) => block.trim());
+    const [hold, release] = blocks;
+    expect(blocks).toHaveLength(2);
+    return { hold, release };
+  }
+
+  it('keeps its holds inside .git, so they are never committed', async () => {
+    const { hold, release } = await holdCommands();
+    const paths = fill(`${hold} ${release}`, SESSION, 3)
+      .split(/\s+/)
+      .filter((word) => word.includes(SESSION));
+
+    expect(paths.length).toBeGreaterThan(0);
+    expect(paths.filter((path) => !path.startsWith('.git/'))).toEqual([]);
+  });
+
+  it('lets only one of two grilling agents of a session hold the same ticket, until it lets go', async () => {
+    const { hold, release } = await holdCommands();
+    // A project folder as the commands see it: only its .git folder matters to them.
+    const project = mkdtempSync(join(tmpdir(), 'grillo-hold-'));
+    mkdirSync(join(project, '.git'));
+    try {
+      const outcome = (commands: string) => `{ ${commands}; } 2>/dev/null && echo free || echo held`;
+      // Two agents hold the same ticket at the same moment; then another ticket of this session and the same ticket in
+      // an earlier session are free, and once the holder lets go the ticket can be held again.
+      const script = [
+        `(${fill(hold, SESSION, 3)}) 2>/dev/null & first=$!`,
+        `(${fill(hold, SESSION, 3)}) 2>/dev/null & second=$!`,
+        'wait $first && echo held-by-me || echo refused',
+        'wait $second && echo held-by-me || echo refused',
+        outcome(`${fill(hold, SESSION, 8)} && ${fill(hold, EARLIER_SESSION, 3)}`),
+        outcome(`${fill(release, SESSION, 3)} && ${fill(hold, SESSION, 3)}`),
+      ].join('\n');
+
+      const [first, second, others, afterLettingGo] = await runInProject(script, project);
+
+      expect([first, second].sort()).toEqual(['held-by-me', 'refused']);
+      expect([others, afterLettingGo]).toEqual(['free', 'free']);
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  it('holds before every claim (picking, jumping) and lets go on leaving a ticket', async () => {
+    const skill = await read('SKILL.md');
+    const link = '(#holding-a-ticket-in-this-session)';
+    const jumpRow = tableRows(sectionOf(skill, 'Messages from the meeting screen')).find(([control]) => control === '`jump <ticket number>`');
+
+    expect(sectionOf(skill, 'Picking the next ticket')).toContain(link);
+    expect(jumpRow?.[1]).toContain(link);
+    expect(sectionOf(skill, 'Leaving a ticket')).toContain(link);
+    expect(sectionOf(skill, HOLDING)).toContain('`grillo-wayfinder`, "Claiming a ticket"');
   });
 });

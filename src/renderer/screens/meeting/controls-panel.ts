@@ -2,7 +2,7 @@
  * The meeting screen (prototype `screen-meeting`) on a meeting agent's tab: who is present, the consent tick with the
  * read-aloud script, the one Record switch with the red Recording banner, the speech model being prepared before the
  * first recording, Listen or Type, "Use it", skip and jump, an imported transcript and the running transcript strip
- * (PRD 4.5, 4.6 item 4).
+ * (PRD 4.5, 4.6 item 4), and the session's grilling agents with "Open another grilling agent" (PRD 4.5 item 9).
  *
  * The controls call the live session in main (`session:*`); the session types the protocol messages
  * (`resources/skills/README.md`, Screen-to-agent protocol) into the agent and writes the transcript file. On any
@@ -14,12 +14,13 @@ import type { AgentInfo } from '../../../shared/agents';
 import type { AgentMode, SessionState } from '../../../shared/session';
 import { createSessionClient } from '../../../shared/session-ipc';
 import { createStoreClient } from '../../../shared/store';
+import { AGENT_SCREEN } from '../../app/navigation';
 import type { AudioCapture } from '../../audio';
 import { badge, button, toggle } from '../../theme/components';
 import type { TabPanel } from '../agent-tab/tab-panels';
 import { el, messageOf, note } from '../map/view';
 import { sendUseIt } from '../own-time/agents';
-import type { MeetingAgents } from './meeting-agents';
+import { startMeetingAgent, type MeetingAgents } from './meeting-agents';
 
 /** Below the own-time panel, which never shows on a meeting agent anyway. */
 export const MEETING_PANEL_PRIORITY = 5;
@@ -34,6 +35,9 @@ export const NOT_RECORDING = 'Not recording. The session transcript appears here
 export const LISTENING = 'Recording. The session transcript appears here as it is spoken.';
 export const MODEL_HINT =
   'One time on this laptop. The model runs here, so no audio or text leaves the machine for transcription. Type answers work meanwhile.';
+export const OPEN_ANOTHER = 'Open another grilling agent';
+export const HINT_PARALLEL = 'Grills one more ticket in parallel, in this session. Each agent takes a different ticket.';
+export const HINT_CHANNELS = 'Each agent receives the transcript only while its own Channel switch is on.';
 const TRANSCRIPT_SENT = 'Transcript sent with "use it": the agent takes the answer from it.';
 const TRANSCRIPT_FILES = '.txt,.md,.vtt,.srt,text/plain';
 const TAG_COLOURS = 4;
@@ -88,6 +92,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       let mode: AgentMode = 'type';
       let greeted = false;
       let waiting = agent.waiting;
+      let tabs: readonly AgentInfo[] = [];
       let busy = false;
       let disposed = false;
       let message: { text: string; error: boolean } | null = null;
@@ -144,6 +149,10 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       ]);
       const opener = el('div', 'row', [openImport]);
       const recordingCard = el('div', 'card stack', [el('h4', '', ['Recording']), record.root, recordReason, opener, importer]);
+      const agentRows = el('ul', 'rows small');
+      const openAnother = button(OPEN_ANOTHER, { small: true, onClick: () => void openAnotherAgent() });
+      const agentsHint = el('p', 'small muted');
+      const agentsCard = el('div', 'card stack', [el('h4', '', ['Grilling agents']), agentRows, openAnother, agentsHint]);
       const side = el('div', 'stack meeting-side', [presentCard, consentCard, recordingCard]);
 
       const modelBadge = el('span', 'row');
@@ -269,6 +278,29 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         if (added) transcript.scrollTop = transcript.scrollHeight;
       }
 
+      /**
+       * This session's grilling agents in tab order, each with its channel; this agent's row is selected. Shown once
+       * consent is ticked, as the prototype shows it only in a session under way.
+       */
+      function drawAgents(): void {
+        if ((state?.consent ?? null) === null) agentsCard.remove();
+        else if (agentsCard.parentElement !== side) side.append(agentsCard);
+        const ours = tabs.filter((tab) => project !== undefined && agents.projectOf(tab.id) === project);
+        const open = new Set(state?.channels ?? []);
+        agentRows.replaceChildren(
+          ...ours.map((tab) => {
+            const isOpen = open.has(tab.id);
+            const isNew = agents.isExtra(tab.id) && !isOpen;
+            const name = el('span', '', [tab.title, ...(isNew ? [' ', badge('New', 'info')] : [])]);
+            const channel = isOpen ? badge('Channel open', 'ok') : badge('Channel closed');
+            return el('li', tab.id === agent.id ? 'selected' : '', [name, channel]);
+          }),
+        );
+        openAnother.disabled = busy || state === null;
+        const someClosed = ours.length > 1 && ours.some((tab) => !open.has(tab.id));
+        agentsHint.textContent = someClosed ? HINT_CHANNELS : HINT_PARALLEL;
+      }
+
       function draw(): void {
         if (disposed) return;
         const recording = state?.recording === true;
@@ -313,6 +345,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
 
         messages.replaceChildren(...(message ? [note(message.text, message.error ? 'err' : 'ok')] : []));
         drawTranscript();
+        drawAgents();
       }
 
       // ---------- Acting ----------
@@ -407,6 +440,15 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         opener.hidden = open;
         if (!open) transcriptField.value = '';
         draw();
+      }
+
+      /** One more grilling agent in this session, in its own tab: it joins the running session and claims its own ticket. */
+      function openAnotherAgent(): Promise<void> {
+        return act(async () => {
+          if (project === undefined) return;
+          const agentId = await startMeetingAgent(grillo, agents, { project, folder: agent.folder, extra: true });
+          shell.navigate(AGENT_SCREEN, { agentId });
+        });
       }
 
       function useTranscript(): Promise<void> {
@@ -519,9 +561,14 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         state = changed;
         draw();
       });
-      const stopAgents = agents.onChange(activate);
+      const stopAgents = agents.onChange(() => {
+        activate();
+        draw();
+      });
       const stopTabs = shell.onAgentTabs((list: readonly AgentInfo[]) => {
-        waiting = list.find((candidate) => candidate?.id === agent.id)?.waiting === true;
+        tabs = list.filter((candidate): candidate is AgentInfo => typeof candidate?.id === 'string');
+        waiting = tabs.find((candidate) => candidate.id === agent.id)?.waiting === true;
+        draw();
         void greet();
       });
       activate();
