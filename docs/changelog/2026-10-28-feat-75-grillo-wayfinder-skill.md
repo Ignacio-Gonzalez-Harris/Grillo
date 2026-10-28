@@ -1,0 +1,1 @@
+Grillo's grilling engine ships as the grillo-wayfinder skill: it turns the idea into a map and tickets, checks every answer for contradictions and records its source first, keeps every PRD section covered and starts the PRD writer when the map is done; a shared fixture checker lets every skill test its outputs against the store layout.
