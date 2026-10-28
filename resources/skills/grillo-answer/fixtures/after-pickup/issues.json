@@ -1,0 +1,51 @@
+{
+  "map": { "number": 1, "title": "Map", "labels": ["wayfinder:map"], "state": "open", "body": "issues/1.md" },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "How riders book a repair slot",
+      "labels": ["wayfinder:grilling", "domain:product"],
+      "state": "closed",
+      "assignee": "ada-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": [
+        { "id": "2001", "author": "ada-example", "createdAt": "2026-10-24T14:11:00.000Z", "body": "comments/2001.md" },
+        { "id": "2002", "author": "ada-example", "createdAt": "2026-10-24T14:11:00.000Z", "body": "comments/2002.md" },
+        { "id": "2003", "author": "ada-example", "createdAt": "2026-10-24T15:06:00.000Z", "body": "comments/2003.md" },
+        { "id": "2004", "author": "ada-example", "createdAt": "2026-10-24T15:08:00.000Z", "body": "comments/2004.md" }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Who may cancel a booking",
+      "labels": ["wayfinder:grilling", "domain:platform"],
+      "state": "closed",
+      "assignee": "cleo-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/3.md",
+      "comments": [
+        { "id": "3001", "author": "cleo-example", "createdAt": "2026-10-24T12:00:00.000Z", "body": "comments/3001.md" },
+        { "id": "3002", "author": "ada-example", "createdAt": "2026-10-24T16:01:00.000Z", "body": "comments/3002.md" },
+        { "id": "3003", "author": "ada-example", "createdAt": "2026-10-24T16:02:00.000Z", "body": "comments/3003.md" }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "How many riders are turned away",
+      "labels": ["wayfinder:research", "domain:developer"],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/4.md",
+      "comments": [
+        { "id": "4001", "author": "ben-example", "createdAt": "2026-10-24T12:30:00.000Z", "body": "comments/4001.md" },
+        { "id": "4002", "author": "ben-example", "createdAt": "2026-10-24T12:31:00.000Z", "body": "comments/4002.md" },
+        { "id": "4003", "author": "ada-example", "createdAt": "2026-10-24T16:03:00.000Z", "body": "comments/4003.md" }
+      ]
+    }
+  ]
+}
