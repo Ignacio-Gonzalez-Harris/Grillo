@@ -80,7 +80,10 @@ are the messages a screen types, and what the agent must do with each.
 
 - Messages arrive while the agent may still be working; it handles them in the order they arrive.
 - The relay of release 2 (a support agent posting `from Support, for <member>` into another agent's chat) is
-  not part of this protocol: it is the support skill's message, not a screen's.
+  not part of this protocol: it is the support skill's message, not a screen's. The support agent writes a
+  `grillo-relay` block; the support agent tab reads it with `readRelayRequests` (`grillo-support/relay-request.ts`),
+  posts it through the agent chat relay and types back `relayed: <tab name>` or `not relayed: <reason>`
+  (`grillo-support/SKILL.md`, "Grillo's answer to a relay request").
 
 ## The map-done rule
 

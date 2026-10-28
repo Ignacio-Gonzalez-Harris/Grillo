@@ -1,0 +1,1 @@
+Support agent skill: `/grillo-support` answers questions about the project and its agents and passes a member's message to another agent tab through the agent chat relay, marked `[from Support, for <member>]`, only after the member says Send.
