@@ -363,7 +363,8 @@ describe('project creation: editing the structure of an existing project', () =>
     const project = 'example-org/sample-project-1';
     await store.createProject({ newRepository: { organisation: 'example-org', name: 'sample-project-1' } });
 
-    await open({ project });
+    // Exactly what the PRD view's "Edit structure and regenerate" navigates with.
+    await open({ project, view: 'structure' });
     expect(sectionNames(root)).toEqual(DEFAULT_PRD_STRUCTURE.sections.map((section) => section.name));
     click(root, 'Add section');
     const names = root.querySelectorAll<HTMLInputElement>('input[aria-label="Section name"]');

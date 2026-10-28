@@ -1,5 +1,6 @@
 // Project creation and invites, found by the shell's screen discovery (`@screens/*/index.ts`). Opened with no params
-// it lists projects and invitations; opened with `{ project: '<owner>/<repo>' }` it edits that project's structure.
+// it lists projects and invitations. Opened with `{ project: '<owner>/<repo>' }` it edits that project's structure;
+// the PRD view adds `view: 'structure'`, which leads to the same editor.
 import type { ScreenParams, ShellContext } from '../../app/screens';
 import { createStoreClient } from '../../../shared/store';
 import { mountProjectCreation } from './project-creation';
