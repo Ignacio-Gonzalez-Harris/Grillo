@@ -546,6 +546,41 @@ by hand.
 - **Developers:** the screen is `src/renderer/screens/generic-agent/`, registered as `generic-agent`;
   `npx vitest run src/renderer/screens/generic-agent` checks it.
 
+## Research, prototype and task agents
+
+Release 3 adds one agent for each of the other three ticket kinds: the skills `grillo-research`, `grillo-prototype`
+and `grillo-task`, shipped into the project folder beside `grillo-wayfinder`. The launch control on ticket management
+arrives with its own story; until then a developer can run them by hand. You may still work such a ticket as grilling
+with `/grillo-answer <ticket number>`.
+
+- **Each command works one ticket of its own kind**: `/grillo-research <ticket number>`, `/grillo-prototype <ticket
+  number>`, `/grillo-task <ticket number>`. The agent takes the ticket for you (a ticket someone else holds is refused,
+  naming who holds it). A ticket of another kind is refused, naming the command that works it.
+- **Research** works alone: it reads primary sources only (official documentation, the rule's own text, the
+  vendor's own pages) and never answers from memory. Each document becomes a source with its title, link and the
+  passage word for word; each answer says how sure it is and what it could not find out. A question no document
+  answers stays open, and the agent asks once whether you know where to look.
+- **Prototype** works with you: it builds the least that shows the choice (a mock screen, a page outline, a flow), in
+  a scratch folder outside the project folder, never committed. It asks what you think of it, one question at a
+  time. Your words are the source ("Grillo, own-time chat on ticket #<n>"), and every answer keeps the exchange,
+  starting with what the prototype showed, as its discussion.
+- **Task** shows its plan first, does alone what it can and gives you numbered steps for the rest. It asks before
+  anything that costs money, creates an account or writes to another system. What it did alone is a work record
+  source ("Grillo, task agent on ticket #<n>"); what you did is your report in your own words. No password or token
+  is ever written down: only where it is kept.
+- **Every answer** goes through the engine's order: the contradiction check, then the source pushed to `main`, then
+  the answer comment. With every question answered the agent closes the ticket with a decision, adds its line under
+  Settled and starts `/grillo-prd` when the map is done; questions still open release the ticket to the pool. The
+  agent then stops.
+- **Run it by hand (developers):** in a clone of a made-up test project with a map and a ticket of that kind on
+  GitHub and `.grillo/` on `main`, copy `resources/skills/grillo-wayfinder/`, `resources/skills/grillo-prd/` and the
+  kind's folder into `.claude/skills/`, start `claude` there and type the command. Never use real customer data.
+- **Developers:** `npx vitest run resources/skills/grillo-research resources/skills/grillo-prototype
+  resources/skills/grillo-task resources/skills/kind-run.test.ts` checks each skill's frontmatter and command against
+  the catalogue, the engine sections and screen messages it follows, the records it teaches against the store's own
+  parsers, and its fixtures (a research run, a prototype run, and two task runs: one released, one completing the
+  map) against the store layout and `resources/skills/kind-run.ts`, the run check of the kind agents.
+
 ## PRD
 
 The PRD writer is the skill `grillo-prd`, shipped into the project folder beside `grillo-wayfinder`. Read, export
