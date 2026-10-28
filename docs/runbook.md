@@ -244,6 +244,28 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
   into the type box. A malformed `tab-panel.ts`, or two body panels tied for one kind, stops Grillo at start with
   the folder named; a panel that throws is logged and the rest of the tab still works.
 
+### Agent chat protocol (release 2, no screen yet)
+
+The chat view's engine. Nothing on screen uses it yet; the chat view arrives with its own story.
+
+- **A chat agent is your own `claude` with no terminal**, started in the project folder with fixed flags:
+  `claude -p --input-format stream-json --output-format stream-json --verbose --permission-prompt-tool stdio
+  --permission-mode manual`. Never `--bare`, so your user-level `CLAUDE.md` and your subscription login still
+  apply. Grillo's skills are copied in first, as for every agent, so the folder must be a git clone.
+- **What comes back** on `agent-chat:message`: `init` (each turn), `assistant` (text bubbles), `user` (every
+  message Grillo wrote in, first message and relays included), `question` (clickable options), `permission` (a
+  tool waiting for Allow or Deny), `result` (turn end) and `error` (a line it could not read; the agent carries
+  on). Every raw line also goes out on `agent-chat:raw`, for the "show terminal" switch.
+- **Answering:** `agent-chat:answer` with the question's id and the chosen label (or free text; with several
+  questions, question text to answer), `agent-chat:allow` and `agent-chat:deny` with the permission's id. Deny also
+  dismisses a question. Each id is answered once; a second answer, an unknown id or an empty answer comes back as
+  `{ ok: false, reason }`, never as an exception.
+- **The relay:** `agent-chat:relay` with the target agent, the member and the text writes one message
+  `[from Support, for <member>] <text>` into the target's chat; its reply arrives in the target's own stream.
+  Square brackets in the name become round ones and line breaks become spaces, so the prefix stays one line.
+- **A question Claude Code sends that Grillo cannot read** is answered with an error at once, so the agent never
+  hangs waiting, and shows as an `error` message.
+
 ## Meeting
 
 The meeting screen arrives with its own story. What already works underneath it:
@@ -266,9 +288,10 @@ The meeting screen arrives with its own story. What already works underneath it:
 The meeting screen's record button arrives with its own story; the capture underneath it works on its own.
 
 - **What is captured:** the room microphone (Windows and Mac), or the call audio, meaning whatever the speakers play
-  (Windows only). Audio becomes 5-second slices of 16 kHz mono 16-bit sound, the format the speech model reads,
-  and stays on the laptop. Stopping a capture sends what is left as one last, shorter slice.
-- **Mac call audio is not available yet.** Choosing it on a Mac says so; record the room microphone instead.
+  (Windows, and a Mac with macOS 14.2 or later). Audio becomes 5-second slices of 16 kHz mono 16-bit sound, the
+  format the speech model reads, and stays on the laptop. Stopping a capture sends what is left as one last,
+  shorter slice.
+- **Mac call audio** has its own subsection below.
 - **Microphone permission:** a Mac asks the first time Grillo records. If it was refused, Grillo says where to
   turn it on: System Settings > Privacy & Security > Microphone, then restart Grillo. On Windows a switched-off
   microphone is reported the same way: Settings > Privacy & security > Microphone, with "Let desktop apps access
@@ -278,6 +301,18 @@ The meeting screen's record button arrives with its own story; the capture under
   is unplugged, recording says so instead of silently using another one.
 - **Call audio on Windows** needs no permission and shows no picker; it captures every sound the computer plays,
   including notification sounds.
+
+### Mac call audio
+
+- **Needs macOS 14.2 or later.** On an older Mac, choosing call audio says macOS 14.2 is needed; record the room
+  microphone instead. Like Windows, it shows no picker and captures every sound the Mac plays.
+- **Permission:** the Mac does not report a missing permission, it just gives silence. So Grillo waits up to
+  2 seconds for the first sound frame; if none arrives (or the Mac refused the capture), it records nothing and
+  says where to grant it: System Settings > Privacy & Security > Screen & System Audio Recording, turn on Grillo,
+  then restart Grillo.
+- **If the Mac has no call audio to give** (no audio track at all), Grillo says so; record the room microphone.
+- **Not yet tried on a real Mac.** Whether macOS also asks for Screen Recording, and the exact name of the
+  settings pane, are still to be confirmed by the first Mac run.
 
 ### Grilling session
 
