@@ -470,6 +470,9 @@ describe('the map screen: closing and reopening the project', () => {
     await sampleTickets(store, project);
     await open();
 
+    expect(text(card(content(), 'Project')?.querySelector('.small.muted'))).toBe(
+      'Closing archives the repository: everything stays readable and nothing can change. A repository admin can reopen it.',
+    );
     await click(card(content(), 'Project') as HTMLElement, 'Close project');
 
     expect((await store.getProject(project)).archived).toBe(true);
