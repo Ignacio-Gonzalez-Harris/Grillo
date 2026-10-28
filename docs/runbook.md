@@ -272,6 +272,36 @@ The meeting panel's controls arrive with their own story; the session logic unde
   channel opens during a session is first told the session file. Several channels can be open at once; an agent
   that has stopped simply loses its channel.
 
+### Meeting grilling skill
+
+The agent that runs a live session is the skill `grillo-meeting`, shipped into the project folder with the other
+Grillo skills. Grillo types `/grillo-meeting` when the host starts a live session; the meeting panel's controls then
+drive it by typing the protocol messages (`resources/skills/README.md`).
+
+- **Which ticket comes next:** the open ticket with the lowest number whose blockers are all closed and whose domains
+  match someone ticked present. "No domain", and a ticket not tagged yet, count as everyone's. Tickets of absent
+  domains stay on the map. A presence change applies from the next ticket; with nobody present the agent waits.
+- **Questions one at a time.** **Type:** the next message a member types is the answer, with no discussion.
+  **Listen:** the room talks; at "Use it" the agent writes the answer from the transcript and keeps the whole talk,
+  word for word, as the question's discussion, which names the session file.
+- **Every answer's source** is a meeting source: the session file, the moment of "Use it" or of typing, and the
+  members present. Before the session is started, a "Use it" chunk is recorded as pasted text instead.
+- **Skip** leaves the question open and asks the next; after the last one the ticket is left as Done leaves it.
+  **Jump** leaves the ticket at hand and takes the one picked, whatever its domains; a closed ticket or one someone
+  else holds is refused. **Done** closes the ticket with its decision when every question is answered (and starts
+  the PRD writer once the map is done), or else releases it with its open questions. Talk above Skip, Jump or Done
+  is never recorded. A ticket left with questions open is not picked again in the same session.
+- **Drift:** what else the room says may add a question to the ticket, a new ticket (with no domain until the next
+  tagging round), a fog line or an out-of-scope line. The agent says what it added.
+- **Run it by hand (developers):** in a clone of a made-up test project with a map and tagged tickets on `main`, copy
+  `resources/skills/grillo-wayfinder/` and `resources/skills/grillo-meeting/` into `.claude/skills/`, start `claude`
+  there and type `/grillo-meeting`, then the messages one at a time: `present: <your login>`, `mode: type`, an
+  answer, `done`. Never use a real transcript.
+- **Developers:** `npx vitest run resources/skills/grillo-meeting` checks the skill's frontmatter and command against
+  the catalogue, that it follows exactly the protocol messages the catalogue gives it, its example records against
+  the store's parsers, and two fixtures (a project before and after a live session) against the store layout and the
+  rules of a session.
+
 ## Grilling engine
 
 The grilling engine is the skill `grillo-wayfinder`, shipped into the project folder with the other Grillo skills.

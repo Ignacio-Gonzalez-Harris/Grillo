@@ -1,0 +1,1 @@
+The live grilling session now has its agent skill, `/grillo-meeting`: it follows the meeting controls, picks tickets for the members present and records answers and word-for-word discussions with the session as their source.
