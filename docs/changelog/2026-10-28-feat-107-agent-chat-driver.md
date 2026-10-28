@@ -1,0 +1,1 @@
+Agent chat protocol: Grillo can now drive Claude Code in machine-readable mode, turning its stream into typed messages, answering questions and permission prompts, and relaying a Support message into another agent's chat, which the release-2 chat view builds on.
