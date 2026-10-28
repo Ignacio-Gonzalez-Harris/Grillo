@@ -84,8 +84,10 @@ words; cite it instead of writing a copy.
 5. **Push refused because `main` is protected:** push the commit to a branch of its own with a unique name,
    `grillo/save-<milliseconds since 1970>` (`git push origin HEAD:refs/heads/grillo/save-<ms>`). Then undo the local
    commit and file exactly as in step 4, so your local `main` never drifts from GitHub's. Open a pull request for the
-   branch (`gh pr create --base main --head grillo/save-<ms>`), and tell the member that the source waits for that
-   pull request.
+   branch, always with a title and a body, since `gh` refuses to ask for them in an agent's shell (`gh pr create
+   --base main --head grillo/save-<ms> --title "chore(grillo): add source S<n>" --body "Grillo could not save source
+   S<n> straight to main, which is protected. Merge this pull request to keep it."`), and tell the member that the
+   source waits for that pull request.
 
 ## Step 3: the answer comment
 
