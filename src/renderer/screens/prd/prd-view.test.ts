@@ -210,6 +210,39 @@ describe('PRD view: Writing', () => {
     expect(text(content().querySelector('h3'))).toBe('PRD · version 1');
   });
 
+  it('shows Writing when the map is done and the agent that closed the last ticket writes the PRD in its own tab', async () => {
+    const { store, content, setAgents, visited, openPrdTab } = await app();
+    await store.createMap(PROJECT, { destination: 'A PRD for a sample product', notes: '', fog: [], outOfScope: [] });
+    const last = await store.createTicket(PROJECT, { title: 'Sample ticket 3', question: 'A made-up question?', whyItMatters: '', assumptions: [], kind: 'grilling', blockers: [], questions: [] });
+    await store.closeTicket(last.id);
+    const closer: AgentInfo = { id: 'closer-1', kind: 'grilling', title: 'Grilling · Sample ticket 3', folder: FOLDER, waiting: false };
+    setAgents([closer, { ...closer, id: 'other', folder: '/memory/Grillo/example-org/another' }]);
+    await openPrdTab();
+
+    const card = content().querySelector('.prd-view > .card') as HTMLElement;
+    expect(text(card.querySelector('h3'))).toBe('Writing version 1');
+    await click(card, 'Open the writer');
+    expect(visited.at(-1)).toEqual({ screenId: 'agent-tab', params: { agentId: 'closer-1' } });
+
+    shell?.navigate('prd');
+    await flush();
+    await store.createPrdVersion(PROJECT, V1);
+    setAgents([{ ...closer, waiting: true }]);
+    await flush();
+
+    expect(content().textContent).not.toContain('Writing version');
+    expect(text(content().querySelector('h3'))).toBe('PRD · version 1');
+  });
+
+  it('says nothing is left, not Writing, when the map is done but no agent of the project runs', async () => {
+    const { store, content, openPrdTab } = await app();
+    await store.createMap(PROJECT, { destination: 'A PRD for a sample product', notes: '', fog: [], outOfScope: [] });
+    await openPrdTab();
+    expect(text(content().querySelector('.prd-view > .card p'))).toBe(
+      'Grillo writes the PRD automatically the moment the map is done. Still left: 0 open tickets and 0 fog items.',
+    );
+  });
+
   it('ignores a writer of another project and one waiting for the member', async () => {
     const { content, setAgents, writer, openPrdTab } = await app();
     setAgents([writer(true), { ...writer(false), id: 'other', folder: '/memory/Grillo/example-org/another' }]);

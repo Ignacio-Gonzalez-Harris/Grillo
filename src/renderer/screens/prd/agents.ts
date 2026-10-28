@@ -2,9 +2,11 @@
  * The PRD view's agents (resources/skills/README.md, Commands): Regenerate starts the PRD writer with
  * `/grillo-prd regenerate`, and "Talk to an agent about this PRD" starts a grilling agent with `/grillo-prd feedback`.
  *
- * The writer runs under the same tab name whoever starts it (this screen, or a screen acting on `mapDone`), so the
- * screen tells a PRD being written from the agent list alone: a writer of this project's folder that is still
- * working, not yet waiting for the member.
+ * A PRD is being written in two ways (resources/skills/README.md, The map-done rule): a writer started in its own tab
+ * ("Grilling · PRD", by this screen or by a screen acting on `mapDone`), or `/grillo-prd` run inside the agent that
+ * closed the last ticket, whose tab keeps that ticket's name. The screen tells the first from the agent list alone
+ * (a writer of this project's folder that is still working); the second only from the map being done with no version
+ * kept while an agent of the project's folder runs.
  */
 import { agentTitle, type AgentId, type AgentInfo } from '../../../shared/agents';
 import type { GrilloApi } from '../../../shared/ipc';
@@ -29,4 +31,9 @@ export function startFeedback(grillo: GrilloApi, folder: string): Promise<AgentI
 /** The project's PRD writers that are still working: running in its folder, and not waiting for the member. */
 export function workingWriters(agents: readonly AgentInfo[], folder: string): AgentInfo[] {
   return agents.filter((agent) => agent.title === PRD_WRITER_TITLE && agent.folder === folder && !agent.waiting);
+}
+
+/** Every running agent started in the project's folder, whatever its tab name. */
+export function agentsOfProject(agents: readonly AgentInfo[], folder: string): AgentInfo[] {
+  return agents.filter((agent) => agent.folder === folder);
 }

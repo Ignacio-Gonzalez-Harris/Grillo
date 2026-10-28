@@ -17,7 +17,7 @@ import { AGENT_SCREEN } from '../../app/navigation';
 import type { ScreenParams } from '../../app/screens';
 import { badge, button } from '../../theme/components';
 import { el, messageOf, note } from '../own-time/view';
-import { startFeedback, startRegenerate, workingWriters } from './agents';
+import { agentsOfProject, startFeedback, startRegenerate, workingWriters } from './agents';
 import { projectFolder, projectToShow, readLeftOnMap, readVersions, type LeftOnMap } from './data';
 import { dayOf, exportFile, versionTitle, type ExportFile, type ExportFormat } from './export';
 import { renderPrdVersion } from './render';
@@ -80,7 +80,8 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
   let actionError: string | null = null;
   /** A writer this screen started that the agent list does not show yet: it counts as writing meanwhile. */
   let startedWriter: AgentId | null = null;
-  let wasWriting = false;
+  /** The agents of the project's folder that were working at the last look; one going quiet may have written a version. */
+  let working = new Set<AgentId>();
 
   function set(next: Phase): void {
     if (disposed) return;
@@ -92,8 +93,22 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
     return workingWriters(agents, project.folder);
   }
 
+  /**
+   * The map is done and no version is kept yet: the agent that closed the last ticket runs `/grillo-prd` in its own
+   * tab (the map-done rule), so any agent of this project's folder counts as the writer.
+   */
+  function mapDoneWithoutVersion(project: Project): boolean {
+    const { left } = project;
+    return project.versions.length === 0 && left !== null && left.openTickets === 0 && left.fog === 0;
+  }
+
   function isWriting(project: Project): boolean {
-    return writers(project).length > 0 || startedWriter !== null;
+    if (writers(project).length > 0 || startedWriter !== null) return true;
+    return mapDoneWithoutVersion(project) && agentsOfProject(agents, project.folder).length > 0;
+  }
+
+  function workingIn(folder: string): Set<AgentId> {
+    return new Set(agentsOfProject(agents, folder).filter(({ waiting }) => !waiting).map(({ id }) => id));
   }
 
   async function act(work: () => Promise<void>): Promise<void> {
@@ -130,7 +145,7 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
       const writer = await startRegenerate(grillo, project.folder);
       // The agent list may already show it, when its change arrived before this answer.
       startedWriter = agents.some(({ id }) => id === writer) ? null : writer;
-      wasWriting = true;
+      working.add(writer);
     });
   }
 
@@ -156,7 +171,10 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
       el('div', 'row', [el('h3', 'm0', [`Writing version ${next}`]), badge('Working…', 'warn')]),
       el('p', 'muted', [WRITING_TEXT]),
     ]);
-    const writer = writers(project)[0]?.id ?? startedWriter;
+    const writer =
+      writers(project)[0]?.id ??
+      startedWriter ??
+      (mapDoneWithoutVersion(project) ? (agentsOfProject(agents, project.folder)[0]?.id ?? null) : null);
     if (writer !== null) {
       card.append(el('div', 'row', [button('Open the writer', { small: true, onClick: () => navigate(AGENT_SCREEN, { agentId: writer }) })]));
     }
@@ -264,15 +282,15 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
     }
   }
 
-  /** Follows the agent list: once every writer of this project has finished, the new version is read. */
+  /** Follows the agent list: when an agent of this project goes quiet or stops, the versions are read again. */
   function showAgents(list: readonly AgentInfo[]): void {
     agents = list;
     if (phase.name !== 'ready') return;
     const { project } = phase;
     if (startedWriter !== null && list.some(({ id }) => id === startedWriter)) startedWriter = null;
-    const writing = isWriting(project);
-    const finished = wasWriting && !writing;
-    wasWriting = writing;
+    const now = workingIn(project.folder);
+    const finished = [...working].some((id) => !now.has(id));
+    working = now;
     draw();
     if (finished) void reload(project);
   }
@@ -285,7 +303,7 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
         return;
       }
       const project = await read(id);
-      wasWriting = workingWriters(agents, project.folder).length > 0;
+      working = workingIn(project.folder);
       set({ name: 'ready', project });
     } catch (error) {
       set({ name: 'failed', message: messageOf(error) });

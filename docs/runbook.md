@@ -333,9 +333,11 @@ The **PRD** tab shows the PRD of the project opened last (a screen may open it o
 
 - **No PRD yet:** says the PRD is written the moment the map is done, and what is still left (open tickets and fog
   items). **Open the map** goes to the map.
-- **Writing:** while a PRD writer of this project is still working (its tab is "Grilling · PRD" and has no waiting
-  dot), the screen shows "Writing version <n>" with **Open the writer**. When the writer goes quiet, the screen reads
-  the versions again and shows the new one. Earlier versions stay readable below.
+- **Writing:** the screen shows "Writing version <n>" with **Open the writer** while a "Grilling · PRD" tab of this
+  project is still working (no waiting dot), and also when the map is done, no version is kept yet and any agent of
+  this project runs: the agent that closed the last ticket writes the PRD in its own tab. When an agent of the
+  project goes quiet or stops, the screen reads the versions again and shows the new one. Earlier versions stay
+  readable below. With the map done, no version and no agent running, it shows "No PRD yet" with nothing left.
 - **The version on show:** the latest one first, with its date and "Latest". Every code chip `[S4, Q12.3]` links to
   its entry in the audit appendix; `[no source]` is marked in amber. Raw HTML in a version is shown as text, and
   images as links: nothing in a PRD runs or loads.
