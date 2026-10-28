@@ -37,7 +37,23 @@ export function registerStoreIpc(ipc: MainIpc, store: Store, settings: Settings)
   ipc.handle('settings:set', ({ key, value }) => settings.set(key, value));
 }
 
-/** The backend comes from GRILLO_STORE: `memory` for made-up data, GitHub otherwise. */
+const appStores = new WeakMap<Settings, Store>();
+
+/**
+ * The app's one store, which every feature reading the store shares: one per settings file, so one queue guards each
+ * project folder (two git commands at once in one clone fail). The backend comes from GRILLO_STORE: `memory` for
+ * made-up data, GitHub otherwise.
+ */
+export function appStore(settings: Settings): Store {
+  let store = appStores.get(settings);
+  if (store === undefined) {
+    store = createStore(storeKindFrom(process.env), { settings });
+    appStores.set(settings, store);
+  }
+  return store;
+}
+
+/** Puts the app's one store (`appStore`) on IPC. */
 export function register({ ipc, settings }: FeatureContext): void {
-  registerStoreIpc(ipc, createStore(storeKindFrom(process.env), { settings }), settings);
+  registerStoreIpc(ipc, appStore(settings), settings);
 }
