@@ -365,6 +365,35 @@ drive it by typing the protocol messages (`resources/skills/README.md`).
   the store's parsers, and two fixtures (a project before and after a live session) against the store layout and the
   rules of a session.
 
+### The meeting panel
+
+The meeting screen sits on a meeting agent's own tab (a grilling agent started with `/grillo-meeting`); there is no
+separate session screen. **No screen starts a meeting agent yet**: that control arrives with its own story, and
+calls `startMeetingAgent` from `src/renderer/screens/meeting/meeting-agents.ts`.
+
+- **Opening the tab** starts the live session for the project if none is running, ticks the host present, and once
+  the agent has gone quiet after starting types `session: <session file>`, `present: <host>` and `mode: type` into
+  it, so every answer it records cites the session, channel open or not.
+- **Present:** one tick per member, with their domains and a Host badge on the member signed in. Each tick is
+  written to the session file and typed into the agent as a new `present:` message.
+- **Preparing speech model:** before the first recording on a laptop the speech model downloads, with its progress.
+  Record stays off until it is ready; a failed download says why and offers "Try again". Type answers work meanwhile.
+- **Consent:** the line to read aloud, then "Everyone here agreed". Record stays disabled until the host ticks it;
+  the card then says who ticked and when.
+- **Record** captures the room microphone (call audio has no switch yet) and shows the red Recording banner with the
+  time since Record went on. Switching it off saves the transcript file and goes back to Type. If the microphone
+  cannot be opened, the recording turns back off and the reason shows.
+- **Listen / Type** per question; Listen needs the recording on and opens this agent's channel. **Use it** (Listen
+  only) sends the transcript in the agent's box with `use it`. **Skip question** and **Jump to ticket** type `skip` and
+  `jump <number>`. **Import a transcript** pastes or uploads a text file and sends it with `use it`.
+- **The transcript strip** under the terminal shows each transcribed line with the time it appeared.
+- **Channel**, the switch inside every agent's tab, opens or closes that agent's channel; while open, the live
+  transcript goes into its type box. It can be turned on before any session runs: the agent is then told the
+  session file when one starts.
+- **Stopping the last meeting agent** ends the session, its transcript saved.
+- **Developers:** `npx vitest run src/renderer/screens/meeting src/main/features/session` runs the panel against the
+  real session, agent runtime and in-memory store, with fake terminals, a fake transcriber and no microphone.
+
 ## Grilling engine
 
 The grilling engine is the skill `grillo-wayfinder`, shipped into the project folder with the other Grillo skills.

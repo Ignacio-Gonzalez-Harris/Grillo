@@ -1,0 +1,1 @@
+The meeting controls (presence, consent, Record with the red banner, speech-model progress, Listen/Type, Use it, skip, jump, transcript strip) are built for the meeting agent's tab, ready for the control that starts a meeting agent, and every agent tab has an Open channel switch.

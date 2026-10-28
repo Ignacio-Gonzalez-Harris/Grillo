@@ -1,0 +1,85 @@
+/*
+ * The meeting screen, ported from the UX prototype's screen-meeting (docs/ux/prototypes/grillo/index.html): the
+ * prototype's helper classes it needs, kept under .meeting so no other screen is touched. Every colour, spacing,
+ * radius and size comes from theme/tokens.css.
+ */
+.meeting .strong { font-weight: var(--font-weight-strong); }
+.meeting .card > :last-child { margin-bottom: 0; }
+.meeting [hidden], .meeting .file-input { display: none; }
+
+/* ---------- Ticks, switches, the answer mode ---------- */
+.meeting .check { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.meeting input[type="checkbox"] { accent-color: var(--color-accent); margin: 0; }
+.meeting .switch input.rec:checked { background: var(--color-danger); border-color: var(--color-danger); }
+.meeting .seg { display: inline-flex; justify-self: start; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
+.meeting .seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
+.meeting .seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
+.meeting .seg button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+.meeting .reason { font-size: var(--font-size-s); color: var(--color-warning); }
+
+/* ---------- Domain tags ---------- */
+.meeting .tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); color: var(--color-text); white-space: nowrap; }
+.meeting .tag.d1 { background: var(--color-tag-1); }
+.meeting .tag.d2 { background: var(--color-tag-2); }
+.meeting .tag.d3 { background: var(--color-tag-3); }
+.meeting .tag.d4 { background: var(--color-tag-4); }
+
+/* ---------- Consent script, notes, the speech model ---------- */
+.meeting .script { font-style: italic; padding: var(--space-3); border-left: var(--focus-ring-width) solid var(--color-accent); background: var(--color-accent-soft); border-radius: var(--radius-s); }
+.meeting .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.meeting .note.ok { background: var(--color-success-soft); }
+.meeting .note.err { background: var(--color-danger-soft); }
+.meeting .progress { width: 100%; height: var(--size-dot); accent-color: var(--color-accent); }
+
+/* ---------- Fields ---------- */
+.meeting select, .meeting textarea { font: inherit; color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); width: 100%; }
+.meeting select.w-auto { width: auto; }
+.meeting textarea { min-height: var(--size-textarea-min); resize: vertical; }
+.meeting select:disabled, .meeting textarea:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
+
+/* ---------- The red Recording banner and the running transcript strip ---------- */
+.meeting .rec-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-danger); color: var(--color-text-on-danger); font-weight: var(--font-weight-strong); }
+.meeting .sdot { display: inline-block; width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-on-danger); flex: none; }
+.meeting .transcript { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); max-height: calc(var(--size-textarea-min) + var(--space-6)); overflow-y: auto; }
+.meeting .transcript p { margin: 0 0 var(--space-1); }
+
+/*
+ * On a meeting agent's tab (the prototype's `.split`): the banner across the top, Present, Consent and Recording in
+ * the column on the left, the speech model and the question controls above the terminal and the transcript strip
+ * below it. The panel's wrappers step aside (`display: contents`) so its parts take their places in the tab's grid.
+ */
+.agent-tab.with-controls:has(.meeting-panel:not([hidden])) {
+  grid-template-columns: var(--size-side-column) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "banner banner" "side head" "side body" "side foot";
+}
+.agent-tab.with-controls:has(.meeting-panel:not([hidden]) > .rec-banner[hidden]) {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "side head" "side body" "side foot";
+}
+.agent-tab:has(.meeting-panel:not([hidden])) .agent-tab-controls,
+.agent-tab:has(.meeting-panel:not([hidden])) .agent-tab-control,
+.meeting-panel:not([hidden]) { display: contents; }
+.agent-tab:has(.meeting-panel:not([hidden])) > .agent-tab-body { grid-area: body; }
+.meeting-panel .rec-banner { grid-area: banner; }
+.meeting-panel .meeting-side { grid-area: side; align-self: start; }
+.meeting-panel .meeting-head { grid-area: head; }
+.meeting-panel .meeting-foot { grid-area: foot; }
+
+/* A panel that hides itself leaves no gap, and a tab whose panels all hide keeps the terminal full width. */
+.meeting-panel[hidden], .agent-tab-control:has(> [hidden]) { display: none; }
+.agent-tab-controls:not(:has(> .agent-tab-control > :not([hidden]))) { display: none; }
+.agent-tab.with-controls:not(:has(> .agent-tab-controls > .agent-tab-control > :not([hidden]))) { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .agent-tab.with-controls:has(.meeting-panel:not([hidden])) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "banner" "side" "head" "body" "foot";
+  }
+  .agent-tab.with-controls:has(.meeting-panel:not([hidden]) > .rec-banner[hidden]) {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "side" "head" "body" "foot";
+  }
+}

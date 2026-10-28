@@ -628,6 +628,37 @@ describe('grilling session: per-agent channels', () => {
     ]);
   });
 
+  it('types the presence message after any transcript in the box, and present: alone for nobody', async () => {
+    const { host, agents, bus } = await channelRig('a1');
+    await host.setChannel('a1', true);
+    await settle();
+    agents.typed.set('a1', []);
+
+    bus.publish(slice(0));
+    await settle();
+    const ticking = host.typePresent('a1', [HOST, OTHER]);
+    await settle();
+    await ticking;
+    const nobody = host.typePresent('a1', []);
+    await settle();
+    await nobody;
+
+    expect(agents.typed.get('a1')).toEqual([
+      'Words 0.', `${LINE_BREAK}present: ${HOST}, ${OTHER}`, ENTER,
+      'present:', ENTER,
+    ]);
+  });
+
+  it.each([
+    ['a login that is not a GitHub login', () => ['not a login']],
+    ['a list that is not a list', () => HOST as unknown as string[]],
+  ])('refuses a presence message with %s and types nothing', async (_case, logins) => {
+    const { host, agents } = await channelRig('a1');
+
+    expect(await refusal(host.typePresent('a1', logins()))).toBe('invalid');
+    expect(agents.typed.get('a1')).toEqual([]);
+  });
+
   it('feeds several open channels at once, and none once closed', async () => {
     const { host, agents, bus } = await channelRig('a1', 'a2', 'a3');
     for (const id of ['a1', 'a2']) await host.setChannel(id, true);
@@ -644,6 +675,42 @@ describe('grilling session: per-agent channels', () => {
     expect(agents.typed.get('a2')).toEqual(['Words 0.']);
     expect(agents.typed.get('a3')).toEqual([]);
     expect(host.state()?.channels).toEqual(['a1']);
+  });
+
+  it('tells a meeting agent the session file once, even with its channel closed, and not again when it opens', async () => {
+    const { host, agents } = await channelRig('a1');
+    const { file } = host.state()!;
+
+    for (let time = 0; time < 2; time += 1) {
+      const telling = host.tellSession('a1');
+      await settle();
+      await telling;
+    }
+    await host.setChannel('a1', true);
+    await settle();
+
+    expect(agents.typed.get('a1')).toEqual([`session: ${file}`, ENTER]);
+  });
+
+  it('refuses to tell an agent the session file when no session runs', async () => {
+    const setup = await rig();
+    setup.agents.add('a1');
+
+    expect(await refusal(setup.host.tellSession('a1'))).toBe('no-session');
+    expect(setup.agents.typed.get('a1')).toEqual([]);
+  });
+
+  it('lists the open channels with no session running as well as during one', async () => {
+    const setup = await rig();
+    setup.agents.add('a1', 'a2');
+
+    await setup.host.setChannel('a2', true);
+    await setup.host.setChannel('a1', true);
+    expect(setup.host.channels()).toEqual(['a2', 'a1']);
+    await setup.host.startSession(PROJECT);
+    await setup.host.setChannel('a2', false);
+
+    expect(setup.host.channels()).toEqual(['a1']);
   });
 
   it('tells agents whose channel is already open about a session started later, once each', async () => {
@@ -679,6 +746,7 @@ describe('grilling session: per-agent channels', () => {
     ['open a channel', (host: SessionHost) => host.setChannel('ghost', true)],
     ['use it', (host: SessionHost) => host.useIt('ghost')],
     ['type a mode', (host: SessionHost) => host.typeMode('ghost', 'listen')],
+    ['type the presence', (host: SessionHost) => host.typePresent('ghost', [HOST])],
     ['skip', (host: SessionHost) => host.skip('ghost')],
     ['jump', (host: SessionHost) => host.jump('ghost', 3)],
     ['open a channel with no id', (host: SessionHost) => host.setChannel(undefined as unknown as string, true)],

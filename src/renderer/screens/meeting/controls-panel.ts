@@ -1,0 +1,547 @@
+/**
+ * The meeting screen (prototype `screen-meeting`) on a meeting agent's tab: who is present, the consent tick with the
+ * read-aloud script, the one Record switch with the red Recording banner, the speech model being prepared before the
+ * first recording, Listen or Type, "Use it", skip and jump, an imported transcript and the running transcript strip
+ * (PRD 4.5, 4.6 item 4).
+ *
+ * The controls call the live session in main (`session:*`); the session types the protocol messages
+ * (`resources/skills/README.md`, Screen-to-agent protocol) into the agent and writes the transcript file. On any
+ * other grilling agent the panel stays hidden.
+ */
+import './meeting.css';
+import type { Member, Ticket } from '../../../main/store/types';
+import type { AgentInfo } from '../../../shared/agents';
+import type { AgentMode, SessionState } from '../../../shared/session';
+import { createSessionClient } from '../../../shared/session-ipc';
+import { createStoreClient } from '../../../shared/store';
+import type { AudioCapture } from '../../audio';
+import { badge, button, toggle } from '../../theme/components';
+import type { TabPanel } from '../agent-tab/tab-panels';
+import { el, messageOf, note } from '../map/view';
+import { sendUseIt } from '../own-time/agents';
+import type { MeetingAgents } from './meeting-agents';
+
+/** Below the own-time panel, which never shows on a meeting agent anyway. */
+export const MEETING_PANEL_PRIORITY = 5;
+export const CONSENT_SCRIPT = '"This call is recorded and transcribed by Grillo."';
+export const CONSENT_LABEL = 'Everyone here agreed';
+
+export const REASON_MODEL = 'Record unlocks once the speech model is ready.';
+export const REASON_CONSENT = 'Read the line above aloud and tick "Everyone here agreed" first.';
+export const REASON_LISTEN = 'Listen needs the recording on.';
+export const USE_IT_HINT = "Use it: the agent distils the answer from the talk and keeps the whole talk as the question's discussion.";
+export const NOT_RECORDING = 'Not recording. The session transcript appears here once Record is on.';
+export const LISTENING = 'Recording. The session transcript appears here as it is spoken.';
+export const MODEL_HINT =
+  'One time on this laptop. The model runs here, so no audio or text leaves the machine for transcription. Type answers work meanwhile.';
+const TRANSCRIPT_SENT = 'Transcript sent with "use it": the agent takes the answer from it.';
+const TRANSCRIPT_FILES = '.txt,.md,.vtt,.srt,text/plain';
+const TAG_COLOURS = 4;
+const SECOND_MS = 1000;
+const PERCENT = 100;
+
+export interface MeetingPanelOptions {
+  agents: MeetingAgents;
+  /** The audio capture, made on the first Record: the page's microphone in the app, a fake in tests. */
+  capture: () => AudioCapture;
+  now?: () => Date;
+}
+
+type Model = { status: 'preparing'; percent: number | null } | { status: 'ready' } | { status: 'failed'; reason: string };
+
+const pad = (value: number) => String(value).padStart(2, '0');
+const clock = (at: Date) => `${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`;
+const minutes = (at: Date) => `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+
+function elapsed(ms: number): string {
+  const seconds = Math.max(0, Math.floor(ms / SECOND_MS));
+  return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
+}
+
+function transcriptLines(state: SessionState | null): string[] {
+  return (state?.transcript ?? '').split('\n').filter((line) => line.trim() !== '');
+}
+
+/** What presence means, in the prototype's words: the domains whose tickets come up. */
+function presenceHint(present: readonly Member[]): string {
+  if (present.length === 0) return 'Used only to pick tickets: with nobody ticked, the agent picks none. Change it at any time.';
+  const domains = [...new Set(present.flatMap((member) => member.domains))];
+  const comeUp = domains.length === 0 ? 'only no-domain tickets come up' : `${domains.join(', ')} and no-domain tickets come up`;
+  return `Used only to pick tickets: ${comeUp}. Change it at any time.`;
+}
+
+export function meetingPanel({ agents, capture, now = () => new Date() }: MeetingPanelOptions): TabPanel {
+  return {
+    kinds: ['grilling'],
+    slot: 'controls',
+    priority: MEETING_PANEL_PRIORITY,
+    mount(container, { agent, grillo, shell }) {
+      const store = createStoreClient(grillo);
+      const session = createSessionClient(grillo);
+      let project: string | undefined;
+      let host: Member | null = null;
+      let members: Member[] = [];
+      let tickets: Ticket[] = [];
+      let state: SessionState | null = null;
+      let model: Model = { status: 'preparing', percent: null };
+      let ticked = new Set<string>();
+      let mode: AgentMode = 'type';
+      let greeted = false;
+      let waiting = agent.waiting;
+      let busy = false;
+      let disposed = false;
+      let message: { text: string; error: boolean } | null = null;
+      let audio: AudioCapture | undefined;
+      let capturing = false;
+      let recordingSince: number | null = null;
+      let timer: ReturnType<typeof setInterval> | undefined;
+      const lineTimes: string[] = [];
+
+      // ---------- The parts, built once and redrawn in place ----------
+      const bannerTime = el('span', 'small');
+      const banner = el('div', 'rec-banner', [
+        el('span', 'sdot'),
+        'Recording',
+        el('span', 'small', ['· audio and transcription stay on this laptop']),
+        el('span', 'spacer'),
+        bannerTime,
+      ]);
+      banner.setAttribute('role', 'status');
+
+      const presentRows = el('div', 'stack');
+      const presentHint = el('p', 'small muted');
+      const presentCard = el('div', 'card stack', [el('h4', '', ['Present']), presentRows, presentHint]);
+
+      const script = el('p', 'script', [CONSENT_SCRIPT]);
+      const consentBox = el('input', '');
+      consentBox.type = 'checkbox';
+      const consentTicked = el('p', 'small muted');
+      const consentCard = el('div', 'card stack', [
+        el('h4', '', ['Consent']),
+        script,
+        el('label', 'check', [consentBox, ` ${CONSENT_LABEL}`]),
+        consentTicked,
+      ]);
+
+      const record = toggle('Record', { onChange: (on) => void setRecording(on) });
+      record.input.classList.add('rec');
+      const recordReason = el('p', 'reason');
+      const transcriptField = el('textarea', '');
+      transcriptField.setAttribute('aria-label', 'Transcript');
+      transcriptField.placeholder = 'Paste a transcript of the talk about the question at hand';
+      const file = el('input', 'file-input');
+      file.type = 'file';
+      file.accept = TRANSCRIPT_FILES;
+      file.setAttribute('aria-label', 'Transcript file');
+      const openImport = button('Import a transcript (paste or upload)', { small: true, onClick: () => showImport(true) });
+      const upload = button('Upload transcript file', { small: true, onClick: () => file.click() });
+      const cancelImport = button('Cancel', { small: true, onClick: () => showImport(false) });
+      const useImport = button('Use it', { small: true, variant: 'primary', onClick: () => void useTranscript() });
+      const importer = el('div', 'stack', [
+        transcriptField,
+        el('div', 'row', [upload, file]),
+        el('div', 'row', [el('span', 'spacer'), cancelImport, useImport]),
+      ]);
+      const opener = el('div', 'row', [openImport]);
+      const recordingCard = el('div', 'card stack', [el('h4', '', ['Recording']), record.root, recordReason, opener, importer]);
+      const side = el('div', 'stack meeting-side', [presentCard, consentCard, recordingCard]);
+
+      const modelBadge = el('span', 'row');
+      const modelText = el('span', 'strong');
+      const modelProgress = el('progress', 'progress');
+      modelProgress.max = PERCENT;
+      modelProgress.setAttribute('aria-label', 'Speech model download');
+      const retryRow = el('div', 'row', [button('Try again', { small: true, onClick: () => prepareModel() })]);
+      const modelCard = el('div', 'card stack', [
+        el('div', 'row', [modelBadge, modelText]),
+        modelProgress,
+        el('p', 'small muted', [MODEL_HINT]),
+        retryRow,
+      ]);
+      modelCard.setAttribute('role', 'status');
+
+      const listen = el('button', '', ['Listen']);
+      const type = el('button', '', ['Type']);
+      for (const [choice, picks] of [
+        [listen, 'listen'],
+        [type, 'type'],
+      ] as const) {
+        choice.type = 'button';
+        choice.addEventListener('click', () => void pickMode(picks));
+      }
+      const seg = el('div', 'seg', [listen, type]);
+      seg.setAttribute('role', 'group');
+      seg.setAttribute('aria-label', 'Answer mode');
+      const useIt = button('Use it', { variant: 'primary', onClick: () => void act(() => session.useIt(agent.id)) });
+      const skip = button('Skip question', { onClick: () => void act(() => session.skip(agent.id)) });
+      const jump = el('select', 'w-auto');
+      jump.setAttribute('aria-label', 'Jump to ticket');
+      jump.addEventListener('change', () => {
+        const ticket = Number(jump.value);
+        jump.value = '';
+        if (Number.isInteger(ticket) && ticket > 0) void act(() => session.jump(agent.id, ticket));
+      });
+      const questionHint = el('p', '');
+      const questionCard = el('div', 'card stack', [el('div', 'row', [seg, useIt, skip, jump]), questionHint]);
+      const messages = el('div', 'stack');
+      const head = el('div', 'stack meeting-head', [modelCard, messages, questionCard]);
+
+      const transcript = el('div', 'transcript');
+      transcript.setAttribute('aria-label', 'Session transcript');
+      const foot = el('div', 'meeting-foot', [transcript]);
+
+      const root = el('div', 'meeting meeting-panel', [banner, side, head, foot]);
+      root.hidden = true;
+      container.append(root);
+      showImport(false);
+
+      // ---------- Drawing ----------
+      function drawPresent(): void {
+        const declared = [...new Set(members.flatMap((member) => member.domains))];
+        presentRows.replaceChildren(
+          ...members.map((member) => {
+            const box = el('input', '');
+            box.type = 'checkbox';
+            box.checked = ticked.has(member.login);
+            box.disabled = busy;
+            box.addEventListener('change', () => void tick(member.login, box.checked));
+            const name = member.name ? `${member.login} · ${member.name}` : member.login;
+            const tags = member.domains.map((domain) =>
+              el('span', `tag d${(declared.indexOf(domain) % TAG_COLOURS) + 1}`, [domain]),
+            );
+            const isHost = host !== null && member.login.toLowerCase() === host.login.toLowerCase();
+            return el('label', 'check', [box, ` ${name} `, ...tags, ...(isHost ? [badge('Host', 'info')] : [])]);
+          }),
+        );
+        presentHint.textContent = presenceHint(members.filter((member) => ticked.has(member.login)));
+      }
+
+      function drawModel(): void {
+        modelCard.hidden = model.status === 'ready';
+        retryRow.hidden = model.status !== 'failed';
+        modelProgress.hidden = model.status !== 'preparing';
+        if (model.status === 'preparing') {
+          modelBadge.replaceChildren(badge('Preparing', 'warn'));
+          modelText.textContent =
+            model.percent === null ? 'Preparing speech model' : `Preparing speech model (downloading, ${model.percent}%)`;
+          if (model.percent === null) {
+            modelProgress.removeAttribute('value');
+            modelProgress.textContent = '';
+          } else {
+            modelProgress.value = model.percent;
+            modelProgress.textContent = `${model.percent}%`;
+          }
+        } else if (model.status === 'failed') {
+          modelBadge.replaceChildren(badge('Not ready', 'err'));
+          modelText.textContent = `The speech model could not be prepared: ${model.reason}`;
+        }
+      }
+
+      function drawBannerTime(): void {
+        bannerTime.textContent = recordingSince === null ? '' : elapsed(now().getTime() - recordingSince);
+      }
+
+      function drawTickets(): void {
+        const pick = el('option', '', ['Jump to ticket…']);
+        pick.value = '';
+        jump.replaceChildren(
+          pick,
+          ...tickets.map((ticket) => {
+            const option = el('option', '', [ticket.title]);
+            option.value = String(ticket.id.number);
+            return option;
+          }),
+        );
+      }
+
+      function drawTranscript(): void {
+        const lines = transcriptLines(state);
+        const added = lines.length > lineTimes.length;
+        while (lineTimes.length < lines.length) lineTimes.push(clock(now()));
+        if (lines.length === 0) {
+          transcript.replaceChildren(el('p', 'muted', [state?.recording ? LISTENING : NOT_RECORDING]));
+          return;
+        }
+        transcript.replaceChildren(
+          ...lines.map((line, at) => el('p', '', [el('span', 'muted', [lineTimes[at]]), ` ${line}`])),
+        );
+        // Only a new line scrolls the strip, so a member reading back up is left where they are.
+        if (added) transcript.scrollTop = transcript.scrollHeight;
+      }
+
+      function draw(): void {
+        if (disposed) return;
+        const recording = state?.recording === true;
+        const consent = state?.consent ?? null;
+        const ready = model.status === 'ready';
+
+        banner.hidden = !recording;
+        drawBannerTime();
+
+        for (const box of presentRows.querySelectorAll('input')) box.disabled = busy || state === null;
+        script.hidden = consent !== null;
+        consentBox.checked = consent !== null;
+        consentBox.disabled = busy || consent !== null || state === null || host === null;
+        consentTicked.hidden = consent === null;
+        consentTicked.textContent = consent ? `Ticked by ${consent.by} at ${minutes(new Date(consent.at))}.` : '';
+
+        record.input.checked = recording;
+        record.input.disabled = busy || state === null || (!recording && (!ready || consent === null));
+        const reason = recording ? '' : !ready ? REASON_MODEL : consent === null ? REASON_CONSENT : '';
+        recordReason.textContent = reason;
+        recordReason.hidden = reason === '';
+
+        const blank = transcriptField.value.trim() === '';
+        openImport.disabled = busy;
+        transcriptField.disabled = busy;
+        upload.disabled = busy;
+        cancelImport.disabled = busy;
+        useImport.disabled = busy || blank;
+
+        drawModel();
+
+        listen.setAttribute('aria-pressed', String(mode === 'listen'));
+        type.setAttribute('aria-pressed', String(mode === 'type'));
+        listen.disabled = busy || !recording;
+        type.disabled = busy;
+        useIt.disabled = busy || mode !== 'listen' || !recording;
+        skip.disabled = busy;
+        jump.disabled = busy;
+        questionHint.className = recording ? 'small muted' : 'reason';
+        questionHint.textContent = recording ? (mode === 'listen' ? USE_IT_HINT : '') : REASON_LISTEN;
+        questionHint.hidden = questionHint.textContent === '';
+
+        messages.replaceChildren(...(message ? [note(message.text, message.error ? 'err' : 'ok')] : []));
+        drawTranscript();
+      }
+
+      // ---------- Acting ----------
+      async function act(work: () => Promise<unknown>, done?: string): Promise<void> {
+        if (busy) return;
+        busy = true;
+        message = null;
+        draw();
+        try {
+          await work();
+          if (done) message = { text: done, error: false };
+        } catch (error) {
+          message = { text: messageOf(error), error: true };
+        } finally {
+          busy = false;
+          draw();
+        }
+      }
+
+      function presentLogins(): string[] {
+        return members.filter((member) => ticked.has(member.login)).map((member) => member.login);
+      }
+
+      function tick(login: string, present: boolean): Promise<void> {
+        const before = new Set(ticked);
+        if (present) ticked.add(login);
+        else ticked.delete(login);
+        drawPresent();
+        return act(async () => {
+          try {
+            await session.setPresent(presentLogins());
+          } catch (error) {
+            ticked = before;
+            drawPresent();
+            throw error;
+          }
+          if (greeted) await session.typePresent(agent.id, presentLogins());
+        });
+      }
+
+      function audioCapture(): AudioCapture {
+        audio ??= capture();
+        return audio;
+      }
+
+      function setRecording(on: boolean): Promise<void> {
+        return act(async () => {
+          if (on) {
+            await session.setRecording(true);
+            const started = await audioCapture().startCapture({ source: 'microphone' });
+            if (!started.ok) {
+              await session.setRecording(false);
+              throw new Error(started.message);
+            }
+            capturing = true;
+            recordingSince = now().getTime();
+            timer ??= setInterval(drawBannerTime, SECOND_MS);
+            return;
+          }
+          await stopRecording();
+          if (mode === 'listen') {
+            mode = 'type';
+            await session.typeMode(agent.id, 'type');
+          }
+        });
+      }
+
+      async function stopRecording(): Promise<void> {
+        try {
+          if (capturing) await audioCapture().stopCapture();
+        } finally {
+          capturing = false;
+          recordingSince = null;
+          if (timer !== undefined) clearInterval(timer);
+          timer = undefined;
+          await session.setRecording(false);
+        }
+      }
+
+      function pickMode(picked: AgentMode): Promise<void> {
+        if (picked === mode) return Promise.resolve();
+        return act(async () => {
+          // Listen needs the transcript in this agent's box, so its channel opens with it.
+          if (picked === 'listen') await session.setChannel(agent.id, true);
+          await session.typeMode(agent.id, picked);
+          mode = picked;
+        });
+      }
+
+      function showImport(open: boolean): void {
+        importer.hidden = !open;
+        opener.hidden = open;
+        if (!open) transcriptField.value = '';
+        draw();
+      }
+
+      function useTranscript(): Promise<void> {
+        return act(async () => {
+          await sendUseIt(grillo, agent.id, transcriptField.value);
+          showImport(false);
+        }, TRANSCRIPT_SENT);
+      }
+
+      transcriptField.addEventListener('input', draw);
+      consentBox.addEventListener('change', () => {
+        if (!consentBox.checked || host === null) return;
+        const login = host.login;
+        void act(() => session.tickConsent(login));
+      });
+      file.addEventListener('change', () => {
+        const chosen = file.files?.[0];
+        file.value = '';
+        if (!chosen) return;
+        chosen.text().then(
+          (text) => {
+            transcriptField.value = text;
+            draw();
+          },
+          (error: unknown) => {
+            message = { text: `Grillo could not read ${chosen.name}: ${messageOf(error)}`, error: true };
+            draw();
+          },
+        );
+      });
+
+      // ---------- Starting ----------
+      function prepareModel(): void {
+        model = { status: 'preparing', percent: null };
+        draw();
+        const stop = grillo.on('transcription:model-progress', ({ receivedBytes, totalBytes }) => {
+          if (model.status !== 'preparing' || !(totalBytes > 0)) return;
+          model = { status: 'preparing', percent: Math.min(PERCENT, Math.floor((receivedBytes * PERCENT) / totalBytes)) };
+          draw();
+        });
+        grillo.invoke('transcription:ensure-model', undefined).then(
+          () => {
+            model = { status: 'ready' };
+          },
+          (error: unknown) => {
+            model = { status: 'failed', reason: messageOf(error) };
+          },
+        ).finally(() => {
+          stop();
+          draw();
+        });
+      }
+
+      /**
+       * Once the agent has said it is ready, it hears the session file (every meeting agent, channel open or not:
+       * `resources/skills/README.md`, Session row), who is present and the mode the screen shows.
+       */
+      async function greet(): Promise<void> {
+        if (greeted || !waiting || state === null || host === null) return;
+        greeted = true;
+        try {
+          await session.tellSession(agent.id);
+          await session.typePresent(agent.id, presentLogins());
+          await session.typeMode(agent.id, mode);
+        } catch (error) {
+          message = { text: messageOf(error), error: true };
+          draw();
+        }
+      }
+
+      async function load(of: string): Promise<void> {
+        try {
+          const [me, list, open] = await Promise.all([
+            store.currentMember(of),
+            store.listMembers(of),
+            store.listTickets(of, { state: 'open' }),
+          ]);
+          host = me;
+          members = list;
+          tickets = open;
+          let running = await session.state();
+          if (running === null) running = await session.startSession(of);
+          else if (running.project !== of) {
+            throw new Error(`A live session of ${running.project} is already running on this laptop.`);
+          }
+          state = running;
+          ticked = new Set(running.present.length > 0 ? running.present : [me.login]);
+          if (running.present.length === 0) await session.setPresent(presentLogins());
+        } catch (error) {
+          message = { text: messageOf(error), error: true };
+        }
+        drawPresent();
+        drawTickets();
+        draw();
+        await greet();
+      }
+
+      function activate(): void {
+        if (project !== undefined) return;
+        project = agents.projectOf(agent.id);
+        if (project === undefined) return;
+        root.hidden = false;
+        draw();
+        prepareModel();
+        void load(project);
+      }
+
+      const stopSession = grillo.on('session:changed', (changed) => {
+        if (project === undefined || (changed !== null && changed.project !== project)) return;
+        state = changed;
+        draw();
+      });
+      const stopAgents = agents.onChange(activate);
+      const stopTabs = shell.onAgentTabs((list: readonly AgentInfo[]) => {
+        waiting = list.find((candidate) => candidate?.id === agent.id)?.waiting === true;
+        void greet();
+      });
+      activate();
+
+      return {
+        dispose() {
+          disposed = true;
+          stopSession();
+          stopAgents();
+          stopTabs();
+          if (timer !== undefined) clearInterval(timer);
+          if (project === undefined) return;
+          agents.forget(agent.id);
+          // The last meeting agent has gone: the session ends, its transcript file saved.
+          if (agents.count() === 0) {
+            const ending = capturing ? audioCapture().stopCapture().catch(() => undefined) : Promise.resolve();
+            void ending.then(() => session.endSession()).catch(() => undefined);
+          }
+        },
+      };
+    },
+  };
+}

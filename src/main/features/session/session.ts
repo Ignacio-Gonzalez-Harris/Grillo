@@ -12,6 +12,7 @@ import {
   isAgentMode,
   jumpLine,
   modeLine,
+  presentLine,
   sessionLine,
   SessionError,
   type SessionState,
@@ -68,9 +69,15 @@ export interface SessionHost {
   endSession(): Promise<void>;
   /** Open: each transcribed slice is written into the agent's input box, without Enter. */
   setChannel(agentId: AgentId, open: boolean): Promise<void>;
+  /** The agents whose channel is open, in opening order, with or without a session running. */
+  channels(): AgentId[];
+  /** Types `session: <file>` into a meeting agent, channel open or not; once per agent and session. */
+  tellSession(agentId: AgentId): Promise<void>;
   /** Sends the agent's input box with `use it` as its last line. The ones below type their protocol message. */
   useIt(agentId: AgentId): Promise<void>;
   typeMode(agentId: AgentId, mode: AgentMode): Promise<void>;
+  /** Types the presence message (`present: <logins>`) into a meeting agent, after any transcript in its box. */
+  typePresent(agentId: AgentId, logins: string[]): Promise<void>;
   skip(agentId: AgentId): Promise<void>;
   jump(agentId: AgentId, ticket: number): Promise<void>;
   /** The running session, or null when there is none. */
@@ -265,10 +272,15 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
     });
   }
 
-  function tellSession(box: AgentBox, current: RunningSession): void {
-    if (box.toldSession === current.file) return;
+  /** Tells the agent the session file once; the promise settles once the line is typed. */
+  function sendSessionLine(box: AgentBox, current: RunningSession): Promise<void> {
+    if (box.toldSession === current.file) return Promise.resolve();
     box.toldSession = current.file;
-    sendControlLine(box, sessionLine(current.file)).catch(() => undefined);
+    return sendControlLine(box, sessionLine(current.file));
+  }
+
+  function tellSession(box: AgentBox, current: RunningSession): void {
+    sendSessionLine(box, current).catch(() => undefined);
   }
 
   function writeSliceToChannels(line: string): void {
@@ -437,6 +449,17 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
       if (session) tellSession(box, session);
     },
 
+    channels() {
+      return [...channels];
+    },
+
+    tellSession(agentId) {
+      return Promise.resolve().then(() => {
+        const current = running();
+        return sendSessionLine(knownBox(agentId), current);
+      });
+    },
+
     useIt(agentId) {
       return Promise.resolve().then(() => sendControlLine(knownBox(agentId), USE_IT));
     },
@@ -447,6 +470,16 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
         if (!isAgentMode(mode)) throw new SessionError('invalid', `'${String(mode)}' is not a mode: listen or type`);
         box.mode = mode;
         return sendControlLine(box, modeLine(mode));
+      });
+    },
+
+    typePresent(agentId, logins) {
+      return Promise.resolve().then(() => {
+        const box = knownBox(agentId);
+        if (!Array.isArray(logins) || !logins.every(isLogin)) {
+          throw new SessionError('invalid', 'Presence is a list of GitHub logins');
+        }
+        return sendControlLine(box, presentLine(logins));
       });
     },
 
