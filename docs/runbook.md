@@ -325,6 +325,25 @@ opens. A closed ticket, or one someone else holds, is shown with the reason and 
 - **Developers:** the screen's id is `own-time`, opened with `{ project: '<owner>/<repo>', ticket: '<number>' }`.
   `npx vitest run src/renderer/screens/own-time` runs its tests against the in-memory store and fake terminals.
 
+## Nudges
+
+Grillo reminds you of tickets you took, or were sent, that have had no answer for days. There is no screen: it is
+one system notification, "Tickets waiting for your answer", naming each ticket as `#<number> <title> (<project>)`.
+
+- **When:** as Grillo opens, then once a day while it stays open. Nothing silent long enough means no notification.
+- **Silent** means an open ticket you hold with no answer recorded for 3 days. Grillo cannot see when a ticket was
+  taken, so the count starts at the later of its latest answer and the first time Grillo saw you holding it; a
+  ticket released and taken again starts afresh. Only the projects on this laptop's recent list are checked, and
+  archived ones are skipped.
+- **Change the number of days:** with Grillo closed, set `nudgeAfterDays` (a number above 0) in the app data
+  folder's `settings.json`, then open Grillo. Any other value means 3. Grillo keeps its own notes under `nudgeHeldSince` there; leave them.
+- **No notification at all?** Check that your system lets Grillo show notifications (on Windows: Settings, System,
+  Notifications; on a Mac: System Settings, Notifications). A project Grillo cannot read is skipped and logged; the
+  others are still checked.
+- **Developers:** `npx vitest run src/main/features/nudges` runs its tests against the in-memory store and a fake
+  notifier. The nudges read the app's one store (`appStore` in `src/main/features/store/ipc.ts`), the same
+  instance the screens reach over IPC, so one queue guards each project folder.
+
 ## PRD
 
 The PRD writer is the skill `grillo-prd`, shipped into the project folder beside `grillo-wayfinder`. The PRD view
