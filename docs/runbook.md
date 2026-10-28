@@ -197,6 +197,27 @@ The meeting screen's record button arrives with its own story; the capture under
 - **Call audio on Windows** needs no permission and shows no picker; it captures every sound the computer plays,
   including notification sounds.
 
+### Grilling session
+
+The meeting panel's controls arrive with their own story; the session logic underneath them works on its own.
+
+- **Starting** a session creates its file in the project's Grillo folder, `.grillo/sessions/<date>-<time>.md`, named
+  by the moment it started (UTC). Only one session runs on a laptop at a time.
+- **Presence** is the list of members ticked present; each change replaces the list in the file. A login that is
+  not a member is refused and the list stays as it was.
+- **Consent:** Record stays disabled until the host, the member signed in on this laptop, ticks "everyone here
+  agreed". The file records who ticked and when; a second tick changes nothing.
+- **Recording** turns every 5-second slice into one line of the transcript, in the order spoken, and writes the
+  whole transcript to the file as it grows. Silence (`[BLANK_AUDIO]`) adds nothing. A slice that fails to
+  transcribe, or takes more than 15 seconds once it is next in line, is left out and the stream goes on.
+  Switching the recording off returns once the file holds every slice heard; if that last write fails, the host
+  is told and the text is kept for the next try. Switching it on again carries on in the same file.
+- **Open channel** on an agent writes each new line into that agent's input box without sending it. "Use it",
+  Listen / Type, skip and jump each send one message: the protocol line on a line of its own under the transcript
+  (`resources/skills/README.md`). While an agent is in Type mode no transcript goes into its box. An agent whose
+  channel opens during a session is first told the session file. Several channels can be open at once; an agent
+  that has stopped simply loses its channel.
+
 ## Grilling engine
 
 The grilling engine is the skill `grillo-wayfinder`, shipped into the project folder with the other Grillo skills.
