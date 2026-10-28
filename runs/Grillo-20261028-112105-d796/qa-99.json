@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261028-112105-d796",
+  "issue": 99,
+  "title": "Research, prototype and task agent commands",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 149,
+  "merged_at": "2026-10-28T11:57:38Z",
+  "merge_commit": "a54b12b63bc7414c2926adb5c7ac4833d1de10aa",
+  "seam": "resources/skills/grillo-research/, resources/skills/grillo-prototype/, resources/skills/grillo-task/",
+  "story": "Release 3 adds three agent commands, /grillo-research, /grillo-prototype and /grillo-task, one per ticket kind. Until now these tickets could only be worked as grilling through /grillo-answer or a meeting, and that path still works. Each command claims the ticket, works it the way its kind needs, and records every outcome through the engine's usual order (clash check, then source, then answer). There is no screen change yet: the launch control on ticket management is a separate story.",
+  "checks": [
+    {
+      "key": "resources/skills/grillo-research/research-a-ticket",
+      "criterion": "The command opens a research ticket, runs the research steps and records each finding as an answer with sources.",
+      "steps": "In a made-up test project with a map and a wayfinder:research ticket on GitHub, copy grillo-wayfinder, grillo-prd and grillo-research into .claude/skills/. Start claude and type /grillo-research <ticket number>.",
+      "expected": "You are assigned to the ticket; each finding is saved as a kind: document source on main with its title, link and passage; an answer comment cites that source; with every question answered the ticket closes with a decision and gets its line under Settled, otherwise it is released."
+    },
+    {
+      "key": "resources/skills/grillo-prototype/prototype-a-ticket",
+      "criterion": "The command works a prototype ticket and records each outcome as an answer with sources.",
+      "steps": "Same setup with a wayfinder:prototype ticket. Type /grillo-prototype <ticket number> and react to the mock it builds.",
+      "expected": "The mock is in a temporary folder outside the project folder and the project folder shows no new files; each answer cites an own-time source ('Grillo, own-time chat on ticket #<n>') and is followed by a discussion that starts with what the prototype showed; at done the ticket closes or is released."
+    },
+    {
+      "key": "resources/skills/grillo-task/task-a-ticket",
+      "criterion": "The command works a task ticket and records each outcome as an answer with sources.",
+      "steps": "Same setup with a wayfinder:task ticket. Type /grillo-task <ticket number>.",
+      "expected": "The plan is shown first; work the agent did alone is recorded as a 'Grillo, task agent on ticket #<n>' document source and your report as an own-time source; no secret appears anywhere; work still waiting on someone releases the ticket."
+    },
+    {
+      "key": "resources/skills/kind-agents/wrong-kind-refused",
+      "criterion": "Each command works only its own kind.",
+      "steps": "Type /grillo-research <number of a grilling ticket>.",
+      "expected": "A one-line refusal that names /grillo-answer <N>, and nothing written on the ticket."
+    }
+  ],
+  "no_qa_reason": null
+}

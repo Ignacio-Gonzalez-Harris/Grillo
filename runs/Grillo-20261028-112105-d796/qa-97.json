@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261028-112105-d796",
+  "issue": 97,
+  "title": "PRD grader skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 146,
+  "merged_at": "2026-10-28T11:43:27Z",
+  "merge_commit": "30c6d5666928cd4b4ba4db7c8e0f55fc0cda35cc",
+  "seam": "resources/skills/grillo-score/",
+  "story": "The PRD can now be graded. /grillo-score scores the latest PRD version from 0 to 10, half on writing quality and half on whether each section holds real decisions, with one mark and one suggestion for each criterion and each section, saved beside the version. The PRD writer now starts it after every version it saves. The PRD view does not show the score yet; that is a later story.",
+  "checks": [
+    {
+      "key": "resources/skills/grillo-score/score-latest-version",
+      "criterion": "The score file matches the store's Score type, and every section and criterion gets a mark and a comment.",
+      "steps": "Make a made-up test GitHub repository whose map is done and which has .grillo/prd/v1.md on main, copying the grillo-prd fixture. Clone it, copy grillo-score, grillo-prd and grillo-wayfinder into .claude/skills/. Run claude and type /grillo-score.",
+      "expected": "A new commit on main that adds only .grillo/prd/v1.score.json, holding an overall from 0 to 10, the eight criteria in order and one entry per structure section, every comment ending with 'Suggestion: ...'. The agent reports the overall mark and the two or three lowest items."
+    },
+    {
+      "key": "resources/skills/grillo-score/guidance-not-gate",
+      "criterion": "Nothing happens by itself after a low score.",
+      "steps": "In the same project, write a version with several [no source] statements, run /grillo-score, then look at the issues and the map.",
+      "expected": "Low marks, but no new ticket, no new fog line, no new PRD version and no other command started."
+    },
+    {
+      "key": "resources/skills/grillo-score/after-prd-writer",
+      "criterion": "grillo-prd runs /grillo-score after saving a version.",
+      "steps": "Run /grillo-prd regenerate in the test project.",
+      "expected": "After v<n>.md is pushed, the same agent scores it and pushes v<n>.score.json."
+    },
+    {
+      "key": "resources/skills/grillo-score/rerun",
+      "criterion": "The score can be run again.",
+      "steps": "Type /grillo-score a second time.",
+      "expected": "The latest version's score file is replaced in one new commit, and no other file changes."
+    }
+  ],
+  "no_qa_reason": null
+}

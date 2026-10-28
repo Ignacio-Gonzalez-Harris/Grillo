@@ -1,0 +1,50 @@
+{
+  "run_id": "Grillo-20261028-112105-d796",
+  "issue": 91,
+  "title": "Meeting panel on the grilling agent's tab, the Open channel header switch for every agent kind, and the preparing-speech-model state",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 150,
+  "merged_at": "2026-10-28T12:02:01Z",
+  "merge_commit": "a648aacf8fb29704ce52222fb96e6618089a6701",
+  "seam": "src/renderer/screens/meeting/",
+  "story": "The grilling agent's tab now carries the meeting screen: presence ticks, the consent tick with its read-aloud script, a Record switch with a red banner, speech-model download progress, Listen or Type, Use it, Skip, Jump, transcript import and a running transcript strip. A meeting agent is told the session file, who is present and the mode as soon as it is ready. Every agent tab also gets a \"Channel\" switch that feeds it the live transcript, and it can be turned on before a session starts. The meeting controls only appear on agents started for a meeting, and nothing starts those yet (issue #151).",
+  "checks": [
+    {
+      "key": "src/renderer/screens/meeting/open-channel-switch",
+      "criterion": "The Open channel switch shows inside every agent tab, beside the name and waiting dot, and shows the channel's real state.",
+      "steps": "Open a made-up project with no live session, press \"+\" and name a generic agent \"Sample notes\", turn on \"Channel\" in its tab, then turn it off.",
+      "expected": "A \"Channel\" switch in every agent tab; it stays on after the first click and goes off after the second."
+    },
+    {
+      "key": "src/renderer/screens/meeting/preparing-speech-model",
+      "criterion": "Before the first recording, the speech model download shows its progress and Record stays disabled.",
+      "steps": "Delete the model file from the app data folder; open a meeting agent's tab (needs the launcher from issue #151).",
+      "expected": "The card \"Preparing speech model (downloading, N%)\" with a progress bar, and Record disabled with \"Record unlocks once the speech model is ready.\""
+    },
+    {
+      "key": "src/renderer/screens/meeting/session-greeting",
+      "criterion": "A meeting agent is told the session file, who is present and the mode, with its channel closed.",
+      "steps": "Open a meeting agent's tab and wait for the agent to say it is ready.",
+      "expected": "The terminal receives 'session: .grillo/sessions/<date>-<time>.md', then 'present: <you>', then 'mode: type'."
+    },
+    {
+      "key": "src/renderer/screens/meeting/consent-record",
+      "criterion": "Record stays disabled until 'Everyone here agreed' is ticked; recording shows the red banner and the transcript strip.",
+      "steps": "On a meeting agent's tab, read the script aloud, tick 'Everyone here agreed', turn on Record, and say a made-up sentence.",
+      "expected": "'Ticked by <you> at HH:MM.', then the red 'Recording' banner with a running timer, and the sentence in the strip under the terminal with a time."
+    },
+    {
+      "key": "src/renderer/screens/meeting/listen-type-controls",
+      "criterion": "Listen, Type, Use it, Skip question and Jump to ticket each send their message to the agent.",
+      "steps": "While recording, press Listen, talk, press Use it, then Skip question, then pick a ticket under 'Jump to ticket…'.",
+      "expected": "The tab's Channel switch turns on with Listen; the talk then 'use it' arrive in the terminal, then 'skip', then 'jump <number>'."
+    },
+    {
+      "key": "src/renderer/screens/meeting/presence",
+      "criterion": "The presence ticks set who is present, and the agent is told each change.",
+      "steps": "On a meeting agent's tab, tick a second made-up member.",
+      "expected": "The agent receives 'present: <host>, <member>', and the hint lists both members' domains."
+    }
+  ],
+  "no_qa_reason": null
+}

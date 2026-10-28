@@ -1,0 +1,62 @@
+{
+  "run_id": "Grillo-20261028-112105-d796",
+  "resumed_from": "Grillo-20261028-062239-2130",
+  "issue": 91,
+  "title": "Meeting panel on the grilling agent's tab, the Open channel header switch for every agent kind, and the preparing-speech-model state",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T11:21:05Z",
+  "finished_at": "2026-10-28T12:02:01Z",
+  "outcome": "merged",
+  "pr": 150,
+  "summary": "The grilling agent's tab now carries the meeting panel (presence, consent, Record, Listen/Type, Use it, Skip, Jump, transcript strip, speech-model progress) and every agent tab gets a Channel switch; the session gained screen-facing IPC. Nothing starts a meeting agent yet: filed as issue #151 (Start a live meeting from Grillo).",
+  "agents": [
+    {
+      "name": "dev-91 (first attempt, lost)",
+      "model": "opus",
+      "tokens_total": null
+    },
+    {
+      "name": "dev-91",
+      "model": "opus",
+      "tokens_total": 280504
+    },
+    {
+      "name": "review-91-r1",
+      "model": "opus",
+      "tokens_total": 179259
+    },
+    {
+      "name": "review-91-r2",
+      "model": "opus",
+      "tokens_total": 149173
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1703,
+    "review_seconds": 611,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/meeting/",
+      "what": "The meeting panel's question card shows no ticket title, domain tags or 'Question n of m' as the prototype does, because no protocol message tells the screen which question is at hand; members can mistake which question Use it, Skip or Jump acts on.",
+      "why": "Needs a new agent-to-screen protocol message (resources/skills/README.md) or a UX change first; out of this story's scope.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/meeting/",
+      "what": "Record captures only the room microphone, because the prototype has no audio source picker, so on a remote call the other participants' voices are not transcribed.",
+      "why": "Needs a UX prototype change for the source picker first.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

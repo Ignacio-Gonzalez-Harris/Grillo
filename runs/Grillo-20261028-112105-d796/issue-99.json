@@ -1,0 +1,47 @@
+{
+  "run_id": "Grillo-20261028-112105-d796",
+  "resumed_from": "Grillo-20261028-062239-2130",
+  "issue": 99,
+  "title": "Research, prototype and task agent commands",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T11:21:05Z",
+  "finished_at": "2026-10-28T11:57:38Z",
+  "outcome": "merged",
+  "pr": 149,
+  "summary": "Three new agent commands, /grillo-research, /grillo-prototype and /grillo-task, each work a ticket of their kind and record outcomes as answers with sources; shared fixture checks kind-run.ts and kind-agent-skill.ts sit beside fixture-check.ts.",
+  "agents": [
+    {
+      "name": "dev-99 (first attempt, lost)",
+      "model": "opus",
+      "tokens_total": null
+    },
+    {
+      "name": "dev-99",
+      "model": "opus",
+      "tokens_total": 253194
+    },
+    {
+      "name": "review-99-r1",
+      "model": "opus",
+      "tokens_total": 161933
+    },
+    {
+      "name": "review-99-r2",
+      "model": "opus",
+      "tokens_total": 128970
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1441,
+    "review_seconds": 540,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

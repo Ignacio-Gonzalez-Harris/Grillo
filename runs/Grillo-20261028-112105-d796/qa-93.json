@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261028-112105-d796",
+  "issue": 93,
+  "title": "Generic agent tab screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 145,
+  "merged_at": "2026-10-28T11:36:15Z",
+  "merge_commit": "b95c4499d637d996d29cc4b819e013230b4e5dff",
+  "seam": "src/renderer/screens/generic-agent/",
+  "story": "\"+\" on the tab bar used to show \"The generic agent tab is not built yet.\" Now it opens a \"New generic agent\" dialog: you name the tab, press \"Open agent\", and Grillo starts a generic agent in the project folder in a tab named \"Generic · <name>\". From there you paste an email or type your own words into that agent's terminal, as on any agent tab.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/generic-agent/name-and-open",
+      "criterion": "\"+\" opens the naming dialog, and Open agent starts a generic agent with /grillo-generic in a tab of that name.",
+      "steps": "Start Grillo and open the made-up project \"example-org/sample-project-1\" from the Project tab. Press \"+\" on the tab bar. Type \"Sample customer email\" in \"Tab name\". Press \"Open agent\".",
+      "expected": "The dialog \"New generic agent\" with a \"Tab name\" field, the line \"A generic agent can change anything the engine can, after it shows clashes and asks you.\", and the buttons Cancel and Open agent; Open agent is greyed out until a name is typed. After Open agent, a tab \"Generic · Sample customer email\" opens showing a Claude Code terminal that receives /grillo-generic."
+    },
+    {
+      "key": "src/renderer/screens/generic-agent/blank-name-locked",
+      "criterion": "Open agent stays locked while the name is blank.",
+      "steps": "Press \"+\", type only spaces in \"Tab name\", then press Enter.",
+      "expected": "Open agent stays greyed out, and no agent tab appears."
+    },
+    {
+      "key": "src/renderer/screens/generic-agent/no-project",
+      "criterion": "With no project open, the dialog asks for one.",
+      "steps": "On a fresh install where no project has ever been opened, press \"+\" and type \"Sample note\".",
+      "expected": "The warning \"Open a project from the Project tab to start a generic agent in it.\" and Open agent stays greyed out."
+    },
+    {
+      "key": "src/renderer/screens/generic-agent/cancel",
+      "criterion": "Cancel starts nothing.",
+      "steps": "With a project open, press \"+\", then press Cancel.",
+      "expected": "The project's Map screen, and no new agent tab."
+    }
+  ],
+  "no_qa_reason": null
+}

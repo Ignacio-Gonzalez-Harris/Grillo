@@ -1,0 +1,56 @@
+{
+  "run_id": "Grillo-20261028-112105-d796",
+  "resumed_from": "Grillo-20261028-062239-2130",
+  "issue": 93,
+  "title": "Generic agent tab screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T11:21:05Z",
+  "finished_at": "2026-10-28T11:36:15Z",
+  "outcome": "merged",
+  "pr": 145,
+  "summary": "The \"+\" on the tab bar now opens a \"New generic agent\" naming dialog that starts a generic agent with /grillo-generic in a tab of that name; 8 new tests, no shared file changed.",
+  "agents": [
+    {
+      "name": "dev-93 (first attempt, lost)",
+      "model": "opus",
+      "tokens_total": null
+    },
+    {
+      "name": "dev-93",
+      "model": "opus",
+      "tokens_total": 149384
+    },
+    {
+      "name": "review-93-r1",
+      "model": "opus",
+      "tokens_total": 116564
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 572,
+    "review_seconds": 193,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 0
+  },
+  "friction": [
+    "CI was skipped for every pull request in this run: GitHub Actions has no minutes left, so on the person's explicit instruction the merge gate was the full local gate (build, lint, typecheck, suite) on the branch after merging origin/main. This clashes with BASE_CLAUDE.md and the project CLAUDE.md ('never merge on red or pending; no checks reported is red') and with the person's own rules file ('don't merge on red or pending checks'); Windows only was tested, the Mac half of the CI matrix never ran.",
+    "The first attempt (run Grillo-20261028-062239-2130, scheduled for 06:22 UTC) lost its session about 3 minutes after the four dev agents started; nothing was built and the four issues stayed assigned and in-progress until this run resumed them at 11:21 UTC, about 5 hours later.",
+    "Another terminal (run Grillo-20261028-111958-6832) rewrote C:\\wt\\in-flight.json at its preflight and dropped this run's four entries, because they still carried the first attempt's 06:22 startedAt (past the 4-hour stale rule); they were restored after the first merge. A resumed run must re-stamp its entries before another terminal's preflight reads them."
+  ],
+  "lessons_learned": [
+    "Several /dev-next terminals on one machine need a machine-wide gate lock: parallel full suites turned 5000 ms tests red under load. This run added C:\\wt\\with-gate-lock.sh (an mkdir lock with a 20-minute stale cutoff) at the person's request; every dev and review brief should wrap its full gate in it."
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "test suite / vitest config",
+      "what": "Full-suite runs on a loaded machine hit the 5000 ms default test timeout in at least four files that pass alone in under a second (resources/skills/grillo-prd/grillo-prd.test.ts, ship-skills.test.ts, test/native-modules.test.ts, resources/skills/grillo-score/grillo-score.test.ts), so a gate goes red with no real fault and costs a rerun; it happened even with the gate lock, because other repositories' runs share the machine.",
+      "why": "Outside every story's seam in this run; the fix (find the slow setup, or a deliberate per-file timeout policy) needs its own story, never a widened timeout to pass a gate.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

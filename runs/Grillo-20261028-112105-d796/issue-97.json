@@ -1,0 +1,42 @@
+{
+  "run_id": "Grillo-20261028-112105-d796",
+  "resumed_from": "Grillo-20261028-062239-2130",
+  "issue": 97,
+  "title": "PRD grader skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T11:21:05Z",
+  "finished_at": "2026-10-28T11:43:27Z",
+  "outcome": "merged",
+  "pr": 146,
+  "summary": "/grillo-score now scores the latest PRD version 0-10 (quality and coverage in equal halves) into prd/v<n>.score.json, and the PRD writer runs it after every version; 51 tests over fixture score files.",
+  "agents": [
+    {
+      "name": "dev-97 (first attempt, lost)",
+      "model": "opus",
+      "tokens_total": null
+    },
+    {
+      "name": "dev-97",
+      "model": "opus",
+      "tokens_total": 176840
+    },
+    {
+      "name": "review-97-r1",
+      "model": "opus",
+      "tokens_total": 119509
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 813,
+    "review_seconds": 240,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}
