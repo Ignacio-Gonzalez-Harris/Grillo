@@ -1,0 +1,13 @@
+{
+  "run_id": "Grillo-20261028-130311-d7a4",
+  "issue": 95,
+  "title": "Support agent skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 153,
+  "merged_at": "2026-10-28T13:27:49Z",
+  "merge_commit": "beefe0a0f8d063f33fa139913f45738ed75e9f58",
+  "seam": "resources/skills/grillo-support/",
+  "story": "In a support tab, I can ask which agent is working on a ticket and who holds it. When I want to correct something I told another agent, the support agent shows me the exact message and the tab it goes to; after I press Send, the message appears in that tab marked 'from Support, for' me. A message can never end with something like 'done' that would press a button in the other agent.",
+  "checks": [],
+  "no_qa_reason": "The support agent has no screen until issue #96 (support agent tab) lands, and nothing reads a relay request before then; live model behaviour is the demo story's job."
+}

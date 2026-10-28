@@ -1,0 +1,51 @@
+{
+  "run_id": "Grillo-20261028-130311-d7a4",
+  "issue": 95,
+  "title": "Support agent skill",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T13:03:11Z",
+  "finished_at": "2026-10-28T13:28:32Z",
+  "outcome": "merged",
+  "pr": 153,
+  "summary": "Adds the /grillo-support skill: it answers questions about the project and its agents and, after the member presses Send, writes a relay request that reuses the agent chat relay, marked 'from Support, for <member>'; the reader refuses malformed requests, self-written marks and messages ending in a screen control line.",
+  "agents": [
+    {
+      "name": "dev-95",
+      "model": "opus",
+      "tokens_total": 203828
+    },
+    {
+      "name": "review-95",
+      "model": "opus",
+      "tokens_total": 112011
+    },
+    {
+      "name": "review-95-r2",
+      "model": "opus",
+      "tokens_total": 109336
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 883,
+    "review_seconds": 449,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [
+    "A skill whose output is relayed into another agent's chat must refuse text whose last line is a screen control line (README protocol table), or the relay can press a button such as Done in the target agent"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "support agent tab (issue #96)",
+      "what": "Issue #96 (support agent tab screen) does not mention the grillo-relay request contract, so it could ship without reading the block, handing it to agent-chat:relay and typing back 'relayed:' / 'not relayed:'; until then nothing is ever relayed",
+      "why": "The tab is out of this issue's scope",
+      "owner": "#96"
+    }
+  ]
+}
