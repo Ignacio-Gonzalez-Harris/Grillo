@@ -1,0 +1,1 @@
+PRD view screen: read the latest PRD with linked trace codes and its audit appendix, open any kept version, export it as Markdown or self-contained HTML, regenerate, edit the structure, or talk to an agent about it.
