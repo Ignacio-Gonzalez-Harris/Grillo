@@ -1,0 +1,33 @@
+{
+  "run_id": "Grillo-20261028-150015-477c",
+  "issue": 94,
+  "title": "Chat view with the \"show terminal\" switch as the agent tab body",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T15:00:15Z",
+  "finished_at": "2026-10-28T15:20:00Z",
+  "outcome": "needs-human",
+  "pr": null,
+  "summary": "The chat view could not be built: agent tabs only ever hold a terminal agent, and nothing starts a chat agent behind a tab. No code was written; issue #156 (agent runtime starts each agent tab as a chat agent) was filed and set as a blocker of issues #94 and #96.",
+  "agents": [
+    {
+      "name": "dev-94",
+      "model": "opus",
+      "tokens_total": 119782
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 166,
+    "review_seconds": 0,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 0,
+    "ci": 0
+  },
+  "friction": [
+    "Issue #94 (chat view) and issue #96 (support agent tab) were labelled agent-ready but unbuildable: the PRD split never cut a story that makes an agent tab a chat agent; a dev run was spent finding it. Filed as issue #156, which waits on issue #123 (Agent SDK terms)."
+  ],
+  "lessons_learned": [],
+  "deferred": []
+}

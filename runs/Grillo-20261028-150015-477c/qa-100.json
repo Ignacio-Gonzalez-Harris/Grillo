@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261028-150015-477c",
+  "issue": 100,
+  "title": "Launch a research, prototype or task agent from a ticket",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 158,
+  "merged_at": "2026-10-28T15:31:48Z",
+  "merge_commit": "ee048d8c5453e0cffd4848e37194b93ef7080e90",
+  "seam": "src/renderer/screens/tickets/launch/",
+  "story": "On the Tickets tab, a research, prototype or task ticket now has a 'Launch … agent' button; clicking it opens a new agent tab that starts working the ticket with the matching command. Grilling tickets have no such button. A ticket someone already holds, or whose agent is still running, shows the button greyed out with the reason.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/tickets/launch/research-control",
+      "criterion": "A research ticket gets a launch button with the catalogue command",
+      "steps": "Start fresh and open the made-up project 'Sample project 1'. On the Tickets tab open the unassigned research ticket 'Sample ticket 5' (issue 5).",
+      "expected": "'Launch research agent' first and highlighted, Take beside it not highlighted, and the line 'Opens a Research tab that runs /grillo-research 5…' with the command shown as a small grey chip."
+    },
+    {
+      "key": "src/renderer/screens/tickets/launch/start-agent",
+      "criterion": "Launching starts the agent with the catalogue command",
+      "steps": "On that ticket click 'Launch research agent'. Repeat on an unassigned prototype ticket and an unassigned task ticket.",
+      "expected": "A new tab 'Research · Sample ticket 5' opens and types /grillo-research 5; the other two type /grillo-prototype <n> and /grillo-task <n> in their own tabs."
+    },
+    {
+      "key": "src/renderer/screens/tickets/launch/no-relaunch",
+      "criterion": "A held ticket or one whose agent is running cannot be launched again",
+      "steps": "Go back to Tickets and open 'Sample ticket 5' again. Then open a task ticket you have taken.",
+      "expected": "The button greyed out with 'Running in the Research · Sample ticket 5 tab.', or with 'Assigned to you. A ticket already held by an agent or a member cannot be launched again.'"
+    },
+    {
+      "key": "src/renderer/screens/tickets/launch/no-control",
+      "criterion": "Only research, prototype and task tickets get the button",
+      "steps": "Open a grilling ticket, then a closed research ticket, then any ticket in an archived project.",
+      "expected": "No 'Launch …' button on any of them."
+    }
+  ],
+  "no_qa_reason": null
+}

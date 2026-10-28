@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261028-150015-477c",
+  "issue": 98,
+  "title": "Score on the PRD view",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 157,
+  "merged_at": "2026-10-28T16:19:34Z",
+  "merge_commit": "96414099f89fe9cc787e8ddd0c52881a8c4e5e4d",
+  "seam": "src/renderer/screens/prd/score/",
+  "story": "The PRD tab now shows how good the PRD is: above the document there is a score out of 10, with a mark and a one-line comment for each quality criterion and each section. Each version in the list carries its own score badge, and Rerun on the latest version asks an agent to score it again; the new score appears when the agent finishes. Before, the PRD tab showed no score at all.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/prd/score/view",
+      "criterion": "The PRD view shows the score of the version on show: overall, per criterion and per section with comments, and a score badge on each scored version",
+      "steps": "Use a made-up project example-org/sample-project-1 with two PRD versions: version 1 scored 5.8, version 2 scored 6.3, each with criteria (e.g. Clear 8, Scope and priorities 4) and sections (e.g. Sample section 1 at 9). Open the PRD tab. Then click Open on version 1.",
+      "expected": "A Score panel above the document reading '6.3 out of 10', the weighting sentence, a Quality table (Criterion, Mark, Comment) and a 'Coverage, per section of the PRD structure' table; marks 8-9 green, 3-4 amber, 6-7 plain, each with a bar. The list shows version 2 'Latest' and 'Score 6.3', version 1 'Score 5.8'. After opening version 1 the panel shows its score and no Rerun button."
+    },
+    {
+      "key": "src/renderer/screens/prd/score/rerun",
+      "criterion": "Rerun starts an agent that scores the latest version again",
+      "steps": "Set up as in the view check, on version 2. Click Rerun. While it runs, open version 1.",
+      "expected": "A new agent tab 'Grilling · PRD score' typing /grillo-score; the latest version's panel shows 'Scoring…' and Rerun is greyed out; version 1's panel shows no 'Scoring…'. When the tab goes quiet the new score shows and Rerun is clickable again."
+    },
+    {
+      "key": "src/renderer/screens/prd/score/unscored",
+      "criterion": "A version with no score says so",
+      "steps": "Use a made-up project with one PRD version that has no score. Open the PRD tab.",
+      "expected": "A Score panel saying 'This version has no score yet.' with a working Rerun button, and no score badge in the version list."
+    }
+  ],
+  "no_qa_reason": null
+}

@@ -1,0 +1,49 @@
+{
+  "run_id": "Grillo-20261028-150015-477c",
+  "issue": 100,
+  "title": "Launch a research, prototype or task agent from a ticket",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T15:00:15Z",
+  "finished_at": "2026-10-28T15:31:48Z",
+  "outcome": "merged",
+  "pr": 158,
+  "summary": "Research, prototype and task tickets on the Tickets screen now carry a Launch button that opens an agent tab running the matching catalogue command; held tickets and tickets with a running agent show it greyed out with the reason.",
+  "agents": [
+    {
+      "name": "dev-100",
+      "model": "opus",
+      "tokens_total": 152151
+    },
+    {
+      "name": "review-100-r1",
+      "model": "opus",
+      "tokens_total": 119626
+    },
+    {
+      "name": "review-100-r2",
+      "model": "opus",
+      "tokens_total": 121936
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 715,
+    "review_seconds": 850,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/tickets/",
+      "what": "The ticket list shows no kind badge on its rows, while the prototype's launch state shows one on every row, so a member cannot tell which tickets are research, prototype or task (and so launchable) without opening each one.",
+      "why": "Outside this story's scope (In: the control only).",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "run_id": "Grillo-20261028-150015-477c",
+  "issue": 98,
+  "title": "Score on the PRD view",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T15:00:15Z",
+  "finished_at": "2026-10-28T16:19:34Z",
+  "outcome": "merged",
+  "pr": 157,
+  "summary": "The PRD tab now shows each version's score out of 10, with marks and comments per quality criterion and per section, score badges in the version list, and a Rerun button that starts /grillo-score on the latest version.",
+  "agents": [
+    {
+      "name": "dev-98",
+      "model": "opus",
+      "tokens_total": 139589
+    },
+    {
+      "name": "review-98-r1",
+      "model": "opus",
+      "tokens_total": 124334
+    },
+    {
+      "name": "review-98-r2",
+      "model": "opus",
+      "tokens_total": 114829
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1030,
+    "review_seconds": 880,
+    "ci_seconds": 420
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/repo/",
+      "what": "One malformed v<n>.score.json (not JSON or missing a field, e.g. written badly by the /grillo-score agent) makes listPrdVersions reject, so the whole PRD view shows only an error and its Rerun button is unreachable until the file is fixed by hand.",
+      "why": "Outside this story's seam (the store); the score panel only handles out-of-range marks and empty names.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
