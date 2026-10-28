@@ -24,11 +24,12 @@ function clock() {
 
 const quietLog = { warn: vi.fn() };
 
-/** A project in the in-memory store with Ben as a second member, so tickets can be sent to him. */
+/** A project opened on this laptop, with Ben as a second member, so tickets can be sent to him. */
 async function projectIn(store: MemoryStore, name: string): Promise<string> {
   const { id } = await store.createProject({ newRepository: { organisation: 'example-org', name } });
   await store.createMap(id, { destination: 'A made-up product', notes: '', fog: [], outOfScope: [] });
   await store.addMember(id, { login: OTHER_MEMBER, role: 'product', domains: [] });
+  await store.openProjectFolder(id);
   return id;
 }
 
@@ -104,12 +105,13 @@ describe('nudges on tickets taken but silent for days', () => {
     }
   });
 
-  it('names the tickets of every project in the one notification', async () => {
+  it('names the tickets of every recent project in the one notification, archived projects left out', async () => {
     const { store, notices, nudges, advance } = setup();
-    for (const name of ['first-project', 'second-project']) {
+    for (const name of ['first-project', 'second-project', 'archived-project']) {
       const project = await projectIn(store, name);
       await store.claimTicket((await ticketIn(store, project, `Ticket of ${name}`)).id);
     }
+    await store.archiveProject('example-org/archived-project');
 
     await nudges.check();
     advance(3 * DAY_MS);
@@ -118,6 +120,7 @@ describe('nudges on tickets taken but silent for days', () => {
     expect(notices).toHaveLength(1);
     expect(notices[0].body).toContain('Ticket of first-project');
     expect(notices[0].body).toContain('Ticket of second-project');
+    expect(notices[0].body).not.toContain('Ticket of archived-project');
   });
 
   it('waits the number of days the setting gives, and the default when the setting is unusable', async () => {
@@ -166,6 +169,12 @@ describe('nudges on tickets taken but silent for days', () => {
   it('still nudges about the other projects when one project cannot be read, and ignores unreadable answer dates', async () => {
     const { store, notices, nudges, advance } = setup((memory) => ({
       ...memory,
+      getProject: async (project) => {
+        if (project === 'example-org/unreachable') {
+          throw new StoreError('conflict', 'The project folder could not be brought up to date with GitHub');
+        }
+        return memory.getProject(project);
+      },
       listTickets: async (project, filter) => {
         if (project === 'example-org/broken') {
           throw new StoreError('backend', 'gh failed');
@@ -174,6 +183,7 @@ describe('nudges on tickets taken but silent for days', () => {
       },
       listAnswers: async (id) => (await memory.listAnswers(id)).map((entry) => ({ ...entry, when: 'not a date' })),
     }));
+    await projectIn(store, 'unreachable');
     await projectIn(store, 'broken');
     const project = await projectIn(store, 'nudge-demo');
     const ticket = await ticketIn(store, project, 'Silent ticket');
@@ -186,6 +196,7 @@ describe('nudges on tickets taken but silent for days', () => {
 
     expect(notices).toHaveLength(1);
     expect(notices[0].body).toContain('Silent ticket');
+    expect(quietLog.warn).toHaveBeenCalledWith(expect.stringContaining('example-org/unreachable'));
     expect(quietLog.warn).toHaveBeenCalledWith(expect.stringContaining('example-org/broken'));
   });
 
@@ -227,9 +238,9 @@ describe('nudges on tickets taken but silent for days', () => {
     let checks = 0;
     const { store, notices, nudges, advance } = setup((memory) => ({
       ...memory,
-      listProjects: () => {
+      listRecentProjects: () => {
         checks++;
-        return memory.listProjects();
+        return memory.listRecentProjects();
       },
     }));
     const project = await projectIn(store, 'nudge-demo');

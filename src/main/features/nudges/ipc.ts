@@ -1,6 +1,6 @@
 import { app, Notification } from 'electron';
 import type { FeatureContext } from '../../app/features';
-import { createStore, storeKindFrom } from '../../store';
+import { appStore } from '../store/ipc';
 import { createNudgesFeature, type Notifier } from './nudges';
 
 /**
@@ -13,7 +13,7 @@ const systemNotifier: Notifier = {
   show: ({ title, body }) => new Notification({ title, body }).show(),
 };
 
-/** Nudges as system notifications, reading the same backend as the store feature (GRILLO_STORE). */
+/** Nudges as system notifications, reading the app's one store, the instance the store feature puts on IPC. */
 export function register({ settings }: FeatureContext): void {
   if (!Notification.isSupported()) {
     return;
@@ -22,7 +22,7 @@ export function register({ settings }: FeatureContext): void {
     app.setAppUserModelId(WINDOWS_APP_ID);
   }
   createNudgesFeature({
-    store: createStore(storeKindFrom(process.env), { settings }),
+    store: appStore(settings),
     settings,
     notifier: systemNotifier,
   }).start();

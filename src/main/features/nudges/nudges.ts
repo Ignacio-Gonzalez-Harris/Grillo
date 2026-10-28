@@ -26,7 +26,7 @@ export const NUDGE_HELD_SINCE_SETTING = 'nudgeHeldSince';
 export const NUDGE_TITLE = 'Tickets waiting for your answer';
 
 /** The store calls a nudge makes. */
-export type NudgeStore = Pick<Store, 'listProjects' | 'currentMember' | 'listTickets' | 'listAnswers'>;
+export type NudgeStore = Pick<Store, 'listRecentProjects' | 'getProject' | 'currentMember' | 'listTickets' | 'listAnswers'>;
 
 export interface Notice {
   title: string;
@@ -131,16 +131,15 @@ export function createNudgesFeature(options: NudgesFeatureOptions): NudgesFeatur
     const since = heldSinceIn(settings);
     const held: HeldSince = {};
     const silent: Ticket[] = [];
-    for (const project of await store.listProjects()) {
-      if (project.archived) {
-        continue;
-      }
+    for (const { project } of await store.listRecentProjects()) {
       try {
-        silent.push(...(await silentIn(project.id, since, held, cutoff)));
+        if (!(await store.getProject(project)).archived) {
+          silent.push(...(await silentIn(project, since, held, cutoff)));
+        }
       } catch (error) {
-        log.warn(`Nudges could not read ${project.id}: ${describe(error)}`);
+        log.warn(`Nudges could not read ${project}: ${describe(error)}`);
         // Keep this project's notes until it can be read again.
-        const prefix = ` ${project.id}#`;
+        const prefix = ` ${project}#`;
         Object.entries(since)
           .filter(([key]) => key.includes(prefix))
           .forEach(([key, value]) => (held[key] = value));

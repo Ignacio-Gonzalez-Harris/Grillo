@@ -316,7 +316,8 @@ one system notification, "Tickets waiting for your answer", naming each ticket a
   Notifications; on a Mac: System Settings, Notifications). A project Grillo cannot read is skipped and logged; the
   others are still checked.
 - **Developers:** `npx vitest run src/main/features/nudges` runs its tests against the in-memory store and a fake
-  notifier. The nudges read the backend `GRILLO_STORE` names, through a store of their own.
+  notifier. The nudges read the app's one store (`appStore` in `src/main/features/store/ipc.ts`), the same
+  instance the screens reach over IPC, so one queue guards each project folder.
 
 ## PRD
 
