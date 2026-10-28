@@ -1,0 +1,41 @@
+{
+  "map": {
+    "number": 1,
+    "title": "Map",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "state": "open",
+    "body": "issues/1.md"
+  },
+  "tickets": [
+    {
+      "number": 2,
+      "title": "Who may lend tools",
+      "labels": [
+        "wayfinder:grilling",
+        "domain:product"
+      ],
+      "state": "open",
+      "assignee": "ben-example",
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/2.md",
+      "comments": []
+    },
+    {
+      "number": 3,
+      "title": "When the tool shed is open",
+      "labels": [
+        "wayfinder:research",
+        "domain:none"
+      ],
+      "state": "open",
+      "assignee": null,
+      "parent": 1,
+      "blockedBy": [],
+      "body": "issues/3.md",
+      "comments": []
+    }
+  ]
+}

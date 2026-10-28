@@ -575,6 +575,33 @@ by hand.
 - **Developers:** the screen is `src/renderer/screens/generic-agent/`, registered as `generic-agent`;
   `npx vitest run src/renderer/screens/generic-agent` checks it.
 
+## Support agent
+
+Release 2 adds a side helper, the skill `grillo-support`, shipped into the project folder beside `grillo-wayfinder`.
+Its tab arrives with its own story, which types `/grillo-support` as the first message; until then a developer can
+run it by hand.
+
+- **Ask it anything** about the project or its agents: what is settled, who holds which ticket, which questions are
+  open, what an agent tab is for. It reads GitHub and the project folder fresh and **writes nothing**: no issue,
+  comment, label or file.
+- **Pass a message to another agent tab on this laptop**: say what it should hear. The support agent shows the exact
+  message and the tab it goes to (`Grilling · Who may lend tools`) and asks Send, Change it or Cancel. Only after
+  Send does it write a relay request, and Grillo posts the message into that tab's chat as
+  `[from Support, for <your login>] <message>`; the reply shows in that tab.
+- **The relay request** is a fenced block in the support agent's message: ` ```grillo-relay `, then `to: <tab name>`,
+  an empty line, the message, and ` ``` `. The support agent tab reads it with `readRelayRequests` from
+  `resources/skills/grillo-support/relay-request.ts`, hands each good one to the agent chat protocol's relay
+  (`agent-chat:relay`), and types back one line: `relayed: <tab name>`, or `not relayed: <reason>` (an unknown tab,
+  the support tab itself, or a malformed request; a message that writes the mark itself is refused).
+- **Run it by hand (developers):** in a clone of a made-up test project with a map on GitHub and `.grillo/` on
+  `main`, copy `resources/skills/grillo-wayfinder/` and `resources/skills/grillo-support/` into `.claude/skills/`,
+  start `claude` there and type `/grillo-support`. Without the tab nothing reads a relay request, so nothing is
+  posted. Never use real customer data.
+- **Developers:** `npx vitest run resources/skills/grillo-support` checks the skill's frontmatter and command against
+  the catalogue, that it writes nothing, the screen messages it handles, the relay request reader against malformed
+  requests, and a fixture support run whose requests go through the real driver and `relay` into a fake target agent,
+  each marked for the member.
+
 ## Research, prototype and task agents
 
 Release 3 adds one agent for each of the other three ticket kinds: the skills `grillo-research`, `grillo-prototype`

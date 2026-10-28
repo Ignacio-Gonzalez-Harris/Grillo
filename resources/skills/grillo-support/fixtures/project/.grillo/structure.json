@@ -1,0 +1,12 @@
+{
+  "sections": [
+    {
+      "name": "Users and roles",
+      "note": "Who uses the app and what each may do"
+    },
+    {
+      "name": "Rules",
+      "note": "The lending rules the app enforces"
+    }
+  ]
+}

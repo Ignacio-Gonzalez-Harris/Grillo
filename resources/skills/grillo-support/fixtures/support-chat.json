@@ -1,0 +1,25 @@
+{
+  "member": "ben-example",
+  "tabs": [
+    { "name": "Grilling · Who may lend tools", "kind": "grilling" },
+    { "name": "Support", "kind": "support" }
+  ],
+  "messages": [
+    { "from": "member", "text": "/grillo-support" },
+    { "from": "agent", "text": "Ready. Ask me anything about the project or its agents, or tell me what to pass to another agent tab." },
+    { "from": "member", "text": "Which agent is on the lending question? I want to correct something I said there." },
+    { "from": "agent", "text": "The ticket \"Who may lend tools\" (#2) is held by you, and the tab \"Grilling · Who may lend tools\" is working it. What should it hear?" },
+    { "from": "member", "text": "Tell it that for Q2.2 I meant guests from partner gardens only, not every visitor." },
+    { "from": "agent", "text": "I will post this into \"Grilling · Who may lend tools\", marked as from Support, for you:\n\n> For Q2.2 on \"Who may lend tools\" (#2): I meant guests from partner gardens only, not every visitor.\n\nSend it?" },
+    { "from": "member", "text": "Send" },
+    { "from": "agent", "text": "```grillo-relay\nto: Grilling · Who may lend tools\n\nFor Q2.2 on \"Who may lend tools\" (#2): I meant guests from partner gardens only, not every visitor.\n```" },
+    { "from": "grillo", "text": "relayed: Grilling · Who may lend tools" },
+    { "from": "agent", "text": "Posted into \"Grilling · Who may lend tools\". Its reply shows in that tab." },
+    { "from": "member", "text": "Also tell the research agent on the shed hours that the shed opens at 8 on weekdays." },
+    { "from": "agent", "text": "I will post this into \"Research · When the tool shed is open\", marked as from Support, for you:\n\n> For Q3.1 on \"When the tool shed is open\" (#3): the shed opens at 8 on weekdays.\n\nSend it?" },
+    { "from": "member", "text": "Send" },
+    { "from": "agent", "text": "```grillo-relay\nto: Research · When the tool shed is open\n\nFor Q3.1 on \"When the tool shed is open\" (#3): the shed opens at 8 on weekdays.\n```" },
+    { "from": "grillo", "text": "not relayed: no open agent tab is named \"Research · When the tool shed is open\"; open tabs: Grilling · Who may lend tools" },
+    { "from": "agent", "text": "Nothing was posted: no research agent is open on \"When the tool shed is open\" (#3). Start one from that ticket on ticket management, then ask me again." }
+  ]
+}
