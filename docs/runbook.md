@@ -372,8 +372,8 @@ ticket and Run tagging round.
 
 - **Pressing it** starts a grilling agent in the project folder that types `/grillo-meeting`, named "Grilling · Live
   session", and opens its tab, where the meeting panel shows (below).
-- **One meeting agent at a time:** while a meeting agent of this project is running, Start meeting opens its tab
-  instead of starting a second one. Once that agent has stopped, it starts a new one.
+- **One meeting agent at a time:** while a meeting agent is running on this laptop, for this project or any other,
+  Start meeting opens its tab instead of starting a second one. Once that agent has stopped, it starts a new one.
 - **A closed (archived) project** shows no Start meeting button; Reopen brings it back.
 - **While the engine builds the map** the Tickets card has no header row, so there is no Start meeting either.
 - **Developers:** `npx vitest run src/renderer/screens/map/map.test.ts -t "starting a live meeting"` runs the button

@@ -8,7 +8,8 @@
  * screen reads the store afresh whenever an agent goes quiet, since agents change the map and tickets as they work.
  *
  * "Start meeting" starts the live session's meeting agent (`/grillo-meeting`, PRD 4.5) and opens its tab, where the
- * meeting panel shows; while one runs for this project, it opens that agent's tab instead of starting a second.
+ * meeting panel shows; while one runs on this laptop, for any project, it opens that agent's tab instead of starting a
+ * second (the laptop runs one live session at a time).
  */
 import './map.css';
 import type { Store } from '../../../main/store/store';
@@ -263,10 +264,10 @@ export function mountMap(container: HTMLElement, params: ScreenParams, deps: Map
     });
   }
 
-  /** Opens this project's running meeting agent, or starts one: one meeting agent at a time from here. */
+  /** Opens the running meeting agent, whatever its project, or starts one: one meeting agent at a time from here. */
   function startMeeting(): Promise<void> {
     return act(async (project) => {
-      const running = [...waiting.keys()].find((agentId) => deps.meetingAgents.projectOf(agentId) === project);
+      const running = [...waiting.keys()].find((agentId) => deps.meetingAgents.projectOf(agentId) !== undefined);
       const agentId =
         running ?? (await startMeetingAgent(grillo, deps.meetingAgents, { project, folder: await projectFolder(store, project) }));
       navigate(AGENT_SCREEN, { agentId });

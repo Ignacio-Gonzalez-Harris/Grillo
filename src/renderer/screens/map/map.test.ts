@@ -306,6 +306,23 @@ describe('the map screen: starting a live meeting', () => {
     expect(starts.map(({ firstMessage }) => firstMessage)).toEqual([TAGGING_COMMAND, MEETING_COMMAND, MEETING_COMMAND]);
     expect(meetingPanel()?.hidden).toBe(false);
   });
+
+  it('opens the meeting agent another project is running instead of starting a second one on this laptop', async () => {
+    const { store, project, starts, content, open } = await app({ meeting: true });
+    await sampleTickets(store, project);
+    const other = await store.createProject({ newRepository: { organisation: 'example-org', name: 'sample-project-2' } });
+    await store.createMap(other.id, { destination: 'A PRD for Sample project 2.', notes: '', fog: [], outOfScope: [] });
+    await store.createTicket(other.id, ticketInput('Sample ticket 9'));
+    await open();
+    await click(content(), 'Start meeting');
+
+    await open({ project: other.id });
+    await click(content(), 'Start meeting');
+
+    expect(starts.map(({ firstMessage }) => firstMessage)).toEqual([MEETING_COMMAND]);
+    expect(document.querySelector('.tab.active')?.textContent).toContain(MEETING_AGENT_TITLE);
+    expect(meetingPanel()?.hidden).toBe(false);
+  });
 });
 
 describe('the map screen: tagged and assigned, with sources', () => {
