@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261028-013907-621e",
+  "issue": 78,
+  "title": "Agent tab: terminal body, tab-panel discovery, tab name and waiting dot",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T01:41:08Z",
+  "finished_at": "2026-10-28T02:25:48Z",
+  "outcome": "needs-human",
+  "pr": 130,
+  "summary": "Ships the agent tab: a live xterm.js terminal wired to the agent runtime, tab-panel discovery for other screens, tab name and waiting dot, in the liquid-glass tokens; approved by two fresh reviews with a green local gate and proven in the real app, but not merged because GitHub Actions refused to start any job (account billing).",
+  "agents": [
+    { "name": "dev-78", "model": "opus", "tokens_total": 230372 },
+    { "name": "review-78", "model": "opus", "tokens_total": 136762 },
+    { "name": "review-78-r2", "model": "opus", "tokens_total": 129406 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 1840, "review_seconds": 625, "ci_seconds": 0 },
+  "rounds": { "review": 2, "ci": 2 },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "high",
+      "area": "src/renderer/screens/agent-tab/",
+      "what": "The fixed tab-panel slot set body | controls | header has no place above the terminal or for a right-hand column, yet the meeting prototype puts the question card above the terminal and own-time answering puts the ticket row above it and the Questions card to its right; issue #91 (meeting panel) and issue #92 (own-time answering screen) cannot match their prototypes without editing this folder, and would collide if run in parallel.",
+      "why": "A new slot is a design decision outside this story's fixed slot list.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/agent-tab/ and the agent runtime",
+      "what": "Send writes the text and then Enter as a separate write; on a long line Claude Code may not have finished echoing, so the Enter can be lost and the message never sent.",
+      "why": "The runtime's wait-until-quiet Enter is not reachable from the renderer; that code belongs to the agent runtime.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
