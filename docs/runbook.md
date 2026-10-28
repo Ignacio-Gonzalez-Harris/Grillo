@@ -244,6 +244,28 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
   into the type box. A malformed `tab-panel.ts`, or two body panels tied for one kind, stops Grillo at start with
   the folder named; a panel that throws is logged and the rest of the tab still works.
 
+### Agent chat protocol (release 2, no screen yet)
+
+The chat view's engine. Nothing on screen uses it yet; the chat view arrives with its own story.
+
+- **A chat agent is your own `claude` with no terminal**, started in the project folder with fixed flags:
+  `claude -p --input-format stream-json --output-format stream-json --verbose --permission-prompt-tool stdio
+  --permission-mode manual`. Never `--bare`, so your user-level `CLAUDE.md` and your subscription login still
+  apply. Grillo's skills are copied in first, as for every agent, so the folder must be a git clone.
+- **What comes back** on `agent-chat:message`: `init` (each turn), `assistant` (text bubbles), `user` (every
+  message Grillo wrote in, first message and relays included), `question` (clickable options), `permission` (a
+  tool waiting for Allow or Deny), `result` (turn end) and `error` (a line it could not read; the agent carries
+  on). Every raw line also goes out on `agent-chat:raw`, for the "show terminal" switch.
+- **Answering:** `agent-chat:answer` with the question's id and the chosen label (or free text; with several
+  questions, question text to answer), `agent-chat:allow` and `agent-chat:deny` with the permission's id. Deny also
+  dismisses a question. Each id is answered once; a second answer, an unknown id or an empty answer comes back as
+  `{ ok: false, reason }`, never as an exception.
+- **The relay:** `agent-chat:relay` with the target agent, the member and the text writes one message
+  `[from Support, for <member>] <text>` into the target's chat; its reply arrives in the target's own stream.
+  Square brackets in the name become round ones and line breaks become spaces, so the prefix stays one line.
+- **A question Claude Code sends that Grillo cannot read** is answered with an error at once, so the agent never
+  hangs waiting, and shows as an `error` message.
+
 ## Meeting
 
 The meeting screen arrives with its own story. What already works underneath it:
