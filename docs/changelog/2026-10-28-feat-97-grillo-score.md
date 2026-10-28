@@ -1,0 +1,1 @@
+The PRD grader ships as the grillo-score skill: every PRD version gets a 0-10 score with a mark, a comment and a suggestion per quality criterion and per section, as guidance that never blocks anything.
