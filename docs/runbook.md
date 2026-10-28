@@ -202,7 +202,7 @@ built the map.
 - **Show discussion (word for word)** shows each recorded discussion of the ticket in full.
 - **Edit**, **Merge** and **Close as out of scope** work as on the map, on tickets nobody else holds. When a merge or
   close leaves no open ticket and no fog, Grillo starts the PRD writer (`/grillo-prd`) and says so.
-- **Answer now** opens the own-time screen on the ticket.
+- **Answer now** opens the own-time screen on the ticket; a ticket someone else holds has none, since only they answer it.
 - **Pick up GitHub comments** shows while members' plain comments on open tickets wait to be recorded. It opens a
   grilling agent in its own tab that types `/grillo-answer pickup`; the answers appear when the agent goes quiet.
 - **An archived project** stays readable here, with every change control gone.

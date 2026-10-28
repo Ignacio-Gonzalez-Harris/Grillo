@@ -339,6 +339,8 @@ describe('the tickets screen: locked by another member', () => {
     expect(buttonNamed(detailCard(content()), 'Take')?.disabled).toBe(true);
     expect(text(detailCard(content()).querySelector('.reason'))).toBe('Assigned to ben-example. You can still read and discuss it.');
     expect(buttonNamed(detailCard(content()), 'Merge')).toBeUndefined();
+    // Only the holder answers a locked ticket: the own-time screen refuses anyone else.
+    expect(buttonNamed(detailCard(content()), 'Answer now')).toBeUndefined();
     expect(questionRows(content())).toHaveLength(2);
     expect(texts(picker(detailCard(content()), 'Reassign to')?.options ?? [])).toEqual(['Reassign to…', 'ada-example (you)']);
 

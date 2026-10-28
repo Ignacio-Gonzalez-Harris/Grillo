@@ -533,7 +533,7 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
       },
     });
     const footer: Content[] = [toggle, el('span', 'spacer')];
-    if (open && !archived) {
+    if (open && !archived && !lockedByOther(ticket, view.member)) {
       footer.push(
         button('Answer now', {
           variant: 'primary',
