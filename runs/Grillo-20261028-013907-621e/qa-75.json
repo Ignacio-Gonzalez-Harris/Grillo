@@ -1,0 +1,20 @@
+{
+  "run_id": "Grillo-20261028-013907-621e",
+  "login": "Ignacio-Gonzalez-Harris",
+  "no_qa_reason": null,
+  "issue": 75,
+  "title": "Engine base: Grillo wayfinder with source recording, contradiction check, map-done and structure-section rules",
+  "pr": 129,
+  "merged_at": "2026-10-28T02:29:28Z",
+  "merge_commit": "512d68eab06902f75dd2c70bb4810761b68c604e",
+  "seam": "resources/skills/grillo-wayfinder/",
+  "story": "A member saves their idea, and Grillo agent turns it into a map and a set of tickets on GitHub without a conversation first; the destination is always a PRD. Every section of the project PRD outline gets a ticket or a still-unclear (fog) note. When answers are recorded later, the agent first checks them against what is settled and saves where each answer came from before posting it; when the last ticket closes it starts the PRD writer.",
+  "checks": [
+    {
+      "key": "grillo-wayfinder/start-map",
+      "criterion": "/grillo-wayfinder <path> creates the map, tickets and questions alone, the destination is always a PRD, and every PRD structure section gets a ticket or a fog line.",
+      "steps": "Create a made-up private test repository. On main add .grillo/sources/S1.md (kind: pasted-text, who: Ada Example, product, when: 2026-10-24T08:00:00.000Z, where: typed into Grillo, an empty line, then a two-line made-up idea about a garden tool shed) and .grillo/structure.json with the sections Problem, Flows and Permissions. Clone it, copy resources/skills/grillo-wayfinder/ into the clone .claude/skills/, run claude in the clone and type /grillo-wayfinder .grillo/sources/S1.md.",
+      "expected": "No question before the tickets exist. One issue titled Map labelled wayfinder:map, a Destination starting \"A PRD for\" and the five ### sections. Tickets are sub-issues of the map, each with one wayfinder:* label and no domain label. Questions numbered - Q<number>.1, .2 and so on. Each ticket Why it matters and each fog line starts with a section name and a colon, and each of the three sections is named at least once. The agent stops after reporting the map, the frontier tickets and the fog count."
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261028-013907-621e",
+  "login": "Ignacio-Gonzalez-Harris",
+  "no_qa_reason": null,
+  "issue": 78,
+  "title": "Agent tab: terminal body, tab-panel discovery, tab name and waiting dot",
+  "pr": 130,
+  "merged_at": "2026-10-28T02:30:33Z",
+  "merge_commit": "86a07275173c96af046632ed727fae622b1f0f4e",
+  "seam": "src/renderer/screens/agent-tab/ and src/renderer/components/terminal/",
+  "story": "Each running agent now has its own tab showing the real Claude Code screen, sized to the window; you can type straight into it or use the box underneath. Switching to another tab and back loses nothing, and if the agent stops while its tab is open the tab says it is not running instead of going blank. Later features (meeting controls, the Channel switch, the chat view) plug into the tab without changing it.",
+  "checks": [
+    {
+      "key": "agent-tab/terminal-shows-agent",
+      "criterion": "The agent tab shows its live Claude Code terminal, with typing and resizing passed to the agent.",
+      "steps": "Start Grillo; start a grilling agent in an empty made-up folder such as sample-project-1; click its tab \"Grilling · Sample ticket 3\".",
+      "expected": "Claude Code trust prompt in a dark smoked-glass panel filling the window, a \"Type to the agent…\" box with Send under it, and the orange waiting dot on the tab after about 3 seconds of quiet."
+    },
+    {
+      "key": "agent-tab/typing-always-available",
+      "criterion": "Typing is always available.",
+      "steps": "Start Grillo; start a grilling agent in an empty made-up folder such as sample-project-1; click its tab \"Grilling · Sample ticket 3\". Click the terminal and press the down arrow, then Esc.",
+      "expected": "The highlight moves to \"Yes, I trust this folder\", then Claude Code closes and its tab disappears."
+    },
+    {
+      "key": "agent-tab/type-box-send",
+      "criterion": "The type box sends to the agent.",
+      "steps": "Start Grillo; start a grilling agent in an empty made-up folder such as sample-project-1; click its tab \"Grilling · Sample ticket 3\". Leave \"No, exit\" highlighted and click Send with the box empty.",
+      "expected": "Claude Code exits and the tab disappears."
+    },
+    {
+      "key": "agent-tab/kept-across-tabs",
+      "criterion": "A tab keeps its state across switches.",
+      "steps": "Start Grillo; start a grilling agent in an empty made-up folder such as sample-project-1; click its tab \"Grilling · Sample ticket 3\". Type \"Sample typed text\" into the box without sending, click Setup, then click the agent tab again.",
+      "expected": "The same terminal output, and the text still in the box."
+    },
+    {
+      "key": "agent-tab/agent-stops-while-open",
+      "criterion": "An open tab whose agent stops says so instead of going blank.",
+      "steps": "Start Grillo; start a made-up task agent \"Task · Sample ticket 5\" in an empty made-up folder; open its tab, then press Esc in the terminal so Claude Code closes.",
+      "expected": "The window body shows \"This agent is not running.\" and the agent tab is gone."
+    }
+  ]
+}

@@ -4,17 +4,37 @@
   "title": "Agent tab: terminal body, tab-panel discovery, tab name and waiting dot",
   "login": "Ignacio-Gonzalez-Harris",
   "started_at": "2026-10-28T01:41:08Z",
-  "finished_at": "2026-10-28T02:25:48Z",
-  "outcome": "needs-human",
+  "finished_at": "2026-10-28T02:30:33Z",
+  "outcome": "merged",
   "pr": 130,
-  "summary": "Ships the agent tab: a live xterm.js terminal wired to the agent runtime, tab-panel discovery for other screens, tab name and waiting dot, in the liquid-glass tokens; approved by two fresh reviews with a green local gate and proven in the real app, but not merged because GitHub Actions refused to start any job (account billing).",
+  "summary": "Ships the agent tab: a live xterm.js terminal wired to the agent runtime, tab-panel discovery for other screens, tab name and waiting dot, in the liquid-glass tokens; approved by two fresh reviews and merged on a green local Windows gate (CI blocked by billing).",
   "agents": [
-    { "name": "dev-78", "model": "opus", "tokens_total": 230372 },
-    { "name": "review-78", "model": "opus", "tokens_total": 136762 },
-    { "name": "review-78-r2", "model": "opus", "tokens_total": 129406 }
+    {
+      "name": "dev-78",
+      "model": "opus",
+      "tokens_total": 230372
+    },
+    {
+      "name": "review-78",
+      "model": "opus",
+      "tokens_total": 136762
+    },
+    {
+      "name": "review-78-r2",
+      "model": "opus",
+      "tokens_total": 129406
+    }
   ],
-  "phases": { "qa_seconds": 0, "dev_seconds": 1840, "review_seconds": 625, "ci_seconds": 0 },
-  "rounds": { "review": 2, "ci": 2 },
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1840,
+    "review_seconds": 625,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 2
+  },
   "friction": [],
   "lessons_learned": [],
   "deferred": [

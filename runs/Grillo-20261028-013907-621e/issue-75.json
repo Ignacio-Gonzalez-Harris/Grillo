@@ -4,19 +4,39 @@
   "title": "Engine base: Grillo's wayfinder with source recording, contradiction check, map-done and structure-section rules",
   "login": "Ignacio-Gonzalez-Harris",
   "started_at": "2026-10-28T01:39:18Z",
-  "finished_at": "2026-10-28T02:25:48Z",
-  "outcome": "needs-human",
+  "finished_at": "2026-10-28T02:29:28Z",
+  "outcome": "merged",
   "pr": 129,
-  "summary": "Ships Grillo's own wayfinder skill (grillo-wayfinder) with the record-answer reference, a shared fixture checker and 83 new tests; approved by two fresh reviews with a green local gate, but not merged because GitHub Actions refused to start any job (account billing).",
+  "summary": "Ships Grillo own wayfinder skill (grillo-wayfinder) with the record-answer reference, a shared fixture checker and 83 new tests; approved by two fresh reviews and merged on a green local Windows gate (CI blocked by billing).",
   "agents": [
-    { "name": "dev-75", "model": "opus", "tokens_total": 246842 },
-    { "name": "review-75", "model": "opus", "tokens_total": 145937 },
-    { "name": "review-75-r2", "model": "opus", "tokens_total": 170882 }
+    {
+      "name": "dev-75",
+      "model": "opus",
+      "tokens_total": 246842
+    },
+    {
+      "name": "review-75",
+      "model": "opus",
+      "tokens_total": 145937
+    },
+    {
+      "name": "review-75-r2",
+      "model": "opus",
+      "tokens_total": 170882
+    }
   ],
-  "phases": { "qa_seconds": 0, "dev_seconds": 1102, "review_seconds": 725, "ci_seconds": 0 },
-  "rounds": { "review": 2, "ci": 2 },
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1102,
+    "review_seconds": 725,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 2
+  },
   "friction": [
-    "GitHub Actions refused every job ('recent account payments have failed or your spending limit needs to be increased'), so neither approved pull request could merge; the run ended needs-human with both PRs open. Preflight checks gh auth and the gate on main but not whether CI can start a job, so this was found only after a full dev and review cycle."
+    "Merged on red CI at the owner explicit instruction (merge anyway): GitHub Actions refused every job because of an account billing block, so the gate was a local Windows run only and nothing was tested on Mac; preflight does not check that CI can start a job, so this surfaced only after a full dev and review cycle."
   ],
   "lessons_learned": [],
   "deferred": [
