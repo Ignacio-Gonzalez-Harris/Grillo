@@ -6,6 +6,9 @@
  *
  * A close or merge from here involves no agent, so a `mapDone` result starts the PRD writer (the map-done rule). The
  * screen reads the store afresh whenever an agent goes quiet, since agents change the map and tickets as they work.
+ *
+ * "Start meeting" starts the live session's meeting agent (`/grillo-meeting`, PRD 4.5) and opens its tab, where the
+ * meeting panel shows; while one runs for this project, it opens that agent's tab instead of starting a second.
  */
 import './map.css';
 import type { Store } from '../../../main/store/store';
@@ -15,6 +18,7 @@ import type { GrilloApi, Unsubscribe } from '../../../shared/ipc';
 import { AGENT_SCREEN } from '../../app/navigation';
 import type { ScreenParams } from '../../app/screens';
 import { badge, button, dialog } from '../../theme/components';
+import { startMeetingAgent, type MeetingAgents } from '../meeting/meeting-agents';
 import { startPrdWriter, startTaggingRound } from './agents';
 import {
   addTicket,
@@ -59,6 +63,8 @@ export interface MapDeps {
   grillo: GrilloApi;
   navigate(screenId: string, params?: ScreenParams): void;
   onAgentTabs(listener: (agents: readonly AgentInfo[]) => void): Unsubscribe;
+  /** The live session's meeting agents, shared with the meeting panel on their tabs. */
+  meetingAgents: MeetingAgents;
 }
 
 const NO_PROJECT = 'Open a project from the Project tab to see its map.';
@@ -257,6 +263,16 @@ export function mountMap(container: HTMLElement, params: ScreenParams, deps: Map
     });
   }
 
+  /** Opens this project's running meeting agent, or starts one: one meeting agent at a time from here. */
+  function startMeeting(): Promise<void> {
+    return act(async (project) => {
+      const running = [...waiting.keys()].find((agentId) => deps.meetingAgents.projectOf(agentId) === project);
+      const agentId =
+        running ?? (await startMeetingAgent(grillo, deps.meetingAgents, { project, folder: await projectFolder(store, project) }));
+      navigate(AGENT_SCREEN, { agentId });
+    });
+  }
+
   function setArchived(archived: boolean): Promise<void> {
     return act(async (project) => {
       await (archived ? store.archiveProject(project) : store.unarchiveProject(project));
@@ -354,6 +370,7 @@ export function mountMap(container: HTMLElement, params: ScreenParams, deps: Map
         }),
       );
     }
+    if (!archived) head.append(button('Start meeting', { disabled: busy, onClick: () => void startMeeting() }));
     const parts: HTMLElement[] = [head];
     if (archived) parts.push(el('p', 'reason', [ARCHIVED_REASON]));
     if (editor) {

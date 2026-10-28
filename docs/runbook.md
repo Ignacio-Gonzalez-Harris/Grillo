@@ -365,11 +365,24 @@ drive it by typing the protocol messages (`resources/skills/README.md`).
   the store's parsers, and two fixtures (a project before and after a live session) against the store layout and the
   rules of a session.
 
+### Starting a meeting
+
+The host starts a live session from the **Map** tab: **Start meeting** sits in the Tickets card's header, beside Add
+ticket and Run tagging round.
+
+- **Pressing it** starts a grilling agent in the project folder that types `/grillo-meeting`, named "Grilling · Live
+  session", and opens its tab, where the meeting panel shows (below).
+- **One meeting agent at a time:** while a meeting agent of this project is running, Start meeting opens its tab
+  instead of starting a second one. Once that agent has stopped, it starts a new one.
+- **A closed (archived) project** shows no Start meeting button; Reopen brings it back.
+- **While the engine builds the map** the Tickets card has no header row, so there is no Start meeting either.
+- **Developers:** `npx vitest run src/renderer/screens/map/map.test.ts -t "starting a live meeting"` runs the button
+  against the real agent runtime, live session and meeting panel, with fake terminals and the in-memory store.
+
 ### The meeting panel
 
 The meeting screen sits on a meeting agent's own tab (a grilling agent started with `/grillo-meeting`); there is no
-separate session screen. **No screen starts a meeting agent yet**: that control arrives with its own story, and
-calls `startMeetingAgent` from `src/renderer/screens/meeting/meeting-agents.ts`.
+separate session screen. **Start meeting** on the Map tab starts one (see Starting a meeting, above).
 
 - **Opening the tab** starts the live session for the project if none is running, ticks the host present, and once
   the agent has gone quiet after starting types `session: <session file>`, `present: <host>` and `mode: type` into
