@@ -855,15 +855,20 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     const lastIndex = creation.steps.length - 1;
     const rows = creation.steps.map((step, index) => {
       const working = step.state === 'running' || (step.state === 'done' && index === lastIndex);
-      const dot = { waiting: '', running: 'warn', done: working ? 'warn' : 'ok', failed: 'err' }[step.state];
+      const partly = step.state === 'done' && step.warning !== null;
+      const dot = { waiting: '', running: 'warn', done: working || partly ? 'warn' : 'ok', failed: 'err' }[step.state];
       const status = working
         ? badge('Working…', 'warn')
-        : step.state === 'done'
-          ? badge('Done', 'ok')
-          : step.state === 'failed'
-            ? badge('Failed', 'err')
-            : badge('Waiting');
-      return el('li', '', [el('span', 'row', [el('span', `sdot ${dot}`.trim()), step.label]), status]);
+        : partly
+          ? badge('Partly done', 'warn')
+          : step.state === 'done'
+            ? badge('Done', 'ok')
+            : step.state === 'failed'
+              ? badge('Failed', 'err')
+              : badge('Waiting');
+      const row = el('li', '', [el('span', 'row', [el('span', `sdot ${dot}`.trim()), step.label]), status]);
+      if (partly && step.warning !== null) row.append(el('p', 'small muted m0 full', [step.warning]));
+      return row;
     });
     const failed = creation.steps.find((step) => step.state === 'failed');
     const parts: HTMLElement[] = [el('ul', 'rows card', rows)];

@@ -4,7 +4,9 @@
  * source S1 (and each attached document as a further source), then the grilling agent started in the project folder
  * with `/grillo-wayfinder <path to the idea's source file>` (resources/skills/README.md, Commands).
  *
- * A step that fails stops the run; running again starts at that step, so nothing already done is done twice.
+ * A step that fails stops the run; running again starts at that step, so nothing already done is done twice. An
+ * invite that GitHub refuses does not stop it: the step ends with a warning naming who was not invited and why, and the
+ * idea and the grilling agent follow, since the member can invite them later.
  */
 import type { Store } from '../../../main/store/store';
 import type { Login, Member, PrdStructure, ProjectId, RepositoryRef, SourceKind } from '../../../main/store/types';
@@ -62,7 +64,12 @@ export interface CreationStep {
   label: string;
   state: 'waiting' | 'running' | 'done' | 'failed';
   error: string | null;
+  /** Set on a step that finished without doing all of its work: what was left undone and why. */
+  warning: string | null;
 }
+
+/** What a step's work may hand back: a better label, and a warning when it finished without doing everything. */
+type StepOutcome = void | string | { label: string; warning: string };
 
 export interface Creation {
   steps: CreationStep[];
@@ -113,7 +120,7 @@ export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation
   const inProject = (): ProjectId => project ?? unreadable('the new project');
   const who = (): string => (me === null ? '' : (me.name ?? me.login));
 
-  const work: Array<{ label: string; run: () => Promise<string | void> }> = [
+  const work: Array<{ label: string; run: () => Promise<StepOutcome> }> = [
     {
       label: repositoryLabel(draft.repository),
       async run() {
@@ -136,10 +143,21 @@ export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation
     work.push({
       label: `Invites sent to ${listed(draft.invites)}`,
       async run() {
+        const refused: string[] = [];
         for (const login of draft.invites.filter((entry) => !invited.has(entry))) {
-          await store.addMember(inProject(), { login, role: '', domains: [] });
-          invited.add(login);
+          try {
+            await store.addMember(inProject(), { login, role: '', domains: [] });
+            invited.add(login);
+          } catch (error) {
+            refused.push(`${login}: ${messageOf(error)}`);
+          }
         }
+        if (refused.length === 0) return;
+        const sent = draft.invites.filter((login) => invited.has(login));
+        return {
+          label: sent.length === 0 ? 'No invite sent' : `Invites sent to ${listed(sent)}`,
+          warning: `Not invited (invite them later from the project): ${refused.join('; ')}.`,
+        };
       },
     });
   }
@@ -191,7 +209,7 @@ export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation
     },
   });
 
-  const steps: CreationStep[] = work.map(({ label }) => ({ label, state: 'waiting', error: null }));
+  const steps: CreationStep[] = work.map(({ label }) => ({ label, state: 'waiting', error: null, warning: null }));
   let running = false;
 
   return {
@@ -206,8 +224,12 @@ export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation
           step.error = null;
           onChange();
           try {
-            const label = await work[index].run();
-            if (typeof label === 'string') step.label = label;
+            const outcome = await work[index].run();
+            if (typeof outcome === 'string') step.label = outcome;
+            else if (outcome) {
+              step.label = outcome.label;
+              step.warning = outcome.warning;
+            }
             step.state = 'done';
             onChange();
           } catch (error) {

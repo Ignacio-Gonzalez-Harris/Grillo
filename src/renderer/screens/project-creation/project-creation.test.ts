@@ -30,6 +30,8 @@ async function until(condition: () => boolean, what: string): Promise<void> {
 interface AppOptions {
   seed?: MemoryStoreOptions['seed'];
   failAgentStarts?: number;
+  /** The GitHub identity cannot be read (gh signed out), so the screen does not know who "you" are. */
+  noIdentity?: boolean;
 }
 
 /** The screen as it runs: the in-memory store and the settings behind the real store IPC, agents recorded. */
@@ -49,7 +51,11 @@ function app(options: AppOptions = {}) {
     starts.push(request);
     return `agent-${starts.length}`;
   });
-  ipc.handle('tools:identity', () => ({ ok: true as const, identity: { login: 'ada-example', name: 'Ada Example', email: null } }));
+  ipc.handle('tools:identity', () =>
+    options.noIdentity
+      ? { ok: false as const, reason: 'signed-out' as const }
+      : { ok: true as const, identity: { login: 'ada-example', name: 'Ada Example', email: null } },
+  );
 
   const navigate = vi.fn<(screenId: string, params?: ScreenParams) => void>();
   const shell: ShellContext = {
@@ -277,6 +283,33 @@ describe('project creation: a new repository', () => {
     click(root, 'Try again');
     await until(() => starts.length === 1, 'the grilling agent to start');
     expect((await store.listSources('example-org/sample-project-1')).map((source) => source.code)).toEqual(['S1']);
+  });
+  it('carries on past an invite GitHub refuses, naming who was not invited and why, then saves S1 and starts the agent', async () => {
+    const { store, starts, root, open } = app({ noIdentity: true });
+    await open();
+    click(root, 'New project');
+    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form');
+    type(root, 'input[aria-label="Repository name"]', 'sample-project-1');
+    // Your own login: with no identity the form cannot catch it, and the store refuses it as a member already.
+    for (const login of ['ada-example', 'ben-example']) {
+      type(root, 'input[aria-label="GitHub login to invite"]', login);
+      click(root, 'Invite');
+    }
+    type(root, 'textarea[aria-label="The idea"]', IDEA);
+
+    click(root, 'Create project');
+    await until(() => starts.length === 1, 'the grilling agent to start');
+
+    const invites = [...root.querySelectorAll('.rows.card > li')][2];
+    expect(text(invites.querySelector('.row'))).toBe('Invites sent to ben-example');
+    expect(text(invites.querySelector('.badge'))).toBe('Partly done');
+    expect(text(invites.querySelector('p'))).toBe(
+      'Not invited (invite them later from the project): ada-example: ada-example is already a member of example-org/sample-project-1.',
+    );
+    expect((await store.listMembers('example-org/sample-project-1')).map((member) => member.login)).toEqual(['ada-example', 'ben-example']);
+    expect((await store.listSources('example-org/sample-project-1')).map((source) => source.code)).toEqual(['S1']);
+    expect(starts[0]).toMatchObject({ firstMessage: '/grillo-wayfinder .grillo/sources/S1.md' });
+    expect(buttonNamed(root, 'Try again')).toBeUndefined();
   });
 });
 
