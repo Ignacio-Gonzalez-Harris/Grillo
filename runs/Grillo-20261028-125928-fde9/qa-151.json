@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261028-125928-fde9",
+  "issue": 151,
+  "title": "Start a live meeting from Grillo: the control that launches the meeting agent",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 152,
+  "merged_at": "2026-10-28T13:18:12Z",
+  "merge_commit": "58e8823a03f14b443d95c7ac70d69484bf791cec",
+  "seam": "src/renderer/screens/map/",
+  "story": "The Map tab's Tickets card now has a \"Start meeting\" button beside \"Add ticket\" and \"Run tagging round\". Before this, no screen could start a live meeting, so the meeting panel could not be reached. The button starts the live session's meeting agent and opens its tab on the meeting panel; while any meeting agent runs on the laptop it reopens that agent instead of starting a second, and it is hidden on an archived project.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/map/start-meeting",
+      "criterion": "Pressing \"Start meeting\" starts a meeting agent with /grillo-meeting, opens its tab, and the tab shows the meeting panel.",
+      "steps": "Open a made-up project such as example-org/sample-project-1 that has at least one open ticket and is not archived. Open the Map tab. In the Tickets card header, press \"Start meeting\".",
+      "expected": "A new agent tab named \"Grilling · Live session\" becomes active and shows the meeting panel (Present, Consent, Record, preparing speech model)."
+    },
+    {
+      "key": "src/renderer/screens/map/start-meeting-reuse",
+      "criterion": "While a meeting agent is running on this laptop, for any project, the button opens that agent's tab instead of starting a second one.",
+      "steps": "Do the start-meeting check. Go back to the Map tab and press \"Start meeting\" again. Open the Map tab of a second made-up project, example-org/sample-project-2, and press \"Start meeting\". Stop the meeting agent, go back to a Map tab, and press \"Start meeting\".",
+      "expected": "The second and third presses both open the same \"Grilling · Live session\" tab, with no second meeting tab in the tab bar. After the agent is stopped, the last press starts a new meeting agent."
+    },
+    {
+      "key": "src/renderer/screens/map/start-meeting-archived",
+      "criterion": "The button is hidden on a closed (archived) project.",
+      "steps": "On a made-up project where you are a repository admin, open the Map tab. Press \"Close project\". Press \"Reopen\".",
+      "expected": "After closing, the Tickets header shows only the greyed-out \"Add ticket\" and \"Run tagging round\", with no \"Start meeting\". After reopening, \"Start meeting\" is back and can be pressed."
+    }
+  ],
+  "no_qa_reason": null
+}

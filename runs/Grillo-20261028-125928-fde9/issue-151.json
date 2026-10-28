@@ -1,0 +1,51 @@
+{
+  "run_id": "Grillo-20261028-125928-fde9",
+  "issue": 151,
+  "title": "Start a live meeting from Grillo: the control that launches the meeting agent",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T12:59:28Z",
+  "finished_at": "2026-10-28T13:18:12Z",
+  "outcome": "merged",
+  "pr": 152,
+  "summary": "The Map screen's Tickets panel gained a Start meeting button that starts the meeting agent through startMeetingAgent() and opens its tab on the meeting panel, reusing any running meeting agent; the UX prototype's map screen shows the same button. Placement chosen by the agent at the person's request.",
+  "agents": [
+    {
+      "name": "dev-151",
+      "model": "opus",
+      "tokens_total": 155531
+    },
+    {
+      "name": "review-151-r1",
+      "model": "opus",
+      "tokens_total": 137769
+    },
+    {
+      "name": "review-151-r2",
+      "model": "opus",
+      "tokens_total": 113097
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 498,
+    "review_seconds": 390,
+    "ci_seconds": null
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [
+    "CI was skipped: GitHub Actions has no minutes, so on the person's explicit instruction the merge gate was the full local gate under the machine-wide gate lock; the Mac half of the CI matrix never ran. This clashes with BASE_CLAUDE.md and the project CLAUDE.md ('no checks reported is red')."
+  ],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/map/",
+      "what": "While project A's meeting agent runs, Start meeting on project B's map opens A's meeting tab with no word that it is A's session (the meeting panel never names its project and the tab title is the generic 'Grilling · Live session'), so a host can run the meeting believing it is B's and the answers land on A's tickets.",
+      "why": "What to show (a message or a prototype state) is a UX decision this story's Decisions do not settle.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
