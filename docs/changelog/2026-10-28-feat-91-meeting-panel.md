@@ -1,0 +1,1 @@
+The meeting screen now runs on a meeting agent's tab (presence, consent, Record with the red banner, speech-model progress, Listen/Type, Use it, skip, jump, transcript strip), and every agent tab has an Open channel switch, so a live session can be driven from Grillo.

@@ -12,6 +12,7 @@ import {
   isAgentMode,
   jumpLine,
   modeLine,
+  presentLine,
   sessionLine,
   SessionError,
   type SessionState,
@@ -71,6 +72,8 @@ export interface SessionHost {
   /** Sends the agent's input box with `use it` as its last line. The ones below type their protocol message. */
   useIt(agentId: AgentId): Promise<void>;
   typeMode(agentId: AgentId, mode: AgentMode): Promise<void>;
+  /** Types the presence message (`present: <logins>`) into a meeting agent, after any transcript in its box. */
+  typePresent(agentId: AgentId, logins: string[]): Promise<void>;
   skip(agentId: AgentId): Promise<void>;
   jump(agentId: AgentId, ticket: number): Promise<void>;
   /** The running session, or null when there is none. */
@@ -447,6 +450,16 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
         if (!isAgentMode(mode)) throw new SessionError('invalid', `'${String(mode)}' is not a mode: listen or type`);
         box.mode = mode;
         return sendControlLine(box, modeLine(mode));
+      });
+    },
+
+    typePresent(agentId, logins) {
+      return Promise.resolve().then(() => {
+        const box = knownBox(agentId);
+        if (!Array.isArray(logins) || !logins.every(isLogin)) {
+          throw new SessionError('invalid', 'Presence is a list of GitHub logins');
+        }
+        return sendControlLine(box, presentLine(logins));
       });
     },
 

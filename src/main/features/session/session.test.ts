@@ -628,6 +628,37 @@ describe('grilling session: per-agent channels', () => {
     ]);
   });
 
+  it('types the presence message after any transcript in the box, and present: alone for nobody', async () => {
+    const { host, agents, bus } = await channelRig('a1');
+    await host.setChannel('a1', true);
+    await settle();
+    agents.typed.set('a1', []);
+
+    bus.publish(slice(0));
+    await settle();
+    const ticking = host.typePresent('a1', [HOST, OTHER]);
+    await settle();
+    await ticking;
+    const nobody = host.typePresent('a1', []);
+    await settle();
+    await nobody;
+
+    expect(agents.typed.get('a1')).toEqual([
+      'Words 0.', `${LINE_BREAK}present: ${HOST}, ${OTHER}`, ENTER,
+      'present:', ENTER,
+    ]);
+  });
+
+  it.each([
+    ['a login that is not a GitHub login', () => ['not a login']],
+    ['a list that is not a list', () => HOST as unknown as string[]],
+  ])('refuses a presence message with %s and types nothing', async (_case, logins) => {
+    const { host, agents } = await channelRig('a1');
+
+    expect(await refusal(host.typePresent('a1', logins()))).toBe('invalid');
+    expect(agents.typed.get('a1')).toEqual([]);
+  });
+
   it('feeds several open channels at once, and none once closed', async () => {
     const { host, agents, bus } = await channelRig('a1', 'a2', 'a3');
     for (const id of ['a1', 'a2']) await host.setChannel(id, true);
@@ -679,6 +710,7 @@ describe('grilling session: per-agent channels', () => {
     ['open a channel', (host: SessionHost) => host.setChannel('ghost', true)],
     ['use it', (host: SessionHost) => host.useIt('ghost')],
     ['type a mode', (host: SessionHost) => host.typeMode('ghost', 'listen')],
+    ['type the presence', (host: SessionHost) => host.typePresent('ghost', [HOST])],
     ['skip', (host: SessionHost) => host.skip('ghost')],
     ['jump', (host: SessionHost) => host.jump('ghost', 3)],
     ['open a channel with no id', (host: SessionHost) => host.setChannel(undefined as unknown as string, true)],

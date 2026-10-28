@@ -29,6 +29,11 @@ export function jumpLine(ticket: number): string {
   return `jump ${ticket}`;
 }
 
+/** Every member ticked present, the host included; an empty list is `present:` alone. */
+export function presentLine(logins: readonly string[]): string {
+  return logins.length === 0 ? 'present:' : `present: ${logins.join(', ')}`;
+}
+
 /** Why a session call was refused. Every refusal is a `SessionError`, so callers handle one error type. */
 export type SessionErrorKind =
   /** No session has been started, or it has ended. */
