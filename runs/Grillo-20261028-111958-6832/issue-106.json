@@ -9,14 +9,34 @@
   "pr": 148,
   "summary": "On macOS 14.2+ the call audio is now captured through Electron's built-in loopback, with a 2-second first-frame check that reports a missing permission instead of recording silence; the real Mac run is still owed because no Mac was available.",
   "agents": [
-    { "name": "dev-106", "model": "opus", "tokens_total": 160427 },
-    { "name": "review-106", "model": "opus", "tokens_total": 105785 },
-    { "name": "review-106-r2", "model": "opus", "tokens_total": 99988 }
+    {
+      "name": "dev-106",
+      "model": "opus",
+      "tokens_total": 160427
+    },
+    {
+      "name": "review-106",
+      "model": "opus",
+      "tokens_total": 105785
+    },
+    {
+      "name": "review-106-r2",
+      "model": "opus",
+      "tokens_total": 99988
+    }
   ],
-  "phases": { "qa_seconds": 0, "dev_seconds": 1164, "review_seconds": 372, "ci_seconds": 60 },
-  "rounds": { "review": 2, "ci": 1 },
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1164,
+    "review_seconds": 372,
+    "ci_seconds": 60
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
   "friction": [
-    "parallel full suites from several Grillo sessions on one machine caused a false 5-second test timeout for another run; a shared gate lock (C:\wt\with-gate-lock.sh, lock dir C:\wt\gate.lock.d) was improvised mid-run and is not in the dev-next skill, so every brief had to be patched by message"
+    "parallel full suites from several Grillo sessions on one machine caused a false 5-second test timeout for another run; a shared gate lock (C:\\wt\\with-gate-lock.sh, lock dir C:\\wt\\gate.lock.d) was improvised mid-run and is not in the dev-next skill, so every brief had to be patched by message"
   ],
   "lessons_learned": [
     "the in-flight file's 4-hour stale rule misfires for a long-lived session: another live run's entries stamped 06:22 were dropped at 11:20 as stale; stale should be judged by the claim's assignee and recent activity, not age alone"

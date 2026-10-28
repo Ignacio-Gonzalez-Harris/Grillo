@@ -9,12 +9,32 @@
   "pr": 147,
   "summary": "Grillo can now start Claude Code per agent tab in stream-json mode, turn its events into typed chat messages, answer its questions and permission prompts, and relay a message into another agent's chat; verified with a real claude run (question, permission, relay).",
   "agents": [
-    { "name": "dev-107", "model": "opus", "tokens_total": 175224 },
-    { "name": "review-107", "model": "opus", "tokens_total": 130550 },
-    { "name": "review-107-r2", "model": "opus", "tokens_total": 128145 }
+    {
+      "name": "dev-107",
+      "model": "opus",
+      "tokens_total": 175224
+    },
+    {
+      "name": "review-107",
+      "model": "opus",
+      "tokens_total": 130550
+    },
+    {
+      "name": "review-107-r2",
+      "model": "opus",
+      "tokens_total": 128145
+    }
   ],
-  "phases": { "qa_seconds": 0, "dev_seconds": 1010, "review_seconds": 726, "ci_seconds": 80 },
-  "rounds": { "review": 2, "ci": 1 },
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1010,
+    "review_seconds": 726,
+    "ci_seconds": 80
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
   "friction": [],
   "lessons_learned": [],
   "deferred": [
