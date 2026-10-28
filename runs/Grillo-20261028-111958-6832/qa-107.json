@@ -1,0 +1,13 @@
+{
+  "run_id": "Grillo-20261028-111958-6832",
+  "issue": 107,
+  "title": "Agent chat protocol: drive Claude Code in machine-readable mode, with the relay into another agent's chat",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 147,
+  "merged_at": "2026-10-28T11:54:27Z",
+  "merge_commit": "fa3a68e55d89d8fa63c96c4b99774bb63cd62242",
+  "seam": "src/main/features/agent-chat/",
+  "story": "Grillo gained the hidden machinery that lets a future chat view talk to Claude Code as messages instead of a terminal. Nothing a person sees changed yet.",
+  "checks": [],
+  "no_qa_reason": "No screen uses the protocol yet; the chat view story (issue #94) makes it visible."
+}

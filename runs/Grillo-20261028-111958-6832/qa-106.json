@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261028-111958-6832",
+  "issue": 106,
+  "title": "Mac call-audio capture (system audio, macOS 14.2+)",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 148,
+  "merged_at": "2026-10-28T11:51:04Z",
+  "merge_commit": "2ce0885077a08cfff2453286c069739f6cd10586",
+  "seam": "src/main/features/audio-mac/",
+  "story": "On my Mac I chose call audio and Grillo heard the other people on the call. When I had turned off the audio-recording permission, Grillo told me within a couple of seconds where to turn it back on, instead of quietly recording silence. On my old Mac it simply said I need a newer macOS. Before this story call audio on any Mac was refused as unsupported.",
+  "checks": [
+    {
+      "key": "src/main/features/audio-mac/call-capture",
+      "criterion": "On macOS 14.2+, call audio is captured through Electron's loopback",
+      "steps": "On a Mac with macOS 14.2 or later, grant Grillo in Screen & System Audio Recording, then restart Grillo. Start a call-audio capture, play a made-up test tone for 15 s, then stop.",
+      "expected": "About three call slices of 80 000 samples, numbered 0 to 2, that carry the tone."
+    },
+    {
+      "key": "src/main/features/audio-mac/permission-missing",
+      "criterion": "A missing permission is reported as permission missing, with where to grant it",
+      "steps": "On a 14.2+ Mac, turn Grillo off in Screen & System Audio Recording, restart Grillo, then start a call-audio capture.",
+      "expected": "Within about 2 s, a refusal naming System Settings > Privacy & Security > Screen & System Audio Recording, and no slices."
+    },
+    {
+      "key": "src/main/features/audio-mac/old-macos",
+      "criterion": "A Mac older than 14.2 gets a typed unsupported answer",
+      "steps": "On macOS 14.1 or earlier, start a call-audio capture.",
+      "expected": "A message that macOS 14.2 or later is needed, and no screen-sharing prompt."
+    }
+  ],
+  "no_qa_reason": null
+}

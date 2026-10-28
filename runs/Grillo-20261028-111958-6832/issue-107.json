@@ -1,0 +1,43 @@
+{
+  "run_id": "Grillo-20261028-111958-6832",
+  "issue": 107,
+  "title": "Agent chat protocol: drive Claude Code in machine-readable mode, with the relay into another agent's chat",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T11:19:58Z",
+  "finished_at": "2026-10-28T11:54:27Z",
+  "outcome": "merged",
+  "pr": 147,
+  "summary": "Grillo can now start Claude Code per agent tab in stream-json mode, turn its events into typed chat messages, answer its questions and permission prompts, and relay a message into another agent's chat; verified with a real claude run (question, permission, relay).",
+  "agents": [
+    { "name": "dev-107", "model": "opus", "tokens_total": 175224 },
+    { "name": "review-107", "model": "opus", "tokens_total": 130550 },
+    { "name": "review-107-r2", "model": "opus", "tokens_total": 128145 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 1010, "review_seconds": 726, "ci_seconds": 80 },
+  "rounds": { "review": 2, "ci": 1 },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/features/agent-chat/",
+      "what": "A control_cancel_request from Claude Code is ignored, so a cancelled question would leave stale answer buttons on screen",
+      "why": "The shape never appeared in a real run, so it was not guessed",
+      "owner": "issue #94 (chat view with the show terminal switch)"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/features/agent-chat/",
+      "what": "claude's stderr is ignored, so a start failure reported only on stderr (for example a rejected pinned flag) reaches the chat as a bare exit code 1 with no reason",
+      "why": "How a failed start is shown belongs to the chat view",
+      "owner": "issue #94 (chat view with the show terminal switch)"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/features/agent-chat/",
+      "what": "Nothing fails loudly if a future Claude Code makes --bare the default and stops loading the member's rules file and login (PRD section 13 risk)",
+      "why": "Not in this issue's acceptance criteria",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
