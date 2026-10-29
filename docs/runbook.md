@@ -425,7 +425,7 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   Record stays off until it is ready; a failed download says why and offers "Try again". Type answers work meanwhile.
 - **Consent:** the line to read aloud, then "Everyone here agreed". Record stays disabled until the host ticks it;
   the card then says who ticked and when.
-- **Record** captures the room microphone (call audio has no switch yet) and shows the red Recording banner with the
+- **Record** captures the source chosen above it (see Recording source, below) and shows the red Recording banner with the
   time since Record went on. Switching it off saves the transcript file and goes back to Type. If the microphone
   cannot be opened, the recording turns back off and the reason shows. The session has one microphone: every
   grilling agent's tab shows the same Record switch, and turning it off in any tab stops the capture, even one
@@ -448,6 +448,17 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   goes on and the stopped one leaves the list.
 - **Developers:** `npx vitest run src/renderer/screens/meeting src/main/features/session` runs the panel against the
   real session, agent runtime and in-memory store, with fake terminals, a fake transcriber and no microphone.
+
+### Recording source
+
+- **Where:** the Recording card of the meeting panel, above Record: **Room microphone** (the people in this room) or
+  **Call audio** (the virtual meeting's sound playing on this laptop). Room microphone is the default.
+- **Record** starts the capture of the chosen source (see Audio capture and Mac call audio, above). On a Mac, call
+  audio goes through the same permission check as before; if it is missing, the recording turns back off and the
+  reason shows, with no extra screen.
+- **Locked while recording:** both choices are greyed out and the card says "Turn Record off to change the source."
+  Turn Record off, pick the other source, and turn Record on again.
+- **One choice for the session:** every grilling agent's tab shows the same choice, as it shows the same Record switch.
 
 ## Grilling engine
 
