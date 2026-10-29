@@ -1,10 +1,11 @@
 import { AGENT_RUNTIME_CHOICES, type AgentRuntimeChoice } from '../../../shared/agents';
 
 /**
- * The one place the agent runtime is chosen (issue 156 decision). Chat by default; the terminal agent stays as a
- * working fallback until the Agent SDK terms are confirmed (issue 123). A "not allowed" answer flips this default.
+ * The one place the agent runtime is chosen (issue 156). The terminal by default until the chat view lands (issue
+ * 164): a chat tab cannot yet show clickable options or permission prompts, nor take what is typed into it. The chat
+ * view story (issue 94) flips this default back to chat.
  */
-export const DEFAULT_AGENT_RUNTIME: AgentRuntimeChoice = 'chat';
+export const DEFAULT_AGENT_RUNTIME: AgentRuntimeChoice = 'terminal';
 /** Set to `terminal` (or `chat`) before starting Grillo to pick the runtime for every agent tab. */
 export const AGENT_RUNTIME_VARIABLE = 'GRILLO_AGENT_RUNTIME';
 
