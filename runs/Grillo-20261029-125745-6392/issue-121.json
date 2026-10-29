@@ -1,0 +1,62 @@
+{
+  "run_id": "Grillo-20261029-125745-6392",
+  "issue": 121,
+  "title": "Open another grilling agent during a live session",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T16:23:00Z",
+  "finished_at": "2026-10-29T13:05:57Z",
+  "outcome": "merged",
+  "pr": 162,
+  "summary": "The meeting panel gains a Grilling agents card and an 'Open another grilling agent' control that starts a second grilling agent in the running session; agents of one session hold a ticket before claiming it so two never grill the same ticket, and all tabs share one microphone capture.",
+  "agents": [
+    {
+      "name": "dev-121",
+      "model": "opus",
+      "tokens_total": 109570
+    },
+    {
+      "name": "review-121-r2",
+      "model": "opus",
+      "tokens_total": 130395
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 152,
+    "review_seconds": 234,
+    "ci_seconds": 60
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [
+    "The machine restarted mid-run (run Grillo-20261028-162300-e368): that run's dev agents' QA blocks and token figures were lost and its audit report was never written; the QA records below were rebuilt from the issues' acceptance criteria and the pull request bodies, and a resume run had to re-claim both issues by number"
+  ],
+  "lessons_learned": [
+    "Post each dev agent's QA checks blocks as a pull request comment the moment they arrive, as Deferred lines already are, so a crash before phase 6 does not lose them"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "resources/skills/grillo-meeting/",
+      "what": "A ticket hold has no owner: when a grilling agent's tab is stopped mid-ticket its hold folder stays, so for the rest of that session every other grilling agent skips that ticket and refuses a jump to it, telling the room another agent holds it when none runs.",
+      "why": "Clearing it needs the hold tied to its agent plus app-side cleanup when a tab stops, a design change beyond this story.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "resources/skills/grillo-meeting/",
+      "what": "The 'already left with questions open' list is per agent and the hold is released on leaving, so agent B can pick a ticket agent A left with questions open and the room hears them again in the same session, contradicting the run-book.",
+      "why": "Needs a session-wide 'left' record that keeps jump back working; the acceptance criteria do not ask for it.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/meeting/",
+      "what": "Every meeting agent's tab is titled 'Grilling · Live session' and never renamed, so with two agents the Grilling agents card and the tab bar show two identical names and the host cannot tell which agent grills which ticket (PRD section 4.6 item 2).",
+      "why": "Renaming a tab needs the agent runtime to learn the agent's ticket, outside this story's folder.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

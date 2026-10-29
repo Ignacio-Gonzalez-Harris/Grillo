@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261029-125745-6392",
+  "issue": 156,
+  "title": "Agent runtime starts each agent tab as a chat agent",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-28T16:29:26Z",
+  "finished_at": "2026-10-29T12:59:37Z",
+  "outcome": "merged",
+  "pr": 163,
+  "summary": "Every agent tab now starts as a chat agent on the app's one chat driver (tab id = chat agent id), with the terminal kept as a fallback behind one runtime choice; the live transcript, own-time 'use it' and the screen's control lines reach the agent as one chat message each.",
+  "agents": [],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": null,
+    "review_seconds": null,
+    "ci_seconds": 60
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [
+    "The machine restarted mid-run (run Grillo-20261028-162300-e368): that run's dev agents' QA blocks and token figures were lost and its audit report was never written; the QA records below were rebuilt from the issues' acceptance criteria and the pull request bodies, and a resume run had to re-claim both issues by number"
+  ],
+  "lessons_learned": [
+    "Post each dev agent's QA checks blocks as a pull request comment the moment they arrive, as Deferred lines already are, so a crash before phase 6 does not lose them"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/features/agents/",
+      "what": "Stopping a tab agent through agent-chat:stop ends the process but leaves the tab on the tab bar, because the chat driver sends no exit event on stop.",
+      "why": "Fixing it changes the closed protocol story's stop meaning.",
+      "owner": "issue #94 (chat view), which should stop tabs with agents:stop"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/features/agent-chat/",
+      "what": "After the member answers a question or a permission (agent-chat:answer / allow / deny), the driver emits no chat message and tool events are ignored, so the tab keeps saying 'waiting for you' while the agent works, until it next prints text or ends its turn.",
+      "why": "No screen can answer yet; the fix belongs with the chat view's answer buttons.",
+      "owner": "issue #94 (chat view)"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261029-125745-6392",
+  "issue": 156,
+  "title": "Agent runtime starts each agent tab as a chat agent",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 163,
+  "merged_at": "2026-10-29T12:59:37Z",
+  "merge_commit": "b931433e567968980cd0e841eaf12984674f5ae5",
+  "seam": "src/main/features/agents/",
+  "story": "Before this story every agent tab ran Claude Code in a terminal and the app typed into it. Now each tab starts a chat agent by default, the tab's waiting dot follows the agent's waiting events, and the live transcript, own-time 'use it' and Done reach the agent as one chat message. Until the chat view lands, the tab's terminal area shows the raw event stream; setting GRILLO_AGENT_RUNTIME=terminal brings the old terminal back.",
+  "checks": [
+    {
+      "key": "src/main/features/agents/start-chat-agent",
+      "criterion": "Starting an agent of any kind opens a tab whose agent is a chat agent; exactly one Claude Code process runs per tab",
+      "steps": "Start Grillo with GRILLO_AGENT_RUNTIME unset. Open a made-up project. Start a generic agent named 'qa-test'. Look at the tab and at the running processes.",
+      "expected": "One new tab named after the agent; its area shows the agent's event lines (init, assistant); exactly one claude process runs for that tab and no terminal shell is spawned beside it."
+    },
+    {
+      "key": "src/main/features/agents/waiting-dot",
+      "criterion": "The tab's waiting dot follows the chat protocol's waiting events",
+      "steps": "In the 'qa-test' tab, let the agent finish its first reply.",
+      "expected": "The waiting dot turns on when the agent's turn ends and turns off again when it starts working on the next message."
+    },
+    {
+      "key": "src/main/features/agents/terminal-fallback",
+      "criterion": "The terminal stays as a fallback behind one runtime choice",
+      "steps": "Quit Grillo. Start it with GRILLO_AGENT_RUNTIME=terminal. Start a generic agent.",
+      "expected": "The tab shows an interactive terminal running Claude Code, as before this story."
+    }
+  ],
+  "no_qa_reason": null
+}

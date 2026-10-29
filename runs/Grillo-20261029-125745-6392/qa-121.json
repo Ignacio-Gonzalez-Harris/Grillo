@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261029-125745-6392",
+  "issue": 121,
+  "title": "Open another grilling agent during a live session",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 162,
+  "merged_at": "2026-10-29T13:05:57Z",
+  "merge_commit": "5f25dc388950b4c3c73168632f49a6e4694e86ca",
+  "seam": "src/renderer/screens/meeting/",
+  "story": "Before this story a live session had exactly one grilling agent. Now, once consent is ticked, the meeting panel shows a Grilling agents card listing the session's grilling agents with their channel state, and an 'Open another grilling agent' control that opens a second grilling agent in its own tab, in the same session. Two agents never grill the same ticket, and the Record switch drives one shared microphone from any tab.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/meeting/open-another-grilling-agent",
+      "criterion": "The control opens a second grilling agent tab in the running session",
+      "steps": "Open a made-up project with at least two open stories. Press Start meeting. Tick consent. Press 'Open another grilling agent'.",
+      "expected": "A second tab opens with its own Open channel switch; the Grilling agents card on both tabs lists two agents, the new one with a New badge until its channel opens; no second session is started."
+    },
+    {
+      "key": "src/renderer/screens/meeting/channel-per-agent",
+      "criterion": "Both agents receive the transcript only while their own Open channel switch is on",
+      "steps": "With two grilling agent tabs, turn Record on, turn Open channel on in tab 1 only, say a sentence, then turn it on in tab 2 and say another.",
+      "expected": "Tab 1's agent receives both sentences; tab 2's agent receives only the second; each line arrives once."
+    },
+    {
+      "key": "src/renderer/screens/meeting/shared-record-switch",
+      "criterion": "One microphone per session across grilling agent tabs (review fix)",
+      "steps": "With two grilling agent tabs, turn Record on in tab 1, turn it off in tab 2, then on again in tab 2, then off in tab 1.",
+      "expected": "No error at any step; the microphone indicator goes off when Record is off; the transcript never shows a line twice."
+    },
+    {
+      "key": "src/renderer/screens/meeting/no-shared-ticket",
+      "criterion": "Two grilling agents never work the same ticket",
+      "steps": "With two grilling agents in one session and two open stories, let both agents pick their next ticket.",
+      "expected": "Each agent works a different ticket; asking one to jump to the ticket the other holds is refused with a message that another grilling agent holds it."
+    }
+  ],
+  "no_qa_reason": null
+}
