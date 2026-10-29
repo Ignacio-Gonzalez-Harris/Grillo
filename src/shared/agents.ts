@@ -35,6 +35,8 @@ export interface AgentInfo {
   folder: string;
   /** True once the agent has gone quiet after output: the tab's dot (it is waiting for the member). */
   waiting: boolean;
+  /** `chat` on a chat agent, whose tab shows the chat view; a terminal agent leaves it out (the release-1 shape). */
+  runtime?: AgentRuntimeChoice;
 }
 
 /** The tab name "<kind> · <ticket>", as in "Grilling · Login flow". */

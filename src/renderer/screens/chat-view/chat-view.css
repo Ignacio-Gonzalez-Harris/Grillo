@@ -1,0 +1,37 @@
+/*
+ * The chat view, ported from the UX prototype (docs/ux/prototypes/grillo/index.html, screen-chat-view: `.chat`,
+ * `.chat-head`, `.msgs`, `.bubble`, `.options`, `.opt`, `.msgbox`, `.terminal`, `.note`, `code`). Every value comes
+ * from theme/tokens.css. The card fills the agent tab's body; the messages, and the raw stream when shown, scroll.
+ */
+.chat-view { display: grid; gap: var(--space-3); grid-template-rows: auto minmax(0, 1fr) auto auto; min-height: 0; }
+.chat-view.show-terminal { grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr) auto auto; }
+.chat-view .chat-head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.chat-view .strong { font-weight: var(--font-weight-strong); }
+.chat-view .msgs { display: grid; gap: var(--space-3); align-content: start; min-height: 0; overflow-y: auto; }
+.chat-view .bubble { justify-self: start; margin-right: var(--space-7); padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-glass-border); box-shadow: 0 var(--border-width) var(--space-2) var(--color-glass-shadow); }
+.chat-view .bubble.me { justify-self: end; margin-right: 0; margin-left: var(--space-7); background: var(--color-accent-soft); border-color: transparent; box-shadow: none; }
+.chat-view .bubble > :last-child { margin-bottom: 0; }
+.chat-view .bubble .who { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); margin: 0 0 var(--space-1); }
+.chat-view .chat-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-view .options { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+.chat-view .opt { font: inherit; text-align: left; display: grid; gap: var(--space-0); padding: var(--space-2) var(--space-3); border-radius: var(--radius-s); border: var(--border-width) solid var(--color-input-border); background: var(--color-glass-fill-strong); color: var(--color-text); cursor: pointer; }
+.chat-view .opt:hover { border-color: var(--color-accent); }
+.chat-view .opt[aria-pressed="true"] { background: var(--color-accent-soft); border-color: var(--color-accent); }
+.chat-view .opt:disabled { cursor: default; }
+.chat-view .opt .small { color: var(--color-text-muted); }
+.chat-view code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); overflow-wrap: anywhere; }
+.chat-view .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.chat-view .note.err { background: var(--color-danger-soft); }
+.chat-view .terminal { background: var(--color-terminal-bg); color: var(--color-terminal-text); font-family: var(--font-family-mono); font-size: var(--font-size-s); padding: var(--space-4); border-radius: var(--radius-m); min-height: 0; white-space: pre-wrap; overflow: auto; overflow-wrap: anywhere; margin: 0; }
+.chat-view .terminal .t-muted { color: var(--color-terminal-muted); }
+.chat-view .terminal .t-hl { color: var(--color-terminal-highlight); }
+.chat-view .terminal .t-ok { color: var(--color-terminal-success); }
+.chat-view .msgbox { display: flex; gap: var(--space-2); align-items: center; }
+.chat-view .msgbox input { flex: 1; min-width: 0; font: inherit; color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); }
+.chat-view .msgbox input:read-only { color: var(--color-text-muted); }
+.chat-view > p { margin: 0; }
+
+@media (max-width: 760px) {
+  .chat-view .bubble { margin-right: var(--space-5); }
+  .chat-view .bubble.me { margin-left: var(--space-5); }
+}

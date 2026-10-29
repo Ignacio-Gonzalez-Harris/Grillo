@@ -1,0 +1,1 @@
+Every agent tab is now a chat (bubbles, clickable answers, Allow and Deny, a message box and a "Show terminal" switch) and chat is the default runtime again, so members answer agents with clicks instead of a raw terminal.

@@ -54,6 +54,8 @@ export interface SessionHostDeps {
   slices: { subscribe(listener: SliceListener): Unsubscribe };
   transcriber: Transcriber;
   agents: Pick<AgentRuntime, 'choice' | 'write' | 'send' | 'list'>;
+  /** Told the words a chat agent's channel holds each time they change ('' once sent), for its chat view's box. */
+  held?(agentId: AgentId, text: string): void;
 }
 
 /** One host's session. Every refusal is a `SessionError`. */
@@ -276,10 +278,17 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
     }
   }
 
+  /** Keeps a chat agent's held words and tells its chat view, so the message box shows them as they are spoken. */
+  function setDraft(box: AgentBox, draft: string[]): void {
+    const changed = draft.length > 0 || box.draft.length > 0;
+    box.draft = draft;
+    if (changed) deps.held?.(box.id, draft.join(TRANSCRIPT_LINE_SEPARATOR));
+  }
+
   /** A chat agent's protocol message: its held transcript, then the control line on a line of its own. */
   async function sendChatMessage(box: AgentBox, controlLine: string): Promise<void> {
     const message = [...box.draft, controlLine].join(TRANSCRIPT_LINE_SEPARATOR);
-    box.draft = [];
+    setDraft(box, []);
     try {
       await deps.agents.send(box.id, message);
     } catch (error) {
@@ -320,7 +329,7 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
       void inBox(box, () => {
         if (!box.open) return;
         if (deps.agents.choice === 'chat') {
-          box.draft.push(line);
+          setDraft(box, [...box.draft, line]);
           return;
         }
         try {
