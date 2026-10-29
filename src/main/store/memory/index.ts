@@ -1,7 +1,7 @@
 import type { Settings } from '../../app/settings';
 import { DEFAULT_PRD_STRUCTURE } from '../defaults';
 import { readRecentProjects, recordRecentProject } from '../recent-projects';
-import { StoreError, type CloseResult, type CommentInput, type Store, type TicketPatch } from '../store';
+import { StoreError, type CloseResult, type CommentInput, type Store, type TicketPatch, type TicketTags } from '../store';
 import type {
   Answer,
   Decision,
@@ -475,6 +475,15 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       const next = { ...entry.ticket, ...clone(patch) };
       checkTags(record, next, patch.domains);
       checkBlockers(record, next.blockers, id.number);
+      entry.ticket = next;
+      return toTicket(entry);
+    },
+    /** Memory keeps no comments for markers: no tagging round runs against it, so only the tags change. */
+    async tagTicketByHand(id, { domains, noDomain }: TicketTags) {
+      const record = writable(id.project);
+      const entry = ticketIn(record, id.number);
+      const next = { ...entry.ticket, domains: [...domains], noDomain };
+      checkTags(record, next, domains);
       entry.ticket = next;
       return toTicket(entry);
     },

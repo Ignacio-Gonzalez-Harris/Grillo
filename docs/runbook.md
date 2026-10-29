@@ -195,7 +195,9 @@ built the map.
   first, the refusal shows and the ticket shows as locked to them. **Release** (on your own ticket) puts it back in
   the pool, unlocked. **Reassign** moves a held ticket to any member until it has an answer.
 - **Domains:** remove a tag with its ×, or add one from "Add a domain…" (the members' declared domains, and "no
-  domain", which replaces every other tag).
+  domain", which replaces every other tag). Every change here is a change by hand: it also writes the tags-by-hand
+  comment, so no later tagging round changes those tags. Removing the last domain leaves "no domain"; removing "no
+  domain" leaves the ticket untagged, deletes its tags-by-hand comments and hands it back to the next tagging round.
 - **Questions** show Open or Answered. An answer shows its text, who recorded it and when, and its source codes; an
   answer made from a GitHub comment shows "Source: <who>, via GitHub, <date> · recorded by <login>". **Undo** deletes
   a recorded answer, so the question is open again (and a GitHub comment waits to be picked up again).
@@ -488,7 +490,8 @@ hand.
   so a new member's domain can replace "no domain", and a domain nobody declares any more is taken off.
 - **Tags you set by hand stay yours:** a ticket with a comment that starts with the hidden line
   `<!-- grillo:tags-by-hand -->` (header lines `who:`, `when:`, `domains:`) keeps its domain labels in every later
-  round. Ask the tagging agent to set a ticket's tags by hand and it writes both the labels and that comment.
+  round. Change the tags on the tickets screen, or ask the tagging agent to set them by hand, and both write the
+  labels and that comment.
   Changing the labels only in GitHub's own label menu writes no such comment, so the next round may change them back.
   **Undo:** delete the ticket's tags-by-hand comments and the next round tags it again.
 - **Run it by hand (developers):** in a clone of a made-up test project with a map, tickets and

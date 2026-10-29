@@ -1,4 +1,4 @@
-import { StoreError, type CloseResult, type CommentInput, type Store, type StoreMethod } from '../../store';
+import { StoreError, type CloseResult, type CommentInput, type Store, type StoreMethod, type TicketTags } from '../../store';
 import type { Answer, Decision, Discussion, Login, PickupComment, ProjectMap, RepositoryRef, Ticket, TicketId, TicketKind } from '../../types';
 import type { GithubDeps } from '..';
 import { createGithubApi } from '../repo/github-api';
@@ -8,11 +8,13 @@ import {
   domainOf,
   formatComment,
   formatMapBody,
+  formatTagsByHand,
   formatTicketBody,
   isCommentId,
   isDomainLabel,
   isKindLabel,
   isSessionFile,
+  isTagsByHand,
   kindLabel,
   MAP_LABEL,
   MAP_TITLE,
@@ -49,6 +51,7 @@ export const ISSUES_METHODS = [
   'getTicket',
   'listTickets',
   'updateTicket',
+  'tagTicketByHand',
   'closeTicket',
   'mergeTicket',
   'reopenTicket',
@@ -149,6 +152,15 @@ function checkDomains(value: unknown): string[] {
   }
   return [...new Set(value.map((domain: string) => domain.trim()))];
 }
+
+function checkNoDomainAlone(noDomain: boolean, domains: string[]): void {
+  if (noDomain && domains.length > 0) {
+    refuse('invalid', 'A ticket tagged "no domain" carries no other domain');
+  }
+}
+
+/** The domain labels that carry a ticket's tags: `domain:none` for "no domain", none at all when not tagged yet. */
+const tagLabels = ({ domains, noDomain }: TicketTags): string[] => (noDomain ? [NO_DOMAIN_LABEL] : domains.map(domainLabel));
 
 /** A list filter only reads: any declared name passes, as the members file allows any text ('none' and blank ones too). */
 function checkFilterDomains(value: unknown): string[] {
@@ -356,6 +368,18 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
     return new Set((await api.memberLines(ref)).flatMap((line) => line.domains));
   }
 
+  /** Only the domains an edit sets must be declared: a tag stays when the last member declaring it leaves. */
+  async function checkDeclared(ref: RepositoryRef, setDomains: string[]): Promise<void> {
+    if (setDomains.length === 0) {
+      return;
+    }
+    const declared = await declaredDomains(ref);
+    const unknown = setDomains.find((domain) => !declared.has(domain));
+    if (unknown !== undefined) {
+      refuse('invalid', `No member declared the domain '${unknown}'`);
+    }
+  }
+
   /** The login as the members file spells it; a login of no member is refused. */
   async function memberLogin(ref: RepositoryRef, login: unknown): Promise<Login> {
     const lines = isLogin(login) ? await api.memberLines(ref) : [];
@@ -558,27 +582,38 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       const { ref, number, issue, comments, ticket } = await readTicket(id, true);
       const domains = setDomains ?? ticket.domains;
       const noDomain = fields.noDomain ?? ticket.noDomain;
-      if (noDomain && domains.length > 0) {
-        refuse('invalid', 'A ticket tagged "no domain" carries no other domain');
-      }
-      if (setDomains !== undefined && setDomains.length > 0) {
-        // Only the domains an edit sets must be declared: a tag stays when the last member declaring it leaves.
-        const declared = await declaredDomains(ref);
-        const unknown = setDomains.find((domain) => !declared.has(domain));
-        if (unknown !== undefined) {
-          refuse('invalid', `No member declared the domain '${unknown}'`);
-        }
-      }
+      checkNoDomainAlone(noDomain, domains);
+      await checkDeclared(ref, setDomains ?? []);
       const blockers = changes.blockers === undefined ? null : await blockerIssues(ref, changes.blockers, number);
       const labels = [
         ...issue.labels.filter((label) => !isKindLabel(label) && !isDomainLabel(label)),
         kindLabel(kind ?? ticket.kind),
-        ...(noDomain ? [NO_DOMAIN_LABEL] : domains.map(domainLabel)),
+        ...tagLabels({ domains, noDomain }),
       ];
       const body = formatTicketBody({ ...bodyOf(issue), ...changes }, number);
       const edited = await api.editIssue(ref, number, { ...(title === undefined ? {} : { title }), body, labels });
       if (blockers !== null) {
         await syncBlockers(ref, number, blockers);
+      }
+      return toTicket(ref, edited, comments);
+    },
+    async tagTicketByHand(id, tags: TicketTags) {
+      const fields = fieldsOf(tags, 'the tags to set');
+      const domains = checkDomains(fields.domains);
+      const noDomain = typeof fields.noDomain === 'boolean' ? fields.noDomain : refuse('invalid', "'noDomain' must be true or false");
+      checkNoDomainAlone(noDomain, domains);
+      const { ref, number, issue, comments } = await readTicket(id, true);
+      await checkDeclared(ref, domains);
+      // Every read comes before the first write, so a failed read leaves the ticket as it was.
+      const handBack = !noDomain && domains.length === 0;
+      const who = handBack ? null : await api.viewer();
+      const markers = handBack ? (await api.comments(ref, number)).filter((comment) => isTagsByHand(comment.body)) : [];
+      const edited = await api.editIssue(ref, number, { labels: [...issue.labels.filter((label) => !isDomainLabel(label)), ...tagLabels({ domains, noDomain })] });
+      if (who !== null) {
+        await api.createComment(ref, number, formatTagsByHand({ who, when: timestamp(), domains, noDomain }));
+      }
+      for (const marker of markers) {
+        await api.deleteComment(ref, marker.id);
       }
       return toTicket(ref, edited, comments);
     },

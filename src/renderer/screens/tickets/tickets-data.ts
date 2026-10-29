@@ -6,7 +6,7 @@
  * Store results are checked before they are drawn. Anything Grillo cannot read is refused with one `StoreError`
  * (`backend`), the only error the screen handles; it shows that error's message.
  */
-import type { Store, TicketPatch } from '../../../main/store/store';
+import type { Store, TicketTags } from '../../../main/store/store';
 import type { Answer, Discussion, Member, Source, Ticket, TicketId } from '../../../main/store/types';
 import { StoreError } from '../../../shared/store';
 import { readMapView, type MapView } from '../map/map-data';
@@ -163,15 +163,19 @@ export function tagChoices(ticket: Ticket, declared: readonly string[]): string[
 }
 
 /** Adds a domain by hand (PRD section 4.3 item 2); "no domain" replaces every domain, and a domain replaces it. */
-export function withTag(ticket: Ticket, tag: string): TicketPatch {
+export function withTag(ticket: Ticket, tag: string): TicketTags {
   if (tag === NO_DOMAIN) return { domains: [], noDomain: true };
   const domain = tag.trim();
   if (domain === '') throw new StoreError('invalid', 'Pick a domain to add.');
   return { domains: ticket.domains.includes(domain) ? [...ticket.domains] : [...ticket.domains, domain], noDomain: false };
 }
 
-/** Removes a domain, or the "no domain" tag, by hand; with none left the ticket is untagged. */
-export function withoutTag(ticket: Ticket, tag: string): TicketPatch {
+/**
+ * Removes a domain by hand; removing the last one leaves "no domain", the tag the hand-set marker can name. Removing
+ * "no domain" leaves the ticket untagged, which hands it back to the tagging round.
+ */
+export function withoutTag(ticket: Ticket, tag: string): TicketTags {
   if (tag === NO_DOMAIN) return { domains: [...ticket.domains], noDomain: false };
-  return { domains: ticket.domains.filter((domain) => domain !== tag), noDomain: false };
+  const domains = ticket.domains.filter((domain) => domain !== tag);
+  return { domains, noDomain: domains.length === 0 };
 }

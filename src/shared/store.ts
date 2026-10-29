@@ -52,6 +52,7 @@ export const STORE_METHODS = [
   'getTicket',
   'listTickets',
   'updateTicket',
+  'tagTicketByHand',
   'closeTicket',
   'mergeTicket',
   'reopenTicket',

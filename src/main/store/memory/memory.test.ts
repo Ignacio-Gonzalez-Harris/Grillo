@@ -293,6 +293,16 @@ describe('in-memory store: tickets', () => {
     expect(await refusal(store.updateTicket(ticket, patch))).toBe('invalid');
   });
 
+  it('sets tags by hand, "no domain" included, and untags a ticket handed back to the tagging round', async () => {
+    const { store, ticket } = await projectWithTicket();
+
+    await expect(store.tagTicketByHand(ticket, { domains: ['platform'], noDomain: false })).resolves.toMatchObject({ domains: ['platform'], noDomain: false });
+    await expect(store.tagTicketByHand(ticket, { domains: [], noDomain: true })).resolves.toMatchObject({ domains: [], noDomain: true });
+    await expect(store.tagTicketByHand(ticket, { domains: [], noDomain: false })).resolves.toMatchObject({ domains: [], noDomain: false });
+    expect(await refusal(store.tagTicketByHand(ticket, { domains: ['finance'], noDomain: false }))).toBe('invalid');
+    expect(await refusal(store.tagTicketByHand(ticket, { domains: ['platform'], noDomain: true }))).toBe('invalid');
+  });
+
   it('lists the member own tickets first and keeps them through every domain filter, with "no domain" kept', async () => {
     const { store, ticket } = await projectWithTicket();
     const product = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
