@@ -252,6 +252,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-accent);
 .seg { display: inline-flex; justify-self: start; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
 .seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
 .seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
+.seg button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
 .reason { font-size: var(--font-size-s); color: var(--color-warning); }
 
 /* ---------- Badges and tags ---------- */
@@ -1281,8 +1282,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The host runs a live grilling session from the grilling agent's own tab: ticks who is present, records consent, records, and lets the room answer each question by Listen or Type. Reached from Start meeting on the map.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 5 · flows 4.5 (Live grilling session) · 4.6 items 2 to 4 (tabs, typing, controls on the tab)</dd>
-      <dt>Controls</dt><dd>Agent tabs named "kind · ticket" with a dot for "waiting for you" and an Open channel switch on each; "+" for a generic agent; present-member ticks; consent tick and read-aloud script; global Record switch; red Recording banner; Listen or Type per question; Use it; Skip question; Jump to ticket; running transcript strip; import a transcript; type box; terminal panel (release 1); Grilling agents card with Open another grilling agent (starts one more grilling agent with <code>/grillo-meeting</code> in the running session, in its own tab with its own Open channel switch; each agent claims a different ticket).</dd>
-      <dt>States</dt><dd>Preparing speech model (downloading, before the first recording) · Before consent (Record disabled) · Recording, Listen · Recording, Type · Another grilling agent opened</dd>
+      <dt>Controls</dt><dd>Agent tabs named "kind · ticket" with a dot for "waiting for you" and an Open channel switch on each; "+" for a generic agent; present-member ticks; consent tick and read-aloud script; recording source choice beside Record (Room microphone, the default, or Call audio, the virtual meeting's sound on this laptop; locked while recording); global Record switch; red Recording banner; Listen or Type per question; Use it; Skip question; Jump to ticket; running transcript strip; import a transcript; type box; terminal panel (release 1); Grilling agents card with Open another grilling agent (starts one more grilling agent with <code>/grillo-meeting</code> in the running session, in its own tab with its own Open channel switch; each agent claims a different ticket).</dd>
+      <dt>States</dt><dd>Preparing speech model (downloading, before the first recording) · Before consent (Record disabled; source on its default, Room microphone) · Recording, Listen (Call audio chosen, source locked) · Recording, Type · Another grilling agent opened</dd>
     </dl>
   </header>
   <div class="states">
@@ -1318,6 +1319,7 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
             <div class="card stack">
               <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="true">Room microphone</button><button aria-pressed="false">Call audio</button></div>
               <label class="switch"><input type="checkbox" class="rec" disabled> Record</label>
               <p class="reason">Record unlocks once the speech model is ready.</p>
             </div>
@@ -1366,6 +1368,8 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
             <div class="card stack">
               <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="true">Room microphone</button><button aria-pressed="false">Call audio</button></div>
+              <p class="small muted">Room microphone records the people in this room. Call audio records the virtual meeting's sound playing on this laptop.</p>
               <label class="switch"><input type="checkbox" class="rec" id="rec-switch-demo" disabled> Record</label>
               <p class="reason">Read the line above aloud and tick "Everyone here agreed" first.</p>
               <button class="btn sm">Import a transcript (paste or upload)</button>
@@ -1421,7 +1425,9 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
             <div class="card stack">
               <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="false" disabled>Room microphone</button><button aria-pressed="true" disabled>Call audio</button></div>
               <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+              <p class="reason">Turn Record off to change the source.</p>
               <button class="btn sm">Import a transcript (paste or upload)</button>
             </div>
             <div class="card stack">
@@ -1481,7 +1487,9 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
             <div class="card stack">
               <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="false" disabled>Room microphone</button><button aria-pressed="true" disabled>Call audio</button></div>
               <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+              <p class="reason">Turn Record off to change the source.</p>
             </div>
           </div>
           <div class="stack">
@@ -1523,7 +1531,9 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
             <div class="card stack">
               <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="false" disabled>Room microphone</button><button aria-pressed="true" disabled>Call audio</button></div>
               <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+              <p class="reason">Turn Record off to change the source.</p>
             </div>
             <div class="card stack">
               <h4>Grilling agents</h4>
@@ -2113,7 +2123,9 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
             <div class="card stack">
               <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="false" disabled>Room microphone</button><button aria-pressed="true" disabled>Call audio</button></div>
               <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+              <p class="reason">Turn Record off to change the source.</p>
               <button class="btn sm">Import a transcript (paste or upload)</button>
             </div>
           </div>
