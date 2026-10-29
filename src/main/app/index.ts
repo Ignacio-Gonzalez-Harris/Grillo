@@ -6,6 +6,7 @@ import { mainIpc } from '../ipc';
 import { loadFeatures } from './features';
 import { isAppPage, webUrlToOpenOutside } from './navigation';
 import { createSettings, SETTINGS_FILE_NAME } from './settings';
+import { repairPathFromLoginShell, runLoginShell } from './shell-path';
 
 const WINDOW_WIDTH = 1280;
 const WINDOW_HEIGHT = 800;
@@ -52,7 +53,17 @@ function createWindow(): void {
   void window.loadURL(appUrl);
 }
 
-void app.whenReady().then(() => {
+// Started before the app is ready so the login shell runs alongside Electron's own start-up; every feature registers
+// only after it settles, so each child process a feature starts sees the repaired PATH. It never waits past its limit.
+const pathRepaired = repairPathFromLoginShell({
+  platform: process.platform,
+  env: process.env,
+  runShell: runLoginShell,
+  warn: console.warn,
+});
+
+void app.whenReady().then(async () => {
+  await pathRepaired;
   loadFeatures({
     ipc: mainIpc,
     settings: createSettings(join(app.getPath('userData'), SETTINGS_FILE_NAME)),
