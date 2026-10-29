@@ -100,7 +100,7 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
   let disposed = false;
 
   // The head: the agent's name, its ticket, the channel badge while the Open channel is on, and the switch.
-  const channelBadge = el('span', 'row', [badge('Channel open', 'ok'), el('span', 'small muted', ['· receiving the transcript live'])]);
+  const channelBadge = el('span', 'row chat-channel', [badge('Channel open', 'ok'), el('span', 'small muted', ['· receiving the transcript live'])]);
   channelBadge.hidden = true;
   const { root: terminalSwitch, input: terminalToggle } = toggle('Show terminal', {
     onChange: (on) => {
@@ -170,10 +170,13 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     };
     const fail = (reason: string) => problem.replaceChildren(errorNote(`The answer was not sent: ${reason}`));
 
+    const everyQuestionPicked = () => [...picks.values()].every((labels) => labels.length > 0);
+
     async function answer(option: ChatAnswer, chosen: HTMLButtonElement[]): Promise<void> {
       optionButtons.forEach((each) => {
         each.disabled = true;
       });
+      sendAnswers.disabled = true;
       const result = await act(() => grillo.invoke('agent-chat:answer', { id, option }));
       if (result.ok) {
         finish(chosen);
@@ -182,6 +185,7 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
       optionButtons.forEach((each) => {
         each.disabled = false;
       });
+      sendAnswers.disabled = !everyQuestionPicked();
       fail(result.reason);
     }
 
@@ -221,7 +225,7 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
               : [label];
           picks.set(question, next);
           siblings.forEach((each) => each.setAttribute('aria-pressed', String(next.includes(each.dataset['label'] ?? ''))));
-          sendAnswers.disabled = [...picks.values()].some((labels) => labels.length === 0);
+          sendAnswers.disabled = !everyQuestionPicked();
         }),
       );
       choices.forEach((choice, at) => {
@@ -321,10 +325,13 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
   const shownText = (words: string) => words.replace(LINE_BREAKS, ' ').trim();
   const joined = (...parts: string[]) => parts.filter((part) => part !== '').join(' ');
 
+  /** Only a grilling agent's tab has the meeting's Use it, so only there does the box say what Use it sends. */
+  const hasUseIt = agent.kind === 'grilling';
+
   function setShownHeld(words: string): void {
     shownHeld = words;
-    hint.hidden = words === '';
-    send.classList.toggle('primary', words === '');
+    hint.hidden = words === '' || !hasUseIt;
+    send.classList.toggle('primary', hint.hidden);
   }
 
   function hold(words: string): void {
@@ -366,6 +373,14 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     }
   }
 
+  async function releaseHeld(shown: string): Promise<void> {
+    try {
+      await session.releaseHeld(agent.id, shown);
+    } catch (error) {
+      console.warn(`Grillo could not release the transcript words held for agent ${agent.id}.`, error);
+    }
+  }
+
   async function sendBox(): Promise<void> {
     const value = input.value;
     if (value.trim() === '') return;
@@ -373,8 +388,10 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     const shown = shownHeld;
     // The box empties at once: words spoken while the message is on its way land in an empty box.
     input.value = '';
-    if (!target) setShownHeld('');
+    setShownHeld('');
     send.disabled = true;
+    // An answer made from held words takes them: the meeting's Use it must not send them again.
+    if (target && shown !== '') await releaseHeld(shown);
     const result = target
       ? await act(() => grillo.invoke('agent-chat:answer', { id: target.id, option: value }))
       : shown !== ''

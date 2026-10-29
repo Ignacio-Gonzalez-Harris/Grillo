@@ -18,6 +18,7 @@ export const SESSION_METHODS = [
   'channels',
   'tellSession',
   'sendBox',
+  'releaseHeld',
   'useIt',
   'typeMode',
   'typePresent',

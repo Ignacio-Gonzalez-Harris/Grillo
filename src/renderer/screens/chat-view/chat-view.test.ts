@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registerAgentChatChannels } from '../../../main/features/agent-chat/channels';
 import { createChatEventHub } from '../../../main/features/agent-chat/event-hub';
@@ -34,6 +36,10 @@ const PROJECT = 'example-org/chat-view-demo';
 const HOST = 'ada-example';
 const FOLDER = '/memory/chat-view-demo';
 const OTHER_QUESTION_ID = '33333333-3333-4333-8333-333333333333';
+
+/** The stylesheets the app loads for the chat view, read from disk: tests import stylesheets empty. */
+const GLASS_CSS = resolve(__dirname, '../../theme/glass.css');
+const CHAT_VIEW_CSS = resolve(__dirname, 'chat-view.css');
 
 const flush = async () => {
   for (let step = 0; step < 5; step += 1) await new Promise((resolve) => setTimeout(resolve, 0));
@@ -166,6 +172,7 @@ afterEach(() => {
   shell?.dispose();
   shell = undefined;
   document.body.replaceChildren();
+  document.head.replaceChildren();
   vi.useRealTimers();
 });
 
@@ -278,9 +285,15 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
     view.buttonNamed('Small').click();
     view.buttonNamed('Large').click();
     view.buttonNamed('Send answers').click();
+    view.buttonNamed('Send answers').click();
     await flush();
 
-    const sent = view.writtenAfterStart(process).at(-1) as { response: { response: { updatedInput: unknown } } };
+    const responses = view
+      .writtenAfterStart(process)
+      .filter((event) => (event as { type: string }).type === 'control_response');
+    expect(responses).toHaveLength(1);
+    expect(view.chat().querySelector('.msgs .note.err')).toBeNull();
+    const sent = responses[0] as { response: { response: { updatedInput: unknown } } };
     expect(sent.response.response.updatedInput).toEqual({
       questions: [...QUESTION_INPUT.questions, second],
       answers: { 'Which colour?': 'Red', 'Which sample size?': 'Small, Large' },
@@ -420,6 +433,73 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
       .map((event) => (event as { message: { content: string } }).message.content);
     expect(sent.slice(-2)).toEqual(['Words 0. Please note this.', 'skip']);
     expect(view.box().value).toBe('');
+  });
+
+  it('says "Use it sends…" under the box only on a grilling agent, the one tab with a Use it', async () => {
+    const view = await app();
+    const { id } = await view.startAgent('task', 'Sample export');
+    await view.host.startSession(PROJECT);
+    await view.host.tickConsent(HOST);
+    await view.host.setRecording(true);
+    await view.host.setChannel(id, true);
+    await flush();
+
+    view.bus.publish({ source: 'microphone', index: 0, pcm: Int16Array.of(0) });
+    await flush();
+
+    expect(view.box().value).toBe('Words 0.');
+    expect(view.hint()).toBeUndefined();
+  });
+
+  it('answers with "Something else" from held words without the meeting\'s Use it sending them again', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('grilling', 'Sample ticket 3');
+    await view.host.startSession(PROJECT);
+    await view.host.tickConsent(HOST);
+    await view.host.setRecording(true);
+    await view.host.setChannel(id, true);
+    await flush();
+    view.bus.publish({ source: 'microphone', index: 0, pcm: Int16Array.of(0) });
+    await flush();
+    process.emit(questionLine(OTHER_QUESTION_ID, QUESTION_INPUT));
+
+    view.buttonNamed('Something else').click();
+    view.sendButton().click();
+    await flush();
+    await view.host.useIt(id);
+    await flush();
+
+    const written = view.writtenAfterStart(process);
+    const answer = written.find((event) => (event as { type: string }).type === 'control_response') as {
+      response: { response: { updatedInput: { answers: unknown } } };
+    };
+    expect(answer.response.response.updatedInput.answers).toEqual({ 'Which colour?': 'Words 0.' });
+    expect(written.filter((event) => (event as { type: string }).type === 'user').at(-1)).toEqual({
+      type: 'user',
+      message: { role: 'user', content: 'use it' },
+    });
+    expect(view.box().value).toBe('');
+  });
+
+  it('keeps what it hides hidden under the real stylesheets: the channel badge, the raw terminal and the Use it line', async () => {
+    for (const sheet of [GLASS_CSS, CHAT_VIEW_CSS]) {
+      const style = document.createElement('style');
+      style.textContent = readFileSync(sheet, 'utf8');
+      document.head.append(style);
+    }
+    const view = await app();
+    const { id } = await view.startAgent('grilling', 'Sample ticket 3');
+    const display = (selector: string) =>
+      getComputedStyle(view.chat().querySelector(selector) as HTMLElement).display;
+    const closed = ['.chat-channel', 'pre.terminal', '.chat-hint'].map(display);
+
+    await view.host.setChannel(id, true);
+    // The session channels announce a change after each call; the test called the host directly, so it announces.
+    view.ipc.send('session:changed', null);
+    await flush();
+
+    expect(closed).toEqual(['none', 'none', 'none']);
+    expect(display('.chat-channel')).toBe('flex');
   });
 
   it('keeps only the newest raw lines in the shown terminal, as in its replay', async () => {

@@ -81,6 +81,8 @@ export interface SessionHost {
    * box showed (`shownHeld`) go with it and are no longer held; words spoken since stay held.
    */
   sendBox(agentId: AgentId, text: string, shownHeld: string): Promise<void>;
+  /** The held words a chat agent's message box showed went out another way (an answer): they are no longer held. */
+  releaseHeld(agentId: AgentId, shownHeld: string): Promise<void>;
   /** Sends the agent's input box with `use it` as its last line. The ones below type their protocol message. */
   useIt(agentId: AgentId): Promise<void>;
   typeMode(agentId: AgentId, mode: AgentMode): Promise<void>;
@@ -288,6 +290,22 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
     const changed = draft.length > 0 || box.draft.length > 0;
     box.draft = draft;
     if (changed) deps.held?.(box.id, draft.join(TRANSCRIPT_LINE_SEPARATOR));
+  }
+
+  /** A chat agent's box, for the calls its message box makes with the held words it showed. */
+  function chatBox(agentId: AgentId, shownHeld: unknown): AgentBox {
+    const box = knownBox(agentId);
+    if (typeof shownHeld !== 'string') throw new SessionError('invalid', 'The held words shown are text');
+    if (deps.agents.choice !== 'chat') throw new SessionError('invalid', 'Only a chat agent has a message box');
+    return box;
+  }
+
+  /** Stops holding the words the message box showed, when they are still the first ones held. */
+  function dropShown(box: AgentBox, shownHeld: string): void {
+    const shown = shownHeld === '' ? [] : shownHeld.split(TRANSCRIPT_LINE_SEPARATOR);
+    if (shown.length > 0 && shown.every((line, at) => box.draft[at] === line)) {
+      setDraft(box, box.draft.slice(shown.length));
+    }
   }
 
   /** A chat agent's protocol message: its held transcript, then the control line on a line of its own. */
@@ -510,21 +528,23 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
 
     sendBox(agentId, text, shownHeld) {
       return Promise.resolve().then(() => {
-        const box = knownBox(agentId);
+        const box = chatBox(agentId, shownHeld);
         if (typeof text !== 'string' || text.trim() === '') throw new SessionError('invalid', 'A message cannot be empty');
-        if (typeof shownHeld !== 'string') throw new SessionError('invalid', 'The held words shown are text');
-        if (deps.agents.choice !== 'chat') {
-          throw new SessionError('invalid', 'Only a chat agent has a message box to send');
-        }
         return inBox(box, async () => {
-          const shown = shownHeld === '' ? [] : shownHeld.split(TRANSCRIPT_LINE_SEPARATOR);
-          if (shown.every((line, at) => box.draft[at] === line)) setDraft(box, box.draft.slice(shown.length));
+          dropShown(box, shownHeld);
           try {
             await deps.agents.send(box.id, text);
           } catch (error) {
             throw agentGone(box, error);
           }
         });
+      });
+    },
+
+    releaseHeld(agentId, shownHeld) {
+      return Promise.resolve().then(() => {
+        const box = chatBox(agentId, shownHeld);
+        return inBox(box, () => dropShown(box, shownHeld));
       });
     },
 

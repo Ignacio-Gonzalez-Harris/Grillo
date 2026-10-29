@@ -284,10 +284,11 @@ launched agent all show their agent as a chat. Every label is in English.
   agent. Nothing is lost: a tab shows its agent's messages from the very first one, even those sent before the tab
   appeared.
 - **Clickable options:** a question shows one button per option, with its description. One click answers a
-  single question. "Something else" lets you type your own answer in the message box; Send then answers with it. A
-  prompt with several questions, or one that takes several picks, is answered with **Send answers** once each
-  question has a pick (several picks go as one answer, joined with commas). Once answered, the buttons grey out and
-  your pick stays highlighted.
+  single question. "Something else" lets you type your own answer in the message box; Send then answers with it
+  (transcript words the box holds go with that answer and are no longer held). A prompt with several questions, or
+  one that takes several picks, is answered with **Send answers** once each question has a pick (several picks go as
+  one answer, joined with commas). While an answer is on its way, its buttons are greyed out; once answered, they
+  stay greyed out and your pick stays highlighted.
 - **Permission prompts** ("Asks permission") show the tool and what it would run, with **Allow** and **Deny**. A
   question or prompt Claude Code repeats is shown, and answered, once.
 - **The message box:** Enter or Send writes one chat message to the agent. A message that cannot be sent, an answer
@@ -298,7 +299,9 @@ launched agent all show their agent as a chat. Every label is in English.
   prompts written into the agent and tool results have colours of their own. Only the newest 2000 lines are kept,
   on screen as in memory.
 - **Open channel:** while the session holds live transcript words for the agent, they are added to the end of the
-  message box as they are spoken, with the line "Use it sends what the message box holds as one message…". The box
+  message box as they are spoken, and "Channel open · receiving the transcript live" shows in the head only while
+  the channel is open. On a grilling agent the line "Use it sends what the message box holds as one message…" shows
+  under the box; other agents have no Use it, so they show no such line. The box
   stays yours on every agent tab: edit it and press **Send** to send all of it as one message, and the words it
   showed are no longer held (words spoken since stay held for the next message). On the meeting's grilling agent,
   **Use it** (or any other meeting control) sends the held words as one chat message instead, and they leave the

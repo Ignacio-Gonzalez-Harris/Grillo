@@ -3,6 +3,8 @@
  * `.chat-head`, `.msgs`, `.bubble`, `.options`, `.opt`, `.msgbox`, `.terminal`, `.note`, `code`). Every value comes
  * from theme/tokens.css. The card fills the agent tab's body; the messages, and the raw stream when shown, scroll.
  */
+/* An element the view hides stays hidden whatever display a class gives it (`.row` is flex). */
+.chat-view [hidden] { display: none; }
 .chat-view { display: grid; gap: var(--space-3); grid-template-rows: auto minmax(0, 1fr) auto auto; min-height: 0; }
 .chat-view.show-terminal { grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr) auto auto; }
 .chat-view .chat-head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
