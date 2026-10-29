@@ -26,7 +26,7 @@ import { FakeTerminalView } from '../../components/terminal/fake-terminal-view';
 import { createAgentTabs, type AgentTabs } from '../agent-tab/agent-tabs';
 import { registerTabPanels } from '../agent-tab/tab-panels';
 import { terminalPanel } from '../agent-tab/terminal-panel';
-import { createChatLog } from './chat-log';
+import { createChatLog, MAX_RAW_LINES } from './chat-log';
 import { chatViewPanel, RAW_STREAM_HEADER, USE_IT_SENDS_THE_BOX } from './chat-panel';
 
 // Made-up project, member, tickets and speech only.
@@ -135,6 +135,11 @@ async function app(choice: AgentRuntimeChoice = 'chat') {
     box,
     sendButton,
     buttonNamed,
+    /** The Use it line under the box, while it shows. */
+    hint: () => {
+      const hint = hintOf(chat());
+      return hint && !hint.hidden ? hint.textContent : undefined;
+    },
     bubbles: () =>
       [...chat().querySelectorAll('.msgs .bubble')].map((bubble) => ({
         me: bubble.classList.contains('me'),
@@ -155,6 +160,7 @@ async function app(choice: AgentRuntimeChoice = 'chat') {
 }
 
 let shell: Shell | undefined;
+const hintOf = (chat: HTMLElement) => chat.querySelector<HTMLElement>('.chat-hint');
 
 afterEach(() => {
   shell?.dispose();
@@ -304,7 +310,8 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
   it('shows the raw event stream, read-only, under the chat while "Show terminal" is on', async () => {
     const view = await app();
     const { process } = await view.startAgent('grilling', 'Sample ticket 4');
-    process.emit(recorded.init, recorded.questionRequest);
+    const prompt = JSON.stringify({ type: 'user', message: { role: 'user', content: '/grillo-answer 4' } });
+    process.emit(recorded.init, prompt, recorded.toolResult, recorded.questionRequest);
     const terminal = () => view.chat().querySelector<HTMLElement>('pre.terminal') as HTMLElement;
     const toggle = [...view.chat().querySelectorAll<HTMLLabelElement>('.chat-head label.switch')].find((label) =>
       label.textContent?.includes('Show terminal'),
@@ -319,6 +326,13 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
     expect(terminal().textContent).toContain(recorded.init);
     expect(terminal().textContent).toContain(recorded.questionRequest);
     expect(terminal().querySelector('input, textarea')).toBeNull();
+    const toneOf = (line: string) =>
+      [...terminal().querySelectorAll('.raw-line')].find((node) => node.textContent === line)?.className;
+    expect([prompt, recorded.toolResult, recorded.questionRequest].map(toneOf)).toEqual([
+      'raw-line t-prompt',
+      'raw-line t-ok',
+      'raw-line t-hl',
+    ]);
   });
 
   it('turns a message it cannot read, or an error the agent reports, into an error note and carries on', async () => {
@@ -343,19 +357,81 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
 
     for (const index of [0, 1]) view.bus.publish({ source: 'microphone', index, pcm: Int16Array.of(index) });
     await flush();
-    const whileHeld = { value: view.box().value, readOnly: view.box().readOnly, hint: view.chat().textContent };
+    const whileHeld = { value: view.box().value, sendable: !view.box().readOnly && !view.sendButton().disabled, hint: view.hint() };
     await view.host.useIt(id);
     await flush();
 
     expect(whileHeld.value).toBe('Words 0. Words 1.');
-    expect(whileHeld.readOnly).toBe(true);
-    expect(whileHeld.hint).toContain(USE_IT_SENDS_THE_BOX);
+    expect(whileHeld.sendable).toBe(true);
+    expect(whileHeld.hint).toBe(USE_IT_SENDS_THE_BOX);
     expect(view.writtenAfterStart(process).filter((event) => (event as { type: string }).type === 'user').at(-1)).toEqual({
       type: 'user',
       message: { role: 'user', content: 'Words 0.\nWords 1.\nuse it' },
     });
     expect(view.box().value).toBe('');
     expect(view.box().readOnly).toBe(false);
+  });
+
+  it('lets the member write again on a tab with no Use it once the channel closes and the session ends', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('generic', 'Sample customer email');
+    await view.host.startSession(PROJECT);
+    await view.host.tickConsent(HOST);
+    await view.host.setRecording(true);
+    await view.host.setChannel(id, true);
+    await flush();
+    view.bus.publish({ source: 'microphone', index: 0, pcm: Int16Array.of(0) });
+    await flush();
+    await view.host.setChannel(id, false);
+    await view.host.endSession();
+    await flush();
+
+    view.box().value = 'Sample note';
+    view.sendButton().click();
+    await flush();
+
+    expect(view.writtenAfterStart(process).at(-1)).toEqual({ type: 'user', message: { role: 'user', content: 'Sample note' } });
+    expect(view.box().value).toBe('');
+    expect(view.box().readOnly).toBe(false);
+    expect(view.sendButton().disabled).toBe(false);
+    expect(view.hint()).toBeUndefined();
+  });
+
+  it('sends the held words with Send as the one message, without sending them again later', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('task', 'Sample export');
+    await view.host.startSession(PROJECT);
+    await view.host.tickConsent(HOST);
+    await view.host.setRecording(true);
+    await view.host.setChannel(id, true);
+    await flush();
+    view.bus.publish({ source: 'microphone', index: 0, pcm: Int16Array.of(0) });
+    await flush();
+
+    view.box().value = `${view.box().value} Please note this.`;
+    view.sendButton().click();
+    await flush();
+    await view.host.skip(id);
+    await flush();
+
+    const sent = view
+      .writtenAfterStart(process)
+      .filter((event) => (event as { type: string }).type === 'user')
+      .map((event) => (event as { message: { content: string } }).message.content);
+    expect(sent.slice(-2)).toEqual(['Words 0. Please note this.', 'skip']);
+    expect(view.box().value).toBe('');
+  });
+
+  it('keeps only the newest raw lines in the shown terminal, as in its replay', async () => {
+    const view = await app();
+    const { process } = await view.startAgent('generic', 'Sample customer email');
+
+    process.emit(...Array.from({ length: MAX_RAW_LINES + 1 }, (_, line) => JSON.stringify({ type: 'sample', line })));
+
+    const lines = [...view.chat().querySelectorAll('pre.terminal .raw-line')].map((line) => line.textContent);
+    expect(lines).toHaveLength(MAX_RAW_LINES);
+    expect(lines[0]).toBe(JSON.stringify({ type: 'sample', line: 1 }));
+    expect(lines.at(-1)).toBe(JSON.stringify({ type: 'sample', line: MAX_RAW_LINES }));
   });
 
   it("keeps the terminal as the body of a terminal agent's tab (GRILLO_AGENT_RUNTIME=terminal)", async () => {

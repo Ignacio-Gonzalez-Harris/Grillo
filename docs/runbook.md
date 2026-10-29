@@ -287,19 +287,23 @@ launched agent all show their agent as a chat. Every label is in English.
   that is refused, an error the agent reports, a turn that ends in error, or a message Grillo cannot read shows as a
   red note in the chat; the agent carries on.
 - **Show terminal** reveals the agent's raw event stream (one JSON line per event, as Claude Code printed it) under
-  the chat, read-only: a chat agent has no terminal to type into. Questions and permission prompts are highlighted.
-  The newest 2000 lines are kept.
-- **Open channel:** while the session holds live transcript words for the agent, the message box shows them as they
-  are spoken, read-only, with Send greyed out and the line "Use it sends what the message box holds as one
-  message…". The meeting's **Use it** (or any other meeting control) sends them as one chat message and empties the
-  box; what you had typed before comes back. To write your own message meanwhile, press Use it first or switch the
-  room to Type.
+  the chat, read-only: a chat agent has no terminal to type into. Questions and permission prompts are highlighted,
+  prompts written into the agent and tool results have colours of their own. Only the newest 2000 lines are kept,
+  on screen as in memory.
+- **Open channel:** while the session holds live transcript words for the agent, they are added to the end of the
+  message box as they are spoken, with the line "Use it sends what the message box holds as one message…". The box
+  stays yours on every agent tab: edit it and press **Send** to send all of it as one message, and the words it
+  showed are no longer held (words spoken since stay held for the next message). On the meeting's grilling agent,
+  **Use it** (or any other meeting control) sends the held words as one chat message instead, and they leave the
+  box; what you typed yourself stays. Closing the channel or ending the session keeps any held words in the box,
+  ready to send or delete.
 
 ### Agent chat protocol (release 2)
 
 The chat view's engine, and what every agent tab runs on under the chat runtime. Its `agent-chat:*` channels take a
 tab's id, since the tab and its chat agent share it; stop a tab with `agents:stop`, which also takes it off the tab
-bar. While a chat agent's Open channel holds transcript words, main sends them on `session:held` (`''` once sent).
+bar. While a chat agent's Open channel holds transcript words, main sends them on `session:held` (`''` once sent);
+`session:sendBox` sends the message box with the held words it showed, so they are never sent twice.
 
 - **A chat agent is your own `claude` with no terminal**, started in the project folder with fixed flags:
   `claude -p --input-format stream-json --output-format stream-json --verbose --permission-prompt-tool stdio

@@ -121,6 +121,23 @@ describe('grilling session over chat agents', () => {
     ]);
   });
 
+  it("sends the chat view's message box as one message, dropping only the held words the box showed", async () => {
+    const { host, id, sent, hear, held } = await rig();
+    await done(host.setChannel(id, true));
+    await hear(0, 1);
+
+    await done(host.sendBox(id, 'Words 0, as the member edited them.', 'Words 0.'));
+    await done(host.useIt(id));
+    const refused = await done(host.sendBox(id, '  ', '').catch((thrown: unknown) => thrown));
+
+    expect(sent()).toEqual([`session: ${SESSION_FILE}`, 'Words 0, as the member edited them.', 'Words 1.\nuse it']);
+    expect(held.slice(-2)).toEqual([
+      { agentId: id, text: 'Words 1.' },
+      { agentId: id, text: '' },
+    ]);
+    expect((refused as SessionError).kind).toBe('invalid');
+  });
+
   it('sends each screen control line as one chat message, below any transcript it carries', async () => {
     const { host, id, sent, hear } = await rig();
     await done(host.setChannel(id, true));

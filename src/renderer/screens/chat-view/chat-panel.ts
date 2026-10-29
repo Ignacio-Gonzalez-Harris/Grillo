@@ -17,7 +17,7 @@ import { badge, button, toggle } from '../../theme/components';
 import { terminalPanel } from '../agent-tab/terminal-panel';
 import type { MountedPanel, TabPanel, TabPanelContext } from '../agent-tab/tab-panels';
 import { el } from '../own-time/view';
-import { appChatLog, type ChatLog } from './chat-log';
+import { appChatLog, MAX_RAW_LINES, type ChatLog } from './chat-log';
 
 /** Above the built-in terminal (priority 0), so every chat agent's tab shows the chat view. */
 export const CHAT_VIEW_PRIORITY = 10;
@@ -32,8 +32,8 @@ const MEMBER = 'You';
 /** The separator of several picks for one question, as Claude Code's own question prompt joins them. */
 const PICK_SEPARATOR = ', ';
 const LINE_BREAKS = /\r?\n/g;
-/** Raw event types the terminal colours, as the prototype does. */
-const RAW_TONES: Readonly<Record<string, string>> = { control_request: 't-hl', user: 't-ok' };
+/** Raw event types the terminal colours, as the prototype does; a `user` line is coloured by `userTone`. */
+const RAW_TONES: Readonly<Record<string, string>> = { control_request: 't-hl' };
 
 export interface ChatViewOptions {
   /** The chat log the view reads from; the app's own, started with the shell, by default. */
@@ -69,10 +69,16 @@ function toolSummary(input: Record<string, unknown>): string {
   return JSON.stringify(input);
 }
 
+/** A prompt written into the agent is plain text; a tool's result comes back as a list of content blocks. */
+function userTone(event: { message?: { content?: unknown } }): string {
+  return typeof event.message?.content === 'string' ? 't-prompt' : 't-ok';
+}
+
 function rawTone(line: string): string | undefined {
   try {
-    const type = (JSON.parse(line) as { type?: unknown } | null)?.type;
-    return typeof type === 'string' ? RAW_TONES[type] : undefined;
+    const event = JSON.parse(line) as { type?: unknown; message?: { content?: unknown } } | null;
+    if (event?.type === 'user') return userTone(event);
+    return typeof event?.type === 'string' ? RAW_TONES[event.type] : undefined;
   } catch {
     return undefined;
   }
@@ -125,7 +131,7 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
   input.placeholder = BOX_PLACEHOLDER;
   input.setAttribute('aria-label', 'Write to the agent');
   const send = button('Send', { variant: 'primary', onClick: () => void sendBox() });
-  const hint = el('p', 'small muted', [USE_IT_SENDS_THE_BOX]);
+  const hint = el('p', 'chat-hint small muted', [USE_IT_SENDS_THE_BOX]);
   hint.hidden = true;
 
   const card = el('div', 'card chat chat-view', [head, msgs, terminal, el('div', 'msgbox', [input, send]), hint]);
@@ -283,9 +289,17 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     }
   }
 
+  /** The raw lines on screen, oldest first, trimmed to the log's cap so a long run never grows the tab. */
+  const rawLines: HTMLElement[] = [];
   function addRaw(line: string): void {
-    const tone = rawTone(line);
-    terminal.append(tone ? el('span', tone, [line]) : line, '\n');
+    const node = el('span', ['raw-line', rawTone(line)].filter(Boolean).join(' '), [line]);
+    terminal.append(node, '\n');
+    rawLines.push(node);
+    if (rawLines.length > MAX_RAW_LINES) {
+      const oldest = rawLines.shift();
+      oldest?.nextSibling?.remove();
+      oldest?.remove();
+    }
     if (!terminal.hidden) terminal.scrollTop = terminal.scrollHeight;
   }
 
@@ -299,20 +313,28 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     }),
   );
 
-  // The member's own text, kept aside while the box shows the transcript the Open channel holds.
-  let typed = '';
-  let holding = false;
+  /**
+   * The live transcript words the session holds for this agent, as last put into the box. The box stays the
+   * member's: new words are added to the end of whatever it holds, and Send sends all of it as one message.
+   */
+  let shownHeld = '';
+  const shownText = (words: string) => words.replace(LINE_BREAKS, ' ').trim();
+  const joined = (...parts: string[]) => parts.filter((part) => part !== '').join(' ');
+
+  function setShownHeld(words: string): void {
+    shownHeld = words;
+    hint.hidden = words === '';
+    send.classList.toggle('primary', words === '');
+  }
 
   function hold(words: string): void {
-    const nowHolding = words !== '';
-    if (nowHolding && !holding) typed = input.value;
-    if (nowHolding) input.value = words.replace(LINE_BREAKS, ' ');
-    else if (holding) input.value = typed;
-    holding = nowHolding;
-    input.readOnly = nowHolding;
-    send.disabled = nowHolding;
-    send.classList.toggle('primary', !nowHolding);
-    hint.hidden = !nowHolding;
+    if (words.startsWith(shownHeld)) {
+      input.value = joined(input.value, shownText(words.slice(shownHeld.length)));
+    } else {
+      // The held words went out another way (the meeting's Use it): they leave the box, the member's text stays.
+      input.value = joined(input.value.replace(shownText(shownHeld), '').trim(), shownText(words));
+    }
+    setShownHeld(words);
   }
 
   stops.push(
@@ -334,18 +356,33 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
   stops.push(grillo.on('session:changed', showChannel));
   showChannel();
 
+  /** Sends the box through the session when it holds transcript words, so they are never held and sent again. */
+  async function sendWithHeld(value: string, shown: string): Promise<ChatActionResult> {
+    try {
+      await session.sendBox(agent.id, value, shown);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, reason: messageOf(error) };
+    }
+  }
+
   async function sendBox(): Promise<void> {
     const value = input.value;
-    if (holding || value.trim() === '') return;
+    if (value.trim() === '') return;
     const target = ownAnswer;
+    const shown = shownHeld;
+    // The box empties at once: words spoken while the message is on its way land in an empty box.
+    input.value = '';
+    if (!target) setShownHeld('');
     send.disabled = true;
-    const result = await act(() =>
-      target
-        ? grillo.invoke('agent-chat:answer', { id: target.id, option: value })
-        : grillo.invoke('agent-chat:send', { id: agent.id, text: value }),
-    );
-    send.disabled = holding;
+    const result = target
+      ? await act(() => grillo.invoke('agent-chat:answer', { id: target.id, option: value }))
+      : shown !== ''
+        ? await sendWithHeld(value, shown)
+        : await act(() => grillo.invoke('agent-chat:send', { id: agent.id, text: value }));
+    send.disabled = false;
     if (!result.ok) {
+      input.value = joined(value, input.value);
       if (target) target.failed(result.reason);
       else show(errorNote(`Not sent: ${result.reason}`));
       return;
@@ -354,7 +391,6 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
       target.done();
       show(bubble([MEMBER], [text(value)], true));
     }
-    if (input.value === value) input.value = '';
   }
 
   input.addEventListener('keydown', (event) => {
@@ -371,8 +407,7 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
       input.focus();
     },
     setInput(value) {
-      if (holding) typed = value;
-      else input.value = value;
+      input.value = value;
     },
     dispose() {
       disposed = true;

@@ -76,6 +76,11 @@ export interface SessionHost {
   channels(): AgentId[];
   /** Types `session: <file>` into a meeting agent, channel open or not; once per agent and session. */
   tellSession(agentId: AgentId): Promise<void>;
+  /**
+   * Sends what a chat agent's message box holds as one chat message (the member pressed Send). The held words the
+   * box showed (`shownHeld`) go with it and are no longer held; words spoken since stay held.
+   */
+  sendBox(agentId: AgentId, text: string, shownHeld: string): Promise<void>;
   /** Sends the agent's input box with `use it` as its last line. The ones below type their protocol message. */
   useIt(agentId: AgentId): Promise<void>;
   typeMode(agentId: AgentId, mode: AgentMode): Promise<void>;
@@ -500,6 +505,26 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
       return Promise.resolve().then(() => {
         const current = running();
         return sendSessionLine(knownBox(agentId), current);
+      });
+    },
+
+    sendBox(agentId, text, shownHeld) {
+      return Promise.resolve().then(() => {
+        const box = knownBox(agentId);
+        if (typeof text !== 'string' || text.trim() === '') throw new SessionError('invalid', 'A message cannot be empty');
+        if (typeof shownHeld !== 'string') throw new SessionError('invalid', 'The held words shown are text');
+        if (deps.agents.choice !== 'chat') {
+          throw new SessionError('invalid', 'Only a chat agent has a message box to send');
+        }
+        return inBox(box, async () => {
+          const shown = shownHeld === '' ? [] : shownHeld.split(TRANSCRIPT_LINE_SEPARATOR);
+          if (shown.every((line, at) => box.draft[at] === line)) setDraft(box, box.draft.slice(shown.length));
+          try {
+            await deps.agents.send(box.id, text);
+          } catch (error) {
+            throw agentGone(box, error);
+          }
+        });
       });
     },
 
