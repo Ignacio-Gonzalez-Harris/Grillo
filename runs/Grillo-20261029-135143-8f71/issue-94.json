@@ -1,0 +1,26 @@
+{
+  "run_id": "Grillo-20261029-135143-8f71",
+  "issue": 94,
+  "title": "Chat view with the \"show terminal\" switch as the agent tab body",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-29T13:51:43Z",
+  "finished_at": "2026-10-29T14:46:00Z",
+  "outcome": "needs-human",
+  "pr": 174,
+  "summary": "Turns every agent tab into a chat view (bubbles, clickable answers, permission buttons, a message box) with a show-terminal switch and the meeting's open channel; chat is the default runtime again. Three review rounds each found a real bug; the last open one is that Use it on a grilling tab sends the held transcript words instead of what the member edited in the box.",
+  "agents": [
+    { "name": "dev-94", "model": "opus", "tokens_total": 291043 },
+    { "name": "review-94", "model": "opus", "tokens_total": 157354 },
+    { "name": "review-94-r2", "model": "opus", "tokens_total": 187214 },
+    { "name": "review-94-r3", "model": "opus", "tokens_total": 183934 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 1628, "review_seconds": 1446, "ci_seconds": 0 },
+  "rounds": { "review": 3, "ci": 0 },
+  "friction": [
+    "No CI and no real-app run: the test browser (happy-dom) missed a hidden attribute overridden by a theme display rule, and a box-versus-held-words mismatch, so each found only by a fresh reviewer — three review rounds and the story ended needs-human"
+  ],
+  "lessons_learned": [
+    "Chat-view and meeting-channel stories need the dev to launch the app (or a probe test over the real stylesheets) and test every send path against what the message box shows before the first review"
+  ],
+  "deferred": []
+}
