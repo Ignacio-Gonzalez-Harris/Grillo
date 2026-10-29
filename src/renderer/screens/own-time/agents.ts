@@ -106,22 +106,19 @@ export function startPrdWriter(grillo: GrilloApi, folder: string): Promise<Agent
 
 /**
  * A pasted or uploaded transcript as one `use it` message: the transcript's lines, then the control line on a line
- * of its own. Sent as one write, the line breaks inside it do not send; Enter follows as its own write.
+ * of its own, sent as one message: the line breaks inside it do not send it early.
  */
 export function useItMessage(transcript: string): string {
   const chunk = transcript.replace(/\r\n?/g, '\n').trimEnd();
   return chunk.trim() === '' ? USE_IT_LINE : `${chunk}\n${USE_IT_LINE}`;
 }
 
-const ENTER = '\r';
-
 /**
- * Types a message into the agent, then presses Enter as a write of its own, as the type box does (Claude Code reads
- * text and Enter in one write as a paste). Unlike the type box it lets a failure through, so the screen can show it.
+ * Sends the agent one whole message: one chat message, or on a terminal agent the text and then Enter as a write of
+ * its own. Unlike the type box it lets a failure through, so the screen can show it.
  */
-async function typeMessage(grillo: GrilloApi, agentId: AgentId, text: string): Promise<void> {
-  await grillo.invoke('agents:write', { id: agentId, text });
-  await grillo.invoke('agents:write', { id: agentId, text: ENTER });
+function typeMessage(grillo: GrilloApi, agentId: AgentId, text: string): Promise<void> {
+  return grillo.invoke('agents:send', { id: agentId, text });
 }
 
 export function sendUseIt(grillo: GrilloApi, agentId: AgentId, transcript: string): Promise<void> {

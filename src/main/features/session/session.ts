@@ -2,7 +2,8 @@
  * The live grilling session on the host's laptop (PRD section 4.5 items 1-5, section 7 recording consent): who is
  * present, the consent tick, one recording switch that turns audio slices into the session transcript file, and a
  * per-agent channel that writes the live transcript into an agent's input box and types the protocol messages of
- * `resources/skills/README.md`.
+ * `resources/skills/README.md`. A chat agent has no input box: its transcript is held here and goes out with the
+ * next protocol message, as one chat message.
  */
 import type { AgentId } from '../../../shared/agents';
 import type { AudioSlice } from '../../../shared/audio';
@@ -52,7 +53,7 @@ export interface SessionHostDeps {
   /** Where captured slices arrive in main (`audioSlices`). */
   slices: { subscribe(listener: SliceListener): Unsubscribe };
   transcriber: Transcriber;
-  agents: Pick<AgentRuntime, 'write' | 'list'>;
+  agents: Pick<AgentRuntime, 'choice' | 'write' | 'send' | 'list'>;
 }
 
 /** One host's session. Every refusal is a `SessionError`. */
@@ -103,6 +104,8 @@ interface AgentBox {
   mode: AgentMode | undefined;
   /** True once the session wrote transcript into the box and has not sent it since. */
   holdsText: boolean;
+  /** A chat agent's transcript lines not sent yet; they go out with its next protocol message. */
+  draft: string[];
   /** The session file this agent has been told about. */
   toldSession: string | undefined;
   /** Writes to this agent, one after another, so a control line is never overtaken by a slice. */
@@ -231,7 +234,15 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
     }
     let box = boxes.get(agentId);
     if (!box) {
-      box = { id: agentId, open: false, mode: undefined, holdsText: false, toldSession: undefined, queue: Promise.resolve() };
+      box = {
+        id: agentId,
+        open: false,
+        mode: undefined,
+        holdsText: false,
+        draft: [],
+        toldSession: undefined,
+        queue: Promise.resolve(),
+      };
       boxes.set(agentId, box);
     }
     return box;
@@ -252,18 +263,37 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
     return result;
   }
 
+  function agentGone(box: AgentBox, error: unknown): SessionError {
+    closeChannel(box);
+    return new SessionError('unknown-agent', `The agent '${box.id}' has gone: ${messageOf(error)}`, { cause: error });
+  }
+
   function typeOrRefuse(box: AgentBox, text: string): void {
     try {
       deps.agents.write(box.id, text);
     } catch (error) {
-      closeChannel(box);
-      throw new SessionError('unknown-agent', `The agent '${box.id}' has gone: ${messageOf(error)}`, { cause: error });
+      throw agentGone(box, error);
+    }
+  }
+
+  /** A chat agent's protocol message: its held transcript, then the control line on a line of its own. */
+  async function sendChatMessage(box: AgentBox, controlLine: string): Promise<void> {
+    const message = [...box.draft, controlLine].join(TRANSCRIPT_LINE_SEPARATOR);
+    box.draft = [];
+    try {
+      await deps.agents.send(box.id, message);
+    } catch (error) {
+      throw agentGone(box, error);
     }
   }
 
   /** One protocol message: the control line on a line of its own below any transcript, then Enter. */
   function sendControlLine(box: AgentBox, controlLine: string): Promise<void> {
     return inBox(box, async () => {
+      if (deps.agents.choice === 'chat') {
+        await sendChatMessage(box, controlLine);
+        return;
+      }
       typeOrRefuse(box, box.holdsText ? LINE_BREAK + controlLine : controlLine);
       // Claude Code swallows an Enter that arrives before it has echoed the text typed just before it.
       await delay(ENTER_AFTER_QUIET_MS);
@@ -289,6 +319,10 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
       if (!box || box.mode === 'type') continue;
       void inBox(box, () => {
         if (!box.open) return;
+        if (deps.agents.choice === 'chat') {
+          box.draft.push(line);
+          return;
+        }
         try {
           deps.agents.write(id, box.holdsText ? LINE_BREAK + line : line);
           box.holdsText = true;

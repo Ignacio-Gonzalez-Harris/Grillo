@@ -31,7 +31,12 @@ async function rig() {
     store,
     slices: bus,
     transcriber,
-    agents: { list: () => running, write: (_id, text) => void typed.push(text) },
+    agents: {
+      choice: 'terminal',
+      list: () => running,
+      write: (_id, text) => void typed.push(text),
+      send: () => Promise.reject(new Error('A terminal agent is typed into, never sent to')),
+    },
   });
   registerSessionChannels(ipc, host);
   const grillo = createGrilloApi(fake.renderer);

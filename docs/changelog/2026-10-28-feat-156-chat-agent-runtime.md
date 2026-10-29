@@ -1,0 +1,1 @@
+Agent tabs now run as chat agents by default (one Claude Code per tab, sharing the tab id), with the terminal agent kept as a fallback behind GRILLO_AGENT_RUNTIME=terminal until the Agent SDK terms are confirmed.

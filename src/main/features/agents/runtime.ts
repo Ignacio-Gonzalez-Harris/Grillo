@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { posix, win32 } from 'node:path';
-import { AGENT_KINDS, type AgentId, type AgentInfo, type StartAgentRequest } from '../../../shared/agents';
+import {
+  AGENT_KINDS,
+  type AgentId,
+  type AgentInfo,
+  type AgentRuntimeChoice,
+  type StartAgentRequest,
+} from '../../../shared/agents';
 
 /** How long an agent must stay silent after output before its tab shows the waiting dot (issue 64 decision). */
 export const WAITING_AFTER_MS = 3000;
@@ -59,8 +65,13 @@ export interface AgentRuntimeDeps {
 }
 
 export interface AgentRuntime {
+  /** Which runtime this is: every agent tab it starts runs this way. */
+  readonly choice: AgentRuntimeChoice;
   startAgent(request: StartAgentRequest): Promise<AgentId>;
+  /** Types raw text into the agent's terminal. A chat agent has no terminal and refuses it. */
   write(id: AgentId, text: string): void;
+  /** Sends one whole, non-empty message: a chat message, or on a terminal agent the text, then Enter. */
+  send(id: AgentId, text: string): Promise<void>;
   resize(id: AgentId, cols: number, rows: number): void;
   /** Ends the agent's Claude Code. Does nothing for an agent that is already gone. */
   stop(id: AgentId): void;
@@ -102,7 +113,8 @@ function isNonEmptyText(value: unknown): value is string {
   return typeof value === 'string' && value !== '';
 }
 
-function assertValidRequest(request: StartAgentRequest): void {
+/** Throws unless the start request has a known kind, a folder, a title and a first message. */
+export function assertValidStartRequest(request: StartAgentRequest): void {
   const valid =
     typeof request === 'object' &&
     request !== null &&
@@ -112,6 +124,13 @@ function assertValidRequest(request: StartAgentRequest): void {
     typeof request.firstMessage === 'string';
   if (!valid) {
     throw new Error('Invalid agent start request: it needs a known kind, a folder, a title and a first message');
+  }
+}
+
+/** Throws unless the text is a message worth sending. */
+export function assertSendableMessage(text: unknown): asserts text is string {
+  if (typeof text !== 'string' || text === '') {
+    throw new Error('A message cannot be empty');
   }
 }
 
@@ -183,7 +202,7 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
   }
 
   async function startAgent(request: StartAgentRequest): Promise<AgentId> {
-    assertValidRequest(request);
+    assertValidStartRequest(request);
     const claude = deps.findClaude();
     await deps.shipSkills(request.folder);
 
@@ -235,11 +254,21 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
     announce();
   }
 
+  /** Types the message, then presses Enter as a write of its own (Claude Code reads both in one write as a paste). */
+  async function send(id: AgentId, text: string): Promise<void> {
+    const agent = find(id);
+    assertSendableMessage(text);
+    agent.pty.write(text);
+    agent.pty.write(ENTER);
+  }
+
   return {
+    choice: 'terminal',
     startAgent,
     write(id, text) {
       find(id).pty.write(text);
     },
+    send,
     resize(id, cols, rows) {
       const agent = find(id);
       if (!isTerminalDimension(cols) || !isTerminalDimension(rows)) {

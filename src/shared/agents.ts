@@ -1,6 +1,7 @@
 /**
  * The agent runtime's contract between the main process and the renderer (PRD section 4.6, 8 Agent runtime).
- * An agent is a visible Claude Code session in an embedded terminal, started in the project folder.
+ * An agent is the member's Claude Code, started in the project folder: a chat agent (the default) or, as the
+ * fallback, a visible session in an embedded terminal (see `AgentRuntimeChoice`).
  */
 
 /** The six kinds of agent (PRD section 3, Vocabulary). */
@@ -9,11 +10,18 @@ export type AgentKind = (typeof AGENT_KINDS)[number];
 
 export type AgentId = string;
 
+/**
+ * How an agent tab's Claude Code runs (PRD section 8, Agent runtime): `chat`, the machine-readable chat agent, or
+ * `terminal`, the release-1 terminal agent kept as a working fallback until the Agent SDK terms are confirmed.
+ */
+export const AGENT_RUNTIME_CHOICES = ['chat', 'terminal'] as const;
+export type AgentRuntimeChoice = (typeof AGENT_RUNTIME_CHOICES)[number];
+
 export interface StartAgentRequest {
   kind: AgentKind;
   /** The project folder: Claude Code starts here and the skills are shipped here. */
   folder: string;
-  /** Typed into Claude Code, followed by Enter, once its prompt appears. An empty message types nothing. */
+  /** Sent as the first chat message, or typed with Enter once a terminal agent's prompt appears. Empty sends nothing. */
   firstMessage: string;
   /** The tab's name, usually `agentTitle(kind, ticket)`. */
   title: string;
@@ -38,6 +46,8 @@ declare module './ipc' {
   interface InvokeChannels {
     'agents:start': { request: StartAgentRequest; response: AgentId };
     'agents:write': { request: { id: AgentId; text: string }; response: void };
+    /** One whole message to the agent: a chat message, or typed text followed by Enter on a terminal agent. */
+    'agents:send': { request: { id: AgentId; text: string }; response: void };
     'agents:resize': { request: { id: AgentId; cols: number; rows: number }; response: void };
     'agents:stop': { request: { id: AgentId }; response: void };
     'agents:set-title': { request: { id: AgentId; title: string }; response: void };
