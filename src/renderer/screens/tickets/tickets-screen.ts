@@ -380,7 +380,7 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
         remove.type = 'button';
         remove.disabled = busy;
         remove.setAttribute('aria-label', `Remove ${names[index]}`);
-        remove.addEventListener('click', () => void write(() => store.updateTicket(ticket.id, withoutTag(ticket, names[index]))));
+        remove.addEventListener('click', () => void write(() => store.tagTicketByHand(ticket.id, withoutTag(ticket, names[index]))));
         tag.append(remove);
       });
     }
@@ -391,7 +391,7 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
       add.disabled = busy;
       add.addEventListener('change', () => {
         const tag = add.value;
-        if (tag !== '') void write(() => store.updateTicket(ticket.id, withTag(ticket, tag)));
+        if (tag !== '') void write(() => store.tagTicketByHand(ticket.id, withTag(ticket, tag)));
       });
       parts.push(add);
     }

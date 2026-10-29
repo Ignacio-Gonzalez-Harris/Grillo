@@ -3,6 +3,7 @@ import { createMemorySettings } from '../../memory/settings';
 import { StoreError, type NewTicket, type Store, type StoreErrorKind } from '../../store';
 import type { TicketId } from '../../types';
 import { createIssuesStore } from '.';
+import { formatTagsByHand, parseTagsByHand } from './bodies';
 import { createFakeIssues } from './fake-issues';
 
 // Every test drives the store through the Store interface; the fake GitHub stands in for `gh`.
@@ -358,6 +359,101 @@ describe('GitHub issues backend: tickets', () => {
     await store.closeTicket(ticket);
 
     expect(await store.getTicket(ticket)).toMatchObject({ state: 'closed', duplicateOf: 3 });
+  });
+});
+
+describe('GitHub issues backend: tags set by hand', () => {
+  /** The rule the tagging skill teaches: a comment whose first line is exactly this marks a hand-tagged ticket. */
+  const SKILL_MARKER_LINE = '<!-- grillo:tags-by-hand -->';
+  const markerBodies = (repository: ReturnType<typeof setup>['repository'], number: number) =>
+    repository.comments.filter((comment) => comment.issue === number && comment.body.split('\n')[0] === SKILL_MARKER_LINE).map(({ body }) => body);
+
+  it('sets the domain labels and writes one tags-by-hand marker naming who, when and the domains', async () => {
+    const { store, repository, issue, ticket, writes } = await projectWithTicket();
+    issue(2).labels.push('bug');
+    const before = writes().length;
+
+    const tagged = await store.tagTicketByHand(ticket, { domains: ['platform', 'product'], noDomain: false });
+
+    expect(tagged).toMatchObject({ domains: ['platform', 'product'], noDomain: false });
+    expect(issue(2).labels).toEqual(['wayfinder:grilling', 'bug', 'domain:platform', 'domain:product']);
+    expect(markerBodies(repository, 2)).toEqual([
+      formatTagsByHand({ who: 'ada-example', when: START.toISOString(), domains: ['platform', 'product'], noDomain: false }),
+    ]);
+    expect(writes().slice(before).map((call) => /--method (\w+) \S+?(issues\/\d+(?:\/comments)?)\b/.exec(call)?.slice(1).join(' '))).toEqual([
+      'PATCH issues/2',
+      'POST issues/2/comments',
+    ]);
+  });
+
+  it('writes the marker with "none" for the "no domain" tag, and the latest marker is the one that counts', async () => {
+    const { store, repository, issue, ticket } = await projectWithTicket();
+    await store.tagTicketByHand(ticket, { domains: ['platform'], noDomain: false });
+
+    const tagged = await store.tagTicketByHand(ticket, { domains: [], noDomain: true });
+
+    expect(tagged).toMatchObject({ domains: [], noDomain: true });
+    expect(issue(2).labels).toEqual(['wayfinder:grilling', 'domain:none']);
+    const markers = markerBodies(repository, 2);
+    expect(markers).toHaveLength(2);
+    expect(markers[1]).toContain('\ndomains: none\n');
+    expect(parseTagsByHand(markers[1], 'the latest marker')).toMatchObject({ who: 'ada-example', domains: [], noDomain: true });
+  });
+
+  it('leaves the tags a member set by hand through a tagging round, which still tags every other ticket', async () => {
+    const { store, repository, issue, ticket } = await projectWithTicket();
+    const other = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    await store.tagTicketByHand(ticket, { domains: ['platform'], noDomain: false });
+
+    // A tagging round as the skill runs it: a ticket with a marker comment is left alone, every other one is relabelled.
+    for (const entry of repository.issues.values()) {
+      if (entry.number === 1 || markerBodies(repository, entry.number).length > 0) continue;
+      entry.labels = [...entry.labels.filter((label) => !label.startsWith('domain:')), 'domain:product'];
+    }
+
+    await expect(store.getTicket(ticket)).resolves.toMatchObject({ domains: ['platform'], noDomain: false });
+    await expect(store.getTicket(other.id)).resolves.toMatchObject({ domains: ['product'] });
+    expect(parseTagsByHand(markerBodies(repository, 2).at(-1)!, 'the latest marker').domains).toEqual(
+      issue(2).labels.filter((label) => label.startsWith('domain:')).map((label) => label.slice('domain:'.length)),
+    );
+  });
+
+  it('hands an untagged ticket back to the tagging round: its domain labels go and every marker is deleted', async () => {
+    const { store, repository, issue, ticket, github } = await projectWithTicket();
+    await store.tagTicketByHand(ticket, { domains: [], noDomain: true });
+    github.addComment(PROJECT, 2, OTHER, formatTagsByHand({ who: OTHER, when: START.toISOString(), domains: [], noDomain: true }));
+    await store.createAnswer(ticket, plainAnswer());
+
+    const untagged = await store.tagTicketByHand(ticket, { domains: [], noDomain: false });
+
+    expect(untagged).toMatchObject({ domains: [], noDomain: false });
+    expect(issue(2).labels).toEqual(['wayfinder:grilling']);
+    expect(markerBodies(repository, 2)).toEqual([]);
+    await expect(store.listAnswers(ticket)).resolves.toHaveLength(1);
+  });
+
+  it.each([
+    ['"no domain" together with a domain', { noDomain: true, domains: ['platform'] }],
+    ['a domain no member declared', { noDomain: false, domains: ['finance'] }],
+    ['the domain name "none", which is the no-domain tag', { noDomain: false, domains: ['none'] }],
+    ['no domain list', { noDomain: false }],
+    ['a "no domain" that is not true or false', { noDomain: 'yes', domains: [] }],
+    ['no tags at all', null],
+  ])('refuses tags with %s without writing anything', async (_case, tags) => {
+    const { store, ticket, writes } = await projectWithTicket();
+    const before = writes().length;
+
+    expect(await refusal(store.tagTicketByHand(ticket, tags as never))).toBe('invalid');
+    expect(writes()).toHaveLength(before);
+  });
+
+  it('refuses a hand change on a closed project as read-only before writing anything', async () => {
+    const { store, repository, ticket, writes } = await projectWithTicket();
+    repository.archived = true;
+    const before = writes().length;
+
+    expect(await refusal(store.tagTicketByHand(ticket, { domains: ['platform'], noDomain: false }))).toBe('read-only');
+    expect(writes()).toHaveLength(before);
   });
 });
 
