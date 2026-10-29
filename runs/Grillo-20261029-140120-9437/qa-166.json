@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261029-140120-9437",
+  "issue": 166,
+  "title": "Record the call audio: choose the recording source on the meeting panel",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 173,
+  "merged_at": "2026-10-29T14:10:40Z",
+  "merge_commit": "19ee7f98076b90624e23cb69c76fdfe6d4a4fbd0",
+  "seam": "src/renderer/screens/meeting/",
+  "story": "The host can now choose to record the room microphone or the virtual meeting's call audio on the meeting panel. Before, Record always used the microphone. The choice sits above Record on every meeting agent's tab, defaults to Room microphone, and is locked while recording.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/meeting/source-default",
+      "criterion": "The source choice is shown and defaults to Room microphone",
+      "steps": "Start the product. Open a made-up project. Press Start meeting and wait for the speech model to be ready.",
+      "expected": "A 'Room microphone' / 'Call audio' choice above Record, with Room microphone pressed and a line explaining both options."
+    },
+    {
+      "key": "src/renderer/screens/meeting/record-call-audio",
+      "criterion": "Record with Call audio chosen captures the call audio, not the microphone",
+      "steps": "On the meeting panel, tick 'Everyone here agreed', click 'Call audio', then turn Record on while a made-up video call plays sound.",
+      "expected": "The red Recording banner, and transcript lines from the call's sound rather than the room."
+    },
+    {
+      "key": "src/renderer/screens/meeting/source-locked",
+      "criterion": "The source cannot change while recording",
+      "steps": "With Record on, try to click the other source. Then turn Record off.",
+      "expected": "While recording both choices are greyed out, the hint 'Turn Record off to change the source.' shows, and nothing changes; after Record is off both choices are clickable again."
+    },
+    {
+      "key": "src/renderer/screens/meeting/source-shared",
+      "criterion": "One source choice for the whole session",
+      "steps": "Pick 'Call audio', click 'Open another grilling agent', then look at the new tab and turn Record on there.",
+      "expected": "Call audio is pressed on the new tab too, and Record from that tab records the call audio."
+    }
+  ],
+  "no_qa_reason": null
+}

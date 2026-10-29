@@ -1,0 +1,20 @@
+{
+  "run_id": "Grillo-20261029-140120-9437",
+  "issue": 166,
+  "title": "Record the call audio: choose the recording source on the meeting panel",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-29T14:01:50Z",
+  "finished_at": "2026-10-29T14:12:00Z",
+  "outcome": "merged",
+  "pr": 173,
+  "summary": "The host can now choose Room microphone or Call audio above Record on the meeting panel, as the prototype draws it; the choice defaults to Room microphone and is locked while recording. 3 new tests; merged on a green local gate (1713 passed, 0 skipped) because the repository has no CI minutes.",
+  "agents": [
+    { "name": "dev-166", "model": "opus", "tokens_total": 134041 },
+    { "name": "review-166", "model": "opus", "tokens_total": 105884 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 277, "review_seconds": 132, "ci_seconds": 0 },
+  "rounds": { "review": 1, "ci": 0 },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}
