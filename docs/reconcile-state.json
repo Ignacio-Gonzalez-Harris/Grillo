@@ -1,6 +1,6 @@
 {
-  "reconciled_at": "e9d31ffe7739eb41392a3e31f295eabf94691595",
-  "last_reconcile": "2026-10-24",
+  "reconciled_at": "5f25dc388950b4c3c73168632f49a6e4694e86ca",
+  "last_reconcile": "2026-10-29",
   "accepted": [
     { "lens": "2", "issue": "82", "section": "docs/PRDs/PRD.md 4.4 item 5", "reason": "Turning GitHub comments into answers by a Pick up button is fine: the PRD says the agent may do it.", "on": "2026-10-24" },
     { "lens": "2", "issue": "57", "section": "none", "reason": "The closed demo-materials story cites section 7 for the made-up-data rule (it is in section 11); closed, nothing to build.", "on": "2026-10-24" },
