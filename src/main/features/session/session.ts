@@ -54,8 +54,11 @@ export interface SessionHostDeps {
   slices: { subscribe(listener: SliceListener): Unsubscribe };
   transcriber: Transcriber;
   agents: Pick<AgentRuntime, 'choice' | 'write' | 'send' | 'list'>;
-  /** Told the words a chat agent's channel holds each time they change ('' once sent), for its chat view's box. */
-  held?(agentId: AgentId, text: string): void;
+  /**
+   * Told the words a chat agent's channel holds each time they change, for its chat view's box: `''` once none are
+   * held, with `sent` true when a protocol message took the whole box (the view then empties it).
+   */
+  held?(agentId: AgentId, text: string, sent: boolean): void;
 }
 
 /** One host's session. Every refusal is a `SessionError`. */
@@ -83,6 +86,12 @@ export interface SessionHost {
   sendBox(agentId: AgentId, text: string, shownHeld: string): Promise<void>;
   /** The held words a chat agent's message box showed went out another way (an answer): they are no longer held. */
   releaseHeld(agentId: AgentId, shownHeld: string): Promise<void>;
+  /**
+   * The member edited a chat agent's message box (grilling agents): it now shows `text`, which stands for the first
+   * held words, those in `shownHeld`. The next protocol message (Use it, skip, …) sends `text` and the words held
+   * since, instead of the held words.
+   */
+  editBox(agentId: AgentId, text: string, shownHeld: string): Promise<void>;
   /** Sends the agent's input box with `use it` as its last line. The ones below type their protocol message. */
   useIt(agentId: AgentId): Promise<void>;
   typeMode(agentId: AgentId, mode: AgentMode): Promise<void>;
@@ -115,6 +124,8 @@ interface AgentBox {
   holdsText: boolean;
   /** A chat agent's transcript lines not sent yet; they go out with its next protocol message. */
   draft: string[];
+  /** A chat agent's message box as the member last edited it, standing for the first `covers` lines of `draft`. */
+  edited: { text: string; covers: number } | undefined;
   /** The session file this agent has been told about. */
   toldSession: string | undefined;
   /** Writes to this agent, one after another, so a control line is never overtaken by a slice. */
@@ -249,6 +260,7 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
         mode: undefined,
         holdsText: false,
         draft: [],
+        edited: undefined,
         toldSession: undefined,
         queue: Promise.resolve(),
       };
@@ -289,7 +301,7 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
   function setDraft(box: AgentBox, draft: string[]): void {
     const changed = draft.length > 0 || box.draft.length > 0;
     box.draft = draft;
-    if (changed) deps.held?.(box.id, draft.join(TRANSCRIPT_LINE_SEPARATOR));
+    if (changed) deps.held?.(box.id, draft.join(TRANSCRIPT_LINE_SEPARATOR), false);
   }
 
   /** A chat agent's box, for the calls its message box makes with the held words it showed. */
@@ -300,18 +312,30 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
     return box;
   }
 
-  /** Stops holding the words the message box showed, when they are still the first ones held. */
-  function dropShown(box: AgentBox, shownHeld: string): void {
+  /** How many of the first held lines the box showed, or undefined when they are no longer the first ones held. */
+  function shownLines(box: AgentBox, shownHeld: string): number | undefined {
     const shown = shownHeld === '' ? [] : shownHeld.split(TRANSCRIPT_LINE_SEPARATOR);
-    if (shown.length > 0 && shown.every((line, at) => box.draft[at] === line)) {
-      setDraft(box, box.draft.slice(shown.length));
-    }
+    return shown.every((line, at) => box.draft[at] === line) ? shown.length : undefined;
   }
 
-  /** A chat agent's protocol message: its held transcript, then the control line on a line of its own. */
+  /** The box left the chat view another way (Send, an answer): the words it showed and the member's edit go with it. */
+  function dropShown(box: AgentBox, shownHeld: string): void {
+    box.edited = undefined;
+    const shown = shownLines(box, shownHeld);
+    if (shown !== undefined && shown > 0) setDraft(box, box.draft.slice(shown));
+  }
+
+  /**
+   * A chat agent's protocol message: what its message box shows (the member's edit, if any, then the words held
+   * since), then the control line on a line of its own. The box is empty afterwards.
+   */
   async function sendChatMessage(box: AgentBox, controlLine: string): Promise<void> {
-    const message = [...box.draft, controlLine].join(TRANSCRIPT_LINE_SEPARATOR);
-    setDraft(box, []);
+    const { edited, draft } = box;
+    const boxLines = edited ? [edited.text, ...draft.slice(edited.covers)].filter((line) => line !== '') : draft;
+    const message = [...boxLines, controlLine].join(TRANSCRIPT_LINE_SEPARATOR);
+    box.edited = undefined;
+    box.draft = [];
+    if (edited !== undefined || draft.length > 0) deps.held?.(box.id, '', true);
     try {
       await deps.agents.send(box.id, message);
     } catch (error) {
@@ -545,6 +569,19 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
       return Promise.resolve().then(() => {
         const box = chatBox(agentId, shownHeld);
         return inBox(box, () => dropShown(box, shownHeld));
+      });
+    },
+
+    editBox(agentId, text, shownHeld) {
+      return Promise.resolve().then(() => {
+        const box = chatBox(agentId, shownHeld);
+        if (typeof text !== 'string') throw new SessionError('invalid', 'The message box holds text');
+        // In line with the box's messages, so an edit made after a Send or Use it never comes before it.
+        return inBox(box, () => {
+          const covers = shownLines(box, shownHeld);
+          // An edit of words already sent arrives late: the box it describes has gone, so it is dropped.
+          if (covers !== undefined) box.edited = { text: text.trim(), covers };
+        });
       });
     },
 

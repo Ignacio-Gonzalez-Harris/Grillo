@@ -1,1 +1,1 @@
-Every agent tab is now a chat (bubbles, clickable answers, Allow and Deny, a message box and a "Show terminal" switch) and chat is the default runtime again, so members answer agents with clicks instead of a raw terminal.
+Agent tabs can now show a chat (bubbles, clickable answers, Allow and Deny, a message box and a "Show terminal" switch) with GRILLO_AGENT_RUNTIME=chat, so members can answer agents with clicks; the terminal stays the default until the terms check allows chat.

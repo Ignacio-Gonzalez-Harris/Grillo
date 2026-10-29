@@ -121,6 +121,20 @@ describe('grilling session over chat agents', () => {
     ]);
   });
 
+  it("sends the chat view's box with a control line once the member edited it, with the words spoken since", async () => {
+    const { host, id, sent, hear, held } = await rig();
+    await done(host.setChannel(id, true));
+    await hear(0, 1);
+
+    await done(host.editBox(id, 'Words 0, corrected.', 'Words 0.\nWords 1.'));
+    await hear(2);
+    await done(host.useIt(id));
+    await done(host.skip(id));
+
+    expect(sent().slice(-2)).toEqual(['Words 0, corrected.\nWords 2.\nuse it', 'skip']);
+    expect(held.at(-1)).toEqual({ agentId: id, text: '' });
+  });
+
   it("sends the chat view's message box as one message, dropping only the held words the box showed", async () => {
     const { host, id, sent, hear, held } = await rig();
     await done(host.setChannel(id, true));

@@ -29,7 +29,7 @@ export function register({ ipc, settings }: FeatureContext): void {
       send: (id, text) => appAgentRuntime().send(id, text),
       list: () => appAgentRuntime().list(),
     },
-    held: (agentId, text) => ipc.send('session:held', { agentId, text }),
+    held: (agentId, text, sent) => ipc.send('session:held', { agentId, text, sent }),
   });
   registerSessionChannels(ipc, host);
 }

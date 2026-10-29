@@ -225,13 +225,15 @@ built the map.
 
 Each agent shows in its own tab: click the agent's name on the tab bar.
 
-- **Two runtimes, one choice: chat (the default) or terminal.** Every agent tab is a **chat agent** by default: your
-  own `claude` in machine-readable mode (see Agent chat protocol below), exactly one Claude Code process per tab, and
-  the tab's id is the chat agent's id. Its tab shows the **chat view** (see below). The release-1 **terminal agent**
-  stays as a working fallback until the Agent SDK terms are confirmed: set the environment variable
-  `GRILLO_AGENT_RUNTIME=terminal` before starting Grillo to get the plain terminal in every agent tab
-  (`GRILLO_AGENT_RUNTIME=chat`, or leaving it unset, gives chat). Any other value keeps chat and logs a warning
-  naming the variable. The choice applies to every agent tab until Grillo restarts.
+- **Two runtimes, one choice: terminal (the default) or chat.** Every agent tab is a **terminal agent** by default:
+  the release-1 plain terminal, where you type into the tab and answer clickable options and permission prompts
+  yourself. It stays the default, even with the chat view in place, until the terms check confirms that Anthropic
+  allows the machine-readable mode with members' own subscriptions (PRD section 8, Agent runtime). The **chat view
+  is opt-in**: set the environment variable `GRILLO_AGENT_RUNTIME=chat` before starting Grillo, and every agent tab
+  is a **chat agent**: your own `claude` in machine-readable mode (see Agent chat protocol below), exactly one Claude
+  Code process per tab, whose id is the tab's id, shown in the **chat view** (see below).
+  (`GRILLO_AGENT_RUNTIME=terminal`, or leaving it unset, gives the terminal.) Any other value keeps the terminal and
+  logs a warning naming the variable. The choice applies to every agent tab until Grillo restarts.
 - **Messages from the screens are one chat message each.** The meeting's "use it", own-time's "use it" and Done,
   and the meeting's control lines (`session:`, `mode:`, `present:`, `skip`, `jump`) each reach a chat agent as one
   message. With the Open channel on, the live transcript is held by Grillo (a chat agent has no input box) and goes
@@ -253,9 +255,8 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
 
 ### The agent tab
 
-- **A chat agent's tab shows the chat view** (see Chat view below). A terminal agent's tab
-  (`GRILLO_AGENT_RUNTIME=terminal`) shows the agent's own Claude Code terminal, which fills the window and follows
-  its size.
+- **A terminal agent's tab** (the default) shows the agent's own Claude Code terminal, which fills the window and
+  follows its size. **A chat agent's tab** (`GRILLO_AGENT_RUNTIME=chat`) shows the chat view (see Chat view below).
 - **Typing in a terminal agent's tab is always available.** Click into the terminal and type, exactly as in a
   normal terminal (arrow keys, Esc and Enter included). Or use the box under it ("Type to the agent…"): Enter or
   Send types the line into the agent, then presses Enter. Send on an empty box presses Enter alone.
@@ -274,8 +275,9 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
 
 ### Chat view (release 2)
 
-The body of every chat agent's tab: the meeting, own-time answering, the generic agent, the support agent and every
-launched agent all show their agent as a chat. Every label is in English.
+The body of every chat agent's tab (opt-in: `GRILLO_AGENT_RUNTIME=chat`, see Agents above): the meeting, own-time
+answering, the generic agent, the support agent and every launched agent then all show their agent as a chat. Every
+label is in English.
 
 - **The head** names the agent ("Grilling agent · Sample ticket 4"), shows "Channel open · receiving the transcript
   live" while the tab's Open channel is on, and carries the **Show terminal** switch.
@@ -300,20 +302,27 @@ launched agent all show their agent as a chat. Every label is in English.
   on screen as in memory.
 - **Open channel:** while the session holds live transcript words for the agent, they are added to the end of the
   message box as they are spoken, and "Channel open · receiving the transcript live" shows in the head only while
-  the channel is open. On a grilling agent the line "Use it sends what the message box holds as one message…" shows
-  under the box; other agents have no Use it, so they show no such line. The box
-  stays yours on every agent tab: edit it and press **Send** to send all of it as one message, and the words it
-  showed are no longer held (words spoken since stay held for the next message). On the meeting's grilling agent,
-  **Use it** (or any other meeting control) sends the held words as one chat message instead, and they leave the
-  box; what you typed yourself stays. Closing the channel or ending the session keeps any held words in the box,
-  ready to send or delete.
+  the channel is open. On a grilling agent the line "Use it sends what the message box shows, your edits included,
+  as one message…" shows under the box; other agents have no Use it, so they show no such line. The box stays yours
+  on every agent tab: edit it and press **Send** to send all of it as one message, and the words it showed are no
+  longer held (words spoken since stay held for the next message). On the meeting's grilling agent, **Use it** (or
+  any other meeting control: skip, jump, Listen or Type, presence) sends exactly what the box shows, your edits
+  included, with the control line on its own last line, as one chat message; then the box is empty and none of
+  those words are held any more. Words spoken after your last edit are added to the box and go with it. Line breaks
+  between transcript slices show as spaces in the one-line box and are sent as line breaks. On other agents, which
+  have no Use it, a meeting message (the session line) takes only the held words, and they leave the box; what you
+  typed yourself stays. Closing the channel or ending the session keeps any held words in the box, ready to send
+  or delete.
 
 ### Agent chat protocol (release 2)
 
 The chat view's engine, and what every agent tab runs on under the chat runtime. Its `agent-chat:*` channels take a
 tab's id, since the tab and its chat agent share it; stop a tab with `agents:stop`, which also takes it off the tab
 bar. While a chat agent's Open channel holds transcript words, main sends them on `session:held` (`''` once sent);
-`session:sendBox` sends the message box with the held words it showed, so they are never sent twice.
+`session:sendBox` sends the message box with the held words it showed, so they are never sent twice;
+`session:editBox` keeps a grilling agent's box as the member edits it, so a meeting control sends what the box shows
+(`session:held` then carries `sent: true` and the view empties the box); `session:releaseHeld` forgets the box when
+an answer took it.
 
 - **A chat agent is your own `claude` with no terminal**, started in the project folder with fixed flags:
   `claude -p --input-format stream-json --output-format stream-json --verbose --permission-prompt-tool stdio

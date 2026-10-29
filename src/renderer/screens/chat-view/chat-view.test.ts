@@ -98,7 +98,7 @@ async function app(choice: AgentRuntimeChoice = 'chat') {
     slices: bus,
     transcriber: { transcribe: async (pcm) => `Words ${pcm[0]}.` },
     agents: runtime,
-    held: (agentId, text) => ipc.send('session:held', { agentId, text }),
+    held: (agentId, text, sent) => ipc.send('session:held', { agentId, text, sent }),
   });
   registerSessionChannels(ipc, host);
 
@@ -410,6 +410,46 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
     expect(view.hint()).toBeUndefined();
   });
 
+  it('makes Use it send exactly what the box shows, the member\'s edits included, once, with no word lost', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('grilling', 'Sample ticket 3');
+    await view.host.startSession(PROJECT);
+    await view.host.tickConsent(HOST);
+    await view.host.setRecording(true);
+    await view.host.setChannel(id, true);
+    await flush();
+    const hear = async (index: number) => {
+      view.bus.publish({ source: 'microphone', index, pcm: Int16Array.of(index) });
+      await flush();
+    };
+    const sent = () =>
+      view
+        .writtenAfterStart(process)
+        .filter((event) => (event as { type: string }).type === 'user')
+        .map((event) => (event as { message: { content: string } }).message.content);
+    await hear(0);
+    await hear(1);
+
+    view.box().value = 'Words 0, as the member corrected them.';
+    view.box().dispatchEvent(new Event('input'));
+    await flush();
+    await hear(2);
+    const shownBeforeUseIt = view.box().value;
+    await view.host.useIt(id);
+    await flush();
+    const afterUseIt = sent();
+    view.sendButton().click();
+    await flush();
+    await hear(3);
+    await view.host.useIt(id);
+    await flush();
+
+    expect(shownBeforeUseIt).toBe('Words 0, as the member corrected them. Words 2.');
+    expect(afterUseIt.at(-1)).toBe('Words 0, as the member corrected them.\nWords 2.\nuse it');
+    expect(sent().slice(-2)).toEqual(['Words 0, as the member corrected them.\nWords 2.\nuse it', 'Words 3.\nuse it']);
+    expect(view.box().value).toBe('');
+  });
+
   it('sends the held words with Send as the one message, without sending them again later', async () => {
     const view = await app();
     const { id, process } = await view.startAgent('task', 'Sample export');
@@ -479,6 +519,37 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
       message: { role: 'user', content: 'use it' },
     });
     expect(view.box().value).toBe('');
+  });
+
+  it('answers with "Something else" from an edited box, and Use it then sends neither the edit nor the held words', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('grilling', 'Sample ticket 3');
+    await view.host.startSession(PROJECT);
+    await view.host.tickConsent(HOST);
+    await view.host.setRecording(true);
+    await view.host.setChannel(id, true);
+    await flush();
+    view.bus.publish({ source: 'microphone', index: 0, pcm: Int16Array.of(0) });
+    await flush();
+    process.emit(questionLine(OTHER_QUESTION_ID, QUESTION_INPUT));
+
+    view.box().value = 'A sample corrected answer';
+    view.box().dispatchEvent(new Event('input'));
+    view.buttonNamed('Something else').click();
+    view.sendButton().click();
+    await flush();
+    await view.host.useIt(id);
+    await flush();
+
+    const written = view.writtenAfterStart(process);
+    const answer = written.find((event) => (event as { type: string }).type === 'control_response') as {
+      response: { response: { updatedInput: { answers: unknown } } };
+    };
+    expect(answer.response.response.updatedInput.answers).toEqual({ 'Which colour?': 'A sample corrected answer' });
+    expect(written.filter((event) => (event as { type: string }).type === 'user').at(-1)).toEqual({
+      type: 'user',
+      message: { role: 'user', content: 'use it' },
+    });
   });
 
   it('keeps what it hides hidden under the real stylesheets: the channel badge, the raw terminal and the Use it line', async () => {

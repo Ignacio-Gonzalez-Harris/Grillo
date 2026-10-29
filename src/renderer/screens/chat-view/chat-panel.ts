@@ -23,7 +23,7 @@ import { appChatLog, MAX_RAW_LINES, type ChatLog } from './chat-log';
 export const CHAT_VIEW_PRIORITY = 10;
 export const RAW_STREAM_HEADER = 'Raw event stream · Claude Code in machine-readable mode · read-only';
 export const USE_IT_SENDS_THE_BOX =
-  "Use it sends what the message box holds as one message; the agent distils the answer and keeps the whole talk as the question's discussion.";
+  "Use it sends what the message box shows, your edits included, as one message; the agent distils the answer and keeps the whole talk as the question's discussion.";
 const BOX_PLACEHOLDER = 'Write to the agent…';
 const OWN_ANSWER_PLACEHOLDER = 'Type your own answer, then Send…';
 const SOMETHING_ELSE = 'Something else';
@@ -344,10 +344,24 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     setShownHeld(words);
   }
 
+  /** A protocol message (Use it, skip, …) took what the box showed: on a grilling tab that is the whole box. */
+  function boxSent(): void {
+    if (!hasUseIt) {
+      hold('');
+      return;
+    }
+    input.value = '';
+    setShownHeld('');
+    // An edit reported while the message was on its way described a box that has gone: the box is empty now.
+    reportEdit();
+  }
+
   stops.push(
     grillo.on('session:held', (payload: unknown) => {
-      const { agentId, text: words } = (payload ?? {}) as { agentId?: unknown; text?: unknown };
-      if (agentId === agent.id && typeof words === 'string') hold(words);
+      const { agentId, text: words, sent } = (payload ?? {}) as { agentId?: unknown; text?: unknown; sent?: unknown };
+      if (agentId !== agent.id || typeof words !== 'string') return;
+      if (sent === true) boxSent();
+      else hold(words);
     }),
   );
 
@@ -362,6 +376,15 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
   }
   stops.push(grillo.on('session:changed', showChannel));
   showChannel();
+
+  /** On a grilling tab the session keeps the box as the member edits it, so Use it sends what the box shows. */
+  function reportEdit(): void {
+    if (!hasUseIt) return;
+    session.editBox(agent.id, input.value, shownHeld).catch((error: unknown) => {
+      console.warn(`Grillo could not keep agent ${agent.id}'s message box for Use it.`, error);
+    });
+  }
+  input.addEventListener('input', reportEdit);
 
   /** Sends the box through the session when it holds transcript words, so they are never held and sent again. */
   async function sendWithHeld(value: string, shown: string): Promise<ChatActionResult> {
@@ -391,10 +414,12 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     setShownHeld('');
     send.disabled = true;
     // An answer made from held words takes them: the meeting's Use it must not send them again.
-    if (target && shown !== '') await releaseHeld(shown);
+    // The session must forget the box (held words, the member's edit) that went out here, or Use it sends it again.
+    const sessionKnowsTheBox = hasUseIt || shown !== '';
+    if (target && sessionKnowsTheBox) await releaseHeld(shown);
     const result = target
       ? await act(() => grillo.invoke('agent-chat:answer', { id: target.id, option: value }))
-      : shown !== ''
+      : sessionKnowsTheBox
         ? await sendWithHeld(value, shown)
         : await act(() => grillo.invoke('agent-chat:send', { id: agent.id, text: value }));
     send.disabled = false;
@@ -425,6 +450,7 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     },
     setInput(value) {
       input.value = value;
+      reportEdit();
     },
     dispose() {
       disposed = true;
