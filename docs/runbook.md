@@ -671,8 +671,9 @@ the support agent (above).
   <message>` and tells the support agent `relayed: <tab name>`. Nothing is posted, and the support agent is told
   `not relayed: <reason>`, when no open tab has that name (the reason lists the open tabs), the target is the
   Support tab itself, the request is malformed, or Grillo cannot read your GitHub login.
-- **Relays need chat agents.** With the plain terminal runtime (`GRILLO_AGENT_RUNTIME=terminal`) the Support tab
-  still starts and opens the agent, but no relay request is read and nothing is posted.
+- **Relays need chat agents.** With the terminal runtime (the default until the chat view lands, see Agents) the
+  Support tab still starts and opens the agent, but no relay request is read and nothing is posted. Start Grillo
+  with `GRILLO_AGENT_RUNTIME=chat` to relay.
 - **No project open:** the card says "Open a project from the Project tab to start the support agent in it." and
   nothing starts.
 - **The agent did not start** (for example Claude Code is not installed): the card says why in red, with "Try
