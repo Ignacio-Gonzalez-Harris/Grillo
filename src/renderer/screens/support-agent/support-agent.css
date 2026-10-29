@@ -1,0 +1,20 @@
+/*
+ * The Support tab's screen while its agent starts, ported from the UX prototype's screen-support-agent-tab and its
+ * chat view (docs/ux/prototypes/grillo/index.html). The prototype's helper classes this screen needs, kept under
+ * .support-agent so no other screen is touched. Every colour, spacing, radius and size comes from theme/tokens.css.
+ */
+.support-agent { display: grid; gap: var(--space-5); align-content: start; }
+.support-agent .strong { font-weight: var(--font-weight-strong); }
+.support-agent .card > :last-child { margin-bottom: 0; }
+
+/* ---------- The chat card: header, then the event line or a note ---------- */
+.support-agent .chat { display: grid; gap: var(--space-3); }
+.support-agent .chat-head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.support-agent .msgs { display: grid; gap: var(--space-3); align-content: start; }
+.support-agent .chat-event { justify-self: center; margin: 0; font-size: var(--font-size-s); color: var(--color-text-muted); }
+.support-agent code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); }
+
+/* ---------- Notes ---------- */
+.support-agent .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.support-agent .note.warn { background: var(--color-warning-soft); }
+.support-agent .note.err { background: var(--color-danger-soft); }

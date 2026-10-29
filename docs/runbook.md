@@ -629,8 +629,7 @@ by hand.
 ## Support agent
 
 Release 2 adds a side helper, the skill `grillo-support`, shipped into the project folder beside `grillo-wayfinder`.
-Its tab arrives with its own story, which types `/grillo-support` as the first message; until then a developer can
-run it by hand.
+The Support tab (below) starts it with `/grillo-support` as the first message; a developer can also run it by hand.
 
 - **Ask it anything** about the project or its agents: what is settled, who holds which ticket, which questions are
   open, what an agent tab is for. It reads GitHub and the project folder fresh and **writes nothing**: no issue,
@@ -647,12 +646,38 @@ run it by hand.
   screen control line such as `done`, is refused so a relay can never press a screen button in the other agent).
 - **Run it by hand (developers):** in a clone of a made-up test project with a map on GitHub and `.grillo/` on
   `main`, copy `resources/skills/grillo-wayfinder/` and `resources/skills/grillo-support/` into `.claude/skills/`,
-  start `claude` there and type `/grillo-support`. Without the tab nothing reads a relay request, so nothing is
-  posted. Never use real customer data.
+  start `claude` there and type `/grillo-support`. Outside the Support tab nothing reads a relay request, so
+  nothing is posted. Never use real customer data.
 - **Developers:** `npx vitest run resources/skills/grillo-support` checks the skill's frontmatter and command against
   the catalogue, that it writes nothing, the screen messages it handles, the relay request reader against malformed
   requests, and a fixture support run whose requests go through the real driver and `relay` into a fake target agent,
   each marked for the member.
+
+## Support agent tab
+
+From release 2 the tab bar always shows **Support** as the first agent tab, right after PRD. It is where you talk to
+the support agent (above).
+
+- **Open Support:** the first time, Grillo starts the support agent in the folder of the project opened last, with
+  `/grillo-support`, in a tab named "Support", and opens that tab. While it starts, the screen shows the "Support
+  agent" card and the line "Opening the Support tab: Grillo starts the support agent with `/grillo-support`."
+- **From then on** the Support tab is the agent's own tab: its waiting dot and Open channel switch, kept first
+  among the agent tabs. Pressing it again opens the same agent; Grillo never starts a second one. When the agent
+  stops, the plain Support tab comes back and starts a new one the next time.
+- **Pass a message on:** ask the support agent to tell another tab something. It shows the message and the tab and
+  waits for your Send; then Grillo posts it into that tab's chat as `[from Support, for <your GitHub login>]
+  <message>` and tells the support agent `relayed: <tab name>`. Nothing is posted, and the support agent is told
+  `not relayed: <reason>`, when no open tab has that name (the reason lists the open tabs), the target is the
+  Support tab itself, the request is malformed, or Grillo cannot read your GitHub login.
+- **Relays need chat agents.** With the plain terminal runtime (`GRILLO_AGENT_RUNTIME=terminal`) the Support tab
+  still starts and opens the agent, but no relay request is read and nothing is posted.
+- **No project open:** the card says "Open a project from the Project tab to start the support agent in it." and
+  nothing starts.
+- **The agent did not start** (for example Claude Code is not installed): the card says why in red, with "Try
+  again".
+- **Developers:** the screen is `src/renderer/screens/support-agent/`, registered as `support-agent`;
+  `npx vitest run src/renderer/screens/support-agent` checks the tab's place on the tab bar, the start, and the
+  relay answers against a stand-in runtime and relay.
 
 ## Research, prototype and task agents
 
