@@ -32,6 +32,8 @@ import {
   REASON_CONSENT,
   REASON_LISTEN,
   REASON_MODEL,
+  SOURCE_HINT,
+  SOURCE_LOCKED,
   USE_IT_HINT,
 } from './controls-panel';
 import { createMeetingAgents, MEETING_COMMAND, startMeetingAgent } from './meeting-agents';
@@ -210,6 +212,14 @@ const checkNamed = (scope: HTMLElement, label: string) =>
 const questionControls = (scope: HTMLElement) => scope.querySelector<HTMLElement>('.meeting-head') as HTMLElement;
 const recordSwitch = (scope: HTMLElement) => scope.querySelector<HTMLInputElement>('.switch input.rec') as HTMLInputElement;
 const visible = (el: Element | null) => el !== null && !(el as HTMLElement).closest('[hidden]');
+const sourceChoice = (scope: HTMLElement) => scope.querySelector<HTMLElement>('[role="group"][aria-label="Recording source"]') as HTMLElement;
+/** The recording source as the group shows it: each choice with whether it is pressed and whether it can be pressed. */
+const sources = (scope: HTMLElement) =>
+  [...sourceChoice(scope).querySelectorAll('button')].map((choice) => ({
+    label: text(choice),
+    pressed: choice.getAttribute('aria-pressed') === 'true',
+    disabled: choice.disabled,
+  }));
 
 async function click(target: HTMLElement): Promise<void> {
   target.click();
@@ -267,6 +277,10 @@ describe('meeting screen: its states', () => {
     expect(status.querySelector('progress')?.value).toBe(42);
     expect(recordSwitch(panel()).disabled).toBe(true);
     expect(text(cardNamed(panel(), 'Recording').querySelector('.reason'))).toBe(REASON_MODEL);
+    expect(sources(panel())).toEqual([
+      { label: 'Room microphone', pressed: true, disabled: false },
+      { label: 'Call audio', pressed: false, disabled: false },
+    ]);
     expect(buttonNamed(panel(), 'Type').getAttribute('aria-pressed')).toBe('true');
 
     await modelReady();
@@ -296,6 +310,8 @@ describe('meeting screen: its states', () => {
 
     expect(text(consent.querySelector('.script'))).toBe(CONSENT_SCRIPT);
     expect(recordSwitch(panel()).disabled).toBe(true);
+    expect(sources(panel()).map(({ pressed }) => pressed)).toEqual([true, false]);
+    expect(text(cardNamed(panel(), 'Recording').querySelector('p.small.muted'))).toBe(SOURCE_HINT);
     expect(text(panel().querySelector('.transcript'))).toBe(NOT_RECORDING);
     expect(text(cardNamed(panel(), 'Recording').nextElementSibling)).toBe('');
     await flip(checkNamed(consent, 'Everyone here agreed'), true);
@@ -363,6 +379,47 @@ describe('meeting screen: its states', () => {
     expect(visible(panel().querySelector('.rec-banner'))).toBe(false);
     expect(buttonNamed(panel(), 'Listen').disabled).toBe(true);
     expect(text(panel().querySelector('.meeting-head .reason'))).toBe(REASON_LISTEN);
+  });
+
+  it('Record with "call audio" chosen starts the call-audio capture, not the microphone', async () => {
+    const { host, capture, panel, modelReady, startMeeting } = await app();
+    await startMeeting();
+    await modelReady();
+    await flip(checkNamed(cardNamed(panel(), 'Consent'), 'Everyone here agreed'), true);
+
+    await click(buttonNamed(sourceChoice(panel()), 'Call audio'));
+    expect(sources(panel()).map(({ pressed }) => pressed)).toEqual([false, true]);
+    await flip(recordSwitch(panel()), true);
+
+    expect(capture.calls).toEqual(['start call']);
+    expect(host.state()?.recording).toBe(true);
+    expect(sources(panel())).toEqual([
+      { label: 'Room microphone', pressed: false, disabled: true },
+      { label: 'Call audio', pressed: true, disabled: true },
+    ]);
+  });
+
+  it('switching the source while recording is refused: the choice is locked, with the hint to turn Record off', async () => {
+    const { capture, panel, modelReady, startMeeting } = await app();
+    await startMeeting();
+    await modelReady();
+    await flip(checkNamed(cardNamed(panel(), 'Consent'), 'Everyone here agreed'), true);
+    await flip(recordSwitch(panel()), true);
+    const recording = cardNamed(panel(), 'Recording');
+
+    expect(text(recording.querySelector('.reason'))).toBe(SOURCE_LOCKED);
+    expect(visible(recording.querySelector('p.small.muted'))).toBe(false);
+    buttonNamed(sourceChoice(panel()), 'Call audio').dispatchEvent(new MouseEvent('click'));
+    await settle();
+
+    expect(sources(panel())).toEqual([
+      { label: 'Room microphone', pressed: true, disabled: true },
+      { label: 'Call audio', pressed: false, disabled: true },
+    ]);
+    expect(capture.calls).toEqual(['start microphone']);
+    await flip(recordSwitch(panel()), false);
+    expect(visible(recording.querySelector('.reason'))).toBe(false);
+    expect(sources(panel()).map(({ disabled }) => disabled)).toEqual([false, false]);
   });
 
   it('turns the recording back off and says why when the microphone cannot be opened', async () => {
@@ -493,6 +550,20 @@ describe('meeting screen: another grilling agent', () => {
     expect(panel().querySelector('.note.err')).toBeNull();
     expect(host.state()?.recording).toBe(false);
     expect(captureCalls()).toEqual(['start microphone', 'stop', 'start microphone', 'stop']);
+  });
+
+  it('shares the source choice between the tabs, as the one capture is shared', async () => {
+    const { ptys, panel, modelReady, startMeeting, captureCalls } = await app();
+    await startMeeting();
+    await modelReady();
+    await tickConsent(panel());
+    await click(buttonNamed(sourceChoice(panel()), 'Call audio'));
+
+    await openAnother(ptys, panel());
+    expect(sources(panel()).map(({ pressed }) => pressed)).toEqual([false, true]);
+    await flip(recordSwitch(panel()), true);
+
+    expect(captureCalls()).toEqual(['start call']);
   });
 
   it('lets the other tab stop the microphone after the agent that started it stops', async () => {
