@@ -1,0 +1,23 @@
+{
+  "run_id": "Grillo-20261029-161127-5f2a",
+  "issue": 94,
+  "title": "Chat view with the \"show terminal\" switch as the agent tab body",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 174,
+  "merged_at": "2026-10-29T16:33:35Z",
+  "merge_commit": "2d8d7fd09e60f4c304741071283dc3194db11f6c",
+  "seam": "src/renderer/screens/chat-view/",
+  "story": "Before this story every agent tab was a plain terminal. Members who start Grillo with GRILLO_AGENT_RUNTIME=chat now talk to agents in a chat: message bubbles, one-click answers or their own words, Allow and Deny buttons for tools, and a Show terminal switch for the raw event stream. In a meeting, live transcript words fill the message box, the member can edit them, and Use it on the grilling tab sends exactly what the box shows. Without the variable the terminal stays the default.",
+  "checks": [
+    { "key": "src/renderer/screens/chat-view/conversation", "criterion": "Chat bubbles and Send", "steps": "Start Grillo with GRILLO_AGENT_RUNTIME=chat and open a made-up project. Open a generic agent, type \"Sample note A\" and press Enter.", "expected": "Your bubble labelled \"You\" on the right, then the agent's reply bubble on the left." },
+    { "key": "src/renderer/screens/chat-view/options", "criterion": "Clickable answers", "steps": "With GRILLO_AGENT_RUNTIME=chat, ask a generic agent to \"ask me to pick Red or Blue with clickable options\", then click Blue.", "expected": "Blue stays highlighted, the other buttons grey out, and the agent goes on with Blue." },
+    { "key": "src/renderer/screens/chat-view/something-else", "criterion": "Own answer", "steps": "With GRILLO_AGENT_RUNTIME=chat, in the same kind of question click \"Something else\", type \"Sample green\" and press Send.", "expected": "A \"You\" bubble shows \"Sample green\" and the agent receives it as the answer." },
+    { "key": "src/renderer/screens/chat-view/permission", "criterion": "Allow and Deny", "steps": "With GRILLO_AGENT_RUNTIME=chat, ask a generic agent to \"create sample.txt containing Sample\" and click Allow on the bubble marked \"Asks permission\".", "expected": "\"Allowed.\" appears and sample.txt is created." },
+    { "key": "src/renderer/screens/chat-view/show-terminal", "criterion": "Raw event stream switch", "steps": "With GRILLO_AGENT_RUNTIME=chat, open an agent and turn on Show terminal, then turn it off.", "expected": "A dark read-only panel lists one JSON line per event with nothing to type into; turning it off hides it." },
+    { "key": "src/renderer/screens/chat-view/channel-badge", "criterion": "Channel badge and Use it hint", "steps": "With GRILLO_AGENT_RUNTIME=chat, open a generic agent and look at its head, then switch its Channel on.", "expected": "No \"Channel open\" badge until the Channel is on; a generic or task agent never shows the \"Use it sends…\" line." },
+    { "key": "src/renderer/screens/chat-view/open-channel", "criterion": "Use it sends what the box shows", "steps": "With GRILLO_AGENT_RUNTIME=chat, start a meeting, tick consent, record, open the grilling agent's channel. Speak \"Sample words\", correct them in the box, speak again, press Use it.", "expected": "The agent gets the corrected text plus the newer words, then \"use it\", once; the box empties and a Send afterwards sends nothing." },
+    { "key": "src/renderer/screens/chat-view/channel-closed", "criterion": "Box stays usable after the channel closes", "steps": "With GRILLO_AGENT_RUNTIME=chat, open a generic agent's channel in a meeting, speak once, close the channel and end the session. Type \"Sample note\" and press Send.", "expected": "The box is editable and the agent receives the text as one message." },
+    { "key": "src/renderer/screens/chat-view/terminal-fallback", "criterion": "Terminal stays the default", "steps": "Start Grillo with GRILLO_AGENT_RUNTIME unset and open a generic agent.", "expected": "The tab shows the plain terminal and its type box, with no chat." }
+  ],
+  "no_qa_reason": null
+}

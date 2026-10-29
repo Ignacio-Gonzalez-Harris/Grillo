@@ -1,0 +1,23 @@
+{
+  "run_id": "Grillo-20261029-161127-5f2a",
+  "issue": 94,
+  "title": "Chat view with the \"show terminal\" switch as the agent tab body",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-29T16:11:27Z",
+  "finished_at": "2026-10-29T16:34:30Z",
+  "outcome": "merged",
+  "pr": 174,
+  "summary": "Resumed the needs-human pull request after the owner decided that Use it sends exactly what the message box shows. Agent tabs can now show a chat view (bubbles, clickable answers, permission buttons, a message box, a show-terminal switch), opt-in through GRILLO_AGENT_RUNTIME=chat while the terminal stays the default per the PRD.",
+  "agents": [
+    { "name": "dev-94", "model": "opus", "tokens_total": 341702 },
+    { "name": "review-94", "model": "opus", "tokens_total": 178991 },
+    { "name": "review-94-r2", "model": "opus", "tokens_total": 159481 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 495, "review_seconds": 675, "ci_seconds": 0 },
+  "rounds": { "review": 2, "ci": 0 },
+  "friction": [
+    "A PRD change merged mid-story (terminal stays the default) contradicted an acceptance criterion; the dev found it only on its final merge of main, and the issue body had to be rewritten during review"
+  ],
+  "lessons_learned": [],
+  "deferred": []
+}
