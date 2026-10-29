@@ -7,6 +7,7 @@ import type { GrilloApi, Unsubscribe } from '../../../shared/ipc';
 import type { SpeechModelUpdates } from '../../../shared/transcription';
 import { createUpdatesClient, type UpdatePhase, type UpdateState } from '../../../shared/updates';
 import { badge, button, toggle } from '../../theme/components';
+import './update-card.css';
 import { readEventVersion, readPercent, readSpeechModelUpdates, readUpdateState } from './answers';
 import { el, type Content } from './dom';
 
@@ -35,7 +36,17 @@ export interface UpdateCard {
   dispose(): void;
 }
 
-export function createUpdateCard(grillo: GrilloApi): UpdateCard {
+/** The note a pop-up's card carries beside its buttons (prototype `screen-map-and-tickets`, state "Update pop-up"). */
+export const POPUP_NOTE = 'Shown once per version. Later hides it until Grillo restarts.';
+
+export interface UpdateCardOptions {
+  /** The card of the update pop-up: modal while it offers, with the once-per-version note beside its buttons. */
+  popup?: boolean;
+  /** Called when the member presses Later, so a pop-up can close. */
+  onLater?: () => void;
+}
+
+export function createUpdateCard(grillo: GrilloApi, { popup = false, onLater }: UpdateCardOptions = {}): UpdateCard {
   const updatesClient = createUpdatesClient(grillo);
   const root = el('div', 'card glass-strong stack update-card');
   let disposed = false;
@@ -67,6 +78,7 @@ export function createUpdateCard(grillo: GrilloApi): UpdateCard {
   function later(): void {
     setOffer(NO_OFFER);
     updatesClient.later().catch(warn('put the update off'));
+    onLater?.();
   }
 
   async function setAutoUpdate(enabled: boolean): Promise<void> {
@@ -111,7 +123,9 @@ export function createUpdateCard(grillo: GrilloApi): UpdateCard {
             disabled: offer.phase === 'downloading',
             onClick: downloadAndInstall,
           });
-    return el('div', 'row', [main, button('Later', { small: true, onClick: later })]);
+    const actions: Content[] = [main, button('Later', { small: true, onClick: later })];
+    if (popup) actions.push(el('span', 'spacer'), el('span', 'small muted', [POPUP_NOTE]));
+    return el('div', 'row', actions);
   }
 
   function appUpdatesSetting(): HTMLElement {
@@ -166,6 +180,7 @@ export function createUpdateCard(grillo: GrilloApi): UpdateCard {
     if (offered) parts.push(offerActions());
     root.setAttribute('role', offered ? 'dialog' : 'group');
     root.setAttribute('aria-label', offered ? 'Update offer' : 'Update settings');
+    if (popup) root.setAttribute('aria-modal', String(offered));
     root.replaceChildren(...parts);
   }
 

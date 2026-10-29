@@ -21,8 +21,11 @@ export const PROJECT_TABS: readonly FixedTab[] = [
   { screenId: 'prd', label: 'PRD' },
 ];
 
+/** The setup check, which shows the update offer itself (PRD section 4.1 item 4). */
+export const SETUP_CHECK_SCREEN = 'setup-check';
+
 /** The screen the shell opens first. */
-export const START_SCREEN = 'setup-check';
+export const START_SCREEN = SETUP_CHECK_SCREEN;
 
 /** The screen an agent's tab opens, with `{ agentId }`. */
 export const AGENT_SCREEN = 'agent-tab';

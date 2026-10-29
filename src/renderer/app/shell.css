@@ -26,3 +26,15 @@
 .tab.add { color: var(--color-accent); font-weight: var(--font-weight-strong); font-size: var(--font-size-l); }
 .tab.add[aria-pressed="true"] { background: var(--color-accent-soft); }
 .tab-sep { width: var(--border-width); align-self: stretch; background: var(--color-divider); margin: 0 var(--space-2); flex: none; }
+
+/* ---------- Update pop-up over any screen ---------- */
+.overlay-host { position: relative; }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-6); -webkit-backdrop-filter: blur(var(--blur-glass)); backdrop-filter: blur(var(--blur-glass)); }
+.overlay[hidden] { display: none; }
+.overlay > .card { width: 100%; max-width: calc(var(--size-side-column) + var(--size-side-column)); box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow); }
+body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
+@media (max-width: 760px) {
+  .overlay { padding: var(--space-4); }
+}
