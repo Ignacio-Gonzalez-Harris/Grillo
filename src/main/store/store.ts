@@ -64,6 +64,9 @@ export type TicketPatch = Partial<
   Pick<Ticket, 'title' | 'question' | 'whyItMatters' | 'assumptions' | 'kind' | 'domains' | 'noDomain' | 'blockers'>
 >;
 
+/** A ticket's domain tags: some domains, or "no domain", or neither (not tagged yet). */
+export type TicketTags = Pick<Ticket, 'domains' | 'noDomain'>;
+
 /** Filters for `listTickets`; the signed-in member's own tickets come first and pass every domain filter. */
 export interface TicketFilter {
   state?: Ticket['state'];
@@ -171,6 +174,12 @@ export interface Store {
   getTicket(id: TicketId): Promise<Ticket>;
   listTickets(project: ProjectId, filter?: TicketFilter): Promise<Ticket[]>;
   updateTicket(id: TicketId, patch: TicketPatch): Promise<Ticket>;
+  /**
+   * A member setting the tags by hand (PRD section 4.3 item 2): the tags, then a tags-by-hand marker so no tagging
+   * round changes them (docs/store-layout.md, Tags set by hand). Tags with no domain and no "no domain" hand the
+   * ticket back to the tagging round: the tags go and every marker is deleted.
+   */
+  tagTicketByHand(id: TicketId, tags: TicketTags): Promise<Ticket>;
   /** A ticket with a decision and no gist line on the map (closed again after a reopen) gets its latest one back. */
   closeTicket(id: TicketId): Promise<CloseResult>;
   /** Closes `id` as a duplicate of `into`, with a decision comment pointing at it. */

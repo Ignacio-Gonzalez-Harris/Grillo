@@ -393,6 +393,32 @@ describe('the tickets screen: tags changed by hand', () => {
     // The ticket now sits in my list as open to anyone.
     expect(groups(content())[1]).toBe('Your domains: Sample ticket 2, Sample ticket 3');
   });
+
+  it('records each hand change as one tags-by-hand write; removing the last domain sets "no domain"', async () => {
+    const { store, project, content, open } = await app();
+    const tickets = await ownList(store, project);
+    const byHand = vi.spyOn(store, 'tagTicketByHand');
+    const update = vi.spyOn(store, 'updateTicket');
+    await open({ project, ticket: String(tickets.mine.id.number) });
+
+    await pick(detailCard(content()), 'Add a domain tag', 'platform');
+    await click(detailCard(content()), '×');
+    expect(tagsOf(content())).toEqual(['tag d3:platform']);
+    await click(detailCard(content()), '×');
+    expect(tagsOf(content())).toEqual(['tag none:no domain']);
+    await click(detailCard(content()), '×');
+
+    expect(byHand.mock.calls).toEqual([
+      [tickets.mine.id, { domains: ['developer', 'platform'], noDomain: false }],
+      [tickets.mine.id, { domains: ['platform'], noDomain: false }],
+      [tickets.mine.id, { domains: [], noDomain: true }],
+      // Removing "no domain" hands the ticket back to the tagging round.
+      [tickets.mine.id, { domains: [], noDomain: false }],
+    ]);
+    expect(update).not.toHaveBeenCalled();
+    expect(tagsOf(content())).toEqual([]);
+    expect(await store.getTicket(tickets.mine.id)).toMatchObject({ domains: [], noDomain: false });
+  });
 });
 
 describe('the tickets screen: answers from GitHub comments', () => {
@@ -715,9 +741,10 @@ describe('tickets data: grouping, tags and what the store answers', () => {
     expect(withTag({ ...base, ...ticket }, tag)).toEqual(patch);
   });
 
-  it('withTag refuses an empty domain; withoutTag leaves an untagged ticket when the last tag goes', () => {
+  it('withTag refuses an empty domain; withoutTag sets "no domain" when the last domain goes, and untags after it', () => {
     expect(() => withTag(base, '  ')).toThrow(StoreError);
-    expect(withoutTag({ ...base, domains: ['developer'] }, 'developer')).toEqual({ domains: [], noDomain: false });
+    expect(withoutTag({ ...base, domains: ['developer', 'product'] }, 'developer')).toEqual({ domains: ['product'], noDomain: false });
+    expect(withoutTag({ ...base, domains: ['developer'] }, 'developer')).toEqual({ domains: [], noDomain: true });
     expect(withoutTag({ ...base, noDomain: true }, NO_DOMAIN)).toEqual({ domains: [], noDomain: false });
   });
 
