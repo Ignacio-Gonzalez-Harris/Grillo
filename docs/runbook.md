@@ -15,6 +15,13 @@ Every screen sits in one window: the title bar ("Grillo" and where you are), the
   transparency (on Windows: Settings, Personalisation, Colours, Transparency effects off), they turn nearly opaque so
   text stays readable. To preview it, open the developer tools console and run
   `document.body.classList.add('no-glass')`.
+- **On a Mac, opened from the Dock or Finder.** Grillo finds Claude Code, `gh`, `git` and `node` exactly as your
+  Terminal does, wherever they came from (the Claude Code installer's `~/.local/bin`, Homebrew, nvm, volta or fnm).
+  At start-up it asks your login shell (the one in `SHELL`, or `/bin/zsh` when that is unset) for its PATH once, and
+  every tool and agent Grillo starts uses it. A shell that fails, prints something unreadable or takes more than
+  5 seconds is skipped: Grillo opens anyway with the short system PATH and logs one warning starting "Grillo kept
+  the PATH it was started with". If tools are then missing, check that a new Terminal window starts quickly and
+  without errors. Windows needs none of this: it already passes your PATH to Grillo.
 - **Developers.** A new screen is a new folder `src/renderer/screens/<name>/index.ts` exporting `id`, `title` and
   `mount(el, params, shell)`; no shared file changes. It may also export `start(shell)`, run once when the shell
   starts (for work that outlives the screen; it may return a cleanup function), and `shell.onAgentTabs(listener)`
