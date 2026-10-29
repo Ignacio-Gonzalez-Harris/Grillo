@@ -1,8 +1,9 @@
 /**
  * The meeting screen (prototype `screen-meeting`) on a meeting agent's tab: who is present, the consent tick with the
- * read-aloud script, the one Record switch with the red Recording banner, the speech model being prepared before the
- * first recording, Listen or Type, "Use it", skip and jump, an imported transcript and the running transcript strip
- * (PRD 4.5, 4.6 item 4), and the session's grilling agents with "Open another grilling agent" (PRD 4.5 item 9).
+ * read-aloud script, the recording source (room microphone or call audio, locked while recording), the one Record
+ * switch with the red Recording banner, the speech model being prepared before the first recording, Listen or Type,
+ * "Use it", skip and jump, an imported transcript and the running transcript strip (PRD 4.5, 4.6 item 4), and the
+ * session's grilling agents with "Open another grilling agent" (PRD 4.5 item 9).
  *
  * The controls call the live session in main (`session:*`); the session types the protocol messages
  * (`resources/skills/README.md`, Screen-to-agent protocol) into the agent and writes the transcript file. On any
@@ -11,6 +12,7 @@
 import './meeting.css';
 import type { Member, Ticket } from '../../../main/store/types';
 import type { AgentInfo } from '../../../shared/agents';
+import type { CaptureSource } from '../../../shared/audio';
 import type { AgentMode, SessionState } from '../../../shared/session';
 import { createSessionClient } from '../../../shared/session-ipc';
 import { createStoreClient } from '../../../shared/store';
@@ -35,6 +37,14 @@ export const NOT_RECORDING = 'Not recording. The session transcript appears here
 export const LISTENING = 'Recording. The session transcript appears here as it is spoken.';
 export const MODEL_HINT =
   'One time on this laptop. The model runs here, so no audio or text leaves the machine for transcription. Type answers work meanwhile.';
+export const SOURCE_HINT =
+  "Room microphone records the people in this room. Call audio records the virtual meeting's sound playing on this laptop.";
+export const SOURCE_LOCKED = 'Turn Record off to change the source.';
+/** The recording sources in the prototype's order; the first is the default. */
+const SOURCE_CHOICES: ReadonlyArray<{ source: CaptureSource; label: string }> = [
+  { source: 'microphone', label: 'Room microphone' },
+  { source: 'call', label: 'Call audio' },
+];
 export const OPEN_ANOTHER = 'Open another grilling agent';
 export const HINT_PARALLEL = 'Grills one more ticket in parallel, in this session. Each agent takes a different ticket.';
 export const HINT_CHANNELS = 'Each agent receives the transcript only while its own Channel switch is on.';
@@ -46,7 +56,7 @@ const PERCENT = 100;
 
 export interface MeetingPanelOptions {
   agents: MeetingAgents;
-  /** The audio capture, made on the first Record: the page's microphone in the app, a fake in tests. */
+  /** The audio capture, made on the first Record: the page's microphone or call audio in the app, a fake in tests. */
   capture: () => AudioCapture;
   now?: () => Date;
 }
@@ -74,17 +84,20 @@ function presenceHint(present: readonly Member[]): string {
   return `Used only to pick tickets: ${comeUp}. Change it at any time.`;
 }
 
-/** The one microphone of the session, shared by every meeting agent's tab, as the Record switch is. */
+/** The one capture of the session and the source it records, shared by every meeting agent's tab, as Record is. */
 interface Microphone {
   audio?: AudioCapture;
+  source: CaptureSource;
   capturing: boolean;
   since: number | null;
+  /** Each mounted panel's redraw, so a source picked in one tab shows in every tab. */
+  redraws: Set<() => void>;
 }
 
 export function meetingPanel({ agents, capture, now = () => new Date() }: MeetingPanelOptions): TabPanel {
   // Each tab's panel turns the same capture on and off: one per tab would hear every slice twice and leave a
   // microphone running that no other tab can stop.
-  const microphone: Microphone = { capturing: false, since: null };
+  const microphone: Microphone = { source: SOURCE_CHOICES[0].source, capturing: false, since: null, redraws: new Set() };
   return {
     kinds: ['grilling'],
     slot: 'controls',
@@ -155,7 +168,25 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         el('div', 'row', [el('span', 'spacer'), cancelImport, useImport]),
       ]);
       const opener = el('div', 'row', [openImport]);
-      const recordingCard = el('div', 'card stack', [el('h4', '', ['Recording']), record.root, recordReason, opener, importer]);
+      const sourceButtons = SOURCE_CHOICES.map(({ source, label }) => {
+        const choice = el('button', '', [label]);
+        choice.type = 'button';
+        choice.addEventListener('click', () => pickSource(source));
+        return choice;
+      });
+      const sourceChoice = el('div', 'seg', sourceButtons);
+      sourceChoice.setAttribute('role', 'group');
+      sourceChoice.setAttribute('aria-label', 'Recording source');
+      const sourceHint = el('p', 'small muted', [SOURCE_HINT]);
+      const recordingCard = el('div', 'card stack', [
+        el('h4', '', ['Recording']),
+        sourceChoice,
+        sourceHint,
+        record.root,
+        recordReason,
+        opener,
+        importer,
+      ]);
       const agentRows = el('ul', 'rows small');
       const openAnother = button(OPEN_ANOTHER, { small: true, onClick: () => void openAnotherAgent() });
       const agentsHint = el('p', 'small muted');
@@ -209,6 +240,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       const root = el('div', 'meeting meeting-panel', [banner, side, head, foot]);
       root.hidden = true;
       container.append(root);
+      microphone.redraws.add(draw);
       showImport(false);
 
       // ---------- Drawing ----------
@@ -326,9 +358,14 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         consentTicked.hidden = consent === null;
         consentTicked.textContent = consent ? `Ticked by ${consent.by} at ${minutes(new Date(consent.at))}.` : '';
 
+        for (const [at, choice] of sourceButtons.entries()) {
+          choice.setAttribute('aria-pressed', String(SOURCE_CHOICES[at].source === microphone.source));
+          choice.disabled = busy || recording;
+        }
+        sourceHint.hidden = recording || !ready;
         record.input.checked = recording;
         record.input.disabled = busy || state === null || (!recording && (!ready || consent === null));
-        const reason = recording ? '' : !ready ? REASON_MODEL : consent === null ? REASON_CONSENT : '';
+        const reason = recording ? SOURCE_LOCKED : !ready ? REASON_MODEL : consent === null ? REASON_CONSENT : '';
         recordReason.textContent = reason;
         recordReason.hidden = reason === '';
 
@@ -409,7 +446,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         return act(async () => {
           if (on) {
             await session.setRecording(true);
-            const started = await audioCapture().startCapture({ source: 'microphone' });
+            const started = await audioCapture().startCapture({ source: microphone.source });
             if (!started.ok) {
               await session.setRecording(false);
               throw new Error(started.message);
@@ -435,6 +472,13 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
           stopTimer();
           await session.setRecording(false);
         }
+      }
+
+      /** The source the next Record captures; refused while recording, as the capture cannot change source mid-way. */
+      function pickSource(picked: CaptureSource): void {
+        if (busy || state?.recording === true || microphone.capturing || picked === microphone.source) return;
+        microphone.source = picked;
+        for (const redraw of microphone.redraws) redraw();
       }
 
       function pickMode(picked: AgentMode): Promise<void> {
@@ -588,6 +632,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       return {
         dispose() {
           disposed = true;
+          microphone.redraws.delete(draw);
           stopSession();
           stopAgents();
           stopTabs();
