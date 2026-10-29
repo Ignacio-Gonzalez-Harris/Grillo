@@ -218,16 +218,18 @@ built the map.
 
 Each agent shows in its own tab: click the agent's name on the tab bar.
 
-- **Two runtimes, one choice: chat (the default) or terminal.** Every agent tab is a **chat agent**: your own
-  `claude` in machine-readable mode (see Agent chat protocol below), exactly one Claude Code process per tab, and
-  the tab's id is the chat agent's id. The release-1 **terminal agent** stays as a working fallback until the Agent
-  SDK terms are confirmed. To use it, set the environment variable `GRILLO_AGENT_RUNTIME=terminal` before starting
-  Grillo (`GRILLO_AGENT_RUNTIME=chat`, or leaving it unset, gives chat). Any other value keeps chat and logs a
-  warning naming the variable. The choice applies to every agent tab until Grillo restarts.
+- **Two runtimes, one choice: terminal (the default) or chat.** Every agent tab is a **terminal agent** by default:
+  the release-1 plain terminal, where you type into the tab and answer clickable options and permission prompts
+  yourself. It stays the default until the chat view lands; that story makes chat the default. A **chat agent** is
+  your own `claude` in machine-readable mode (see Agent chat protocol below), exactly one Claude Code process per
+  tab, and the tab's id is the chat agent's id. To use it, set the environment variable `GRILLO_AGENT_RUNTIME=chat`
+  before starting Grillo (`GRILLO_AGENT_RUNTIME=terminal`, or leaving it unset, gives the terminal). Any other value
+  keeps the terminal and logs a warning naming the variable. The choice applies to every agent tab until Grillo
+  restarts.
 - **Until the chat view arrives, a chat tab shows the raw event stream** (one JSON line per event) in the terminal
   area, and typing there does nothing (the type box and keystrokes are refused: a chat agent has no terminal).
-  Clickable options and permission prompts cannot be answered on screen yet, so an agent that asks one waits. Use
-  `GRILLO_AGENT_RUNTIME=terminal` to work with agents before the chat view story lands.
+  Clickable options and permission prompts cannot be answered on screen yet, so an agent that asks one waits. Leave
+  `GRILLO_AGENT_RUNTIME` unset to work with agents before the chat view story lands.
 - **Messages from the screens are one chat message each.** The meeting's "use it", own-time's "use it" and Done,
   and the meeting's control lines (`session:`, `mode:`, `present:`, `skip`, `jump`) each reach a chat agent as one
   message. With the Open channel on, the live transcript is held by Grillo (a chat agent has no input box) and goes
