@@ -275,7 +275,9 @@ Taking a ticket is atomic (PRD section 4.3 item 6):
 3. If another login is also assigned, the earlier `assigned` event in the issue's timeline wins, and the
    later one unassigns itself.
 
-Agents follow the same rule through `gh`.
+Agents follow the same rule through `gh`. The grilling agents of one live session share the host's login, so
+each first holds the ticket on the laptop (`grillo-meeting`, "Holding a ticket in this session"): a folder inside
+the project folder's `.git`, never committed and never on GitHub.
 
 ## Saves to a protected main
 

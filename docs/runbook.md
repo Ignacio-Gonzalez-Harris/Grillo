@@ -377,6 +377,11 @@ drive it by typing the protocol messages (`resources/skills/README.md`).
   else holds is refused. **Done** closes the ticket with its decision when every question is answered (and starts
   the PRD writer once the map is done), or else releases it with its open questions. Talk above Skip, Jump or Done
   is never recorded. A ticket left with questions open is not picked again in the same session.
+- **Several grilling agents in one session** all act for the host's login, so before claiming a ticket each one
+  holds it in the session: it makes the folder `meeting-holds/<session id>/<ticket number>` inside the project
+  folder's `.git` (never committed), which only one agent can make. A ticket another agent of the session holds is
+  skipped (or a jump to it is refused); the agent removes its hold when it leaves the ticket. A hold left by an agent
+  that was stopped mid-ticket keeps that ticket out of this session only; the next session starts free.
 - **Drift:** what else the room says may add a question to the ticket, a new ticket (with no domain until the next
   tagging round), a fog line or an out-of-scope line. The agent says what it added.
 - **Run it by hand (developers):** in a clone of a made-up test project with a map and tagged tickets on `main`, copy
@@ -418,7 +423,9 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   the card then says who ticked and when.
 - **Record** captures the room microphone (call audio has no switch yet) and shows the red Recording banner with the
   time since Record went on. Switching it off saves the transcript file and goes back to Type. If the microphone
-  cannot be opened, the recording turns back off and the reason shows.
+  cannot be opened, the recording turns back off and the reason shows. The session has one microphone: every
+  grilling agent's tab shows the same Record switch, and turning it off in any tab stops the capture, even one
+  started in a tab whose agent has since stopped.
 - **Listen / Type** per question; Listen needs the recording on and opens this agent's channel. **Use it** (Listen
   only) sends the transcript in the agent's box with `use it`. **Skip question** and **Jump to ticket** type `skip` and
   `jump <number>`. **Import a transcript** pastes or uploads a text file and sends it with `use it`.
@@ -426,7 +433,15 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
 - **Channel**, the switch inside every agent's tab, opens or closes that agent's channel; while open, the live
   transcript goes into its type box. It can be turned on before any session runs: the agent is then told the
   session file when one starts.
-- **Stopping the last meeting agent** ends the session, its transcript saved.
+- **Grilling agents** (shown once consent is ticked) lists the session's grilling agents by tab name, this tab's agent
+  highlighted, each with "Channel open" or "Channel closed"; one opened from here carries a New badge until its
+  channel opens. **Open another grilling agent** starts one more grilling agent with `/grillo-meeting` in the same
+  session and opens its tab: it is told the same session file, who is present and `mode: type`, and starts with its
+  channel closed. Each agent receives the transcript only while its own Channel switch is on, and each takes a
+  different ticket (see Meeting grilling skill, above). If the agent cannot start, the reason shows and you stay on
+  this tab.
+- **Stopping the last meeting agent** ends the session, its transcript saved; while another one runs, the session
+  goes on and the stopped one leaves the list.
 - **Developers:** `npx vitest run src/renderer/screens/meeting src/main/features/session` runs the panel against the
   real session, agent runtime and in-memory store, with fake terminals, a fake transcriber and no microphone.
 
