@@ -64,6 +64,20 @@ describe('session channels', () => {
     expect(sent.at(-1)?.consent?.by).toBe(HOST);
   });
 
+  it("never sends the session for a chat view's message box calls, made on every keystroke", async () => {
+    const { client, sent } = await rig();
+    await client.startSession(PROJECT);
+    sent.length = 0;
+
+    const settled = await Promise.allSettled([
+      client.editBox('a1', 'Sample typed text', ''),
+      client.releaseHeld('a1', ''),
+    ]);
+
+    expect(settled.map(({ status }) => status)).toEqual(['rejected', 'rejected']);
+    expect(sent).toEqual([]);
+  });
+
   it('turns a refusal back into a SessionError of the same kind, and still sends the session', async () => {
     const { client, sent } = await rig();
     await client.startSession(PROJECT);

@@ -236,8 +236,8 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
   logs a warning naming the variable. The choice applies to every agent tab until Grillo restarts.
 - **Messages from the screens are one chat message each.** The meeting's "use it", own-time's "use it" and Done,
   and the meeting's control lines (`session:`, `mode:`, `present:`, `skip`, `jump`) each reach a chat agent as one
-  message. With the Open channel on, the live transcript is held by Grillo (a chat agent has no input box) and goes
-  out as the first lines of the next such message, the control line last.
+  message. With the Open channel on, the live transcript goes into the chat view's message box; how Use it and the
+  other control lines send that box is under Chat view, Open channel, below.
 - **Claude Code must be installed and on PATH.** Each agent is your own `claude`, started in the project folder
   (a terminal agent with no extra flags). Without it, starting an agent fails with "Claude Code was not found:
   there is no `claude` command on PATH".

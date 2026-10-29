@@ -425,6 +425,8 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     send.disabled = false;
     if (!result.ok) {
       input.value = joined(value, input.value);
+      // The session forgot the box when it went out; it shows text again, which Use it must send.
+      reportEdit();
       if (target) target.failed(result.reason);
       else show(errorNote(`Not sent: ${result.reason}`));
       return;

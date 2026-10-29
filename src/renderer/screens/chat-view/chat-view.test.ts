@@ -552,6 +552,37 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
     });
   });
 
+  it('keeps a refused "Something else" answer in the box, and Use it then sends it', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('grilling', 'Sample ticket 3');
+    await view.host.startSession(PROJECT);
+    await view.host.tickConsent(HOST);
+    await view.host.setRecording(true);
+    await view.host.setChannel(id, true);
+    await flush();
+    view.bus.publish({ source: 'microphone', index: 0, pcm: Int16Array.of(0) });
+    await flush();
+    process.emit(questionLine(OTHER_QUESTION_ID, QUESTION_INPUT));
+    // The question is dismissed before the member answers it, so Claude Code refuses the answer.
+    await view.grillo.invoke('agent-chat:deny', { id: OTHER_QUESTION_ID });
+
+    view.box().value = 'A sample typed answer';
+    view.box().dispatchEvent(new Event('input'));
+    view.buttonNamed('Something else').click();
+    view.sendButton().click();
+    await flush();
+    const refilled = view.box().value;
+    await view.host.useIt(id);
+    await flush();
+
+    expect(refilled).toBe('A sample typed answer');
+    expect(view.writtenAfterStart(process).filter((event) => (event as { type: string }).type === 'user').at(-1)).toEqual({
+      type: 'user',
+      message: { role: 'user', content: 'A sample typed answer\nuse it' },
+    });
+    expect(view.box().value).toBe('');
+  });
+
   it('keeps what it hides hidden under the real stylesheets: the channel badge, the raw terminal and the Use it line', async () => {
     for (const sheet of [GLASS_CSS, CHAT_VIEW_CSS]) {
       const style = document.createElement('style');
