@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createGrilloApi } from '../../../preload/bridge';
 import type { AgentInfo, StartAgentRequest } from '../../../shared/agents';
 import { createMainIpc } from '../../ipc/bridge';
@@ -9,6 +9,7 @@ import { createChatEventHub } from '../agent-chat/event-hub';
 import { FakeChatProcess } from '../agent-chat/fake-process';
 import { registerAgentChannels, registerChosenAgentChannels } from './channels';
 import { FakePty } from './fake-pty';
+import { agentRuntimeChoice } from './runtime-choice';
 
 const request: StartAgentRequest = {
   kind: 'task',
@@ -94,7 +95,7 @@ function connectChosen(choice: AgentRuntimeChoice) {
     },
     events: hub.events,
   });
-  registerChosenAgentChannels(createMainIpc(fake.main, () => [fake.window]), choice, {
+  const runtime = registerChosenAgentChannels(createMainIpc(fake.main, () => [fake.window]), choice, {
     terminal: {
       ...tools,
       spawnPty: (file, args, options) => {
@@ -105,8 +106,38 @@ function connectChosen(choice: AgentRuntimeChoice) {
     },
     chat: { driver, observe: hub.observe },
   });
-  return { grillo: createGrilloApi(fake.renderer), ptys, chats };
+  return { grillo: createGrilloApi(fake.renderer), ptys, chats, runtime };
 }
+
+describe('agent IPC channels with GRILLO_AGENT_RUNTIME unset', () => {
+  function connectDefault() {
+    const warn = vi.fn();
+    return { ...connectChosen(agentRuntimeChoice({}, warn)), warn };
+  }
+
+  it('runs a new agent tab as Claude Code in a terminal, and its type box reaches the agent', async () => {
+    const { grillo, ptys, chats, warn } = connectDefault();
+
+    const id = await grillo.invoke('agents:start', request);
+    await grillo.invoke('agents:write', { id, text: 'Sample answer\r' });
+
+    expect(ptys).toHaveLength(1);
+    expect(chats).toEqual([]);
+    expect(ptys[0].written).toEqual(['Sample answer\r']);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("takes the live session's transcript slices into the agent's input box as they are spoken", async () => {
+    const { grillo, ptys, runtime } = connectDefault();
+    const id = await grillo.invoke('agents:start', request);
+
+    runtime.write(id, 'Ada: first sample line');
+    runtime.write(id, '\nBen: second sample line');
+
+    expect(runtime.choice).toBe('terminal');
+    expect(ptys[0].written).toEqual(['Ada: first sample line', '\nBen: second sample line']);
+  });
+});
 
 describe('agent IPC channels over the chosen runtime', () => {
   it('runs exactly one chat Claude Code per tab under chat, and no terminal beside it', async () => {
