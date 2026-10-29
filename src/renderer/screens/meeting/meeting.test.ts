@@ -123,10 +123,17 @@ async function app() {
   const grillo = createGrilloApi(fake.renderer);
   const meetingAgents = createMeetingAgents();
   const capture = new FakeCapture();
+  // As in the app, every call makes a new capture: the first is `capture`, so a test can set its result beforehand.
+  const captures: FakeCapture[] = [];
+  const makeCapture = () => {
+    const made = captures.length === 0 ? capture : new FakeCapture();
+    captures.push(made);
+    return made;
+  };
   let tabs: AgentTabs | undefined;
   const panels = registerTabPanels({}, [
     terminalPanel(() => new FakeTerminalView()),
-    meetingPanel({ agents: meetingAgents, capture: () => capture }),
+    meetingPanel({ agents: meetingAgents, capture: makeCapture }),
     channelSwitchPanel(),
   ]);
   const agentTabScreen: ScreenModule = {
@@ -149,6 +156,10 @@ async function app() {
     bus,
     ptys,
     capture,
+    /** Every capture still capturing the microphone: started more often than stopped. */
+    microphonesOpen: () =>
+      captures.filter((made) => made.calls.filter((call) => call === 'start microphone').length > made.calls.filter((call) => call === 'stop').length).length,
+    captureCalls: () => captures.flatMap((made) => made.calls),
     grillo,
     folder,
     meetingAgents,
@@ -450,6 +461,55 @@ describe('meeting screen: another grilling agent', () => {
     expect(first.pty.written).toEqual([]);
     expect(second.written).toEqual(['Sample words 2.']);
     expect(agentRows(panel()).map(text)).toEqual(['Grilling · Live sessionChannel closed', 'Grilling · Live sessionChannel open']);
+  });
+
+  /** Opens another grilling agent from the panel on show and lets its Claude Code take the command and go quiet. */
+  async function openAnother(ptys: FakePty[], scope: HTMLElement): Promise<void> {
+    await click(buttonNamed(cardNamed(scope, 'Grilling agents'), OPEN_ANOTHER));
+    (ptys.at(-1) as FakePty).print(PROMPT);
+    await vi.advanceTimersByTimeAsync(WAITING_AFTER_MS + ENTER_AFTER_QUIET_MS);
+    await settle();
+  }
+
+  it('shares one microphone between the tabs: Record off in one tab stops what Record on in another started', async () => {
+    const { host, ptys, panel, modelReady, startMeeting, microphonesOpen, captureCalls } = await app();
+    const first = await startMeeting();
+    await modelReady();
+    await tickConsent(panel());
+    await flip(recordSwitch(panel()), true);
+    await openAnother(ptys, panel());
+    expect(recordSwitch(panel()).checked).toBe(true);
+
+    await flip(recordSwitch(panel()), false);
+    expect(host.state()?.recording).toBe(false);
+    expect(microphonesOpen()).toBe(0);
+    await flip(recordSwitch(panel()), true);
+    expect(microphonesOpen()).toBe(1);
+    shell?.navigate('agent-tab', { agentId: first.id });
+    await settle();
+    expect(recordSwitch(panel()).checked).toBe(true);
+    await flip(recordSwitch(panel()), false);
+
+    expect(panel().querySelector('.note.err')).toBeNull();
+    expect(host.state()?.recording).toBe(false);
+    expect(captureCalls()).toEqual(['start microphone', 'stop', 'start microphone', 'stop']);
+  });
+
+  it('lets the other tab stop the microphone after the agent that started it stops', async () => {
+    const { host, grillo, ptys, panel, modelReady, startMeeting, microphonesOpen } = await app();
+    const first = await startMeeting();
+    await modelReady();
+    await tickConsent(panel());
+    await flip(recordSwitch(panel()), true);
+    await openAnother(ptys, panel());
+
+    await grillo.invoke('agents:stop', { id: first.id });
+    await settle();
+    expect(host.state()?.recording).toBe(true);
+    await flip(recordSwitch(panel()), false);
+
+    expect(host.state()?.recording).toBe(false);
+    expect(microphonesOpen()).toBe(0);
   });
 
   it('says why when another grilling agent cannot be started, and stays on this tab', async () => {

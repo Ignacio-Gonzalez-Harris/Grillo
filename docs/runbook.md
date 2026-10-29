@@ -423,7 +423,9 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   the card then says who ticked and when.
 - **Record** captures the room microphone (call audio has no switch yet) and shows the red Recording banner with the
   time since Record went on. Switching it off saves the transcript file and goes back to Type. If the microphone
-  cannot be opened, the recording turns back off and the reason shows.
+  cannot be opened, the recording turns back off and the reason shows. The session has one microphone: every
+  grilling agent's tab shows the same Record switch, and turning it off in any tab stops the capture, even one
+  started in a tab whose agent has since stopped.
 - **Listen / Type** per question; Listen needs the recording on and opens this agent's channel. **Use it** (Listen
   only) sends the transcript in the agent's box with `use it`. **Skip question** and **Jump to ticket** type `skip` and
   `jump <number>`. **Import a transcript** pastes or uploads a text file and sends it with `use it`.

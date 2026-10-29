@@ -74,7 +74,17 @@ function presenceHint(present: readonly Member[]): string {
   return `Used only to pick tickets: ${comeUp}. Change it at any time.`;
 }
 
+/** The one microphone of the session, shared by every meeting agent's tab, as the Record switch is. */
+interface Microphone {
+  audio?: AudioCapture;
+  capturing: boolean;
+  since: number | null;
+}
+
 export function meetingPanel({ agents, capture, now = () => new Date() }: MeetingPanelOptions): TabPanel {
+  // Each tab's panel turns the same capture on and off: one per tab would hear every slice twice and leave a
+  // microphone running that no other tab can stop.
+  const microphone: Microphone = { capturing: false, since: null };
   return {
     kinds: ['grilling'],
     slot: 'controls',
@@ -96,9 +106,6 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       let busy = false;
       let disposed = false;
       let message: { text: string; error: boolean } | null = null;
-      let audio: AudioCapture | undefined;
-      let capturing = false;
-      let recordingSince: number | null = null;
       let timer: ReturnType<typeof setInterval> | undefined;
       const lineTimes: string[] = [];
 
@@ -247,7 +254,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       }
 
       function drawBannerTime(): void {
-        bannerTime.textContent = recordingSince === null ? '' : elapsed(now().getTime() - recordingSince);
+        bannerTime.textContent = microphone.since === null ? '' : elapsed(now().getTime() - microphone.since);
       }
 
       function drawTickets(): void {
@@ -308,6 +315,8 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         const ready = model.status === 'ready';
 
         banner.hidden = !recording;
+        if (recording) timer ??= setInterval(drawBannerTime, SECOND_MS);
+        else stopTimer();
         drawBannerTime();
 
         for (const box of presentRows.querySelectorAll('input')) box.disabled = busy || state === null;
@@ -387,8 +396,13 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       }
 
       function audioCapture(): AudioCapture {
-        audio ??= capture();
-        return audio;
+        microphone.audio ??= capture();
+        return microphone.audio;
+      }
+
+      function stopTimer(): void {
+        if (timer !== undefined) clearInterval(timer);
+        timer = undefined;
       }
 
       function setRecording(on: boolean): Promise<void> {
@@ -400,9 +414,8 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
               await session.setRecording(false);
               throw new Error(started.message);
             }
-            capturing = true;
-            recordingSince = now().getTime();
-            timer ??= setInterval(drawBannerTime, SECOND_MS);
+            microphone.capturing = true;
+            microphone.since = now().getTime();
             return;
           }
           await stopRecording();
@@ -415,12 +428,11 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
 
       async function stopRecording(): Promise<void> {
         try {
-          if (capturing) await audioCapture().stopCapture();
+          if (microphone.capturing) await audioCapture().stopCapture();
         } finally {
-          capturing = false;
-          recordingSince = null;
-          if (timer !== undefined) clearInterval(timer);
-          timer = undefined;
+          microphone.capturing = false;
+          microphone.since = null;
+          stopTimer();
           await session.setRecording(false);
         }
       }
@@ -579,12 +591,14 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
           stopSession();
           stopAgents();
           stopTabs();
-          if (timer !== undefined) clearInterval(timer);
+          stopTimer();
           if (project === undefined) return;
           agents.forget(agent.id);
           // The last meeting agent has gone: the session ends, its transcript file saved.
           if (agents.count() === 0) {
-            const ending = capturing ? audioCapture().stopCapture().catch(() => undefined) : Promise.resolve();
+            const ending = microphone.capturing ? audioCapture().stopCapture().catch(() => undefined) : Promise.resolve();
+            microphone.capturing = false;
+            microphone.since = null;
             void ending.then(() => session.endSession()).catch(() => undefined);
           }
         },
