@@ -53,11 +53,14 @@ async function rig() {
     events: { output: () => undefined, exited: () => undefined, listChanged: () => undefined },
   });
   const bus = createSliceBus();
+  /** Every change of an agent's held words, as the chat view's message box shows them. */
+  const held: Array<{ agentId: string; text: string }> = [];
   const host = createSessionHost({
     store,
     slices: bus,
     transcriber: { transcribe: async (pcm) => `Words ${pcm[0]}.` },
     agents,
+    held: (agentId, text) => held.push({ agentId, text }),
   });
   const id = await agents.startAgent({ kind: 'grilling', folder: '/memory/chat-demo', firstMessage: '', title: 'Grilling' });
 
@@ -73,7 +76,7 @@ async function rig() {
     for (const index of indexes) bus.publish({ source: 'microphone', index, pcm: Int16Array.of(index) });
     await settle();
   };
-  return { host, agents, driver, processes, id, writes, sent, hear };
+  return { host, agents, driver, processes, id, writes, sent, hear, held };
 }
 
 /** Lets every queued transcription, store write and message finish. */
@@ -102,6 +105,51 @@ describe('grilling session over chat agents', () => {
     await done(host.useIt(id));
 
     expect(sent()).toEqual([`session: ${SESSION_FILE}`, 'Words 0.\nWords 1.\nuse it', 'Words 2.\nuse it']);
+  });
+
+  it('tells the chat view the words it holds for the agent as they are spoken, and that none are left once sent', async () => {
+    const { host, id, hear, held } = await rig();
+    await done(host.setChannel(id, true));
+
+    await hear(0, 1);
+    await done(host.useIt(id));
+
+    expect(held).toEqual([
+      { agentId: id, text: 'Words 0.' },
+      { agentId: id, text: 'Words 0.\nWords 1.' },
+      { agentId: id, text: '' },
+    ]);
+  });
+
+  it("sends the chat view's box with a control line once the member edited it, with the words spoken since", async () => {
+    const { host, id, sent, hear, held } = await rig();
+    await done(host.setChannel(id, true));
+    await hear(0, 1);
+
+    await done(host.editBox(id, 'Words 0, corrected.', 'Words 0.\nWords 1.'));
+    await hear(2);
+    await done(host.useIt(id));
+    await done(host.skip(id));
+
+    expect(sent().slice(-2)).toEqual(['Words 0, corrected.\nWords 2.\nuse it', 'skip']);
+    expect(held.at(-1)).toEqual({ agentId: id, text: '' });
+  });
+
+  it("sends the chat view's message box as one message, dropping only the held words the box showed", async () => {
+    const { host, id, sent, hear, held } = await rig();
+    await done(host.setChannel(id, true));
+    await hear(0, 1);
+
+    await done(host.sendBox(id, 'Words 0, as the member edited them.', 'Words 0.'));
+    await done(host.useIt(id));
+    const refused = await done(host.sendBox(id, '  ', '').catch((thrown: unknown) => thrown));
+
+    expect(sent()).toEqual([`session: ${SESSION_FILE}`, 'Words 0, as the member edited them.', 'Words 1.\nuse it']);
+    expect(held.slice(-2)).toEqual([
+      { agentId: id, text: 'Words 1.' },
+      { agentId: id, text: '' },
+    ]);
+    expect((refused as SessionError).kind).toBe('invalid');
   });
 
   it('sends each screen control line as one chat message, below any transcript it carries', async () => {

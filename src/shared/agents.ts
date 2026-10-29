@@ -1,7 +1,7 @@
 /**
  * The agent runtime's contract between the main process and the renderer (PRD section 4.6, 8 Agent runtime).
- * An agent is the member's Claude Code, started in the project folder: a chat agent (the default) or, as the
- * fallback, a visible session in an embedded terminal (see `AgentRuntimeChoice`).
+ * An agent is the member's Claude Code, started in the project folder: a visible session in an embedded terminal
+ * (the default) or, opted into, a chat agent shown in the chat view (see `AgentRuntimeChoice`).
  */
 
 /** The six kinds of agent (PRD section 3, Vocabulary). */
@@ -35,6 +35,8 @@ export interface AgentInfo {
   folder: string;
   /** True once the agent has gone quiet after output: the tab's dot (it is waiting for the member). */
   waiting: boolean;
+  /** `chat` on a chat agent, whose tab shows the chat view; a terminal agent leaves it out (the release-1 shape). */
+  runtime?: AgentRuntimeChoice;
 }
 
 /** The tab name "<kind> · <ticket>", as in "Grilling · Login flow". */

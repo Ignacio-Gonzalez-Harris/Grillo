@@ -70,8 +70,8 @@ describe('chat agent runtime', () => {
       [CLAUDE_PATH, CHAT_FLAGS, request.folder],
     ]);
     expect(runtime.list()).toEqual([
-      { id: first, kind: 'grilling', title: request.title, folder: request.folder, waiting: false },
-      { id: second, kind: 'task', title: 'Task · Sample export', folder: request.folder, waiting: false },
+      { id: first, kind: 'grilling', title: request.title, folder: request.folder, waiting: false, runtime: 'chat' },
+      { id: second, kind: 'task', title: 'Task · Sample export', folder: request.folder, waiting: false, runtime: 'chat' },
     ]);
     expect(lists.at(-1)).toEqual(runtime.list());
     expect(chatMessages.map(({ id }) => id)).toEqual([first, second]);

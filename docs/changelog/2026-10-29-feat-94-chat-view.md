@@ -1,0 +1,1 @@
+Agent tabs can now show a chat (bubbles, clickable answers, Allow and Deny, a message box and a "Show terminal" switch) with GRILLO_AGENT_RUNTIME=chat, so members can answer agents with clicks; the terminal stays the default until the terms check allows chat.

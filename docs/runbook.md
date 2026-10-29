@@ -227,20 +227,17 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
 
 - **Two runtimes, one choice: terminal (the default) or chat.** Every agent tab is a **terminal agent** by default:
   the release-1 plain terminal, where you type into the tab and answer clickable options and permission prompts
-  yourself. It stays the default until the chat view lands; that story makes chat the default. A **chat agent** is
-  your own `claude` in machine-readable mode (see Agent chat protocol below), exactly one Claude Code process per
-  tab, and the tab's id is the chat agent's id. To use it, set the environment variable `GRILLO_AGENT_RUNTIME=chat`
-  before starting Grillo (`GRILLO_AGENT_RUNTIME=terminal`, or leaving it unset, gives the terminal). Any other value
-  keeps the terminal and logs a warning naming the variable. The choice applies to every agent tab until Grillo
-  restarts.
-- **Until the chat view arrives, a chat tab shows the raw event stream** (one JSON line per event) in the terminal
-  area, and typing there does nothing (the type box and keystrokes are refused: a chat agent has no terminal).
-  Clickable options and permission prompts cannot be answered on screen yet, so an agent that asks one waits. Leave
-  `GRILLO_AGENT_RUNTIME` unset to work with agents before the chat view story lands.
+  yourself. It stays the default, even with the chat view in place, until the terms check confirms that Anthropic
+  allows the machine-readable mode with members' own subscriptions (PRD section 8, Agent runtime). The **chat view
+  is opt-in**: set the environment variable `GRILLO_AGENT_RUNTIME=chat` before starting Grillo, and every agent tab
+  is a **chat agent**: your own `claude` in machine-readable mode (see Agent chat protocol below), exactly one Claude
+  Code process per tab, whose id is the tab's id, shown in the **chat view** (see below).
+  (`GRILLO_AGENT_RUNTIME=terminal`, or leaving it unset, gives the terminal.) Any other value keeps the terminal and
+  logs a warning naming the variable. The choice applies to every agent tab until Grillo restarts.
 - **Messages from the screens are one chat message each.** The meeting's "use it", own-time's "use it" and Done,
   and the meeting's control lines (`session:`, `mode:`, `present:`, `skip`, `jump`) each reach a chat agent as one
-  message. With the Open channel on, the live transcript is held by Grillo (a chat agent has no input box) and goes
-  out as the first lines of the next such message, the control line last.
+  message. With the Open channel on, the live transcript goes into the chat view's message box; how Use it and the
+  other control lines send that box is under Chat view, Open channel, below.
 - **Claude Code must be installed and on PATH.** Each agent is your own `claude`, started in the project folder
   (a terminal agent with no extra flags). Without it, starting an agent fails with "Claude Code was not found:
   there is no `claude` command on PATH".
@@ -258,13 +255,13 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
 
 ### The agent tab
 
-- **The tab shows the agent's own Claude Code terminal** (terminal runtime; on the chat runtime it shows the raw
-  event stream until the chat view comes in release 2). It fills the window and follows its size.
-- **Typing is always available.** Click into the terminal and type, exactly as in a normal terminal (arrow keys,
-  Esc and Enter included). Or use the box under it ("Type to the agent…"): Enter or Send types the line into the
-  agent, then presses Enter. Send on an empty box presses Enter alone.
-- **Nothing is lost when you switch tabs.** An agent keeps its terminal from the moment its tab appears: what it
-  prints while you are on another tab, and any half-typed text in the box, are still there when you come back.
+- **A terminal agent's tab** (the default) shows the agent's own Claude Code terminal, which fills the window and
+  follows its size. **A chat agent's tab** (`GRILLO_AGENT_RUNTIME=chat`) shows the chat view (see Chat view below).
+- **Typing in a terminal agent's tab is always available.** Click into the terminal and type, exactly as in a
+  normal terminal (arrow keys, Esc and Enter included). Or use the box under it ("Type to the agent…"): Enter or
+  Send types the line into the agent, then presses Enter. Send on an empty box presses Enter alone.
+- **Nothing is lost when you switch tabs.** An agent keeps its chat or terminal from the moment its tab appears:
+  what it says while you are on another tab, and any half-typed text in the box, are still there when you come back.
 - **When an agent stops**, its tab goes away. Opening it from an old link says "This agent is not running."
 - **Developers: tab panels.** A story adds to the agent tab with a file `src/renderer/screens/<name>/tab-panel.ts`
   that exports as `default` one panel or an array of panels, each `{ kinds, slot, priority, mount }`: `kinds` is
@@ -276,11 +273,56 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
   into the type box. A malformed `tab-panel.ts`, or two body panels tied for one kind, stops Grillo at start with
   the folder named; a panel that throws is logged and the rest of the tab still works.
 
-### Agent chat protocol (release 2, no screen yet)
+### Chat view (release 2)
 
-The chat view's engine, and what every agent tab runs on under the chat runtime. The chat view arrives with its
-own story. Its `agent-chat:*` channels take a tab's id, since the tab and its chat agent share it; stop a tab with
-`agents:stop`, which also takes it off the tab bar.
+The body of every chat agent's tab (opt-in: `GRILLO_AGENT_RUNTIME=chat`, see Agents above): the meeting, own-time
+answering, the generic agent, the support agent and every launched agent then all show their agent as a chat. Every
+label is in English.
+
+- **The head** names the agent ("Grilling agent · Sample ticket 4"), shows "Channel open · receiving the transcript
+  live" while the tab's Open channel is on, and carries the **Show terminal** switch.
+- **Bubbles:** what the agent says on the left, what was written to it on the right as "You": your own messages,
+  the first message the agent was started with, the meeting's and own-time's messages, and relays from the Support
+  agent. Nothing is lost: a tab shows its agent's messages from the very first one, even those sent before the tab
+  appeared.
+- **Clickable options:** a question shows one button per option, with its description. One click answers a
+  single question. "Something else" lets you type your own answer in the message box; Send then answers with it
+  (transcript words the box holds go with that answer and are no longer held). A prompt with several questions, or
+  one that takes several picks, is answered with **Send answers** once each question has a pick (several picks go as
+  one answer, joined with commas). While an answer is on its way, its buttons are greyed out; once answered, they
+  stay greyed out and your pick stays highlighted.
+- **Permission prompts** ("Asks permission") show the tool and what it would run, with **Allow** and **Deny**. A
+  question or prompt Claude Code repeats is shown, and answered, once.
+- **The message box:** Enter or Send writes one chat message to the agent. A message that cannot be sent, an answer
+  that is refused, an error the agent reports, a turn that ends in error, or a message Grillo cannot read shows as a
+  red note in the chat; the agent carries on.
+- **Show terminal** reveals the agent's raw event stream (one JSON line per event, as Claude Code printed it) under
+  the chat, read-only: a chat agent has no terminal to type into. Questions and permission prompts are highlighted,
+  prompts written into the agent and tool results have colours of their own. Only the newest 2000 lines are kept,
+  on screen as in memory.
+- **Open channel:** while the session holds live transcript words for the agent, they are added to the end of the
+  message box as they are spoken, and "Channel open · receiving the transcript live" shows in the head only while
+  the channel is open. On a grilling agent the line "Use it sends what the message box shows, your edits included,
+  as one message…" shows under the box; other agents have no Use it, so they show no such line. The box stays yours
+  on every agent tab: edit it and press **Send** to send all of it as one message, and the words it showed are no
+  longer held (words spoken since stay held for the next message). On the meeting's grilling agent, **Use it** (or
+  any other meeting control: skip, jump, Listen or Type, presence) sends exactly what the box shows, your edits
+  included, with the control line on its own last line, as one chat message; then the box is empty and none of
+  those words are held any more. Words spoken after your last edit are added to the box and go with it. Line breaks
+  between transcript slices show as spaces in the one-line box and are sent as line breaks. On other agents, which
+  have no Use it, a meeting message (the session line) takes only the held words, and they leave the box; what you
+  typed yourself stays. Closing the channel or ending the session keeps any held words in the box, ready to send
+  or delete.
+
+### Agent chat protocol (release 2)
+
+The chat view's engine, and what every agent tab runs on under the chat runtime. Its `agent-chat:*` channels take a
+tab's id, since the tab and its chat agent share it; stop a tab with `agents:stop`, which also takes it off the tab
+bar. While a chat agent's Open channel holds transcript words, main sends them on `session:held` (`''` once sent);
+`session:sendBox` sends the message box with the held words it showed, so they are never sent twice;
+`session:editBox` keeps a grilling agent's box as the member edits it, so a meeting control sends what the box shows
+(`session:held` then carries `sent: true` and the view empties the box); `session:releaseHeld` forgets the box when
+an answer took it.
 
 - **A chat agent is your own `claude` with no terminal**, started in the project folder with fixed flags:
   `claude -p --input-format stream-json --output-format stream-json --verbose --permission-prompt-tool stdio

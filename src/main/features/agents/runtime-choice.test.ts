@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { agentRuntimeChoice, AGENT_RUNTIME_VARIABLE, DEFAULT_AGENT_RUNTIME } from './runtime-choice';
 
 describe('agent runtime choice', () => {
-  it('is the terminal agent when nothing is set, until the chat view lands', () => {
+  it('is the terminal agent when nothing is set, until the terms check allows chat', () => {
     expect(DEFAULT_AGENT_RUNTIME).toBe('terminal');
     expect(agentRuntimeChoice({}, vi.fn())).toBe('terminal');
   });

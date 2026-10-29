@@ -79,7 +79,7 @@ export function createChatAgentRuntime(deps: ChatAgentRuntimeDeps): AgentRuntime
       assertValidStartRequest(request);
       const { kind, folder, title, firstMessage } = request;
       const id = await deps.driver.startChatAgent({ kind, folder, firstMessage });
-      agents.set(id, { id, kind, title, folder, waiting: false });
+      agents.set(id, { id, kind, title, folder, waiting: false, runtime: 'chat' });
       announce();
       return id;
     },

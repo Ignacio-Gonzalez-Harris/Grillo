@@ -4,6 +4,7 @@
  * `createSessionClient`, which turns a refusal back into a `SessionError`, as the store client does.
  */
 import type { SessionHost } from '../main/features/session/session';
+import type { AgentId } from './agents';
 import type { GrilloApi } from './ipc';
 import { SessionError, type SessionErrorKind, type SessionState } from './session';
 
@@ -16,6 +17,9 @@ export const SESSION_METHODS = [
   'setChannel',
   'channels',
   'tellSession',
+  'sendBox',
+  'releaseHeld',
+  'editBox',
   'useIt',
   'typeMode',
   'typePresent',
@@ -53,6 +57,11 @@ declare module './ipc' {
   interface EventChannels {
     /** The session after a change: a call, a transcribed slice; null once it has ended. */
     'session:changed': SessionState | null;
+    /**
+     * The live transcript words a chat agent's open channel holds for its next message; '' once none are held, with
+     * `sent` true when a protocol message (Use it, skip, …) took the whole message box.
+     */
+    'session:held': { agentId: AgentId; text: string; sent: boolean };
   }
 }
 

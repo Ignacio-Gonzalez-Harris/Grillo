@@ -148,7 +148,7 @@ describe('agent IPC channels over the chosen runtime', () => {
     expect(chats).toHaveLength(2);
     expect(ptys).toEqual([]);
     await expect(grillo.invoke('agents:list', undefined)).resolves.toEqual(
-      ids.map((id) => ({ id, kind: 'task', title: request.title, folder: request.folder, waiting: false })),
+      ids.map((id) => ({ id, kind: 'task', title: request.title, folder: request.folder, waiting: false, runtime: 'chat' })),
     );
   });
 
