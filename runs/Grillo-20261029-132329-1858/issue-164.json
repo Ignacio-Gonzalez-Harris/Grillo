@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261029-132329-1858",
+  "issue": 164,
+  "title": "Agent tabs start in the plain terminal until the chat view lands",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-29T13:24:44Z",
+  "finished_at": "2026-10-29T13:33:09Z",
+  "outcome": "merged",
+  "pr": 168,
+  "summary": "Agent tabs open as the plain Claude Code terminal again when nothing is configured; the chat runtime is one setting away (GRILLO_AGENT_RUNTIME=chat).",
+  "agents": [
+    {
+      "name": "dev-164",
+      "model": "opus",
+      "tokens_total": 108720
+    },
+    {
+      "name": "review-164",
+      "model": "opus",
+      "tokens_total": 90731
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 332,
+    "review_seconds": 85,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

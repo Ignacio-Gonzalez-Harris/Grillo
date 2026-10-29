@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261029-132329-1858",
+  "issue": 96,
+  "title": "Support agent tab screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-29T13:24:44Z",
+  "finished_at": "2026-10-29T13:43:57Z",
+  "outcome": "merged",
+  "pr": 170,
+  "summary": "The tab bar always shows a Support tab first among agent tabs; it starts /grillo-support in the project and posts the support agent's relay requests into the named tab (chat runtime only).",
+  "agents": [
+    {
+      "name": "dev-96",
+      "model": "opus",
+      "tokens_total": 208575
+    },
+    {
+      "name": "review-96",
+      "model": "opus",
+      "tokens_total": 139223
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 664,
+    "review_seconds": 337,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/agent-tab/",
+      "what": "The prototype screen-support-agent-tab's third state (the 'Relayed to …' note with Back to Support in the target tab, and the 'from Support, for <member>' badge on the relayed bubble) is built nowhere and no open story names it, so it silently never ships; issue #94 (chat view) implements screen-chat-view, which has neither.",
+      "why": "A note in the target tab needs a controls slot on agent tabs that does not open a fixed side column on every tab: a change to the agent-tab seam, outside a story that must touch no shared file.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

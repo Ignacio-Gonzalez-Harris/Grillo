@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261029-132329-1858",
+  "issue": 96,
+  "title": "Support agent tab screen",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 170,
+  "merged_at": "2026-10-29T13:43:57Z",
+  "merge_commit": "e0c2d20f884e32dcaf2926973f7e1a1be846d90d",
+  "seam": "src/renderer/screens/support-agent/",
+  "story": "The tab bar now always shows a Support tab first among the agent tabs. The first press starts the support agent with /grillo-support in the project folder and opens its agent tab, which then stays first. When that agent writes a relay request, Grillo posts the message into the named tab, marked 'from Support, for' the member (chat runtime only). Before this, the support skill could only be run by hand, and nothing read its relay requests.",
+  "checks": [
+    {
+      "key": "support-agent/tab-bar-first",
+      "criterion": "Support is always on the tab bar as the first agent tab.",
+      "steps": "Start Grillo with no agent running and look at the tab bar. Then open '+', start a generic agent named 'Sample note', and look again.",
+      "expected": "'Setup · Project · Map · Tickets · PRD · Support · +'. After that: '… PRD · Support · Generic · Sample note · +'."
+    },
+    {
+      "key": "support-agent/first-open-starts",
+      "criterion": "Opening Support the first time starts /grillo-support through the agent tab.",
+      "steps": "Open a made-up test project, press Support, then press it again.",
+      "expected": "The card 'Opening the Support tab: Grillo starts the support agent with /grillo-support.' appears briefly, then the agent tab named 'Support' opens, still first, with its Channel switch. The second press opens the same agent; no second Support tab appears."
+    },
+    {
+      "key": "support-agent/no-project",
+      "criterion": "No project means nothing starts.",
+      "steps": "Start Grillo with an empty user-data folder and press Support.",
+      "expected": "Support is highlighted, and a yellow note says 'Open a project from the Project tab to start the support agent in it.' No agent tab appears."
+    },
+    {
+      "key": "support-agent/relay",
+      "criterion": "A relay is posted into the target tab, marked for the member.",
+      "steps": "Start Grillo with GRILLO_AGENT_RUNTIME=chat in a made-up test project and start a grilling agent. In Support, ask it to tell that tab 'Sample message', then choose Send.",
+      "expected": "The target tab gets '[from Support, for <your login>] Sample message', and the support agent says the message was posted."
+    }
+  ],
+  "no_qa_reason": null
+}

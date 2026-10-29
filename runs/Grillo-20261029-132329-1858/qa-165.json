@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261029-132329-1858",
+  "issue": 165,
+  "title": "Domain tags changed by hand on the tickets screen are overwritten by the next tagging round",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 169,
+  "merged_at": "2026-10-29T13:39:22Z",
+  "merge_commit": "e80c6b6a21a824217f6da3f30c7576453a58bb37",
+  "seam": "src/renderer/screens/tickets/",
+  "story": "Adding or removing a domain tag on the tickets screen used to change only the labels, so the next tagging round could overwrite them. Now each change also leaves the hidden tags-by-hand comment, and rounds keep those tags. Removing the last domain now leaves 'no domain' instead of an untagged ticket; removing 'no domain' untags the ticket and hands it back to the tagging round.",
+  "checks": [
+    {
+      "key": "tickets/hand-tag-survives-round",
+      "criterion": "A domain tag added by hand on the tickets screen survives a later tagging round.",
+      "steps": "Open a made-up test project with a map, two open tickets and members who declared product and platform. Open the tickets screen and open 'Sample ticket 1'. In 'Add a domain…', pick platform. On the map screen, press 'Run tagging round' and wait until the agent goes quiet.",
+      "expected": "'Sample ticket 1' still shows only platform, and the other ticket got a domain from the round. In GitHub, 'Sample ticket 1' has a comment starting <!-- grillo:tags-by-hand --> with 'domains: platform'."
+    },
+    {
+      "key": "tickets/remove-last-domain",
+      "criterion": "Removing the last domain tag writes the marker with 'no domain'.",
+      "steps": "On a ticket tagged only platform, press the × on platform.",
+      "expected": "The tags row shows 'no domain'. In GitHub the ticket carries domain:none, and its newest tags-by-hand comment says 'domains: none'."
+    },
+    {
+      "key": "tickets/remove-no-domain-hands-back",
+      "criterion": "Removing 'no domain' hands the ticket back to the tagging round.",
+      "steps": "On a ticket tagged 'no domain', press its ×, then run a tagging round.",
+      "expected": "The ticket shows 'untagged' straight away, and every tags-by-hand comment on it is gone in GitHub. After the round, the ticket has whatever tag the round chose."
+    }
+  ],
+  "no_qa_reason": null
+}

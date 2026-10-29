@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261029-132329-1858",
+  "issue": 164,
+  "title": "Agent tabs start in the plain terminal until the chat view lands",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 168,
+  "merged_at": "2026-10-29T13:33:09Z",
+  "merge_commit": "3e20091dfb24babbc1460685a4e0afaea27d34dd",
+  "seam": "src/main/features/agents/",
+  "story": "Agent tabs open as the plain Claude Code terminal again when nothing is configured, instead of the chat agent that issue #156 made the default. The chat agent now needs GRILLO_AGENT_RUNTIME=chat. Typing into a tab, answering clickable options and permission prompts on screen, and live transcript lines in the input box during a meeting work again.",
+  "checks": [
+    {
+      "key": "agents/default-runtime-terminal",
+      "criterion": "With GRILLO_AGENT_RUNTIME unset, a new agent tab runs Claude Code in a terminal, and its type box reaches the agent.",
+      "steps": "Make sure GRILLO_AGENT_RUNTIME is not set. Start Grillo and open a made-up demo project. Launch a task agent on any open task ticket. Type \"hello sample\" in the agent tab and press Enter.",
+      "expected": "The tab shows Claude Code's own terminal screen, not JSON event lines. The typed text shows in Claude Code's input, and its trust or permission prompts can be answered from the tab."
+    },
+    {
+      "key": "agents/runtime-chat-opt-in",
+      "criterion": "GRILLO_AGENT_RUNTIME=chat still starts the chat runtime, and an unknown value keeps the default and warns.",
+      "steps": "Set GRILLO_AGENT_RUNTIME=chat, start Grillo and launch a task agent. Quit Grillo, set GRILLO_AGENT_RUNTIME=termnial, start Grillo again and launch a task agent.",
+      "expected": "With chat, the tab shows raw JSON event lines and typing does nothing. With termnial, the tab is a normal terminal and the main-process log warns, naming GRILLO_AGENT_RUNTIME and the terminal runtime."
+    },
+    {
+      "key": "session/open-channel-live-transcript",
+      "criterion": "The live session's Open channel delivers transcript slices as they are spoken, on the default runtime.",
+      "steps": "Leave GRILLO_AGENT_RUNTIME unset and start a grilling session on a made-up project. Turn the recording on, open the channel to the grilling agent and speak a sample sentence.",
+      "expected": "Each spoken slice appears as a line in the agent's input box within seconds, without Enter."
+    }
+  ],
+  "no_qa_reason": null
+}

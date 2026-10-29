@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261029-132329-1858",
+  "issue": 165,
+  "title": "Domain tags changed by hand on the tickets screen are overwritten by the next tagging round",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-29T13:24:44Z",
+  "finished_at": "2026-10-29T13:39:22Z",
+  "outcome": "merged",
+  "pr": 169,
+  "summary": "A domain tag added or removed by hand on the tickets screen now also writes the tags-by-hand marker, so later tagging rounds keep it; removing the last domain leaves 'no domain'.",
+  "agents": [
+    {
+      "name": "dev-165",
+      "model": "opus",
+      "tokens_total": 168726
+    },
+    {
+      "name": "review-165",
+      "model": "opus",
+      "tokens_total": 132418
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 455,
+    "review_seconds": 272,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}
