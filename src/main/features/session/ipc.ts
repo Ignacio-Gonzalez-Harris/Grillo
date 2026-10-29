@@ -11,7 +11,7 @@ import { createSessionHost, type SessionHost } from './session';
 
 /**
  * The live grilling session on IPC: the app's one store, the captured slices, whisper.cpp with the speech model the
- * transcription feature prepares, and the agent runtime the session types into.
+ * transcription feature prepares, and the agent runtime the session types or sends into.
  */
 export function register({ ipc, settings }: FeatureContext): void {
   const engine = createWhisperEngine({ modelPath: speechModelPathIn(app.getPath('userData')) });
@@ -22,7 +22,11 @@ export function register({ ipc, settings }: FeatureContext): void {
     slices: audioSlices,
     transcriber: announcingTranscriber(createTranscriber(engine), changed),
     agents: {
+      get choice() {
+        return appAgentRuntime().choice;
+      },
       write: (id, text) => appAgentRuntime().write(id, text),
+      send: (id, text) => appAgentRuntime().send(id, text),
       list: () => appAgentRuntime().list(),
     },
   });

@@ -24,15 +24,7 @@
 .setup-check table + p { margin: var(--space-2) 0 0; }
 .setup-check th { font-size: var(--font-size-s); color: var(--color-text-muted); font-weight: var(--font-weight-strong); white-space: nowrap; }
 
-/* ---------- Update card ---------- */
-.setup-check .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
-.setup-check .seg { display: inline-flex; justify-self: start; flex-wrap: wrap; padding: var(--space-0); gap: var(--space-0); border-radius: var(--radius-pill); background: var(--color-disabled-fill); }
-.setup-check .seg button { font: inherit; border: 0; background: none; padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-muted); cursor: pointer; min-height: var(--size-switch-height); }
-.setup-check .seg button[aria-pressed="true"] { background: var(--color-glass-fill-strong-fallback); color: var(--color-text); font-weight: var(--font-weight-strong); box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow); }
-.setup-check .seg button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
-
 /* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
 @media (max-width: 760px) {
-  .setup-check .grid-2 { grid-template-columns: minmax(0, 1fr); }
   .setup-check .rows .grow { flex-basis: 100%; }
 }

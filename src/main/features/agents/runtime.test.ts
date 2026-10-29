@@ -243,6 +243,25 @@ describe('agent runtime', () => {
     expect(steps).toEqual([]);
   });
 
+  it('is the terminal runtime, and sends a whole message as typed text, then Enter as a write of its own', async () => {
+    const { runtime, ptys } = setup();
+    const id = await runtime.startAgent({ ...request, firstMessage: '' });
+
+    await runtime.send(id, 'Sample transcript line\nuse it');
+
+    expect(runtime.choice).toBe('terminal');
+    expect(ptys[0].written).toEqual(['Sample transcript line\nuse it', '\r']);
+  });
+
+  it('refuses to send an empty message or to an unknown agent, typing nothing', async () => {
+    const { runtime, ptys } = setup();
+    const id = await runtime.startAgent({ ...request, firstMessage: '' });
+
+    await expect(runtime.send(id, '')).rejects.toThrow('A message cannot be empty');
+    await expect(runtime.send('no-such-agent', 'x')).rejects.toThrow("No agent with id 'no-such-agent'");
+    expect(ptys[0].written).toEqual([]);
+  });
+
   it.each([
     [0, 24],
     [80, -1],

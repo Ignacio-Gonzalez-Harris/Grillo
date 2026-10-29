@@ -3,7 +3,11 @@ import { createGrilloApi } from '../../../preload/bridge';
 import type { AgentInfo, StartAgentRequest } from '../../../shared/agents';
 import { createMainIpc } from '../../ipc/bridge';
 import { createFakeIpc } from '../../ipc/fake-ipc';
-import { registerAgentChannels } from './channels';
+import type { AgentRuntimeChoice } from '../../../shared/agents';
+import { createClaudeChatDriver } from '../agent-chat/driver';
+import { createChatEventHub } from '../agent-chat/event-hub';
+import { FakeChatProcess } from '../agent-chat/fake-process';
+import { registerAgentChannels, registerChosenAgentChannels } from './channels';
 import { FakePty } from './fake-pty';
 
 const request: StartAgentRequest = {
@@ -71,5 +75,71 @@ describe('agent IPC channels', () => {
     ptys[0].exit(2);
 
     expect(exits).toEqual([{ id, exitCode: 2 }]);
+  });
+});
+
+/** The channels over the chosen runtime, with both kinds of Claude Code faked, so a hidden second one would show. */
+function connectChosen(choice: AgentRuntimeChoice) {
+  const fake = createFakeIpc();
+  const ptys: FakePty[] = [];
+  const chats: FakeChatProcess[] = [];
+  const hub = createChatEventHub();
+  const tools = { findClaude: () => '/opt/made-up/bin/claude', shipSkills: async () => undefined, env: {} };
+  const driver = createClaudeChatDriver({
+    ...tools,
+    spawnProcess: (file, args, options) => {
+      const process = new FakeChatProcess(file, args, options);
+      chats.push(process);
+      return process;
+    },
+    events: hub.events,
+  });
+  registerChosenAgentChannels(createMainIpc(fake.main, () => [fake.window]), choice, {
+    terminal: {
+      ...tools,
+      spawnPty: (file, args, options) => {
+        const pty = new FakePty(file, args, options);
+        ptys.push(pty);
+        return pty;
+      },
+    },
+    chat: { driver, observe: hub.observe },
+  });
+  return { grillo: createGrilloApi(fake.renderer), ptys, chats };
+}
+
+describe('agent IPC channels over the chosen runtime', () => {
+  it('runs exactly one chat Claude Code per tab under chat, and no terminal beside it', async () => {
+    const { grillo, ptys, chats } = connectChosen('chat');
+
+    const ids = [await grillo.invoke('agents:start', request), await grillo.invoke('agents:start', request)];
+
+    expect(chats).toHaveLength(2);
+    expect(ptys).toEqual([]);
+    await expect(grillo.invoke('agents:list', undefined)).resolves.toEqual(
+      ids.map((id) => ({ id, kind: 'task', title: request.title, folder: request.folder, waiting: false })),
+    );
+  });
+
+  it('runs exactly one terminal Claude Code per tab under terminal, and no chat process beside it', async () => {
+    const { grillo, ptys, chats } = connectChosen('terminal');
+
+    await grillo.invoke('agents:start', request);
+    await grillo.invoke('agents:start', request);
+
+    expect(ptys).toHaveLength(2);
+    expect(chats).toEqual([]);
+  });
+
+  it('sends one whole message from the renderer as one chat message, and rejects one for an unknown tab', async () => {
+    const { grillo, chats } = connectChosen('chat');
+    const id = await grillo.invoke('agents:start', request);
+
+    await grillo.invoke('agents:send', { id, text: 'Sample message' });
+
+    expect(chats[0].writtenEvents.filter((event) => (event as { type?: string }).type === 'user')).toEqual([
+      { type: 'user', message: { role: 'user', content: 'Sample message' } },
+    ]);
+    await expect(grillo.invoke('agents:send', { id: 'no-such-tab', text: 'x' })).rejects.toThrow('No agent with id');
   });
 });

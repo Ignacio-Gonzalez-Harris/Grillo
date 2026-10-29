@@ -1,15 +1,31 @@
 import type { MainIpc } from '../../ipc/bridge';
-import { createClaudeChatDriver, type ChatDriver, type ChatDriverDeps } from './driver';
+import { createClaudeChatDriver, type ChatDriver, type ChatDriverDeps, type ChatDriverEvents } from './driver';
 import { relay } from './relay';
 
-/** Builds the chat driver with its events sent to the renderer, and answers the renderer's agent chat channels. */
-export function registerAgentChatChannels(ipc: MainIpc, deps: Omit<ChatDriverDeps, 'events'>): ChatDriver {
+/**
+ * Builds the chat driver with its events sent to the renderer, and to `also` when given (the agent runtime, which
+ * shows the driver's agents as tabs), and answers the renderer's agent chat channels.
+ */
+export function registerAgentChatChannels(
+  ipc: MainIpc,
+  deps: Omit<ChatDriverDeps, 'events'>,
+  also?: ChatDriverEvents,
+): ChatDriver {
   const driver = createClaudeChatDriver({
     ...deps,
     events: {
-      message: (id, message) => ipc.send('agent-chat:message', { id, message }),
-      raw: (id, line) => ipc.send('agent-chat:raw', { id, line }),
-      exited: (id, exitCode) => ipc.send('agent-chat:exited', { id, exitCode }),
+      message: (id, message) => {
+        ipc.send('agent-chat:message', { id, message });
+        also?.message(id, message);
+      },
+      raw: (id, line) => {
+        ipc.send('agent-chat:raw', { id, line });
+        also?.raw(id, line);
+      },
+      exited: (id, exitCode) => {
+        ipc.send('agent-chat:exited', { id, exitCode });
+        also?.exited(id, exitCode);
+      },
     },
   });
 
