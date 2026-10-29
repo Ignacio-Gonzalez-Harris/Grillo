@@ -1,0 +1,20 @@
+{
+  "run_id": "Grillo-20261029-140012-b95f",
+  "issue": 116,
+  "title": "Mac: the installed app cannot find Claude Code or gh when opened from Finder (login-shell PATH at startup)",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 172,
+  "merged_at": "2026-10-29T14:19:19Z",
+  "merge_commit": "e7229db72625835d5adf3a42bd300a02e423e085",
+  "seam": "src/main/app/",
+  "story": "A member on a Mac opens Grillo from the Dock or Finder. Before this story the app only saw the short system PATH, so the setup check could not find Claude Code or gh and agents failed to start. Grillo now reads the same PATH as the member's Terminal once at startup, so the setup check and agent tabs find their tools; Windows is unchanged.",
+  "checks": [
+    {
+      "key": "src/main/app/startup-path",
+      "criterion": "Opened from Finder on a Mac, Grillo finds Claude Code and gh",
+      "steps": "On a Mac with Claude Code installed in ~/.local/bin and gh installed with Homebrew, open the installed Grillo from Finder (not from a Terminal). Look at the setup check, then open a sample agent tab in a made-up project.",
+      "expected": "The setup check shows both Claude Code and gh as found, and the agent tab starts Claude Code instead of failing to find it."
+    }
+  ],
+  "no_qa_reason": null
+}

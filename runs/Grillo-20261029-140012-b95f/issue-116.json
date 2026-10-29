@@ -1,0 +1,22 @@
+{
+  "run_id": "Grillo-20261029-140012-b95f",
+  "issue": 116,
+  "title": "Mac: the installed app cannot find Claude Code or gh when opened from Finder (login-shell PATH at startup)",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-29T14:00:12Z",
+  "finished_at": "2026-10-29T14:20:30Z",
+  "outcome": "merged",
+  "pr": 172,
+  "summary": "On macOS, Grillo now reads the member's login-shell PATH once at startup (5-second limit, before features register) and merges it into the PATH its child processes inherit, so Claude Code and gh are found when the app opens from Finder; any shell failure keeps the old PATH and logs one warning. 25 fake-shell tests; no Mac was available, so the real Finder launch is left to the release-1 demo walkthrough (issue #101).",
+  "agents": [
+    { "name": "dev-116", "model": "opus", "tokens_total": 95796 },
+    { "name": "review-116", "model": "opus", "tokens_total": 107092 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 294, "review_seconds": 242, "ci_seconds": 507 },
+  "rounds": { "review": 1, "ci": 1 },
+  "friction": [],
+  "lessons_learned": [
+    "A gate run in a background Bash call ran in the main checkout, not the worktree, and reported a green result for the wrong code (97 files instead of 98); put the `cd <worktree> &&` inside the `with-gate-lock.sh ... bash -c '...'` string and print `pwd` and `git rev-parse HEAD` first, then check vitest's RUN line names the worktree"
+  ],
+  "deferred": []
+}
