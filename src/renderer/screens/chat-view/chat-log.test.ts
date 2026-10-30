@@ -70,6 +70,10 @@ describe('chat log: every chat agent message from the moment Grillo starts, for 
     ['a permission with no id', { type: 'permission', toolName: 'Bash', input: {}, description: '' }],
     ['a permission whose input is null', { type: 'permission', id: 'p-1', toolName: 'Bash', input: null, description: '' }],
     ['a result with no error flag', { type: 'result', text: 'Done' }],
+    ['an answer with no id', { type: 'answered' }],
+    ['a cancel whose id is empty', { type: 'cancelled', id: '' }],
+    ['a cancel whose id is null', { type: 'cancelled', id: null }],
+    ['a failed end with no message', { type: 'failed' }],
   ])('turns %s into the one error the view shows, and carries on', (_case, message) => {
     const { grillo, send } = fakeGrillo();
     const log = createChatLog(grillo);
@@ -101,6 +105,21 @@ describe('chat log: every chat agent message from the moment Grillo starts, for 
     expect(view.raw).toEqual([]);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
+  });
+
+  it('hands on what the agent is doing: an answer sent, a withdrawn request, work, a failed end', () => {
+    const { grillo, send } = fakeGrillo();
+    const log = createChatLog(grillo);
+    const status: ChatMessage[] = [
+      { type: 'answered', id: 'q-1' },
+      { type: 'cancelled', id: 'p-1' },
+      { type: 'working' },
+      { type: 'failed', message: 'Claude Code stopped with exit code 1.' },
+    ];
+
+    for (const message of status) send('agent-chat:message', { id: 'a-1', message });
+
+    expect(follow(log, 'a-1').messages).toEqual(status);
   });
 
   it('shows a question or permission Claude Code repeats only once, so it is never answered twice', () => {

@@ -59,6 +59,11 @@ async function started(overrides: Partial<ChatDriverDeps> = {}) {
   return { ...context, id, process, initializeId };
 }
 
+/** A clickable-options question with its own request id. */
+function questionLine(requestId: string): string {
+  return recorded.questionRequest.replace(QUESTION_REQUEST_ID, requestId);
+}
+
 function controlResponse(requestId: string, response: unknown) {
   return { type: 'control_response', response: { subtype: 'success', request_id: requestId, response } };
 }
@@ -259,7 +264,7 @@ describe('chat driver: questions and permissions', () => {
     const result = driver.answer(QUESTION_REQUEST_ID, 'Blue');
     const again = driver.answer(QUESTION_REQUEST_ID, 'Red');
 
-    expect(only(id).at(-1)).toEqual({ type: 'question', id: QUESTION_REQUEST_ID, questions: QUESTION_INPUT.questions });
+    expect(only(id).at(-2)).toEqual({ type: 'question', id: QUESTION_REQUEST_ID, questions: QUESTION_INPUT.questions });
     expect(result).toEqual({ ok: true });
     expect(process.writtenEvents).toEqual([
       controlResponse(QUESTION_REQUEST_ID, {
@@ -277,7 +282,7 @@ describe('chat driver: questions and permissions', () => {
     const allowed = driver.allow(PERMISSION_REQUEST_ID);
     const deniedAfter = driver.deny(PERMISSION_REQUEST_ID);
 
-    expect(only(id).at(-1)).toEqual({
+    expect(only(id).at(-2)).toEqual({
       type: 'permission',
       id: PERMISSION_REQUEST_ID,
       toolName: 'Write',
@@ -395,7 +400,7 @@ describe('chat driver: questions and permissions', () => {
     driver.allow(PERMISSION_REQUEST_ID);
     process.emit(recorded.permissionRequest);
 
-    expect(only(id).slice(1).map((m) => m.type)).toEqual(['permission', 'error', 'error']);
+    expect(only(id).slice(1).map((m) => m.type)).toEqual(['permission', 'error', 'answered', 'error']);
     expect(process.writtenEvents).toHaveLength(1);
     expect(driver.allow(PERMISSION_REQUEST_ID).ok).toBe(false);
   });
@@ -460,11 +465,185 @@ describe('chat driver: typing, stopping and exits', () => {
     driver.stop(id);
     driver.stop(id);
     processes[0].emit(recorded.assistantText('late'));
-    processes[0].exit(0);
+    processes[0].printError('late error\n');
+    processes[0].exit(1);
     driver.stopAll();
 
     expect(processes.map((p) => p.stopped)).toEqual([true, true]);
     expect(messages).toHaveLength(count);
     expect(exits).toEqual([]);
+  });
+
+  it('says whether a stop ended a running agent', async () => {
+    const { id, driver } = await started();
+
+    expect(driver.stop(id)).toBe(true);
+    expect(driver.stop(id)).toBe(false);
+    expect(driver.stop('no-such-agent')).toBe(false);
+  });
+});
+
+describe('chat driver: what the agent is doing after an answer', () => {
+  it('says the agent works on once the member answers, allows or denies', async () => {
+    const { id, driver, process, only } = await started();
+    process.emit(recorded.questionRequest, recorded.permissionRequest);
+
+    driver.answer(QUESTION_REQUEST_ID, 'Blue');
+    driver.allow(PERMISSION_REQUEST_ID);
+    process.emit(questionLine('q-2'), recorded.permissionRequest.replace(PERMISSION_REQUEST_ID, 'p-2'));
+    driver.deny('q-2');
+    driver.deny('p-2');
+
+    expect(only(id).filter(({ type }) => type === 'answered')).toEqual([
+      { type: 'answered', id: QUESTION_REQUEST_ID },
+      { type: 'answered', id: PERMISSION_REQUEST_ID },
+      { type: 'answered', id: 'q-2' },
+      { type: 'answered', id: 'p-2' },
+    ]);
+  });
+
+  it('says nothing more for an answer it refuses', async () => {
+    const { id, driver, process, only } = await started();
+    process.emit(recorded.questionRequest);
+    const before = only(id).length;
+
+    driver.answer(QUESTION_REQUEST_ID, '');
+    driver.allow(QUESTION_REQUEST_ID);
+    driver.answer('no-such-request', 'Blue');
+
+    expect(only(id)).toHaveLength(before);
+  });
+
+  it('counts tool events as work: one working message once the agent waited, none while it already works', async () => {
+    const { id, process, only } = await started();
+
+    process.emit(recorded.assistantToolUse, recorded.toolResult);
+    expect(only(id).slice(1)).toEqual([]);
+
+    process.emit(recorded.result('Sample turn end'), recorded.assistantToolUse, recorded.toolResult, recorded.assistantToolUse);
+    expect(only(id).slice(1)).toEqual([{ type: 'result', isError: false, text: 'Sample turn end' }, { type: 'working' }]);
+  });
+
+  it('counts a sub-agent message as work once the agent waited', async () => {
+    const { id, process, only } = await started();
+
+    process.emit(
+      recorded.questionRequest,
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Sub' }] }, parent_tool_use_id: 'toolu_x' }),
+    );
+
+    expect(only(id).at(-1)).toEqual({ type: 'working' });
+  });
+});
+
+describe('chat driver: questions Claude Code withdraws', () => {
+  it('drops a cancelled question or permission, so it can no longer be answered, and says so once', async () => {
+    const { id, driver, process, only } = await started();
+    process.emit(recorded.questionRequest, recorded.permissionRequest);
+
+    process.emit(recorded.cancelRequest(QUESTION_REQUEST_ID), recorded.cancelRequest(PERMISSION_REQUEST_ID));
+
+    expect(only(id).slice(-2)).toEqual([
+      { type: 'cancelled', id: QUESTION_REQUEST_ID },
+      { type: 'cancelled', id: PERMISSION_REQUEST_ID },
+    ]);
+    expect(driver.answer(QUESTION_REQUEST_ID, 'Blue').ok).toBe(false);
+    expect(driver.allow(PERMISSION_REQUEST_ID).ok).toBe(false);
+    expect(process.written).toEqual([]);
+  });
+
+  it("ignores a repeated cancel, and a cancel that crossed the member's answer", async () => {
+    const { id, driver, process, only } = await started();
+    process.emit(recorded.questionRequest, recorded.permissionRequest);
+    driver.answer(QUESTION_REQUEST_ID, 'Blue');
+    const before = only(id).length;
+
+    process.emit(
+      recorded.cancelRequest(QUESTION_REQUEST_ID),
+      recorded.cancelRequest(PERMISSION_REQUEST_ID),
+      recorded.cancelRequest(PERMISSION_REQUEST_ID),
+    );
+
+    expect(only(id).slice(before)).toEqual([{ type: 'cancelled', id: PERMISSION_REQUEST_ID }]);
+  });
+
+  const badCancels: Array<[string, string]> = [
+    ['a cancel with no id', '{"type":"control_cancel_request"}'],
+    ['a cancel with a null id', '{"type":"control_cancel_request","request_id":null}'],
+    ['a cancel with an empty id', '{"type":"control_cancel_request","request_id":""}'],
+    ['a cancel with a number for an id', '{"type":"control_cancel_request","request_id":7}'],
+    ['a cancel for a request never asked', recorded.cancelRequest('never-asked')],
+  ];
+
+  it.each(badCancels)('turns %s into one error message, keeping the open question', async (_name, line) => {
+    const { id, driver, process, only } = await started();
+    process.emit(recorded.questionRequest);
+    const before = only(id).length;
+
+    expect(() => process.emit(line)).not.toThrow();
+
+    expect(only(id).slice(before)).toEqual([{ type: 'error', message: expect.any(String) }]);
+    expect(driver.answer(QUESTION_REQUEST_ID, 'Blue').ok).toBe(true);
+  });
+
+  it("never lets one agent cancel another agent's question", async () => {
+    const { driver, processes, only } = await started();
+    const other = await driver.startChatAgent(request);
+    processes[0].emit(recorded.questionRequest);
+
+    processes[1].emit(recorded.cancelRequest(QUESTION_REQUEST_ID));
+
+    expect(only(other).at(-1)).toMatchObject({ type: 'error' });
+    expect(driver.answer(QUESTION_REQUEST_ID, 'Blue').ok).toBe(true);
+  });
+});
+
+describe("chat driver: Claude Code's own error text when it ends badly", () => {
+  it('shows the last lines of its error text, with the exit code, before reporting the end', async () => {
+    const { id, process, only, exits, messages } = await started();
+
+    process.printError("\u001b[31mError: unknown option '--made-up'\u001b[0m\r\n");
+    process.printError('Run claude --help for us');
+    process.printError('age.\n');
+    process.exit(1);
+
+    const failed = only(id).at(-1);
+    expect(failed).toEqual({ type: 'failed', message: expect.stringContaining('exit code 1') });
+    const text = (failed as { message: string }).message;
+    expect(text).toContain("Error: unknown option '--made-up'\nRun claude --help for usage.");
+    expect(text).not.toContain('\u001b');
+    expect(exits).toEqual([{ id, exitCode: 1 }]);
+    expect(messages.at(-1)?.message.type).toBe('failed');
+  });
+
+  it('keeps only the last lines of a long error text, each cut to a readable length', async () => {
+    const { id, process, only } = await started();
+
+    process.printError(Array.from({ length: 30 }, (_, n) => `made-up line ${n}`).join('\n'));
+    process.printError(`\n${'x'.repeat(5000)}\n`);
+    process.exit(2);
+
+    const text = (only(id).at(-1) as { message: string }).message;
+    expect(text).not.toContain('made-up line 20\n');
+    expect(text).toContain('made-up line 29');
+    expect(text.length).toBeLessThan(2000);
+  });
+
+  it('says it could not start when it ended with no exit code, and that it printed no error text', async () => {
+    const { id, process, only } = await started();
+
+    process.exit(null);
+
+    expect(only(id).at(-1)).toEqual({ type: 'failed', message: expect.stringMatching(/could not start.*no error text/s) });
+  });
+
+  it('says nothing more when it ends well, even after printing to its error text', async () => {
+    const { id, process, only } = await started();
+    process.printError('a made-up warning\n');
+    const before = only(id).length;
+
+    process.exit(0);
+
+    expect(only(id)).toHaveLength(before);
   });
 });

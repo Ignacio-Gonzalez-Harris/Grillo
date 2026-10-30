@@ -29,6 +29,8 @@ const OWN_ANSWER_PLACEHOLDER = 'Type your own answer, then Send…';
 const SOMETHING_ELSE = 'Something else';
 const SOMETHING_ELSE_HINT = 'Type your own answer in the message box.';
 const MEMBER = 'You';
+const QUESTION_WITHDRAWN = 'The agent withdrew this question.';
+const PERMISSION_WITHDRAWN = 'The agent withdrew this request.';
 /** The separator of several picks for one question, as Claude Code's own question prompt joins them. */
 const PICK_SEPARATOR = ', ';
 const LINE_BREAKS = /\r?\n/g;
@@ -150,6 +152,16 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
 
   // A question answered with "Something else": the next Send is its answer.
   let ownAnswer: { id: string; done(): void; failed(reason: string): void } | undefined;
+  /** How to take away the buttons of each question and permission shown, should Claude Code withdraw it. */
+  const withdrawals = new Map<string, () => void>();
+  /** Why Claude Code ended, when it ended badly: the tab says it once the chat has gone. */
+  let failure: string | undefined;
+
+  function forgetOwnAnswer(id: string): void {
+    if (ownAnswer?.id !== id) return;
+    ownAnswer = undefined;
+    input.placeholder = BOX_PLACEHOLDER;
+  }
 
   function questionBubble(id: string, questions: ChatQuestionItem[]): HTMLElement {
     const oneClick = questions.length === 1 && !questions[0].multiSelect;
@@ -163,10 +175,7 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
       });
       chosen.forEach((option) => option.setAttribute('aria-pressed', 'true'));
       sendAnswers.disabled = true;
-      if (ownAnswer?.id === id) {
-        ownAnswer = undefined;
-        input.placeholder = BOX_PLACEHOLDER;
-      }
+      forgetOwnAnswer(id);
     };
     const fail = (reason: string) => problem.replaceChildren(errorNote(`The answer was not sent: ${reason}`));
 
@@ -244,7 +253,14 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
       return [text(question), el('div', 'options', choices)];
     });
 
-    return bubble([name], [...blocks, ...(oneClick ? [] : [el('div', 'row', [sendAnswers])]), problem]);
+    const sendRow = oneClick ? [] : [el('div', 'row', [sendAnswers])];
+    withdrawals.set(id, () => {
+      blocks.filter((block) => block.classList.contains('options')).forEach((block) => block.remove());
+      sendRow.forEach((row) => row.remove());
+      forgetOwnAnswer(id);
+      problem.replaceChildren(el('p', 'small muted', [QUESTION_WITHDRAWN]));
+    });
+    return bubble([name], [...blocks, ...sendRow, problem]);
   }
 
   function permissionBubble(id: string, toolName: string, input: Record<string, unknown>, description: string) {
@@ -263,12 +279,17 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     };
     const allow = button('Allow', { small: true, variant: 'primary', onClick: () => void decide('agent-chat:allow', 'Allowed.') });
     const deny = button('Deny', { small: true, onClick: () => void decide('agent-chat:deny', 'Denied.') });
+    const choices = el('div', 'row', [allow, deny]);
+    withdrawals.set(id, () => {
+      choices.remove();
+      outcome.replaceChildren(el('p', 'small muted', [PERMISSION_WITHDRAWN]));
+    });
     return bubble(
       [name, badge('Asks permission', 'warn')],
       [
         el('p', 'chat-text', [`${toolName}: `, el('code', '', [toolSummary(input)])]),
         ...(description !== '' ? [el('p', 'small muted', [description])] : []),
-        el('div', 'row', [allow, deny]),
+        choices,
         outcome,
       ],
     );
@@ -288,6 +309,17 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
         return message.isError ? errorNote(`The agent's turn ended with an error: ${message.text}`) : undefined;
       case 'error':
         return errorNote(message.message);
+      case 'failed':
+        failure = message.message;
+        return el('p', 'note err small chat-text', [message.message]);
+      case 'cancelled':
+        withdrawals.get(message.id)?.();
+        withdrawals.delete(message.id);
+        return undefined;
+      case 'answered':
+        withdrawals.delete(message.id);
+        return undefined;
+      case 'working':
       case 'init':
         return undefined;
     }
@@ -454,6 +486,7 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
       input.value = value;
       reportEdit();
     },
+    endNote: () => failure,
     dispose() {
       disposed = true;
       stops.forEach((stop) => stop());

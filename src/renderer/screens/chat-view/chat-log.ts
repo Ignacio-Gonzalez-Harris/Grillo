@@ -84,8 +84,15 @@ function checked(value: unknown): ChatMessage | string {
         return { type: 'result', isError: m['isError'], text: m['text'] };
       }
       break;
+    case 'answered':
+    case 'cancelled':
+      if (isText(m['id']) && m['id'] !== '') return { type: m['type'], id: m['id'] };
+      break;
+    case 'working':
+      return { type: 'working' };
     case 'error':
-      if (isText(m['message'])) return { type: 'error', message: m['message'] };
+    case 'failed':
+      if (isText(m['message'])) return { type: m['type'], message: m['message'] };
       break;
     default:
       return `its type ${JSON.stringify(m['type']) ?? 'is missing'} is not one the chat view knows`;

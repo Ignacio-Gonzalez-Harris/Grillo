@@ -9,9 +9,20 @@ export const NO_EXIT_CODE = -1;
 /** A raw event line shown on the tab ends with a terminal line break. */
 const LINE_END = '\r\n';
 
-/** The chat messages after which the agent waits for the member (the tab's dot), and those that end the wait. */
-const WAITING_MESSAGES: ReadonlySet<string> = new Set(['result', 'question', 'permission']);
-const WORKING_MESSAGES: ReadonlySet<string> = new Set(['init', 'assistant', 'user']);
+/** The chat messages that open a request for the member, and those that settle one. */
+const REQUEST_MESSAGES: ReadonlySet<string> = new Set(['question', 'permission']);
+const SETTLED_MESSAGES: ReadonlySet<string> = new Set(['answered', 'cancelled']);
+/** The agent talks again, so every request it left open has gone by and its turn goes on. */
+const TALKING_MESSAGES: ReadonlySet<string> = new Set(['init', 'assistant', 'user']);
+
+/**
+ * What the tab's dot follows: the questions and permissions still waiting for the member, and whether the agent's
+ * turn has ended. The agent waits for the member while either holds.
+ */
+interface ChatStatus {
+  open: Set<string>;
+  turnOver: boolean;
+}
 
 export interface ChatAgentRuntimeDeps {
   /** The app's one chat driver, shared with the agent chat channels so the chat view reaches the tab's process. */
@@ -26,12 +37,31 @@ function messageType(message: unknown): string | undefined {
   return typeof message === 'object' && typeof type === 'string' ? type : undefined;
 }
 
+function requestId(message: unknown): string | undefined {
+  const id = (message as { id?: unknown }).id;
+  return typeof id === 'string' ? id : undefined;
+}
+
+/** Moves the status on by one chat message. */
+function advance(status: ChatStatus, type: string, message: unknown): void {
+  const id = requestId(message);
+  if (REQUEST_MESSAGES.has(type) && id !== undefined) status.open.add(id);
+  else if (SETTLED_MESSAGES.has(type) && id !== undefined) status.open.delete(id);
+  else if (type === 'result') status.turnOver = true;
+  else if (type === 'working') status.turnOver = false;
+  else if (TALKING_MESSAGES.has(type)) {
+    status.open.clear();
+    status.turnOver = false;
+  }
+}
+
 /**
  * The agent runtime over the chat driver (PRD section 4.6 item 1, issue 156): each tab is one chat agent, one
  * Claude Code process in machine-readable mode, and the tab's id is the chat agent's id. No terminal runs beside it.
  */
 export function createChatAgentRuntime(deps: ChatAgentRuntimeDeps): AgentRuntime {
   const agents = new Map<AgentId, AgentInfo>();
+  const statuses = new Map<AgentId, ChatStatus>();
 
   const announce = (): void => deps.events.listChanged(list());
 
@@ -47,9 +77,11 @@ export function createChatAgentRuntime(deps: ChatAgentRuntimeDeps): AgentRuntime
 
   function follow(id: AgentId, message: ChatMessage): void {
     const info = agents.get(id);
+    const status = statuses.get(id);
     const type = messageType(message);
-    if (!info || type === undefined) return;
-    const waiting = WAITING_MESSAGES.has(type) ? true : WORKING_MESSAGES.has(type) ? false : info.waiting;
+    if (!info || !status || type === undefined) return;
+    advance(status, type, message);
+    const waiting = status.turnOver || status.open.size > 0;
     if (waiting === info.waiting) return;
     info.waiting = waiting;
     announce();
@@ -61,6 +93,7 @@ export function createChatAgentRuntime(deps: ChatAgentRuntimeDeps): AgentRuntime
       if (agents.has(id) && typeof line === 'string') deps.events.output(id, line + LINE_END);
     },
     exited(id, exitCode) {
+      statuses.delete(id);
       if (!agents.delete(id)) return;
       deps.events.exited(id, typeof exitCode === 'number' ? exitCode : NO_EXIT_CODE);
       announce();
@@ -68,6 +101,7 @@ export function createChatAgentRuntime(deps: ChatAgentRuntimeDeps): AgentRuntime
   });
 
   function stop(id: AgentId): void {
+    statuses.delete(id);
     if (!agents.delete(id)) return;
     deps.driver.stop(id);
     announce();
@@ -80,6 +114,7 @@ export function createChatAgentRuntime(deps: ChatAgentRuntimeDeps): AgentRuntime
       const { kind, folder, title, firstMessage } = request;
       const id = await deps.driver.startChatAgent({ kind, folder, firstMessage });
       agents.set(id, { id, kind, title, folder, waiting: false, runtime: 'chat' });
+      statuses.set(id, { open: new Set(), turnOver: false });
       announce();
       return id;
     },

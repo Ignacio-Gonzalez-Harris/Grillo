@@ -8,7 +8,7 @@ const WINDOWS_SCRIPT = /\.(cmd|bat)$/i;
 export type SpawnChild = (file: string, args: string[], options: SpawnOptions) => ChildProcessWithoutNullStreams;
 
 /**
- * Starts `claude` with piped stdin and stdout. The arguments are the driver's fixed flags, never member input (the
+ * Starts `claude` with piped stdin, stdout and stderr (its own error text, which says why it failed to start). The arguments are the driver's fixed flags, never member input (the
  * messages go through stdin), so a `.cmd` shim may run through the shell with only its path quoted.
  */
 export function createSpawnChatProcess(
@@ -21,10 +21,15 @@ export function createSpawnChatProcess(
       cwd,
       env,
       shell: viaShell,
-      stdio: ['pipe', 'pipe', 'ignore'],
+      stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
     });
     child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    // Always read the error text, listened to or not: a full pipe would stall Claude Code.
+    const errorListeners: Array<(chunk: string) => void> = [];
+    const errorText = (chunk: string): void => errorListeners.forEach((listener) => listener(chunk));
+    child.stderr.on('data', errorText);
     // Writing after the process ended fails with EPIPE; the exit listener already reports the end.
     child.stdin.on('error', () => undefined);
 
@@ -37,10 +42,15 @@ export function createSpawnChatProcess(
     };
     // `close`, not `exit`: the last stdout line can arrive after the process has exited, and `close` waits for it.
     child.on('close', (code: number | null) => end(code));
-    child.on('error', () => end(null));
+    // A process that could not start has no error text of its own: Node's reason stands in for it.
+    child.on('error', (error: Error) => {
+      if (!ended) errorText(`${error.message}\n`);
+      end(null);
+    });
 
     const chatProcess: ChatProcess = {
       onStdout: (listener) => child.stdout.on('data', listener),
+      onStderr: (listener) => errorListeners.push(listener),
       onExit: (listener) => exitListeners.push(listener),
       write: (data) => child.stdin.write(data),
       stop: () => {

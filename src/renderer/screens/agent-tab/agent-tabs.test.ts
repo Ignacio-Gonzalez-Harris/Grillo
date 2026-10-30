@@ -209,6 +209,26 @@ describe('agent tab', () => {
     expect(content(root).textContent).toBe('This agent is not running.');
   });
 
+  it('says why the agent ended under "not running", when a panel can tell, and ignores a note that is not text', async () => {
+    const { grillo, startAgent } = runtime();
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const body: TabPanel = { kinds: 'all', slot: 'body', priority: 1, mount: () => ({ endNote: () => 'Made-up reason it ended.' }) };
+    const junk: TabPanel[] = [
+      { kinds: 'all', slot: 'controls', priority: 2, mount: () => ({ endNote: () => 42 as unknown as string }) },
+      { kinds: 'all', slot: 'controls', priority: 1, mount: () => ({ endNote: () => { throw new Error('made-up note failure'); } }) },
+    ];
+    const root = open(screenWith([body, ...junk]), grillo);
+    const { id } = await startAgent('task', 'Task · Sample ticket 5');
+    shell?.navigate('agent-tab', { agentId: id });
+
+    await grillo.invoke('agents:stop', { id });
+
+    const paragraphs = [...content(root).querySelectorAll('p')].map((p) => p.textContent);
+    expect(paragraphs).toEqual(['This agent is not running.', 'Made-up reason it ended.']);
+    expect(error).toHaveBeenCalledTimes(1);
+    error.mockRestore();
+  });
+
   it("takes an agent's panels down when it stops, and says so if its tab is opened after", async () => {
     const { grillo, startAgent } = runtime();
     const { panel, views } = fakeTerminalBody();
