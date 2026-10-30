@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registerAgentChannels } from '../../../main/features/agents/channels';
 import { FakePty } from '../../../main/features/agents/fake-pty';
-import { WAITING_AFTER_MS } from '../../../main/features/agents/runtime';
+import { ENTER_AFTER_QUIET_MS, WAITING_AFTER_MS } from '../../../main/features/agents/runtime';
 import { registerStoreIpc } from '../../../main/features/store/ipc';
 import { createMainIpc } from '../../../main/ipc/bridge';
 import { createFakeIpc } from '../../../main/ipc/fake-ipc';
@@ -34,6 +34,12 @@ const QUESTIONS = [
 ];
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+/** Claude Code has echoed what was typed and gone quiet, so the runtime has pressed Enter and the send is done. */
+async function enterPressed(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ENTER_AFTER_QUIET_MS));
+  await flush();
+  await flush();
+}
 
 /**
  * The app as it runs, in process: the real agent channels (Claude Code played by fake terminals) and the in-memory
@@ -51,6 +57,7 @@ async function app(options: { claudeMissing?: boolean } = {}) {
     shipSkills: async () => undefined,
     spawnPty: (file, args, spawnOptions) => {
       const pty = new FakePty(file, args, spawnOptions);
+      pty.echoTyping = true;
       ptys.push(pty);
       return pty;
     },
@@ -426,6 +433,7 @@ describe('own-time answering: with a grilling agent', () => {
     await click(content(), 'With a grilling agent');
 
     await click(panel(content()) as HTMLElement, 'Done');
+    await enterPressed();
 
     expect(ptys[0].written).toEqual(['done', '\r']);
     expect(await store.getTicket(ticket.id)).toMatchObject({ state: 'open', assignee: 'ada-example' });
@@ -457,6 +465,7 @@ describe('own-time answering: with a grilling agent', () => {
     await click(panel(content()) as HTMLElement, 'In a form');
 
     await click(content(), 'Done');
+    await enterPressed();
 
     expect(ptys[0].written).toEqual(['done', '\r']);
     expect(await store.getTicket(ticket.id)).toMatchObject({ state: 'open', assignee: 'ada-example' });
@@ -472,6 +481,7 @@ describe('own-time answering: with a grilling agent', () => {
     await open();
     await click(content(), 'With a grilling agent');
     await click(panel(content()) as HTMLElement, 'Done');
+    await enterPressed();
     // The agent releases the ticket with its questions open; its Claude Code keeps running.
     await store.releaseTicket(ticket.id);
     for (const k of [1, 2, 3]) await store.createAnswer(ticket.id, answerFrom(code(k), 'Sample answer.'));
@@ -517,6 +527,7 @@ describe('own-time answering: with a grilling agent', () => {
     await flush();
     expect(field.value).toBe('Sample line from a file.\r\nSample reply.\r\n\r\n');
     await click(shown, 'Use it');
+    await enterPressed();
 
     expect(ptys[0].written).toEqual(['Sample line from a file.\nSample reply.\nuse it', '\r']);
     expect(text(shown.querySelector('.note'))).toBe('Transcript sent with "use it": the agent takes the answers from it and records them.');
@@ -525,6 +536,7 @@ describe('own-time answering: with a grilling agent', () => {
     expect(field.value).toBe('');
     typeInto(field, 'Sample pasted line.');
     await click(shown, 'Use it');
+    await enterPressed();
     expect(ptys[0].written.slice(2)).toEqual(['Sample pasted line.\nuse it', '\r']);
   });
 

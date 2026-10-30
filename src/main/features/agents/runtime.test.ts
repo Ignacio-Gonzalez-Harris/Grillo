@@ -281,14 +281,99 @@ describe('agent runtime', () => {
     expect(steps).toEqual([]);
   });
 
-  it('is the terminal runtime, and sends a whole message as typed text, then Enter as a write of its own', async () => {
+  it('is the terminal runtime, and sends a whole message as typed text, then Enter as a write of its own once the echo is quiet', async () => {
+    const { runtime, ptys } = setup();
+    const id = await runtime.startAgent({ ...request, firstMessage: '' });
+    const pty = ptys[0];
+
+    const sending = runtime.send(id, 'Sample transcript line\nuse it');
+    expect(pty.written).toEqual(['Sample transcript line\nuse it']);
+    pty.print(`${RULE}\r\n❯ Sample transcript line\r\n  use it`);
+    vi.advanceTimersByTime(ENTER_AFTER_QUIET_MS - 1);
+    expect(pty.written).toEqual(['Sample transcript line\nuse it']);
+    vi.advanceTimersByTime(1);
+    await sending;
+
+    expect(runtime.choice).toBe('terminal');
+    expect(pty.written).toEqual(['Sample transcript line\nuse it', '\r']);
+  });
+
+  it('waits for the whole echo of a long line, however slowly and in however many pieces it comes', async () => {
+    const { runtime, ptys } = setup();
+    const id = await runtime.startAgent({ ...request, firstMessage: '' });
+    const pty = ptys[0];
+    // Longer, once redrawn with its line breaks, than the output the runtime scans for a prompt.
+    const long = Array.from({ length: 600 }, (_, at) => `word${at}`).join(' ');
+
+    const sending = runtime.send(id, long);
+    for (let shown = 200; shown < long.length + 200; shown += 200) {
+      vi.advanceTimersByTime(ENTER_AFTER_QUIET_MS / 2);
+      pty.print(`\x1b[2K${RULE}\r\n❯ ${long.slice(0, shown).replace(/ /g, '\r\n  ')}`);
+    }
+    expect(pty.written).toEqual([long]);
+    vi.advanceTimersByTime(ENTER_AFTER_QUIET_MS);
+    await sending;
+
+    expect(pty.written).toEqual([long, '\r']);
+  });
+
+  it('presses Enter on a sent message anyway when its echo never shows, and refuses a send whose agent ends first', async () => {
+    const { runtime, ptys } = setup();
+    const id = await runtime.startAgent({ ...request, firstMessage: '' });
+    const pty = ptys[0];
+
+    const sending = runtime.send(id, 'Sample answer');
+    vi.advanceTimersByTime(ECHO_WAIT_MS + ENTER_AFTER_QUIET_MS);
+    await sending;
+    expect(pty.written).toEqual(['Sample answer', '\r']);
+
+    const lost = runtime.send(id, 'Sample answer two');
+    pty.exit(1);
+    await expect(lost).rejects.toThrow(`The agent '${id}' has gone`);
+    vi.advanceTimersByTime(ECHO_WAIT_MS + ENTER_AFTER_QUIET_MS);
+    expect(pty.written).toEqual(['Sample answer', '\r', 'Sample answer two']);
+  });
+
+  it('reports an agent ready only once its prompt is up and its first message sent, never during a start-up question', async () => {
+    const { runtime, ptys } = setup();
+    const id = await runtime.startAgent(request);
+    const pty = ptys[0];
+    let ready = false;
+    void runtime.ready(id).then(() => {
+      ready = true;
+    });
+
+    pty.print(TRUST_DIALOG);
+    await vi.advanceTimersByTimeAsync(ECHO_WAIT_MS);
+    expect(ready).toBe(false);
+
+    pty.print(READY_PROMPT);
+    pty.print(request.firstMessage);
+    await vi.advanceTimersByTimeAsync(ENTER_AFTER_QUIET_MS - 1);
+    expect(ready).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(ready).toBe(true);
+    expect(pty.written).toEqual([request.firstMessage, '\r']);
+  });
+
+  it('reports an agent with no first message ready once its prompt is up', async () => {
     const { runtime, ptys } = setup();
     const id = await runtime.startAgent({ ...request, firstMessage: '' });
 
-    await runtime.send(id, 'Sample transcript line\nuse it');
+    ptys[0].print(READY_PROMPT);
 
-    expect(runtime.choice).toBe('terminal');
-    expect(ptys[0].written).toEqual(['Sample transcript line\nuse it', '\r']);
+    await expect(runtime.ready(id)).resolves.toBeUndefined();
+  });
+
+  it('refuses readiness for an agent that ends before it is ready, and for an unknown agent', async () => {
+    const { runtime, ptys } = setup();
+    const id = await runtime.startAgent(request);
+    const ready = runtime.ready(id);
+
+    ptys[0].exit(1);
+
+    await expect(ready).rejects.toThrow(`The agent '${id}' has gone`);
+    await expect(runtime.ready('no-such-agent')).rejects.toThrow("No agent with id 'no-such-agent'");
   });
 
   it('refuses to send an empty message or to an unknown agent, typing nothing', async () => {

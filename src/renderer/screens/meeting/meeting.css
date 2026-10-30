@@ -32,6 +32,7 @@
 .meeting .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
 .meeting .note.ok { background: var(--color-success-soft); }
 .meeting .note.err { background: var(--color-danger-soft); }
+.meeting .note.warn { background: var(--color-warning-soft); }
 .meeting .progress { width: 100%; height: var(--size-dot); accent-color: var(--color-accent); }
 
 /* ---------- Fields ---------- */

@@ -16,6 +16,7 @@ import { createSessionHost, type SessionHost } from './session';
 export function register({ ipc, settings }: FeatureContext): void {
   const engine = createWhisperEngine({ modelPath: speechModelPathIn(app.getPath('userData')) });
   // The transcriber announces the host's changes, so `changed` reads the host when a slice is done, never before.
+  // A slice arriving announces too, so the meeting panel sees slices waiting to be transcribed.
   const changed = () => ipc.send('session:changed', host.state());
   const host: SessionHost = createSessionHost({
     store: appStore(settings),
@@ -28,8 +29,10 @@ export function register({ ipc, settings }: FeatureContext): void {
       write: (id, text) => appAgentRuntime().write(id, text),
       send: (id, text) => appAgentRuntime().send(id, text),
       list: () => appAgentRuntime().list(),
+      ready: (id) => appAgentRuntime().ready(id),
     },
     held: (agentId, text, sent) => ipc.send('session:held', { agentId, text, sent }),
+    sliceHeard: changed,
   });
   registerSessionChannels(ipc, host);
 }

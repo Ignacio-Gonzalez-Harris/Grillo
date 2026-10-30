@@ -53,12 +53,15 @@ export interface SessionHostDeps {
   /** Where captured slices arrive in main (`audioSlices`). */
   slices: { subscribe(listener: SliceListener): Unsubscribe };
   transcriber: Transcriber;
-  agents: Pick<AgentRuntime, 'choice' | 'write' | 'send' | 'list'>;
+  /** Nothing is typed or sent to an agent before its `ready` resolves. */
+  agents: Pick<AgentRuntime, 'choice' | 'write' | 'send' | 'list' | 'ready'>;
   /**
    * Told the words a chat agent's channel holds each time they change, for its chat view's box: `''` once none are
    * held, with `sent` true when a protocol message took the whole box (the view then empties it).
    */
   held?(agentId: AgentId, text: string, sent: boolean): void;
+  /** Told each time a slice arrives, so the screens can show slices waiting to be transcribed. */
+  sliceHeard?(): void;
 }
 
 /** One host's session. Every refusal is a `SessionError`. */
@@ -183,14 +186,25 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Waits for one slice's text while it is at the head of the stream, at most `OUTLIER_AFTER_MS`. */
-async function headOfStream(text: Promise<unknown>): Promise<SliceOutcome> {
+/**
+ * One slice's outcome, given at most `OUTLIER_AFTER_MS` from the moment the transcriber starts it: slices queued
+ * behind a long one keep their full time, and a slice past the limit is left out and stops holding the queue.
+ */
+async function withinOutlierLimit(transcriber: Transcriber, pcm: Int16Array): Promise<SliceOutcome> {
+  const giveUp = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<SliceOutcome>((resolve) => {
-    timer = setTimeout(() => resolve(DROPPED), OUTLIER_AFTER_MS);
+    const started = () => {
+      timer = setTimeout(() => {
+        resolve(DROPPED);
+        giveUp.abort();
+      }, OUTLIER_AFTER_MS);
+    };
+    const text = Promise.resolve().then(() => transcriber.transcribe(pcm, { started, signal: giveUp.signal }));
+    text.then((answer) => resolve(outcomeOf(answer)), () => resolve(DROPPED));
   });
   try {
-    return await Promise.race([text.then(outcomeOf, () => DROPPED), late]);
+    return await late;
   } finally {
     clearTimeout(timer);
   }
@@ -262,7 +276,8 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
         draft: [],
         edited: undefined,
         toldSession: undefined,
-        queue: Promise.resolve(),
+        // Every write waits behind the agent's readiness, so nothing lands in a start-up question.
+        queue: deps.agents.ready(agentId).catch(() => undefined),
       };
       boxes.set(agentId, box);
     }
@@ -409,9 +424,9 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
     if (heardThisRecording.has(key)) return;
     heardThisRecording.add(key);
     current.slices.heard += 1;
-    const text = Promise.resolve().then(() => deps.transcriber.transcribe(slice.pcm));
-    text.catch(() => undefined);
-    stream = stream.then(async () => apply(current, await headOfStream(text))).catch(() => undefined);
+    const outcome = withinOutlierLimit(deps.transcriber, slice.pcm);
+    stream = stream.then(async () => apply(current, await outcome)).catch(() => undefined);
+    deps.sliceHeard?.();
   }
 
   async function stopRecording(current: RunningSession): Promise<void> {
