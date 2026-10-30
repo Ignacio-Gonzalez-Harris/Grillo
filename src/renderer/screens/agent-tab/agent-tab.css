@@ -7,9 +7,31 @@
 .shell:has(.agent-tab) { height: 100vh; }
 .window-body:has(> .screen > .agent-tab) { align-content: stretch; }
 .screen:has(> .agent-tab) { display: flex; min-height: 0; }
-.agent-tab { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
-.agent-tab.with-controls { grid-template-columns: var(--size-side-column) minmax(0, 1fr); align-items: start; }
-.agent-tab-body { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--space-3); min-height: 0; align-self: stretch; }
+/*
+ * One grid whose every area but the body may be empty: a track with nothing in it takes no room, and the room between
+ * two parts belongs to the part that is there (its margin), never to the grid (a gap would stay behind an empty track).
+ * "banner" and "foot" are for panels that step into this grid themselves, as the meeting's does.
+ */
+.agent-tab {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "banner banner banner" "side above aside" "side body aside" "side foot aside";
+}
+.agent-tab-body { grid-area: body; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--space-3); min-height: 0; align-self: stretch; }
+.agent-tab-controls { grid-area: side; width: var(--size-side-column); margin-right: var(--space-5); align-self: start; }
+.agent-tab-above { grid-area: above; margin-bottom: var(--space-5); }
+.agent-tab-aside { grid-area: aside; width: var(--size-side-column); margin-left: var(--space-5); align-self: start; }
+
+/* A panel that hides itself leaves no gap, and a slot whose panels all hide takes no room. */
+.agent-tab [hidden] { display: none; }
+.agent-tab-part:not(:has(> :not([hidden]))),
+.agent-tab-control:not(:has(> :not([hidden]))) { display: none; }
+.agent-tab-above:not(:has(> .agent-tab-part > :not([hidden]))),
+.agent-tab-aside:not(:has(> .agent-tab-part > :not([hidden]))),
+.agent-tab-controls:not(:has(> .agent-tab-control > :not([hidden]))) { display: none; }
 .agent-tab-gone { padding: var(--space-5); }
 .agent-tab-gone p { margin: 0; }
 /* Why the agent ended (Claude Code's own error lines), kept line by line under "This agent is not running." */
@@ -17,5 +39,11 @@
 .tab .tab-panel { display: inline-flex; align-items: center; }
 
 @media (max-width: 760px) {
-  .agent-tab.with-controls { grid-template-columns: minmax(0, 1fr); }
+  .agent-tab {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "banner" "side" "above" "body" "foot" "aside";
+  }
+  .agent-tab-controls { width: auto; margin-right: 0; margin-bottom: var(--space-5); }
+  .agent-tab-aside { width: auto; margin-left: 0; margin-top: var(--space-5); }
 }

@@ -1,7 +1,7 @@
 /**
  * Own-time answering with a grilling agent (prototype `screen-own-time-answering`, state "With a grilling agent"):
- * a panel on the agent tab of every agent the own-time screen started. It shows the ticket's heading row above the
- * terminal and, beside it, the questions with their answered state, a transcript import and Done.
+ * panels on the agent tab of every agent the own-time screen started: the ticket's heading row in the slot above the
+ * terminal and, in the column on its right, the questions with their answered state, a transcript import and Done.
  *
  * The agent records the answers, so this panel never writes to the store: Done types `done`, and a transcript is
  * typed with `use it` (`resources/skills/README.md`, Screen-to-agent protocol). On any other grilling agent the panel
@@ -12,7 +12,7 @@ import type { TicketId } from '../../../main/store/types';
 import type { AgentInfo } from '../../../shared/agents';
 import { createStoreClient } from '../../../shared/store';
 import { button } from '../../theme/components';
-import type { TabPanel } from '../agent-tab/tab-panels';
+import { slotPart, type TabPanel } from '../agent-tab/tab-panels';
 import { DONE_SENT, sendDone, sendUseIt, type OwnTimeAgents } from './agents';
 import { readTicketView, type TicketView } from './ticket';
 import { closedOutcome, el, headingRow, messageOf, note, questionRows, releasedOutcome } from './view';
@@ -31,10 +31,11 @@ export interface OwnTimePanelOptions {
 
 type Outcome = 'closed' | 'released';
 
-export function ownTimePanel({ agents }: OwnTimePanelOptions): TabPanel {
-  return {
+export function ownTimePanels({ agents }: OwnTimePanelOptions): TabPanel[] {
+  const heading = slotPart('above', ['grilling'], OWN_TIME_PANEL_PRIORITY, 'own-time own-time-head');
+  const questions: TabPanel = {
     kinds: ['grilling'],
-    slot: 'controls',
+    slot: 'aside',
     priority: OWN_TIME_PANEL_PRIORITY,
     mount(container, { agent, grillo, shell }) {
       const store = createStoreClient(grillo);
@@ -50,7 +51,7 @@ export function ownTimePanel({ agents }: OwnTimePanelOptions): TabPanel {
 
       // The parts stay in place between redraws, so a transcript being pasted keeps its focus while the questions
       // refresh beside it.
-      const head = el('div', 'own-time-head');
+      const head = heading.of(agent.id);
       const status = el('div', 'stack');
       const messages = el('div', 'stack');
       const transcript = el('textarea', '');
@@ -72,7 +73,7 @@ export function ownTimePanel({ agents }: OwnTimePanelOptions): TabPanel {
       const opener = el('div', 'row', [openImport]);
       const done = button('Done', { variant: 'primary', onClick: () => void pressDone() });
       const side = el('div', 'card stack own-time-side', [el('h4', '', ['Questions']), status, opener, importer, messages, done]);
-      const root = el('div', 'own-time own-time-panel', [head, side]);
+      const root = el('div', 'own-time own-time-panel', [side]);
       root.hidden = true;
       container.append(root);
       showImport(false);
@@ -193,6 +194,7 @@ export function ownTimePanel({ agents }: OwnTimePanelOptions): TabPanel {
         ticket = agents.ticketOf(agent.id);
         if (ticket === undefined) return;
         root.hidden = false;
+        head.hidden = false;
         drawTicket();
         void refresh();
       }
@@ -217,4 +219,5 @@ export function ownTimePanel({ agents }: OwnTimePanelOptions): TabPanel {
       };
     },
   };
+  return [heading.panel, questions];
 }

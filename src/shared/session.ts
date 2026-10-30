@@ -73,6 +73,13 @@ export interface SliceCounts {
   dropped: number;
 }
 
+/** The question a meeting agent says it asks: number `at` of the `of` questions of its ticket at hand. */
+export interface QuestionAtHand {
+  ticket: number;
+  at: number;
+  of: number;
+}
+
 /** The session as the host's screen shows it. */
 export interface SessionState {
   project: string;

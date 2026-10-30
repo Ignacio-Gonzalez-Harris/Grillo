@@ -46,12 +46,10 @@ export function createSupportTab(shell: ShellContext, open: () => void): Support
   const place = (agents: readonly AgentInfo[]): void => {
     const support = agents.find((agent) => agent.kind === 'support');
     const agentTab = support && shell.agentTabHeader(support.id)?.closest<HTMLElement>('.tab');
-    if (agentTab) {
-      ownTab.remove();
-      strip.prepend(agentTab);
-    } else {
-      strip.prepend(ownTab);
-    }
+    if (agentTab) ownTab.remove();
+    const first = agentTab ?? ownTab;
+    // Only when out of place: moving a tab takes keyboard focus off it.
+    if (strip.firstElementChild !== first) strip.prepend(first);
   };
 
   const stopFollowing = shell.onAgentTabs(place);
