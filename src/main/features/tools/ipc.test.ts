@@ -3,7 +3,8 @@ import { createGrilloApi } from '../../../preload/bridge';
 import type { ToolsReport } from '../../../shared/tools';
 import { createMainIpc } from '../../ipc/bridge';
 import { createFakeIpc } from '../../ipc/fake-ipc';
-import { IdentityError } from './identity';
+import { createFakeRunner, exited, type FakeAnswers } from './fake-runner';
+import { createIdentityReader, IdentityError } from './identity';
 import { registerTools, type ToolsService } from './ipc';
 
 const REPORT: ToolsReport = {
@@ -38,5 +39,24 @@ describe('tools IPC channels', () => {
 
     await expect(signedIn.invoke('tools:identity', undefined)).resolves.toEqual({ ok: true, identity });
     await expect(signedOut.invoke('tools:identity', undefined)).resolves.toEqual({ ok: false, reason: 'signed-out' });
+  });
+
+  it('reads the email afresh on every tools:identity, so it appears once the member grants gh the email scope', async () => {
+    // A made-up member who keeps their email private: until `gh auth refresh -h github.com -s user:email` has run,
+    // gh may not read the address list. The fake gh answers by command line, as the real one would.
+    const gh: FakeAnswers = {
+      'gh api user': exited(0, JSON.stringify({ login: 'ada-example', name: 'Ada Example', email: null })),
+      'gh api user/emails': exited(1, '', 'gh: This API operation needs the "user:email" scope. (HTTP 404)\n'),
+    };
+    const runner = createFakeRunner(gh);
+    const grillo = connect({ checkTools: vi.fn(), identity: createIdentityReader(runner).identity });
+
+    const before = await grillo.invoke('tools:identity', undefined);
+    gh['gh api user/emails'] = exited(0, JSON.stringify([{ email: 'ada@example.test', primary: true, verified: true }]));
+    const after = await grillo.invoke('tools:identity', undefined);
+
+    expect(before).toEqual({ ok: true, identity: { login: 'ada-example', name: 'Ada Example', email: null } });
+    expect(after).toEqual({ ok: true, identity: { login: 'ada-example', name: 'Ada Example', email: 'ada@example.test' } });
+    expect(runner.calls.filter((line) => line === 'gh api user/emails')).toHaveLength(2);
   });
 });
