@@ -7,6 +7,7 @@ import { speechModelPathIn } from '../transcription/model';
 import { createTranscriber } from '../transcription/transcriber';
 import { createWhisperEngine } from '../transcription/whisper-engine';
 import { announcingTranscriber, registerSessionChannels } from './channels';
+import { readTicketHolds } from './holds';
 import { createSessionHost, type SessionHost } from './session';
 
 /**
@@ -33,6 +34,7 @@ export function register({ ipc, settings }: FeatureContext): void {
     },
     held: (agentId, text, sent) => ipc.send('session:held', { agentId, text, sent }),
     sliceHeard: changed,
+    holds: readTicketHolds,
   });
   registerSessionChannels(ipc, host);
 }

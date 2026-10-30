@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatMessage, StartChatAgentRequest } from '../../../shared/agent-chat';
+import { AGENT_ID_VARIABLE } from '../../../shared/agents';
 import { ClaudeNotFoundError } from '../agents/runtime';
 import { CHAT_FLAGS, createClaudeChatDriver, type ChatDriverDeps } from './driver';
 import { FakeChatProcess } from './fake-process';
@@ -66,7 +67,7 @@ describe('chat driver: starting', () => {
   it('starts claude in machine-readable mode with the pinned flags, never --bare, after shipping the skills', async () => {
     const { driver, processes, steps } = setup();
 
-    await driver.startChatAgent(request);
+    const id = await driver.startChatAgent(request);
 
     expect(steps).toEqual([`ship ${request.folder}`, 'spawn']);
     expect(processes[0].file).toBe(CLAUDE_PATH);
@@ -83,7 +84,8 @@ describe('chat driver: starting', () => {
       'manual',
     ]);
     expect(CHAT_FLAGS).not.toContain('--bare');
-    expect(processes[0].options).toEqual({ cwd: request.folder, env: { PATH: '/opt/made-up/bin' } });
+    // The agent's skills read its id to say which tab holds what (grillo-meeting, "Holding a ticket in this session").
+    expect(processes[0].options).toEqual({ cwd: request.folder, env: { PATH: '/opt/made-up/bin', [AGENT_ID_VARIABLE]: id } });
   });
 
   it('opens the control channel, then sends the first message as one user line and echoes it', async () => {

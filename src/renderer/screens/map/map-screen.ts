@@ -8,8 +8,9 @@
  * screen reads the store afresh whenever an agent goes quiet, since agents change the map and tickets as they work.
  *
  * "Start meeting" starts the live session's meeting agent (`/grillo-meeting`, PRD 4.5) and opens its tab, where the
- * meeting panel shows; while one runs on this laptop, for any project, it opens that agent's tab instead of starting a
- * second (the laptop runs one live session at a time).
+ * meeting panel shows; while this project's meeting agent runs it opens that agent's tab instead of starting a second.
+ * The laptop runs one live session at a time, so while another project's runs it opens nothing: it names that project
+ * and offers to open its session (prototype state `other-meeting`), so answers never land on the wrong project.
  */
 import './map.css';
 import type { Store } from '../../../main/store/store';
@@ -78,6 +79,12 @@ const CLOSE_HINT = 'Closing archives the repository: everything stays readable a
 const MAP_DONE = 'The map is done: no open tickets and no fog.';
 const WRITING_PRD = 'Grillo is writing the PRD now.';
 const TAGGING_STARTED = 'The tagging round runs in its own tab. The tags appear here when it finishes.';
+export function otherMeetingRunning(project: string): string {
+  return (
+    `A live session of ${project} is running on this laptop, and Grillo runs one live session at a time. ` +
+    "To start one for this project, end that session first: type /exit in each of its grilling agent tabs, or quit Grillo."
+  );
+}
 const RERUN_HINT = 'Rerun the tagging round when members join.';
 
 type Phase =
@@ -118,6 +125,8 @@ export function mountMap(container: HTMLElement, params: ScreenParams, deps: Map
   let taggingAgent: AgentId | null = null;
   let prdWriter: AgentId | null = null;
   let prdError: string | null = null;
+  /** Another project's meeting agent, found running when the member pressed Start meeting. */
+  let otherMeeting: { agentId: AgentId; project: string } | null = null;
 
   function set(next: Phase): void {
     if (disposed) return;
@@ -266,10 +275,19 @@ export function mountMap(container: HTMLElement, params: ScreenParams, deps: Map
     });
   }
 
-  /** Opens the running meeting agent, whatever its project, or starts one: one meeting agent at a time from here. */
+  /**
+   * Opens this project's running meeting agent, or starts one; while another project's runs, says so and opens
+   * nothing: one live session at a time on this laptop.
+   */
   function startMeeting(): Promise<void> {
     return act(async (project) => {
+      otherMeeting = null;
       const running = [...waiting.keys()].find((agentId) => deps.meetingAgents.projectOf(agentId) !== undefined);
+      const runningFor = running === undefined ? undefined : deps.meetingAgents.projectOf(running);
+      if (running !== undefined && runningFor !== undefined && runningFor !== project) {
+        otherMeeting = { agentId: running, project: runningFor };
+        return;
+      }
       const agentId =
         running ?? (await startMeetingAgent(grillo, deps.meetingAgents, { project, folder: await projectFolder(store, project) }));
       navigate(AGENT_SCREEN, { agentId });
@@ -384,6 +402,14 @@ export function mountMap(container: HTMLElement, params: ScreenParams, deps: Map
     if (editor) {
       editor.controls.forEach((control) => (control.disabled = busy || control.dataset['off'] === 'true'));
       parts.push(editor.el);
+    }
+    if (otherMeeting !== null && waiting.has(otherMeeting.agentId)) {
+      const { agentId } = otherMeeting;
+      const openSession = button('Open that session', { small: true, onClick: () => navigate(AGENT_SCREEN, { agentId }) });
+      const warning = note([el('span', 'fill', [otherMeetingRunning(otherMeeting.project)]), openSession], 'warn');
+      warning.classList.add('row');
+      warning.setAttribute('role', 'status');
+      parts.push(warning);
     }
     if (taggingAgent !== null) {
       const agentId = taggingAgent;

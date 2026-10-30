@@ -5,7 +5,10 @@ import type { GrilloApi } from '../../shared/ipc';
 import { glassPanel } from '../theme/components';
 import {
   AGENT_SCREEN,
+  APP_TABS,
   GENERIC_AGENT_SCREEN,
+  PROJECT_ID,
+  PROJECT_TABS,
   SETUP_CHECK_SCREEN,
   START_SCREEN,
   UNBUILT_SCREEN_NAMES,
@@ -31,6 +34,10 @@ function unbuiltName(screenId: string): string {
   return UNBUILT_SCREEN_NAMES.get(screenId) ?? screenId;
 }
 
+/** The tabs that open on the current project; the project list and Setup stand outside any project. */
+const OPENS_ON_PROJECT: ReadonlySet<string> = new Set([...PROJECT_TABS.map(({ screenId }) => screenId), GENERIC_AGENT_SCREEN]);
+const OUTSIDE_PROJECT: ReadonlySet<string> = new Set(APP_TABS.map(({ screenId }) => screenId));
+
 function emptyState(title: string): HTMLElement {
   const message = document.createElement('p');
   message.className = 'muted';
@@ -44,11 +51,20 @@ function emptyState(title: string): HTMLElement {
  * The frame every screen sits in: the app window with its title bar, the tab bar and the content area. Screens come
  * from the registry; agent tabs come from the agent runtime's list (`agents:list`, then `agents:list-changed`). The
  * update pop-up covers the whole window when a newer version is found.
+ *
+ * The current project is the one the member opened last in this window: the last screen opened with
+ * `{ project }`, or the one a screen says it shows (`showProject`). The title bar names it, and the Map, Tickets and
+ * PRD tabs and "+" open on it, so with two projects open each screen shows the project the member is working in.
+ * An agent's tab names a project only when its panel says which one (a meeting agent's does): any other agent may
+ * work in a project other than the current one.
  */
 export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions): Shell {
   let agents: readonly AgentInfo[] = [];
   let current: { screenId: string; params: ScreenParams } = { screenId: START_SCREEN, params: {} };
   let closeScreen: (() => void) | undefined;
+  let project: string | null = null;
+  /** True once the open screen has said which project it shows, since it was opened. */
+  let screenNamedProject = false;
 
   const context = document.createElement('span');
   context.className = 'context';
@@ -60,12 +76,17 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
   brand.textContent = 'Grillo';
   const titlebar = document.createElement('header');
   titlebar.className = 'titlebar';
-  titlebar.append(logo, brand, context);
+  const projectLabel = document.createElement('span');
+  projectLabel.className = 'project';
+  projectLabel.hidden = true;
+  titlebar.append(logo, brand, context, projectLabel);
 
+  const onProject = (screenId: string): ScreenParams =>
+    project !== null && OPENS_ON_PROJECT.has(screenId) ? { project } : {};
   const tabBar = createTabBar({
-    openScreen: (screenId) => navigate(screenId),
+    openScreen: (screenId) => navigate(screenId, onProject(screenId)),
     openAgent: (agentId) => navigate(AGENT_SCREEN, { agentId }),
-    openGenericAgent: () => navigate(GENERIC_AGENT_SCREEN),
+    openGenericAgent: () => navigate(GENERIC_AGENT_SCREEN, onProject(GENERIC_AGENT_SCREEN)),
   });
 
   const content = document.createElement('main');
@@ -105,7 +126,22 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
         agentTabListeners.delete(listener);
       };
     },
+    showProject(shown) {
+      followProject(shown);
+      screenNamedProject = project === shown;
+      drawProject();
+    },
   };
+
+  function followProject(candidate: string | undefined): void {
+    if (typeof candidate === 'string' && PROJECT_ID.test(candidate)) project = candidate;
+  }
+
+  function drawProject(): void {
+    projectLabel.textContent = project ?? '';
+    const unnamedAgent = current.screenId === AGENT_SCREEN && !screenNamedProject;
+    projectLabel.hidden = project === null || OUTSIDE_PROJECT.has(current.screenId) || unnamedAgent;
+  }
 
   function activeTabFor(screenId: string, params: ScreenParams): ActiveTab {
     const agentId = params['agentId'];
@@ -124,9 +160,12 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
     closeScreen?.();
     closeScreen = undefined;
     current = { screenId, params };
+    screenNamedProject = false;
+    followProject(params['project']);
     content.replaceChildren();
     tabBar.setActive(activeTabFor(screenId, params));
     context.textContent = titleFor(screenId, params);
+    drawProject();
 
     const screen = screens.get(screenId);
     if (!screen) {

@@ -12,7 +12,7 @@
  */
 import './meeting.css';
 import type { Member, Ticket } from '../../../main/store/types';
-import type { AgentInfo } from '../../../shared/agents';
+import { agentTitle, type AgentInfo } from '../../../shared/agents';
 import { type CaptureSource, SLICE_SECONDS } from '../../../shared/audio';
 import type { AgentMode, SessionState, SliceCounts } from '../../../shared/session';
 import { createSessionClient } from '../../../shared/session-ipc';
@@ -23,7 +23,7 @@ import { badge, button, toggle } from '../../theme/components';
 import type { TabPanel } from '../agent-tab/tab-panels';
 import { el, messageOf, note } from '../map/view';
 import { sendUseIt } from '../own-time/agents';
-import { startMeetingAgent, type MeetingAgents } from './meeting-agents';
+import { MEETING_AGENT_TITLE, startMeetingAgent, type MeetingAgents } from './meeting-agents';
 
 /** Below the own-time panel, which never shows on a meeting agent anyway. */
 export const MEETING_PANEL_PRIORITY = 5;
@@ -657,10 +657,35 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         await greet();
       }
 
+      /**
+       * Titles the tab after the ticket the agent holds (prototype screen-meeting: "Grilling · Sample ticket 3"), or
+       * the live-session name while it holds none. A ticket added since the panel read the list is read afresh.
+       */
+      async function nameTab(): Promise<void> {
+        if (project === undefined) return;
+        try {
+          const number = await session.ticketAtHand(agent.id);
+          const find = () => tickets.find((ticket) => ticket.id.number === number);
+          if (number !== null && find() === undefined) {
+            tickets = await store.listTickets(project, { state: 'open' });
+            drawTickets();
+          }
+          const ticket = number === null ? undefined : find();
+          if (number !== null && ticket === undefined) return;
+          const title = ticket === undefined ? MEETING_AGENT_TITLE : agentTitle('grilling', ticket.title);
+          const shown = tabs.find((tab) => tab.id === agent.id)?.title;
+          if (!disposed && shown !== title) await grillo.invoke('agents:set-title', { id: agent.id, title });
+        } catch (error) {
+          console.warn("Grillo could not name the meeting agent's tab after its ticket; the tab keeps its name.", error);
+        }
+      }
+
       function activate(): void {
         if (project !== undefined) return;
         project = agents.projectOf(agent.id);
         if (project === undefined) return;
+        // The title bar names the meeting's project while its tab is open, and the project tabs follow it.
+        if (container.isConnected) shell.showProject(project);
         root.hidden = false;
         draw();
         prepareModel();
@@ -678,13 +703,19 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       });
       const stopTabs = shell.onAgentTabs((list: readonly AgentInfo[]) => {
         tabs = list.filter((candidate): candidate is AgentInfo => typeof candidate?.id === 'string');
+        const wasWaiting = waiting;
         waiting = tabs.find((candidate) => candidate.id === agent.id)?.waiting === true;
         draw();
         void greet();
+        // The agent went quiet: it may have taken another ticket, so its tab may need a new name.
+        if (waiting && !wasWaiting) void nameTab();
       });
       activate();
 
       return {
+        shown() {
+          if (project !== undefined) shell.showProject(project);
+        },
         dispose() {
           disposed = true;
           microphone.redraws.delete(draw);

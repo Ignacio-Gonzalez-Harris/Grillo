@@ -63,6 +63,7 @@ function app(options: AppOptions = {}) {
     navigate,
     agentTabHeader: () => undefined,
     onAgentTabs: () => () => undefined,
+    showProject: () => undefined,
   };
   const root = document.createElement('div');
   document.body.append(root);

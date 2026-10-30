@@ -26,6 +26,7 @@ export const SESSION_METHODS = [
   'skip',
   'jump',
   'state',
+  'ticketAtHand',
 ] as const satisfies readonly (keyof SessionHost)[];
 
 export type SessionMethod = (typeof SESSION_METHODS)[number];

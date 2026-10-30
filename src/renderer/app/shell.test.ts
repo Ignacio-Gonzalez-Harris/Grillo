@@ -171,6 +171,109 @@ describe('app shell', () => {
     expect(add?.getAttribute('aria-pressed')).toBe('true');
   });
 
+  describe('the current project', () => {
+    const PROJECT_A = 'example-org/sample-project-1';
+    const PROJECT_B = 'example-org/sample-project-2';
+    const titlebarProject = (root: HTMLElement) => {
+      const label = root.querySelector<HTMLElement>('.titlebar .project');
+      return label && !label.hidden ? label.textContent : undefined;
+    };
+    const click = (root: HTMLElement, label: string) =>
+      [...root.querySelectorAll<HTMLElement>('nav .tab')].find((tab) => tab.textContent === label)?.click();
+    const lastParams = (module: { mount: Mock<ScreenModule['mount']> }) => module.mount.mock.calls.at(-1)?.[1];
+
+    function projectScreens(...extra: ScreenModule[]) {
+      const screens = {
+        map: screen('map', 'Map'),
+        tickets: screen('tickets', 'Tickets'),
+        prd: screen('prd', 'PRD'),
+        generic: screen('generic-agent', 'Generic agent'),
+        project: screen('project-creation', 'Project creation and invites'),
+        setup: screen('setup-check', 'Setup check'),
+      };
+      return { ...screens, registry: registry(...Object.values(screens), ...extra) };
+    }
+
+    it('opens the Map, Tickets and PRD tabs and "+" on the project the member opened, and follows a switch of project', () => {
+      const screens = projectScreens();
+      const root = start(screens.registry, fakeGrillo().grillo);
+
+      shell?.navigate('map', { project: PROJECT_A });
+      click(root, 'PRD');
+      expect(lastParams(screens.prd)).toEqual({ project: PROJECT_A });
+      click(root, 'Tickets');
+      expect(lastParams(screens.tickets)).toEqual({ project: PROJECT_A });
+      root.querySelector<HTMLElement>('nav .add')?.click();
+      expect(lastParams(screens.generic)).toEqual({ project: PROJECT_A });
+
+      shell?.navigate('tickets', { project: PROJECT_B, ticket: '4' });
+      click(root, 'Map');
+      expect(lastParams(screens.map)).toEqual({ project: PROJECT_B });
+      click(root, 'PRD');
+      expect(lastParams(screens.prd)).toEqual({ project: PROJECT_B });
+    });
+
+    it('names the current project in the title bar on its screens, never on Setup or the project list', () => {
+      const screens = projectScreens();
+      const root = start(screens.registry, fakeGrillo().grillo);
+      expect(titlebarProject(root)).toBeUndefined();
+
+      shell?.navigate('map', { project: PROJECT_A });
+      expect(titlebarContext(root)).toBe('Map');
+      expect(titlebarProject(root)).toBe(PROJECT_A);
+
+      click(root, 'Project');
+      expect(lastParams(screens.project)).toEqual({});
+      expect(titlebarProject(root)).toBeUndefined();
+      click(root, 'Setup');
+      expect(titlebarProject(root)).toBeUndefined();
+      click(root, 'PRD');
+      expect(titlebarProject(root)).toBe(PROJECT_A);
+    });
+
+    it("follows the project a screen says it shows, such as a meeting agent's tab", () => {
+      const meeting = screen('agent-tab', 'Agent');
+      meeting.mount.mockImplementation((_el, _params, context) => context.showProject(PROJECT_B));
+      const screens = projectScreens(meeting);
+      const root = start(screens.registry, fakeGrillo().grillo);
+
+      shell?.navigate('map', { project: PROJECT_A });
+      shell?.navigate('agent-tab', { agentId: 'a1' });
+      expect(titlebarProject(root)).toBe(PROJECT_B);
+
+      click(root, 'Map');
+      expect(lastParams(screens.map)).toEqual({ project: PROJECT_B });
+    });
+
+    it("names no project on an agent's tab that does not say which project it belongs to", async () => {
+      const agentScreen = screen('agent-tab', 'Agent');
+      const screens = projectScreens(agentScreen);
+      const { grillo } = fakeGrillo(Promise.resolve([agent('a1', 'Generic · Sample notes')]));
+      const root = start(screens.registry, grillo);
+      await flush();
+
+      shell?.navigate('map', { project: PROJECT_A });
+      shell?.navigate('map', { project: PROJECT_B });
+      agentTab(root, 'a1')?.querySelector<HTMLElement>('.tab-name')?.click();
+
+      expect(titlebarContext(root)).toBe('Generic · Sample notes');
+      expect(titlebarProject(root)).toBeUndefined();
+      click(root, 'Map');
+      expect(titlebarProject(root)).toBe(PROJECT_B);
+    });
+
+    it('opens the project tabs with no project before the member has opened one, and ignores a malformed one', () => {
+      const screens = projectScreens();
+      const root = start(screens.registry, fakeGrillo().grillo);
+
+      shell?.navigate('map', { project: 'not a project id' });
+      click(root, 'PRD');
+
+      expect(lastParams(screens.prd)).toEqual({});
+      expect(titlebarProject(root)).toBeUndefined();
+    });
+  });
+
   it.each([
     ['"+"', 'nav .add', 'The generic agent tab'],
     ['an agent tab', '[data-agent-id] .tab-name', 'The agent tab'],

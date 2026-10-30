@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { posix, win32 } from 'node:path';
 import {
+  AGENT_ID_VARIABLE,
   AGENT_KINDS,
   type AgentId,
   type AgentInfo,
@@ -285,13 +286,13 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
     const claude = deps.findClaude();
     await deps.shipSkills(request.folder);
 
+    const id = randomUUID();
     const pty = deps.spawnPty(claude, [], {
       cwd: request.folder,
       cols: INITIAL_COLS,
       rows: INITIAL_ROWS,
-      env: deps.env,
+      env: { ...deps.env, [AGENT_ID_VARIABLE]: id },
     });
-    const id = randomUUID();
     const agent: RunningAgent = {
       info: { id, kind: request.kind, title: request.title, folder: request.folder, waiting: false },
       pty,

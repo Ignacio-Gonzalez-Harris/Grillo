@@ -307,7 +307,7 @@ describe('the map screen: starting a live meeting', () => {
     expect(meetingPanel()?.hidden).toBe(false);
   });
 
-  it('opens the meeting agent another project is running instead of starting a second one on this laptop', async () => {
+  it("never opens another project's running meeting as this one's: it names that project and opens it only when asked", async () => {
     const { store, project, starts, content, open } = await app({ meeting: true });
     await sampleTickets(store, project);
     const other = await store.createProject({ newRepository: { organisation: 'example-org', name: 'sample-project-2' } });
@@ -320,8 +320,18 @@ describe('the map screen: starting a live meeting', () => {
     await click(content(), 'Start meeting');
 
     expect(starts.map(({ firstMessage }) => firstMessage)).toEqual([MEETING_COMMAND]);
+    expect(text(document.querySelector('.tab.active'))).toBe('Map');
+    const warning = ticketsHead(content()).parentElement?.querySelector('.note.warn');
+    expect(text(warning)).toBe(
+      `A live session of ${PROJECT} is running on this laptop, and Grillo runs one live session at a time. ` +
+        "To start one for this project, end that session first: type /exit in each of its grilling agent tabs, or quit Grillo.Open that session",
+    );
+
+    await click(content(), 'Open that session');
+
     expect(document.querySelector('.tab.active')?.textContent).toContain(MEETING_AGENT_TITLE);
     expect(meetingPanel()?.hidden).toBe(false);
+    expect(text(document.querySelector('.titlebar .project'))).toBe(PROJECT);
   });
 });
 

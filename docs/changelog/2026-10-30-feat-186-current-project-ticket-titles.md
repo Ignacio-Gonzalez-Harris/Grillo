@@ -1,0 +1,1 @@
+Every screen now follows the project you are working in, Start meeting never opens another project's session as this one's, and meeting tabs are named after their ticket, so answers never land on the wrong project or ticket.
