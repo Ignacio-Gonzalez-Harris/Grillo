@@ -4,12 +4,19 @@ How to use each part of Grillo, one section per feature. Each feature's story ed
 
 ## App shell
 
-Every screen sits in one window: the title bar ("Grillo" and where you are), the tab bar, and the screen below it.
+Every screen sits in one window: the title bar ("Grillo", where you are and the project you are in), the tab bar,
+and the screen below it.
 
 - **The tab bar**, left to right: Setup and Project; then Map, Tickets and PRD; then one tab per running agent;
   then "+". Grillo opens on Setup. A screen whose own story has not landed yet says "<name> is not built yet."
+- **The current project** is the one you opened last in this window: opening a project (from the Project tab, a
+  link such as Open the map, or a meeting agent's tab) makes it current. The title bar names it (`<owner>/<repo>`),
+  and Map, Tickets, PRD and "+" open on it, so with two projects open you never see one project's map, tickets or
+  PRD while working in the other. Setup and the Project tab stand outside any project and show none, and so does
+  an agent's tab, unless it says which project it works for (a meeting agent's tab does). Before you
+  have opened a project, Map, Tickets and PRD fall back to the project opened last on this laptop.
 - **Agent tabs** are named "kind · ticket" (for example "Grilling · Sample ticket 1") and follow the agent when it
-  renames itself. An orange dot on a tab means that agent is waiting for you. Click the name to open the agent.
+  renames itself. A meeting agent's tab is named after the ticket it is grilling (see The meeting panel, below). An orange dot on a tab means that agent is waiting for you. Click the name to open the agent.
 - **"+"** opens the generic agent tab.
 - **The window frame is Grillo's own.** There is no separate system title bar: drag Grillo's title bar (the strip
   with the logo and "Grillo") to move the window, and double-click it to maximise or restore. The system window
@@ -171,8 +178,8 @@ The map and ticket screens arrive with their own stories. What already works und
 
 ### The map screen
 
-The Map tab shows where the project stands. It opens the project it was opened for, or else the project you opened
-last on this laptop; with neither it says to open a project from the Project tab.
+The Map tab shows where the project stands. It opens the current project (see App shell, above), or else the
+project you opened last on this laptop; with neither it says to open a project from the Project tab.
 
 - **The four map cards:** the destination, settled (one line per closed ticket: its title and the decision's gist),
   fog and out of scope.
@@ -442,7 +449,8 @@ drive it by typing the protocol messages (`resources/skills/README.md`).
   is never recorded. A ticket left with questions open is not picked again in the same session.
 - **Several grilling agents in one session** all act for the host's login, so before claiming a ticket each one
   holds it in the session: it makes the folder `meeting-holds/<session id>/<ticket number>` inside the project
-  folder's `.git` (never committed), which only one agent can make. A ticket another agent of the session holds is
+  folder's `.git` (never committed), which only one agent can make, and writes its tab's id (Grillo starts every
+  agent with `GRILLO_AGENT_ID`) into the folder's `tab` file, so the host's screen names the tab after it. A ticket another agent of the session holds is
   skipped (or a jump to it is refused); the agent removes its hold when it leaves the ticket. A hold left by an agent
   that was stopped mid-ticket keeps that ticket out of this session only; the next session starts free.
 - **Drift:** what else the room says may add a question to the ticket, a new ticket (with no domain until the next
@@ -463,8 +471,15 @@ ticket and Run tagging round.
 
 - **Pressing it** starts a grilling agent in the project folder that types `/grillo-meeting`, named "Grilling · Live
   session", and opens its tab, where the meeting panel shows (below).
-- **One meeting agent at a time:** while a meeting agent is running on this laptop, for this project or any other,
-  Start meeting opens its tab instead of starting a second one. Once that agent has stopped, it starts a new one.
+- **One meeting agent at a time:** while this project's meeting agent is running, Start meeting opens its tab
+  instead of starting a second one. Once that agent has stopped, it starts a new one.
+- **Another project's meeting running:** the laptop runs one live session at a time, so while another project's
+  meeting agent runs, Start meeting opens nothing and starts nothing. A note under the Tickets header says "A live
+  session of `<owner>/<repo>` is running on this laptop, and Grillo runs one live session at a time. To start one
+  for this project, end that session first: type /exit in each of its grilling agent tabs, or quit Grillo."
+  **Open that session** opens that meeting's tab, whose title bar names its project. Agent tabs have no close
+  control: typing `/exit` in a terminal agent's tab (the default runtime) ends its Claude Code and the tab goes away,
+  and the session ends with its last meeting agent. Quitting Grillo stops every agent, whatever the runtime.
 - **A closed (archived) project** shows no Start meeting button; Reopen brings it back.
 - **While the engine builds the map** the Tickets card has no header row, so there is no Start meeting either.
 - **Developers:** `npx vitest run src/renderer/screens/map/map.test.ts -t "starting a live meeting"` runs the button
@@ -503,6 +518,12 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   channel closed. Each agent receives the transcript only while its own Channel switch is on, and each takes a
   different ticket (see Meeting grilling skill, above). If the agent cannot start, the reason shows and you stay on
   this tab.
+- **The tab's name** follows the ticket the agent holds: "Grilling · Live session" until it takes one, then
+  "Grilling · <ticket title>" once it goes quiet after taking it (for example "Grilling · Sample ticket 3"), renamed
+  each time it moves to another ticket (Done, Skip past the last question, Jump), and back to "Grilling · Live
+  session" while it holds none. The Grilling agents card lists the same names. A ticket added during the meeting is
+  read afresh, and appears under Jump to ticket too.
+- **The title bar** names the meeting's project while its tab is open, and Map, Tickets and PRD then open on it.
 - **Stopping the last meeting agent** ends the session, its transcript saved; while another one runs, the session
   goes on and the stopped one leaves the list.
 - **Developers:** `npx vitest run src/renderer/screens/meeting src/main/features/session` runs the panel against the
@@ -712,8 +733,8 @@ by hand.
 
 - **Name the tab:** type a name in "Tab name" (for example "Sample customer email"). "Open agent" stays locked
   while the name is empty or only spaces. Enter in the field does the same as "Open agent".
-- **Open agent** starts the agent in the folder of the project opened last (or the project the screen was opened
-  with), in a tab named "Generic · <your name>", and opens that tab. From there it is an ordinary agent tab: the
+- **Open agent** starts the agent in the folder of the current project (see App shell, above; with none, the
+  project opened last on this laptop), in a tab named "Generic · <your name>", and opens that tab. From there it is an ordinary agent tab: the
   agent's terminal and the box under it ("Type to the agent…"); paste the material and say where it came from.
 - **No project open:** the dialog says "Open a project from the Project tab to start a generic agent in it." and
   "Open agent" stays locked.
@@ -841,7 +862,8 @@ and regenerate the PRD on the PRD tab ([The PRD view](#the-prd-view) below).
 
 ### The PRD view
 
-The **PRD** tab shows the PRD of the project opened last (a screen may open it on another project).
+The **PRD** tab shows the PRD of the current project (see App shell, above; with none, the project opened last on
+this laptop). A screen may open it on another project.
 
 - **No PRD yet:** says the PRD is written the moment the map is done, and what is still left (open tickets and fog
   items). **Open the map** goes to the map.

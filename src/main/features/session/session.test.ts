@@ -10,7 +10,7 @@ import { createTranscriber, type SliceControl, type Transcriber } from '../trans
 import { formatSession } from '../../store/github/repo/records';
 import { createMemoryStore, type MemoryStore } from '../../store/memory';
 import type { GrillingSession } from '../../store/types';
-import { createSessionHost, LINE_BREAK, OUTLIER_AFTER_MS, type SessionHost, type SessionStore } from './session';
+import { createSessionHost, LINE_BREAK, OUTLIER_AFTER_MS, type SessionHost, type SessionHostDeps, type SessionStore } from './session';
 
 const PROJECT = 'example-org/grilling-demo';
 const HOST = 'ada-example';
@@ -88,7 +88,7 @@ interface Rig {
 
 let now: Date;
 
-async function rig(overrides: { store?: SessionStore } = {}): Promise<Rig> {
+async function rig(overrides: { store?: SessionStore; holds?: SessionHostDeps['holds'] } = {}): Promise<Rig> {
   now = new Date(START);
   const store = createMemoryStore({ now: () => now });
   await store.createProject({ newRepository: { organisation: 'example-org', name: 'grilling-demo' } });
@@ -96,7 +96,7 @@ async function rig(overrides: { store?: SessionStore } = {}): Promise<Rig> {
   const bus = createSliceBus();
   const transcriber = new FakeTranscriber();
   const agents = new FakeAgents();
-  const host = createSessionHost({ store: overrides.store ?? store, slices: bus, transcriber, agents });
+  const host = createSessionHost({ store: overrides.store ?? store, slices: bus, transcriber, agents, holds: overrides.holds });
   return { host, store, bus, transcriber, agents };
 }
 
@@ -260,6 +260,42 @@ describe('grilling session: start, presence and consent', () => {
     await host.tickConsent(HOST);
 
     expect(await refusal(host.setRecording('yes' as unknown as boolean))).toBe('invalid');
+  });
+});
+
+describe("grilling session: each meeting agent's ticket at hand", () => {
+  it('is the newest ticket the agent holds in this session, read in its project folder; none before a session or a hold', async () => {
+    const asked: string[] = [];
+    const setup = await rig({
+      holds: async (folder, sessionId) => {
+        asked.push(`${folder} ${sessionId}`);
+        return [
+          { ticket: 3, agentId: 'tab-1', heldAt: 100 },
+          { ticket: 8, agentId: 'tab-2', heldAt: 100 },
+          { ticket: 5, agentId: 'tab-1', heldAt: 200 },
+        ];
+      },
+    });
+    setup.agents.add('tab-1', 'tab-2', 'tab-3');
+    expect(await setup.host.ticketAtHand('tab-1')).toBeNull();
+
+    const { id } = await setup.host.startSession(PROJECT);
+
+    expect(await setup.host.ticketAtHand('tab-1')).toBe(5);
+    expect(await setup.host.ticketAtHand('tab-2')).toBe(8);
+    expect(await setup.host.ticketAtHand('tab-3')).toBeNull();
+    expect(asked.at(-1)).toBe(`/memory/Grillo ${id}`);
+  });
+
+  it('refuses an agent that is not running, and a hold folder Grillo cannot read, each as a SessionError', async () => {
+    const setup = await rig({
+      holds: () => Promise.reject(new Error('EACCES: permission denied')),
+    });
+    setup.agents.add('tab-1');
+    await setup.host.startSession(PROJECT);
+
+    expect(await refusal(setup.host.ticketAtHand('tab-9'))).toBe('unknown-agent');
+    expect(await refusal(setup.host.ticketAtHand('tab-1'))).toBe('store');
   });
 });
 

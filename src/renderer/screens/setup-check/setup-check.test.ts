@@ -100,7 +100,13 @@ async function open(grillo: GrilloApi): Promise<HTMLElement> {
   const el = document.createElement('div');
   document.body.append(el);
   navigate = vi.fn<ShellContext['navigate']>();
-  const shell: ShellContext = { grillo, navigate, agentTabHeader: () => undefined, onAgentTabs: () => () => undefined };
+  const shell: ShellContext = {
+    grillo,
+    navigate,
+    agentTabHeader: () => undefined,
+    onAgentTabs: () => () => undefined,
+    showProject: () => undefined,
+  };
   unmount = setupCheck.mount(el, {}, shell) ?? undefined;
   await flush();
   return el;

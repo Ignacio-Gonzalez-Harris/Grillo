@@ -278,7 +278,8 @@ Taking a ticket is atomic (PRD section 4.3 item 6):
 
 Agents follow the same rule through `gh`. The grilling agents of one live session share the host's login, so
 each first holds the ticket on the laptop (`grillo-meeting`, "Holding a ticket in this session"): a folder inside
-the project folder's `.git`, never committed and never on GitHub.
+the project folder's `.git`, never committed and never on GitHub, whose `tab` file holds the id of the agent's tab
+(`GRILLO_AGENT_ID`), so Grillo can name each tab after its ticket.
 
 ## Saves to a protected main
 

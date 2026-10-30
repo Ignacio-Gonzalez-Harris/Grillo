@@ -28,6 +28,7 @@ import type { Consent, GrillingSession } from '../../store/types';
 import { type AgentRuntime, ENTER_AFTER_QUIET_MS } from '../agents/runtime';
 import type { SliceListener } from '../audio/slices';
 import type { Transcriber } from '../transcription/transcriber';
+import type { TicketHold } from './holds';
 
 /**
  * How long the slice at the head of the stream may take to transcribe before it is left out, so one outlier never
@@ -62,6 +63,8 @@ export interface SessionHostDeps {
   held?(agentId: AgentId, text: string, sent: boolean): void;
   /** Told each time a slice arrives, so the screens can show slices waiting to be transcribed. */
   sliceHeard?(): void;
+  /** The tickets the session's grilling agents hold in a project folder (`readTicketHolds`); none when left out. */
+  holds?(folder: string, sessionId: string): Promise<readonly TicketHold[]>;
 }
 
 /** One host's session. Every refusal is a `SessionError`. */
@@ -104,6 +107,11 @@ export interface SessionHost {
   jump(agentId: AgentId, ticket: number): Promise<void>;
   /** The running session, or null when there is none. */
   state(): SessionState | null;
+  /**
+   * The ticket a meeting agent works on: the newest it holds in this session (`grillo-meeting`, "Holding a ticket
+   * in this session"). Null before a session, or while the agent holds none.
+   */
+  ticketAtHand(agentId: AgentId): Promise<number | null>;
 }
 
 interface RunningSession {
@@ -639,6 +647,16 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
 
     state() {
       return session ? snapshot(session) : null;
+    },
+    async ticketAtHand(agentId) {
+      const agent = deps.agents.list().find(({ id }) => id === agentId);
+      if (agent === undefined) throw new SessionError('unknown-agent', `No running agent with id '${String(agentId)}'`);
+      const { holds } = deps;
+      if (!session || !holds) return null;
+      const { id } = session;
+      const held = await fromStore('Grillo could not read the tickets held in this session', () => holds(agent.folder, id));
+      const newest = held.filter((hold) => hold.agentId === agentId).sort((a, b) => b.heldAt - a.heldAt)[0];
+      return newest?.ticket ?? null;
     },
   };
 }

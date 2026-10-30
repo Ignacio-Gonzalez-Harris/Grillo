@@ -9,6 +9,8 @@ import { parse as parseYaml } from 'yaml';
 import { domainOf, isDomainLabel, NO_DOMAIN_LABEL, parseComment } from '../../../src/main/store/github/issues/bodies';
 import { parseMembers, parseSession, parseSource } from '../../../src/main/store/github/repo/records';
 import { sameLogin } from '../../../src/main/store/github/repo/names';
+import { readTicketHolds } from '../../../src/main/features/session/holds';
+import { AGENT_ID_VARIABLE } from '../../../src/shared/agents';
 import { readCommandCatalogue } from '../catalogue';
 import { checkProjectFixture, type CheckedTicket, readFixtureFolder } from '../fixture-check';
 
@@ -474,6 +476,29 @@ describe('holding a ticket in a live session', () => {
 
       expect([first, second].sort()).toEqual(['held-by-me', 'refused']);
       expect([others, afterLettingGo]).toEqual(['free', 'free']);
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  it('names the tab that holds each ticket, as Grillo reads it to title the tab after its ticket', async () => {
+    const { hold, release } = await holdCommands();
+    const project = mkdtempSync(join(tmpdir(), 'grillo-hold-'));
+    mkdirSync(join(project, '.git'));
+    const asTab = (tab: string, command: string) => `export ${AGENT_ID_VARIABLE}=${tab}; ${command}`;
+    const held = async () =>
+      (await readTicketHolds(project, SESSION)).map(({ ticket, agentId }) => ({ ticket, agentId })).sort((a, b) => a.ticket - b.ticket);
+    try {
+      await runInProject([asTab('tab-1', fill(hold, SESSION, 3)), asTab('tab-2', fill(hold, SESSION, 8))].join('\n'), project);
+      const both = await held();
+      await runInProject(fill(release, SESSION, 3), project);
+
+      expect(both).toEqual([
+        { ticket: 3, agentId: 'tab-1' },
+        { ticket: 8, agentId: 'tab-2' },
+      ]);
+      expect(await held()).toEqual([{ ticket: 8, agentId: 'tab-2' }]);
+      expect(await readTicketHolds(project, EARLIER_SESSION)).toEqual([]);
     } finally {
       rmSync(project, { recursive: true, force: true });
     }

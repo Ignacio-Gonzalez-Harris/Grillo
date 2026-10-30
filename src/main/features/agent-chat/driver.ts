@@ -7,7 +7,7 @@ import type {
   ChatQuestionItem,
   StartChatAgentRequest,
 } from '../../../shared/agent-chat';
-import { AGENT_KINDS } from '../../../shared/agents';
+import { AGENT_ID_VARIABLE, AGENT_KINDS } from '../../../shared/agents';
 import { createLineSplitter, parseEventLine, type StreamEvent } from './stream';
 
 /**
@@ -223,8 +223,8 @@ export function createClaudeChatDriver(deps: ChatDriverDeps): ChatDriver {
     const claude = deps.findClaude();
     await deps.shipSkills(request.folder);
 
-    const process = deps.spawnProcess(claude, CHAT_FLAGS, { cwd: request.folder, env: deps.env });
     const id = randomUUID();
+    const process = deps.spawnProcess(claude, CHAT_FLAGS, { cwd: request.folder, env: { ...deps.env, [AGENT_ID_VARIABLE]: id } });
     const agent: RunningChatAgent = { id, process, seenRequestIds: new Set(), awaitingResponses: new Set() };
     agents.set(id, agent);
 

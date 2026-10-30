@@ -815,8 +815,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">The member sees where the project stands (destination, settled, fog, out of scope) and the ticket list, and runs the tagging round.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 3 · flows 4.2 steps 6 and 7 · 4.3 (Routing a question)</dd>
-      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; Start meeting (starts the live session's meeting agent and opens its tab on the meeting screen, or opens the running one's tab; hidden on an archived project); per ticket Edit, Merge, Close as out of scope; Sources list (code, kind, who, when, where) with Open to read a source's full text; Close project; Reopen on an archived project. Over this screen (and any other): the update pop-up with Download and install and Later, the setup check screen's offer card with its phases (available, downloading with the percent, ready with Restart and install).</dd>
-      <dt>States</dt><dd>Engine building the map (loading) · Tickets untagged · Tagged and assigned, with sources · Source opened · Map done · Closed project, archived · Update pop-up over the map · Update pop-up, downloading · Update pop-up, ready to install · Update pop-up, unsigned Mac</dd>
+      <dt>Controls</dt><dd>Destination, settled, fog and out-of-scope lists; ticket list with kind, domain tags, assignee and blockers; filter by my domains; Run tagging round; Add ticket; Start meeting (starts the live session's meeting agent and opens its tab on the meeting screen, or opens the running one's tab when it is this project's; while another project's session runs on this laptop it opens nothing and names that project, with Open that session; hidden on an archived project); per ticket Edit, Merge, Close as out of scope; Sources list (code, kind, who, when, where) with Open to read a source's full text; Close project; Reopen on an archived project. Over this screen (and any other): the update pop-up with Download and install and Later, the setup check screen's offer card with its phases (available, downloading with the percent, ready with Restart and install).</dd>
+      <dt>States</dt><dd>Engine building the map (loading) · Tickets untagged · Tagged and assigned, with sources · Source opened · Map done · Closed project, archived · Update pop-up over the map · Update pop-up, downloading · Update pop-up, ready to install · Update pop-up, unsigned Mac · Another project's meeting running</dd>
     </dl>
   </header>
   <div class="states">
@@ -832,6 +832,25 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="update-ready">Update pop-up, ready to install</button>
       <button class="btn sm" data-state="update-popup-mac">Update pop-up, unsigned Mac</button>
       <button class="btn sm" data-state="damaged-ticket">A damaged ticket</button>
+      <button class="btn sm" data-state="other-meeting">Another project's meeting running</button>
+    </div>
+
+    <div class="state" data-state="other-meeting">
+      <p class="state-caption">State: Another project's meeting running (Start meeting pressed on Sample project 2 while Sample project 1's live session runs on this laptop: nothing opens and nothing starts)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 2</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Tickets</h3><span class="spacer"></span><button class="btn">Add ticket</button><button class="btn">Run tagging round</button><button class="btn">Start meeting</button></div>
+            <div class="note warn row" role="status"><span class="grow fill">A live session of example-org/sample-project-1 is running on this laptop, and Grillo runs one live session at a time. To start one for this project, end that session first: type /exit in each of its grilling agent tabs, or quit Grillo.</span><a class="btn sm" href="#screen-meeting/type">Open that session</a></div>
+            <div class="table-wrap"><table>
+              <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th><th>Blocked by</th><th></th></tr>
+              <tr><td>Sample ticket 9</td><td><span class="badge">grilling</span></td><td><span class="tag d1">product</span></td><td>—</td><td>—</td><td><span class="row"><button class="btn sm">Edit</button><button class="btn sm">Merge</button><button class="btn sm">Close as out of scope</button></span></td></tr>
+            </table></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="state" data-state="damaged-ticket">

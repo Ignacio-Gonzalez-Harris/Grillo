@@ -17,6 +17,11 @@ export interface ShellContext {
    * drawn them (so `agentTabHeader` finds each one).
    */
   onAgentTabs(listener: (agents: readonly AgentInfo[]) => void): Unsubscribe;
+  /**
+   * Tells the shell which project the open screen is about (`<owner>/<repo>`), when its params do not say so (a
+   * meeting agent's tab): the title bar names it, and the Map, Tickets and PRD tabs and "+" open on it.
+   */
+  showProject(project: string): void;
 }
 
 /**
