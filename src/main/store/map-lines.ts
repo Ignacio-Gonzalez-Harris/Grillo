@@ -7,8 +7,8 @@ import type { ProjectMap } from './types';
 
 type MapLines = Pick<ProjectMap, 'settled' | 'outOfScope'>;
 
-/** `#<number>` as a word of its own, so `#2` is not found in `#21`, `##2` or `issue#2`. */
-const namesTicket = (line: string, ticket: number): boolean => new RegExp(`(?<![\\w#])#${ticket}(?!\\d)`).test(line);
+/** `#<number>` as a word of its own, so `#2` is not found in `#21`, `#2a`, `##2` or `issue#2`. */
+const namesTicket = (line: string, ticket: number): boolean => new RegExp(`(?<![\\w#])#${ticket}(?!\\w)`).test(line);
 
 const isOutOfScope = (map: MapLines, ticket: number): boolean => map.outOfScope.some((line) => namesTicket(line, ticket));
 

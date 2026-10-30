@@ -448,6 +448,7 @@ describe('GitHub issues backend: map bookkeeping', () => {
     ['in brackets', 'Beyond this PRD [#2]', true],
     ['after an equals sign', 'ticket=#2', true],
     ['another ticket that starts with the same digits', 'Hosting (#21)', false],
+    ['a ticket number followed by a letter', 'Beyond this PRD #2a', false],
     ['a double hash', 'Beyond this PRD ##2', false],
     ['a hash inside a word', 'Beyond this PRD, see issue#2', false],
     ['a plain number', 'Two weeks: 2 sprints', false],
