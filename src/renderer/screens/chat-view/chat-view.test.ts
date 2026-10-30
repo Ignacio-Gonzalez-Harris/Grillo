@@ -40,6 +40,7 @@ const OTHER_QUESTION_ID = '33333333-3333-4333-8333-333333333333';
 /** The stylesheets the app loads for the chat view, read from disk: tests import stylesheets empty. */
 const GLASS_CSS = resolve(__dirname, '../../theme/glass.css');
 const CHAT_VIEW_CSS = resolve(__dirname, 'chat-view.css');
+const TOKENS_CSS = resolve(__dirname, '../../theme/tokens.css');
 
 const flush = async () => {
   for (let step = 0; step < 5; step += 1) await new Promise((resolve) => setTimeout(resolve, 0));
@@ -222,6 +223,31 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
     });
     expect(option.getAttribute('aria-pressed')).toBe('true');
     expect(view.buttonNamed('Red').disabled).toBe(true);
+  });
+
+  it('greys out the options not picked once a choice is made, under the real stylesheets, and keeps the pick highlighted', async () => {
+    for (const sheet of [TOKENS_CSS, GLASS_CSS, CHAT_VIEW_CSS]) {
+      const style = document.createElement('style');
+      style.textContent = readFileSync(sheet, 'utf8');
+      document.head.append(style);
+    }
+    const view = await app();
+    const { process } = await view.startAgent('generic', 'Sample customer email');
+    process.emit(recorded.questionRequest);
+    const look = (name: string) => {
+      const style = getComputedStyle(view.buttonNamed(name));
+      return { color: style.color, background: style.backgroundColor };
+    };
+    const token = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const before = ['Red', 'Blue', 'Something else'].map(look);
+
+    view.buttonNamed('Blue').click();
+    await flush();
+
+    const greyed = { color: token('--color-text-disabled'), background: token('--color-disabled-fill') };
+    expect(before.map((each) => each.color)).toEqual(Array(3).fill(token('--color-text')));
+    expect([look('Red'), look('Something else')]).toEqual([greyed, greyed]);
+    expect(look('Blue').background).toBe(token('--color-accent-soft'));
   });
 
   it('answers with "Something else": the next message the member writes is the answer', async () => {
