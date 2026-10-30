@@ -131,7 +131,7 @@ apart. Before you claim any ticket, hold it in this session, so two grilling age
 3. **Let go** when you leave the ticket or lose its claim:
 
    ```bash
-   rm -f .git/meeting-holds/<session id>/<ticket number>/tab && rmdir .git/meeting-holds/<session id>/<ticket number>
+   rm -r .git/meeting-holds/<session id>/<ticket number>
    ```
 
 ## Recording an answer
