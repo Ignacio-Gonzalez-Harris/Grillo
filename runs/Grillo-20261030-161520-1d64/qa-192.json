@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261030-161520-1d64",
+  "issue": 192,
+  "title": "Chat agents: real status after an answer, stop closes the tab, cancelled questions, start errors",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 202,
+  "merged_at": "2026-10-30T16:40:34Z",
+  "merge_commit": "70e0dc8d9d35a4d784fdbbbff3d20916ae6944f3",
+  "seam": "src/main/features/agent-chat/",
+  "story": "With the chat view on, an agent's tab now tells the truth. After answering a question or allowing a tool, the 'waiting for you' dot goes instead of staying on while the agent works. A question the agent withdraws no longer leaves dead buttons, stopping a chat agent closes its tab, and a failed Claude Code start shows its own error lines instead of a tab that silently vanishes.",
+  "checks": [
+    {
+      "key": "src/main/features/agent-chat/answer-clears-dot",
+      "criterion": "After an answer, allow or deny, the tab shows the agent working until it next waits or ends its turn; tool events count as work",
+      "steps": "Start Grillo with GRILLO_AGENT_RUNTIME=chat, open a made-up project, open a generic agent with '+'. Ask it: 'Ask me Red or Blue with AskUserQuestion'. Click 'Blue'.",
+      "expected": "The dot shows while the question waits and goes the moment you click; it returns only when the agent's turn ends or it asks again."
+    },
+    {
+      "key": "src/main/features/agent-chat/stop-closes-tab",
+      "criterion": "Stopping a chat agent removes its tab",
+      "steps": "Open a generic chat agent tab, then call agent-chat:stop with that tab's id from the renderer devtools console (no button exists).",
+      "expected": "The tab leaves the tab bar, and the body says 'This agent is not running.'"
+    },
+    {
+      "key": "src/main/features/agent-chat/withdrawn-question",
+      "criterion": "A cancel request for a pending question removes that question's answer buttons",
+      "steps": "Have the agent ask a clickable question. Interrupt it before answering, so Claude Code withdraws the question.",
+      "expected": "The option buttons disappear and 'The agent withdrew this question.' shows in their place."
+    },
+    {
+      "key": "src/main/features/agent-chat/failed-start-error",
+      "criterion": "A failed start shows the last lines of Claude Code's own error text in the chat",
+      "steps": "Put a made-up 'claude' script first on PATH that prints 'Error: made-up failure' to stderr and exits 1. Start Grillo with the chat runtime and open a generic agent.",
+      "expected": "A red note with 'exit code 1' and 'Error: made-up failure'; after the tab closes, the same text under 'This agent is not running.'"
+    }
+  ],
+  "no_qa_reason": null
+}

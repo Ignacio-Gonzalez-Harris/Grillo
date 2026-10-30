@@ -1,0 +1,51 @@
+{
+  "run_id": "Grillo-20261030-161520-1d64",
+  "issue": 192,
+  "title": "Chat agents: real status after an answer, stop closes the tab, cancelled questions, start errors",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-30T16:17:00Z",
+  "finished_at": "2026-10-30T16:41:00Z",
+  "outcome": "merged",
+  "pr": 202,
+  "summary": "A chat agent's tab now shows what the agent really does: the waiting dot clears after an answer, a withdrawn question loses its buttons, stopping closes the tab, and a failed start shows Claude Code's own error lines.",
+  "agents": [
+    {
+      "name": "dev-192",
+      "model": "opus",
+      "tokens_total": 260251
+    },
+    {
+      "name": "review-192",
+      "model": "opus",
+      "tokens_total": 142117
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1022,
+    "review_seconds": 292,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/agent-tab/",
+      "what": "A background agent (PRD writer, PRD scorer, map tagging) whose Claude Code fails to start loses its error text: its tab vanishes while the member is elsewhere, the end note is discarded, and reopening shows only 'This agent is not running.'",
+      "why": "Needs a decision on where a gone agent's failure surfaces (tab bar or app notice), outside this story's seam",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/features/session/",
+      "what": "When an agent leaves the agent list, its Open channel in the live session stays listed until a send to it fails",
+      "why": "The session folder belonged to the parallel story issue #193",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

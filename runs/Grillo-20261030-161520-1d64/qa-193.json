@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261030-161520-1d64",
+  "issue": 193,
+  "title": "Grilling skills: start the PRD writer after map done, and share tickets cleanly between agents",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 201,
+  "merged_at": "2026-10-30T22:35:32Z",
+  "merge_commit": "7b53004a8b15923a0c596797ee8085b648e5f8df",
+  "seam": "resources/skills/",
+  "story": "When the last ticket closes, the agent that closed it now writes the PRD itself; before, its own tool refused to start the PRD writer and the finished map just waited. Two grilling tabs on one laptop no longer both grab the first ticket, and a ticket released at Done can be taken again straight away. In a meeting, a ticket one agent left open is not asked again by another agent, and closing a tab mid-ticket frees that ticket at once instead of locking it for the session.",
+  "checks": [
+    {
+      "key": "resources/skills/prd-writer-after-map-done",
+      "criterion": "The agent that closes the last ticket starts the PRD writer itself",
+      "steps": "Use a made-up project 'garden-demo' with a map, exactly one open ticket and no fog. Open that ticket in own-time answering, answer every question, press Done.",
+      "expected": "The agent says the map is done and, in the same tab, writes .grillo/prd/v1.md; no 'skill cannot be invoked' refusal."
+    },
+    {
+      "key": "resources/skills/two-agents-one-ticket",
+      "criterion": "Outside a meeting, two grilling agents under one login never claim the same frontier ticket",
+      "steps": "In 'garden-demo' with open tickets 3 and 8, start two own-time grilling agents at the same moment, neither naming a ticket. Watch which ticket each takes.",
+      "expected": "One takes ticket 3; the other says ticket 3 is held and takes ticket 8."
+    },
+    {
+      "key": "src/main/features/session/hold-cleared-on-tab-stop",
+      "criterion": "When a meeting agent's tab stops, its ticket hold is cleared",
+      "steps": "Start a live session and open a second grilling agent. Let tab A take ticket 3, then close tab A mid-ticket. In tab B, Jump to ticket 3.",
+      "expected": "Tab B takes ticket 3 and is not refused as held by another agent."
+    },
+    {
+      "key": "resources/skills/left-ticket-not-repicked",
+      "criterion": "A ticket one agent left with questions open is not picked by another agent in the same session, and Jump still works",
+      "steps": "In a live session with two agents, let tab A skip past ticket 3's last question. Let tab B pick its next ticket. Then Jump tab B to ticket 3.",
+      "expected": "Tab B never picks ticket 3 by itself, and Jump takes it."
+    },
+    {
+      "key": "resources/skills/released-ticket-retaken",
+      "criterion": "A ticket released with questions open can be taken again straight away on the same laptop",
+      "steps": "Open ticket 3 in own-time answering, answer one question and press Done so it is released with questions open. Leave that tab open and take ticket 3 again from the pool.",
+      "expected": "The new agent claims ticket 3 and never says another agent holds it."
+    }
+  ],
+  "no_qa_reason": null
+}

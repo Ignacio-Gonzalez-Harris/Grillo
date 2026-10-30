@@ -1,0 +1,65 @@
+{
+  "run_id": "Grillo-20261030-161520-1d64",
+  "issue": 193,
+  "title": "Grilling skills: start the PRD writer after map done, and share tickets cleanly between agents",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-30T16:17:20Z",
+  "finished_at": "2026-10-30T22:36:00Z",
+  "outcome": "merged",
+  "pr": 201,
+  "summary": "The agent that closes the last ticket can now start the PRD writer itself, two grilling agents on one laptop no longer claim the same ticket, and a stopped meeting tab or a left ticket no longer locks or repeats tickets for other agents.",
+  "agents": [
+    {
+      "name": "dev-193",
+      "model": "opus",
+      "tokens_total": 261379
+    },
+    {
+      "name": "review-193",
+      "model": "opus",
+      "tokens_total": 135456
+    },
+    {
+      "name": "review-193-r2",
+      "model": "opus",
+      "tokens_total": 140263
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1027,
+    "review_seconds": 21480,
+    "ci_seconds": 120
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [
+    "The confirming review took about 5.9 hours, almost all of it waiting for the machine-wide gate lock while other sessions ran their suites; meanwhile four stories merged to main and the branch needed a conflict round in five files"
+  ],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "resources/skills/grillo-score/",
+      "what": "The PRD writer tells the agent to run /grillo-score in the same agent, but grillo-score keeps disable-model-invocation: true (pinned by its test), so no PRD version written by the map-done rule ever gets its score file",
+      "why": "A different skill outside this story's seam, and its own test pins the flag",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "resources/skills/grillo-wayfinder/",
+      "what": "A no-session ticket hold outlives its owner when Grillo did not see the tab stop (Grillo crashed, or /grillo-answer N was run by hand), so every agent on that laptop refuses ticket N until someone deletes .git/meeting-holds/ by hand",
+      "why": "Needs a design decision: a single-instance lock or stale-hold detection; the runbook documents the manual step",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "resources/skills/grillo-meeting/",
+      "what": "On the host's laptop a live-session agent holds under meeting-holds/<session id>/ while an own-time agent holds under meeting-holds/no-session/, so both can hold and grill the same ticket at once",
+      "why": "Outside this story's criteria (outside a meeting) and needs a choice of which folder both check",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
