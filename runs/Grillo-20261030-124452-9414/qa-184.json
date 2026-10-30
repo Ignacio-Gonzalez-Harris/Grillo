@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261030-124452-9414",
+  "issue": 184,
+  "title": "Storage: saves on a protected main branch, and lists that survive one damaged record",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 197,
+  "merged_at": "2026-10-30T14:27:10Z",
+  "merge_commit": "4143f3b84e5eb125b587a1b9f2564157f2678159",
+  "seam": "src/main/store/github/, src/main/store/store.ts, and the notice and flagged-item rendering in the project list, map, tickets and PRD view screens under src/renderer/screens/",
+  "story": "Saving to a project whose GitHub main branch is protected now behaves like a normal save while its pull request waits: numbers don't collide, a session or PRD version saved a moment ago can be updated or scored, and a note above the open screen names the pull request; once dismissed, it stays dismissed. Before, two saves both took S1 and a follow-up update failed with 'not found'. One hand-damaged project, ticket or score file used to empty the whole project list, map, tickets screen or PRD view; now only that item is flagged, with the reason. The tickets screen reads waiting GitHub comments with one store call per project instead of one per ticket.",
+  "checks": [
+    {
+      "key": "store/save-notice",
+      "criterion": "When a save becomes a pull request, the member sees a notice naming it on the screen where they saved.",
+      "steps": "Make a made-up repository whose main branch is protected and open it as a project in Grillo. On the Project screen, invite a made-up login. Press Dismiss, then save another change to the same record (for example the same member's role).",
+      "expected": "A note above the screen says 'Saved as pull request #N, \"grillo: …\"', names the repository, and has Open on GitHub and Dismiss. Dismiss removes it and later saves into the same pull request never bring it back; a save that opens a new pull request shows a new note."
+    },
+    {
+      "key": "store/protected-numbering",
+      "criterion": "With main protected, two saves in a row get different numbers.",
+      "steps": "In that project, add two sources one after the other.",
+      "expected": "S1 and S2, two pull requests on GitHub with different files, and the map's Sources list shows both before anything is merged."
+    },
+    {
+      "key": "store/damaged-project",
+      "criterion": "A damaged project is flagged and the list still shows every other project.",
+      "steps": "On GitHub, put 'not json' into .grillo/members.json of one made-up project, then open the Project screen.",
+      "expected": "That project shows 'Damaged' with the reason and 'Fix the file on GitHub…'; the other projects show as usual."
+    },
+    {
+      "key": "tickets/damaged-ticket",
+      "criterion": "A damaged ticket is flagged on the map and the tickets screen, and the rest still work.",
+      "steps": "On GitHub, add a second wayfinder: kind label to one made-up ticket. Open Map, then Tickets, then select that ticket.",
+      "expected": "The map row shows 'Damaged' with the reason and no Edit, Merge or Close; the tickets list shows a Damaged badge and the card shows a warning note and no controls; every other ticket works as before."
+    },
+    {
+      "key": "prd/damaged-score",
+      "criterion": "A damaged score file is flagged and Rerun stays reachable.",
+      "steps": "On GitHub, replace .grillo/prd/v<latest>.score.json with '{ not json', then open PRD.",
+      "expected": "The Score panel and the version row show 'Damaged' with the reason; Rerun is enabled and writes a fresh score."
+    }
+  ],
+  "no_qa_reason": null
+}

@@ -1,0 +1,26 @@
+{
+  "run_id": "Grillo-20261030-124452-9414",
+  "issue": 188,
+  "title": "Start-up failure is always visible, and a private GitHub email still gives the member's email",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 195,
+  "merged_at": "2026-10-30T13:19:00Z",
+  "merge_commit": "1318bd865261eafc4353a4733614b55715f4636b",
+  "seam": "src/main/app/ and src/main/features/tools/, plus the guidance line on src/renderer/screens/setup-check/",
+  "story": "If Grillo hits an error while starting, it now shows the reason in an error dialog and closes; before, it opened no window and left a hidden process only Task Manager could end. On the Setup screen, a member who keeps their GitHub email private is told to approve the one-time email permission in the browser, and pressing Check again then shows their email. Sign-in itself is unchanged (gh auth login --web).",
+  "checks": [
+    {
+      "key": "app/startup-failure-dialog",
+      "criterion": "A feature whose register() throws at start-up makes Grillo show the error in the system's error dialog and then quit.",
+      "steps": "Add a made-up feature folder src/main/features/zz-broken/ipc.ts whose register() throws new Error('made-up failure'). Run npm run dev. Press OK on the dialog. Remove the folder.",
+      "expected": "A dialog headed 'Grillo could not start', then \"Feature 'zz-broken' could not start: made-up failure\", then 'Grillo will close now…'. After OK, no Grillo or electron process is left running."
+    },
+    {
+      "key": "setup-check/private-email-scope-step",
+      "criterion": "When the member's email comes back empty, the setup check shows the scope command; after it runs the email is read again.",
+      "steps": "Sign in a made-up GitHub account that keeps its email private and lacks the user:email scope with gh auth login --web. Open Grillo on the Setup tab. Run gh auth refresh -h github.com -s user:email and approve it in the browser. Press Check again.",
+      "expected": "Before: Email reads 'Not shared yet', the refresh command shows with '…approve it in your browser, then press Check again.', and Check again and Continue are enabled. After Check again: the primary email shows and the step is gone."
+    }
+  ],
+  "no_qa_reason": null
+}

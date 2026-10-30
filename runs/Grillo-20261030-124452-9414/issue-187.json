@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261030-124452-9414",
+  "issue": 187,
+  "title": "Installer and toolchain: Intel Mac build, no unused speech-engine files, no source rebuild on Windows, current Node 24 LTS",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-30T12:44:53Z",
+  "finished_at": "2026-10-30T14:21:00Z",
+  "outcome": "merged",
+  "pr": 198,
+  "summary": "The release now builds one universal Mac app (Apple silicon and Intel), leaves the unused CUDA, Vulkan and WASM speech engines out of the Windows installer (231 MB to 119 MB), uses node-pty's prebuilt binary instead of compiling it, pins Node 24.22.2, and CI installs Electron before tests.",
+  "agents": [
+    {
+      "name": "dev-187",
+      "model": "opus",
+      "tokens_total": 181200
+    },
+    {
+      "name": "review-187",
+      "model": "opus",
+      "tokens_total": 141776
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 3150,
+    "review_seconds": 920,
+    "ci_seconds": 600
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": ".github/workflows/ and electron-builder.yml (Mac)",
+      "what": "The universal Mac build, the step that fetches the other chip's speech engine with a checksum, and the CI changes never ran, so the first published release is their first real test and may fail or ship a Mac app that does not start on one chip.",
+      "why": "GitHub Actions has no minutes and there is no Mac on this machine.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

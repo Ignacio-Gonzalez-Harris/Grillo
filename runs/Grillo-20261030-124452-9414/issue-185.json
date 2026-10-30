@@ -1,0 +1,50 @@
+{
+  "run_id": "Grillo-20261030-124452-9414",
+  "issue": 185,
+  "title": "Live meeting: never lose spoken words without telling the host",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-30T12:44:53Z",
+  "finished_at": "2026-10-30T14:18:30Z",
+  "outcome": "merged",
+  "pr": 196,
+  "summary": "The meeting screen now says when spoken words are lost or delayed: an ended capture track stops Record with a reason, a 'transcription is behind' line shows when slices queue, a stuck slice drops only itself (a fresh speech-model copy takes the next slice), agents get nothing until Claude Code is ready, and terminal Enter waits for the typed echo.",
+  "agents": [
+    {
+      "name": "dev-185",
+      "model": "opus",
+      "tokens_total": 328944
+    },
+    {
+      "name": "review-185",
+      "model": "opus",
+      "tokens_total": 160668
+    },
+    {
+      "name": "review-185-r2",
+      "model": "opus",
+      "tokens_total": 169806
+    },
+    {
+      "name": "review-185-r3",
+      "model": "opus",
+      "tokens_total": 178190
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 2600,
+    "review_seconds": 1400,
+    "ci_seconds": 1500
+  },
+  "rounds": {
+    "review": 3,
+    "ci": 3
+  },
+  "friction": [
+    "The merge gate went red twice on a 5-second timeout in resources/skills/grillo-meeting/grillo-meeting.test.ts (the test forks Git Bash many times) while another project's Playwright tests held the CPU at 80-100%; the gate lock only serialises Grillo runs, so about 30 minutes went to two red runs and waiting for the other project to finish."
+  ],
+  "lessons_learned": [
+    "Fakes for the speech engine must run one call at a time like whisper.node (one native lock per context, a running call cannot be aborted); fakes that ran calls side by side hid the outlier-clock bug through two review rounds."
+  ],
+  "deferred": []
+}

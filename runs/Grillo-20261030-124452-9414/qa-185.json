@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261030-124452-9414",
+  "issue": 185,
+  "title": "Live meeting: never lose spoken words without telling the host",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 196,
+  "merged_at": "2026-10-30T14:18:30Z",
+  "merge_commit": "7a07b2b",
+  "seam": "src/renderer/audio/, src/main/features/session/, src/main/features/transcription/, the send path and ready signal in src/main/features/agents/runtime.ts, and the meeting panel's status line in src/renderer/screens/meeting/",
+  "story": "The meeting screen says when spoken words are lost or delayed. An unplugged microphone (or call audio no longer shared) stops Record with a red reason instead of recording silence, and a yellow line shows when transcription falls behind; a slice the model takes over 15 seconds on is left out, but the healthy slices behind it are kept. Grilling agents receive nothing until Claude Code is ready, and terminal sends press Enter only after the typed text appears on screen; before, Enter came straight after the text.",
+  "checks": [
+    {
+      "key": "meeting/capture-stops-by-itself",
+      "criterion": "When a capture track ends, recording stops and the meeting panel says why.",
+      "steps": "Plug in a USB microphone and pick it. Open a meeting on a made-up project and tick consent. Choose Room microphone, turn Record on and press Listen. Say a sentence, then unplug the microphone.",
+      "expected": "Record turns off and the red banner goes; a red note starting 'Recording stopped: the microphone stopped sending sound' shows; Type is selected again; the sentence spoken before stays in the transcript; turning Record on again clears the note. If the transcript cannot be saved at that moment, the note ends with 'The transcript could not be written to the session file; try again'."
+    },
+    {
+      "key": "meeting/transcription-behind",
+      "criterion": "When more than two slices wait, the meeting panel shows that transcription is behind.",
+      "steps": "Load the laptop heavily (for example a large build). Record and talk for a minute.",
+      "expected": "While three or more slices wait, a yellow line shows: 'Transcription is behind: N slices (about N×5 seconds of talk)… a slice the model takes more than 15 seconds over is left out of the transcript.' It goes once the model catches up."
+    },
+    {
+      "key": "meeting/agent-not-ready",
+      "criterion": "The session types nothing into an agent before the runtime reports it ready.",
+      "steps": "Start a meeting in a folder Claude Code has never trusted. Leave the trust question unanswered for 10 seconds, then answer Yes.",
+      "expected": "Nothing is typed into the question while it shows. After Yes, the meeting command runs first, then 'session: …', then presence and mode."
+    }
+  ],
+  "no_qa_reason": null
+}

@@ -1,0 +1,56 @@
+{
+  "run_id": "Grillo-20261030-124452-9414",
+  "issue": 184,
+  "title": "Storage: saves on a protected main branch, and lists that survive one damaged record",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-30T12:44:53Z",
+  "finished_at": "2026-10-30T14:27:10Z",
+  "outcome": "merged",
+  "pr": 197,
+  "summary": "Saves on a protected main now take distinct numbers and can be updated while their pull request waits, a note names the pull request a save became, one damaged project, ticket or score file is flagged instead of emptying its whole list, close and merge report success once the issue closed, and the tickets screen reads pickup comments with one call per project.",
+  "agents": [
+    {
+      "name": "dev-184",
+      "model": "opus",
+      "tokens_total": 389176
+    },
+    {
+      "name": "review-184",
+      "model": "opus",
+      "tokens_total": 185410
+    },
+    {
+      "name": "review-184-r2",
+      "model": "opus",
+      "tokens_total": 169885
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 3200,
+    "review_seconds": 1400,
+    "ci_seconds": 600
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/",
+      "what": "Grillo only remembers its own waiting pull requests while it runs, so after a restart a new save on a protected main can reuse a number an unmerged pull request already holds and the two pull requests conflict on GitHub.",
+      "why": "Fixing it means reading open pull requests and their files back from GitHub, beyond this story's acceptance criteria.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "closeTicket on a ticket that carries a decision, when the map issue's body is damaged, closes the issue and then fails in changeMap, so the member is told the close failed although it happened.",
+      "why": "What to do with a settled line that cannot be written is map bookkeeping, not this story's scope.",
+      "owner": "issue #189 (map bookkeeping: one settled line per ticket)"
+    }
+  ]
+}

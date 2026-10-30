@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261030-124452-9414",
+  "issue": 187,
+  "title": "Installer and toolchain: Intel Mac build, no unused speech-engine files, no source rebuild on Windows, current Node 24 LTS",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 198,
+  "merged_at": "2026-10-30T14:21:00Z",
+  "merge_commit": "eceb3eb",
+  "seam": "electron-builder.yml (everything except signing), .nvmrc, engines in package.json, .github/workflows/",
+  "story": "Grillo's Windows installer is about half its old size, and building it no longer compiles anything, so no Visual Studio setup is needed. The Mac download is now one universal disk image that runs on both Apple silicon and Intel Macs; before, it only ran on Apple silicon. The project now pins Node 24.22.2, and the download site's Mac button points at the universal file.",
+  "checks": [
+    {
+      "key": "installer/windows-dist-size",
+      "criterion": "npm run dist builds the Windows installer without compiling node-pty and leaves out the CUDA, Vulkan and WASM speech engines.",
+      "steps": "On Windows with Node 24.22.2 run npm ci, then npx --no install-electron, then npm run dist. Look in dist/ and in dist/win-unpacked/resources/app.asar.unpacked/node_modules/@fugood/.",
+      "expected": "The log says 'skipped dependencies rebuild'. The installer is about 119 MB, not about 231 MB. The @fugood folder holds only node-whisper-win32-x64."
+    },
+    {
+      "key": "installer/windows-app-native-modules",
+      "criterion": "The packaged Windows app still runs terminals and the speech engine.",
+      "steps": "Install the built .exe, open Grillo, open any agent terminal, then start a live-meeting recording and speak a made-up test sentence.",
+      "expected": "The terminal starts and accepts typing, and transcript lines appear."
+    },
+    {
+      "key": "site/mac-download",
+      "criterion": "The site's Mac button links the universal disk image.",
+      "steps": "Once a release exists, open the download site and click 'Download for Mac'.",
+      "expected": "Grillo-<version>-universal.dmg downloads and opens on both an Apple silicon and an Intel Mac."
+    }
+  ],
+  "no_qa_reason": null
+}
