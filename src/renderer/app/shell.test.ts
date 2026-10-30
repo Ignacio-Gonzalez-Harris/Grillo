@@ -314,6 +314,18 @@ describe('app shell: a save that became a pull request', () => {
     expect(notes(root)).toEqual([]);
   });
 
+  it('keeps a dismissed note away when later saves join the same pull request, and still tells a new one', () => {
+    const fake = fakeGrillo();
+    const root = start(registry(), fake.grillo);
+    fake.emit('store:pull-request', NOTICE);
+    (notes(root)[0].querySelector('button') as HTMLButtonElement).click();
+
+    fake.emit('store:pull-request', NOTICE);
+    fake.emit('store:pull-request', { ...NOTICE, url: 'https://github.com/example-org/sample-project-1/pull/4', title: 'grillo: add source S2' });
+
+    expect(notes(root).map((note) => note.querySelector('a')?.getAttribute('href'))).toEqual(['https://github.com/example-org/sample-project-1/pull/4']);
+  });
+
   it('ignores a notice that is not one, or whose address is not a web address', () => {
     const fake = fakeGrillo();
     const root = start(registry(), fake.grillo);

@@ -39,11 +39,16 @@ function textOf({ project, url, title }: PullRequestNotice): string {
 export function createSaveNotice(grillo: GrilloApi): SaveNotice {
   const root = document.createElement('div');
   root.className = 'save-notices';
-  /** One note per pull request, oldest first: a later save added to the same pull request changes nothing on screen. */
-  const shown = new Map<string, HTMLElement>();
+  /**
+   * Every pull request already told, shown or dismissed: one note per pull request, oldest first. A later save added
+   * to the same pull request (a live session's transcript, say) changes nothing on screen, and a dismissed note stays
+   * dismissed.
+   */
+  const told = new Set<string>();
 
   function show(notice: PullRequestNotice): void {
-    if (shown.has(notice.url)) return;
+    if (told.has(notice.url)) return;
+    told.add(notice.url);
     const message = document.createElement('span');
     message.className = 'grow';
     message.textContent = textOf(notice);
@@ -58,13 +63,9 @@ export function createSaveNotice(grillo: GrilloApi): SaveNotice {
     note.setAttribute('role', 'status');
     const dismiss = button('Dismiss', {
       small: true,
-      onClick: () => {
-        note.remove();
-        shown.delete(notice.url);
-      },
+      onClick: () => note.remove(),
     });
     note.append(message, link, dismiss);
-    shown.set(notice.url, note);
     root.append(note);
   }
 
