@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261030-101442-e0c3",
+  "login": "Ignacio-Gonzalez-Harris",
+  "issue": 178,
+  "title": "Chat view: unpicked options do not grey out after a choice",
+  "started_at": "2026-10-30T10:15:51Z",
+  "finished_at": "2026-10-30T10:40:28Z",
+  "outcome": "merged",
+  "pr": 182,
+  "summary": "In the chat view the option buttons a member did not pick were disabled but looked unchanged; they now grey out using the existing disabled-button tokens. One new test.",
+  "agents": [
+    {
+      "name": "dev-178",
+      "model": "opus",
+      "tokens_total": 128502
+    },
+    {
+      "name": "review-178",
+      "model": "opus",
+      "tokens_total": 101366
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1071,
+    "review_seconds": 186,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

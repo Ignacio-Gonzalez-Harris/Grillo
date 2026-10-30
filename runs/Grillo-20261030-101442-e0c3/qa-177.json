@@ -1,0 +1,26 @@
+{
+  "run_id": "Grillo-20261030-101442-e0c3",
+  "login": "Ignacio-Gonzalez-Harris",
+  "issue": 177,
+  "title": "Agent's first message is not sent after the folder-trust question is answered",
+  "pr": 183,
+  "merged_at": "2026-10-30T10:44:42Z",
+  "merge_commit": "d1fc1dc9f1b39c5a5b163ca54bd3d0d54bd5a231",
+  "seam": "src/main/features/agents/",
+  "story": "Before this change, in a folder Claude Code had never trusted, Grillo typed the agent's first message after the trust question but often left it unsent. Grillo now presses Enter only once Claude Code shows the typed message, or after 10 seconds at most, so the first message of every terminal agent tab is sent on its own after the trust answer. Already-trusted folders behave as before.",
+  "checks": [
+    {
+      "key": "src/main/features/agents/first-message-after-trust",
+      "criterion": "In a never-trusted folder, answering \"Yes, I trust this folder\" shows the trust question first; the first message is then sent without pressing Enter and Claude starts answering.",
+      "steps": "Start Grillo with npm run dev (GRILLO_STORE=memory, terminal runtime). git init a new made-up folder under the temp folder. Start a grilling agent on it with window.grillo.invoke('agents:start', { kind: 'grilling', folder, title: 'Grilling · Login flow', firstMessage: 'Reply with the single word OK.' }). Open its tab. When Claude Code asks whether you trust the folder, press Down, then Enter. Wait 20 seconds. Repeat three times, each in a new folder.",
+      "expected": "The trust question first, then `Reply with the single word OK.` in Claude Code's input, sent with no key pressed, then Claude's answer OK."
+    },
+    {
+      "key": "src/main/features/agents/first-message",
+      "criterion": "In a folder Claude Code already trusts, the first message is still sent and answered.",
+      "steps": "Start the same agent on a folder trusted in the check above, open its tab, and wait 15 seconds.",
+      "expected": "The message is sent on its own and Claude answers OK."
+    }
+  ],
+  "no_qa_reason": null
+}

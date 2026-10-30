@@ -1,0 +1,20 @@
+{
+  "run_id": "Grillo-20261030-101442-e0c3",
+  "login": "Ignacio-Gonzalez-Harris",
+  "issue": 178,
+  "title": "Chat view: unpicked options do not grey out after a choice",
+  "pr": 182,
+  "merged_at": "2026-10-30T10:40:28Z",
+  "merge_commit": "cb97524dc6ffa7c08d61753c9ce458598f6b102f",
+  "seam": "src/renderer/screens/chat-view/",
+  "story": "In the chat view, once you click one of an agent's clickable options, the options you did not pick now turn grey, so your pick stands out. Before, the unpicked buttons could no longer be clicked but looked exactly as before the click. While the answer is being sent, all the buttons grey out for a moment. What the click sends to the agent did not change.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/chat-view/options",
+      "criterion": "After clicking one clickable option, the options not picked look greyed out and the pick stays highlighted.",
+      "steps": "Start Grillo with GRILLO_AGENT_RUNTIME=chat. Open a made-up project. Open a generic agent. Ask it to \"ask me to pick Red or Blue with clickable options\". Click Blue.",
+      "expected": "Before the click all options look the same (white fill, dark text). After the click Red and \"Something else\" have a grey fill, grey text and a faint border; Blue stays green-tinted with a green border; the agent goes on with Blue."
+    }
+  ],
+  "no_qa_reason": null
+}

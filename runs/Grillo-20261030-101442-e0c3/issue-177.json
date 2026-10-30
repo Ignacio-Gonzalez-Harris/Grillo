@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261030-101442-e0c3",
+  "login": "Ignacio-Gonzalez-Harris",
+  "issue": 177,
+  "title": "Agent's first message is not sent after the folder-trust question is answered",
+  "started_at": "2026-10-30T10:15:21Z",
+  "finished_at": "2026-10-30T10:44:42Z",
+  "outcome": "merged",
+  "pr": 183,
+  "summary": "After a fresh folder-trust answer Claude Code stays silent up to 2.5 s before echoing typed text, so Grillo's Enter after 0.5 s of silence was lost; Enter now waits for the echo (10 s at most). Tested in the real app, 3 of 3 untrusted folders.",
+  "agents": [
+    {
+      "name": "dev-177",
+      "model": "opus",
+      "tokens_total": 176679
+    },
+    {
+      "name": "review-177",
+      "model": "opus",
+      "tokens_total": 126201
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1268,
+    "review_seconds": 354,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/meeting/",
+      "what": "The meeting panel greets an agent (types `session: ...` then Enter) once its waiting dot shows after 3 s of silence; in a never-trusted folder where Claude Code stays silent 3 s or more after drawing its input, that line is typed straight after the still-unsent `/grillo-meeting`, and both go out as one message `/grillo-meetingsession: ...`.",
+      "why": "Pre-existing and outside issue #177's seam (src/main/features/agents/); the fix is for the meeting panel to greet only once the first message's Enter is pressed.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
