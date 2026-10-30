@@ -260,6 +260,7 @@ describe('agent tab', () => {
         tell = listener;
         return () => undefined;
       },
+      showProject: () => undefined,
     };
     const tabs = createAgentTabs(shellContext, registerTabPanels({}, [panel]));
     const good: AgentInfo = { id: 'a1', kind: 'grilling', title: 'Grilling · Sample ticket 1', folder: '/projects/sample-1', waiting: false };

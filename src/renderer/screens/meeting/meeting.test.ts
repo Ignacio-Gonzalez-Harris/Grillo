@@ -12,6 +12,7 @@ import { createFakeIpc } from '../../../main/ipc/fake-ipc';
 import { createMemoryStore } from '../../../main/store/memory';
 import { createMemorySettings } from '../../../main/store/memory/settings';
 import { createGrilloApi } from '../../../preload/bridge';
+import type { TicketHold } from '../../../main/features/session/holds';
 import type { StartCaptureResult } from '../../../shared/audio';
 import type { AudioCapture } from '../../audio';
 import { MICROPHONE_ENDED } from '../../audio/capture';
@@ -128,7 +129,9 @@ async function app() {
     },
     changed,
   );
-  const host = createSessionHost({ store, slices: bus, transcriber, agents: runtime, sliceHeard: changed });
+  // The tickets the meeting agents hold, as the skill's hold folders would say; the test fills it in.
+  const held: TicketHold[] = [];
+  const host = createSessionHost({ store, slices: bus, transcriber, agents: runtime, sliceHeard: changed, holds: async () => held });
   registerSessionChannels(ipc, host);
   let modelReady: () => void = () => undefined;
   let modelFailed: (error: Error) => void = () => undefined;
@@ -184,6 +187,7 @@ async function app() {
   return {
     store,
     host,
+    held,
     bus,
     ptys,
     capture,
@@ -696,6 +700,69 @@ describe('meeting screen: another grilling agent', () => {
     expect(text(panel().querySelector('.note.err'))).toBe('Claude Code could not start');
     expect(document.querySelectorAll('nav .tab[data-agent-id]')).toHaveLength(1);
     expect(document.querySelector('nav .tab.active')?.getAttribute('data-agent-id')).toBe(first.id);
+  });
+});
+
+describe("meeting screen: each meeting agent's tab names its ticket", () => {
+  const tabNames = () => [...document.querySelectorAll('nav .tab[data-agent-id] .tab-name')].map(text);
+  /** The agent says something, then goes quiet: the tab's dot comes on. */
+  async function talkThenWait(pty: FakePty): Promise<void> {
+    pty.print('A made-up question for the room.\r\n');
+    await vi.advanceTimersByTimeAsync(WAITING_AFTER_MS + ENTER_AFTER_QUIET_MS);
+    await settle();
+  }
+
+  it('titles each tab after the ticket its agent holds once it goes quiet, and renames it when the agent moves on', async () => {
+    const { store, held, ptys, panel, startMeeting } = await app();
+    const [one, five] = await store.listTickets(PROJECT, { state: 'open' });
+    const first = await startMeeting();
+    await flip(checkNamed(cardNamed(panel(), 'Consent'), 'Everyone here agreed'), true);
+    await click(buttonNamed(cardNamed(panel(), 'Grilling agents'), OPEN_ANOTHER));
+    const second = ptys.at(-1) as FakePty;
+    showPromptAndTakeCommand(second);
+    await vi.advanceTimersByTimeAsync(WAITING_AFTER_MS + ENTER_AFTER_QUIET_MS);
+    await settle();
+    const secondId = [...document.querySelectorAll<HTMLElement>('nav .tab[data-agent-id]')][1].dataset['agentId'] ?? '';
+    expect(tabNames()).toEqual(['Grilling · Live session', 'Grilling · Live session']);
+
+    held.push({ ticket: one.id.number, agentId: first.id, heldAt: 1 }, { ticket: five.id.number, agentId: secondId, heldAt: 1 });
+    await talkThenWait(first.pty);
+    await talkThenWait(second);
+
+    expect(tabNames()).toEqual(['Grilling · Sample ticket 1', 'Grilling · Sample ticket 5']);
+    expect([...cardNamed(panel(), 'Grilling agents').querySelectorAll('li > span:first-child')].map(text)).toEqual([
+      'Grilling · Sample ticket 1',
+      'Grilling · Sample ticket 5 New',
+    ]);
+
+    // The first agent closes its ticket and takes one added during the meeting, which the panel has not read yet.
+    const added = await store.createTicket(PROJECT, {
+      title: 'Sample ticket 7',
+      question: 'A made-up question?',
+      whyItMatters: 'Made up.',
+      assumptions: [],
+      kind: 'grilling',
+      blockers: [],
+      questions: ['Sample question.'],
+    });
+    held.splice(0, 1, { ticket: added.id.number, agentId: first.id, heldAt: 2 });
+    await talkThenWait(first.pty);
+
+    expect(tabNames()).toEqual(['Grilling · Sample ticket 7', 'Grilling · Sample ticket 5']);
+
+    // Nothing left that matches who is present: the agent holds no ticket, and its tab says so again.
+    held.splice(0, 1);
+    await talkThenWait(first.pty);
+
+    expect(tabNames()).toEqual(['Grilling · Live session', 'Grilling · Sample ticket 5']);
+  });
+
+  it("names the meeting's project in the title bar while its tab is open", async () => {
+    const { startMeeting } = await app();
+
+    await startMeeting();
+
+    expect(text(document.querySelector('.titlebar .project'))).toBe(PROJECT);
   });
 });
 

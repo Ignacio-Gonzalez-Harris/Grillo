@@ -118,11 +118,12 @@ apart. Before you claim any ticket, hold it in this session, so two grilling age
    message (`no-session` before one arrives); `<ticket number>` is the ticket's number:
 
    ```bash
-   mkdir -p .git/meeting-holds/<session id> && mkdir .git/meeting-holds/<session id>/<ticket number>
+   mkdir -p .git/meeting-holds/<session id> && mkdir .git/meeting-holds/<session id>/<ticket number> && printf '%s' "$GRILLO_AGENT_ID" > .git/meeting-holds/<session id>/<ticket number>/tab
    ```
 
    Only one agent can make that folder, and it lives inside `.git`, so it is never committed. Made: the ticket is
-   yours in this session. `mkdir` says it exists: another grilling agent of this session holds the ticket; say so in
+   yours in this session, and its `tab` file names your tab (Grillo starts you with `GRILLO_AGENT_ID`), so the host's
+   screen titles your tab after the ticket. `mkdir` says it exists: another grilling agent of this session holds the ticket; say so in
    one line, write nothing on it, and take the next ticket on the frontier (or refuse the jump). The ticket at hand
    is already held by you.
 2. **Claim it** (`grillo-wayfinder`, "Claiming a ticket"). Lost to another login: let go of the hold and take the
@@ -130,7 +131,7 @@ apart. Before you claim any ticket, hold it in this session, so two grilling age
 3. **Let go** when you leave the ticket or lose its claim:
 
    ```bash
-   rmdir .git/meeting-holds/<session id>/<ticket number>
+   rm -f .git/meeting-holds/<session id>/<ticket number>/tab && rmdir .git/meeting-holds/<session id>/<ticket number>
    ```
 
 ## Recording an answer

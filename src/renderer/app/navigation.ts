@@ -21,6 +21,9 @@ export const PROJECT_TABS: readonly FixedTab[] = [
   { screenId: 'prd', label: 'PRD' },
 ];
 
+/** A project as screens are opened with it: `{ project: '<owner>/<repo>' }`. */
+export const PROJECT_ID = /^[^/\s]+\/[^/\s]+$/;
+
 /** The setup check, which shows the update offer itself (PRD section 4.1 item 4). */
 export const SETUP_CHECK_SCREEN = 'setup-check';
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AgentInfo, StartAgentRequest } from '../../../shared/agents';
+import { AGENT_ID_VARIABLE, type AgentInfo, type StartAgentRequest } from '../../../shared/agents';
 import { FakePty } from './fake-pty';
 import {
   ClaudeNotFoundError,
@@ -63,14 +63,15 @@ describe('agent runtime', () => {
     vi.useRealTimers();
   });
 
-  it('ships the skills, then starts claude with no extra flags in the project folder, and lists the agent', async () => {
+  it('ships the skills, then starts claude with no extra flags in the project folder, told its own tab id, and lists the agent', async () => {
     const { runtime, ptys, steps, lists } = setup();
 
     const id = await runtime.startAgent(request);
 
     expect(steps).toEqual([`ship ${request.folder}`, `spawn ${CLAUDE_PATH} in ${request.folder}`]);
     expect(ptys[0].args).toEqual([]);
-    expect(ptys[0].options.env).toEqual({ PATH: '/opt/made-up/bin' });
+    // The agent's skills read the id to say which tab holds what (grillo-meeting, "Holding a ticket in this session").
+    expect(ptys[0].options.env).toEqual({ PATH: '/opt/made-up/bin', [AGENT_ID_VARIABLE]: id });
     const expected = { id, kind: 'grilling', title: 'Grilling · Login flow', folder: request.folder, waiting: false };
     expect(runtime.list()).toEqual([expected]);
     expect(lists.at(-1)).toEqual([expected]);

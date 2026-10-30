@@ -11,6 +11,12 @@ export type AgentKind = (typeof AGENT_KINDS)[number];
 export type AgentId = string;
 
 /**
+ * The environment variable every agent's Claude Code is started with: its own tab's id, so a skill can say which tab
+ * holds what (`grillo-meeting`, "Holding a ticket in this session").
+ */
+export const AGENT_ID_VARIABLE = 'GRILLO_AGENT_ID';
+
+/**
  * How an agent tab's Claude Code runs (PRD section 8, Agent runtime): `chat`, the machine-readable chat agent, or
  * `terminal`, the release-1 terminal agent kept as a working fallback until the Agent SDK terms are confirmed.
  */
