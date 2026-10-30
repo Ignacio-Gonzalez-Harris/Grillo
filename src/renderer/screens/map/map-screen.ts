@@ -82,7 +82,7 @@ const TAGGING_STARTED = 'The tagging round runs in its own tab. The tags appear 
 export function otherMeetingRunning(project: string): string {
   return (
     `A live session of ${project} is running on this laptop, and Grillo runs one live session at a time. ` +
-    "To start one for this project, close that session's grilling agent tabs first."
+    "To start one for this project, end that session first: type /exit in each of its grilling agent tabs, or quit Grillo."
   );
 }
 const RERUN_HINT = 'Rerun the tagging round when members join.';

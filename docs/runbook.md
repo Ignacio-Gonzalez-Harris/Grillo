@@ -476,8 +476,10 @@ ticket and Run tagging round.
 - **Another project's meeting running:** the laptop runs one live session at a time, so while another project's
   meeting agent runs, Start meeting opens nothing and starts nothing. A note under the Tickets header says "A live
   session of `<owner>/<repo>` is running on this laptop, and Grillo runs one live session at a time. To start one
-  for this project, close that session's grilling agent tabs first." **Open that session** opens that meeting's tab,
-  whose title bar names its project.
+  for this project, end that session first: type /exit in each of its grilling agent tabs, or quit Grillo."
+  **Open that session** opens that meeting's tab, whose title bar names its project. Agent tabs have no close
+  control: typing `/exit` in a terminal agent's tab (the default runtime) ends its Claude Code and the tab goes away,
+  and the session ends with its last meeting agent. Quitting Grillo stops every agent, whatever the runtime.
 - **A closed (archived) project** shows no Start meeting button; Reopen brings it back.
 - **While the engine builds the map** the Tickets card has no header row, so there is no Start meeting either.
 - **Developers:** `npx vitest run src/renderer/screens/map/map.test.ts -t "starting a live meeting"` runs the button

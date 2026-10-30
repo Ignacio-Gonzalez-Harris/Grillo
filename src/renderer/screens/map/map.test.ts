@@ -324,7 +324,7 @@ describe('the map screen: starting a live meeting', () => {
     const warning = ticketsHead(content()).parentElement?.querySelector('.note.warn');
     expect(text(warning)).toBe(
       `A live session of ${PROJECT} is running on this laptop, and Grillo runs one live session at a time. ` +
-        "To start one for this project, close that session's grilling agent tabs first.Open that session",
+        "To start one for this project, end that session first: type /exit in each of its grilling agent tabs, or quit Grillo.Open that session",
     );
 
     await click(content(), 'Open that session');
