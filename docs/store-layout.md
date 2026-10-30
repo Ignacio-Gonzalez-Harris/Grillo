@@ -150,8 +150,16 @@ Free text.
 - A mobile app
 ```
 
-Settled holds one line per closed ticket, `- #<ticket issue number> <gist>`. Fog and out of scope hold one
-`- ` line per item.
+Settled holds one line per ticket, `- #<ticket issue number> <gist>`, with the gist of its latest decision: a new
+decision replaces the line, and editing or deleting the latest one follows on it (deleting it brings back the one
+before, or takes the line off). Fog and out of scope hold one `- ` line per item. A line under Out of scope that
+names a ticket as `#<number>` means that ticket was closed as out of scope: it has no line under Settled, even if
+it carried a decision, until it is reopened.
+
+**Two laptops writing at once.** GitHub has no conditional write for an issue body, so every change of the body is
+read, changed, written and read again. While the fresh body does not hold the change, it is applied to that body and
+written again, up to five times; then the change is refused as a conflict. A write from another laptop that landed
+just after that last read can still lose a line; closing the ticket again writes its line back.
 
 A fog line an engine skill writes starts with the name of the PRD structure section it belongs to, exactly as
 `structure.json` spells it, then `: ` (`- Problem: pricing is unclear`), so a skill can tell which sections are
@@ -307,12 +315,16 @@ While that pull request is open, the save is **waiting**:
 ## Merging and reopening tickets
 
 - **Merge:** closing a ticket as a duplicate of another, with a decision comment whose text and gist are
-  `Merged into #<other issue number>`.
-- **Reopen:** the ticket's line leaves the map's settled list; its decision comments stay as history.
-- **Close again:** a ticket that has a decision comment and no line in the settled list gets the gist line of
-  its latest decision back.
-- **`duplicateOf`** is the number in the latest `Merged into #<n>` decision while the ticket is closed; an
-  open ticket has none.
+  `Merged into #<other issue number>`. A retry after a failure halfway finds that decision as the latest one and
+  writes no second one.
+- **Create:** the issue, its question codes, the sub-issue link and the blocker links are separate calls. A retry
+  with the same title, kind and words finds the open issue a failure left without a link and finishes it, instead of
+  creating a second one. A finished ticket with the same words stays apart: the retry makes a new one.
+- **Reopen:** the ticket's lines leave the map's settled and out-of-scope lists; its decision comments stay as
+  history.
+- **Close again:** a ticket that has a decision comment gets the gist line of its latest decision.
+- **`duplicateOf`** is the number in the ticket's latest decision, when that decision is `Merged into #<n>`,
+  while the ticket is closed. An open ticket has none, nor has one decided on its own after a merge was undone.
 
 ## Recent projects
 

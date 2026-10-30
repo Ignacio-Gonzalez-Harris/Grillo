@@ -362,6 +362,279 @@ describe('GitHub issues backend: tickets', () => {
   });
 });
 
+describe('GitHub issues backend: map bookkeeping', () => {
+  const decide = (store: IssuesStore, ticket: TicketId, gist: string) => store.createDecision(ticket, { text: gist, gist, sources: [], via: null });
+  const settled = async (store: IssuesStore) => (await store.getMap(PROJECT)).settled;
+
+  it('keeps one settled line per ticket, holding the latest gist, after two decisions or a decision then a merge', async () => {
+    const { store, issue, ticket } = await projectWithTicket();
+    const second = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Hosting' }));
+
+    await decide(store, ticket, 'GitHub first');
+    await decide(store, ticket, 'GitHub only');
+    await store.closeTicket(ticket);
+    await decide(store, second.id, 'Free for all');
+    await store.mergeTicket(second.id, into.id);
+
+    expect(await settled(store)).toEqual([
+      { ticket: 2, gist: 'GitHub only' },
+      { ticket: 3, gist: 'Merged into #4' },
+    ]);
+    expect(issue(1).body).toContain('### Settled\n- #2 GitHub only\n- #3 Merged into #4\n');
+  });
+
+  it('collapses the several lines an older version left for a ticket into the one with the latest gist', async () => {
+    const { store, issue, ticket } = await projectWithTicket();
+    issue(1).body = issue(1).body!.replace('### Settled\n', '### Settled\n- #2 Old one\n- #9 Someone else\n- #2 Older one\n');
+
+    await decide(store, ticket, 'GitHub only');
+
+    expect(await settled(store)).toEqual([
+      { ticket: 2, gist: 'GitHub only' },
+      { ticket: 9, gist: 'Someone else' },
+    ]);
+  });
+
+  it('follows only the latest decision on the map when decisions are edited or deleted', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const first = await decide(store, ticket, 'Same words');
+    const latest = await decide(store, ticket, 'Same words');
+
+    await store.updateDecision(ticket, first.id, { gist: 'An older thought' });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'Same words' }]);
+    await store.updateDecision(ticket, latest.id, { gist: 'GitHub only' });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'GitHub only' }]);
+    await store.deleteDecision(ticket, latest.id);
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'An older thought' }]);
+    await store.deleteDecision(ticket, first.id);
+    expect(await settled(store)).toEqual([]);
+  });
+
+  it('does not read a merge that was undone and later decided on its own as a duplicate', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+    await store.mergeTicket(ticket, into.id);
+    await store.reopenTicket(ticket);
+    await decide(store, ticket, 'GitHub only');
+
+    await store.closeTicket(ticket);
+
+    expect(await store.getTicket(ticket)).toMatchObject({ state: 'closed', duplicateOf: null });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'GitHub only' }]);
+  });
+
+  it.each([
+    ['a decision', async (store: IssuesStore, ticket: TicketId) => void (await decide(store, ticket, 'GitHub only'))],
+    ['a merge that was undone', async (store: IssuesStore, ticket: TicketId) => {
+      const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+      await store.mergeTicket(ticket, into.id);
+      await store.reopenTicket(ticket);
+    }],
+  ])('lists a ticket closed as out of scope only under Out of scope, even after %s', async (_case, before) => {
+    const { store, issue, ticket } = await projectWithTicket();
+    await before(store, ticket);
+
+    await store.updateMap(PROJECT, { outOfScope: ['Login flow: beyond this PRD (#2)'] });
+    await store.closeTicket(ticket);
+
+    expect(issue(1).body).toBe('### Destination\nA PRD\n\n### Notes\n\n### Settled\n\n### Fog\n\n### Out of scope\n- Login flow: beyond this PRD (#2)\n');
+  });
+
+  it.each([
+    ['the screen form', 'Login flow: beyond this PRD (#2)', true],
+    ['the skill form at the start', '#2 is beyond this PRD', true],
+    ['after a colon', 'Beyond this PRD:#2', true],
+    ['in brackets', 'Beyond this PRD [#2]', true],
+    ['after an equals sign', 'ticket=#2', true],
+    ['another ticket that starts with the same digits', 'Hosting (#21)', false],
+    ['a ticket number followed by a letter', 'Beyond this PRD #2a', false],
+    ['a double hash', 'Beyond this PRD ##2', false],
+    ['a hash inside a word', 'Beyond this PRD, see issue#2', false],
+    ['a plain number', 'Two weeks: 2 sprints', false],
+  ])('reads an out-of-scope line naming a ticket: %s', async (_case, line, named) => {
+    const { store, ticket } = await projectWithTicket();
+    await decide(store, ticket, 'GitHub only');
+    await store.updateMap(PROJECT, { outOfScope: [line] });
+
+    await store.closeTicket(ticket);
+
+    expect(await settled(store)).toEqual(named ? [] : [{ ticket: 2, gist: 'GitHub only' }]);
+  });
+
+  it('takes a reopened ticket off Out of scope too, so a decision on it settles it again', async () => {
+    const { store, ticket } = await projectWithTicket();
+    await store.updateMap(PROJECT, { outOfScope: ['Mobile app', 'Login flow: beyond this PRD (#2)'] });
+    await store.closeTicket(ticket);
+
+    await store.reopenTicket(ticket);
+    await decide(store, ticket, 'GitHub only');
+    await store.closeTicket(ticket);
+
+    expect(await store.getMap(PROJECT)).toMatchObject({ settled: [{ ticket: 2, gist: 'GitHub only' }], outOfScope: ['Mobile app'] });
+  });
+
+  it('reports map done when updateMap takes the last fog line off with no open ticket, and only then', async () => {
+    const { store, ticket } = await projectWithTicket();
+    await store.updateMap(PROJECT, { fog: ['Pricing is unclear', 'Hosting is unclear'] });
+    await store.closeTicket(ticket);
+
+    expect(await store.updateMap(PROJECT, { fog: ['Hosting is unclear'] })).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { fog: [] })).toMatchObject({ fog: [], mapDone: true });
+    expect(await store.getMap(PROJECT)).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { notes: 'Done already' })).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { fog: [] })).not.toHaveProperty('mapDone');
+  });
+
+  it('does not report map done when updateMap takes the last fog line off while a ticket is open', async () => {
+    const { store } = await projectWithTicket();
+    await store.updateMap(PROJECT, { fog: ['Pricing is unclear'] });
+
+    expect(await store.updateMap(PROJECT, { fog: [] })).not.toHaveProperty('mapDone');
+  });
+
+  it('keeps both settled lines when two laptops change the map body at once', async () => {
+    const { github, store, ticket } = await projectWithTicket();
+    const other = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    const laptop = createIssuesStore({ gh: github.gh, settings: createMemorySettings(), now: () => START });
+
+    await Promise.all([decide(store, ticket, 'GitHub only'), decide(laptop, other.id, 'Free for all')]);
+
+    expect((await settled(store)).toSorted((a, b) => a.ticket - b.ticket)).toEqual([
+      { ticket: 2, gist: 'GitHub only' },
+      { ticket: 3, gist: 'Free for all' },
+    ]);
+  });
+
+  it('writes the line again when another laptop overwrites the map body just after this write', async () => {
+    const { store, issue, ticket } = await projectWithTicket();
+    const stale = issue(1).body;
+    let body = stale;
+    let writes = 0;
+    Object.defineProperty(issue(1), 'body', {
+      configurable: true,
+      get: () => body,
+      set: (written: string) => {
+        writes += 1;
+        // The first write is lost to the other laptop's older body; later writes stay.
+        body = writes === 1 ? stale : written;
+      },
+    });
+
+    await decide(store, ticket, 'GitHub only');
+
+    expect(writes).toBe(2);
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'GitHub only' }]);
+  });
+
+  it('refuses as a conflict when a write never stays, after a few tries', async () => {
+    const { store, issue } = await projectWithTicket();
+    const stale = issue(1).body;
+    let writes = 0;
+    Object.defineProperty(issue(1), 'body', {
+      configurable: true,
+      get: () => stale,
+      set: () => {
+        writes += 1;
+      },
+    });
+
+    expect(await refusal(store.updateMap(PROJECT, { notes: 'Never stays' }))).toBe('conflict');
+    expect(writes).toBeGreaterThan(1);
+  });
+
+  it('writes a multi-line text with Windows line breaks once, not again and again', async () => {
+    const { store, writes } = await projectWithTicket();
+    const before = writes().length;
+
+    await store.updateMap(PROJECT, { notes: 'First line\r\nSecond line' });
+
+    expect(writes().length).toBe(before + 1);
+  });
+});
+
+describe('GitHub issues backend: a create or merge that fails halfway', () => {
+  const blockedTicket = () => newTicket({ title: 'Hosting', blockers: [2, 3] });
+
+  /** The map (issue 1), two tickets (issues 2 and 3); the next new ticket is issue 4. */
+  async function withBlockers() {
+    const context = await projectWithTicket();
+    await context.store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    return context;
+  }
+
+  it.each([
+    ['writing the question codes', `PATCH repos/${PROJECT}/issues/4`, 0],
+    ['the sub-issue link', `POST repos/${PROJECT}/issues/1/sub_issues`, 0],
+    ['the first blocker link', `POST repos/${PROJECT}/issues/4/dependencies/blocked_by`, 0],
+    ['the second blocker link', `POST repos/${PROJECT}/issues/4/dependencies/blocked_by`, 1],
+  ])('a retry of a create that failed at %s finishes the same issue with every link', async (_case, step, after) => {
+    const { github, store, issue, repository } = await withBlockers();
+    github.failNext(step, after);
+
+    expect(await refusal(store.createTicket(PROJECT, blockedTicket()))).toBe('backend');
+    const created = await store.createTicket(PROJECT, blockedTicket());
+
+    expect(created.id.number).toBe(4);
+    expect(created.blockers).toEqual([2, 3]);
+    expect(created.questions.map((question) => question.code)).toEqual(['Q4.1', 'Q4.2']);
+    expect(repository.issues.size).toBe(4);
+    expect(issue(1).subIssues).toEqual([issue(2).id, issue(3).id, issue(4).id]);
+    expect(issue(4).blockedBy).toEqual([issue(2).id, issue(3).id]);
+  });
+
+  it('a second ticket with the same words as a finished one is a new ticket', async () => {
+    const { store, repository } = await withBlockers();
+
+    await store.createTicket(PROJECT, blockedTicket());
+    const again = await store.createTicket(PROJECT, blockedTicket());
+
+    expect(again.id.number).toBe(5);
+    expect(repository.issues.size).toBe(5);
+  });
+
+  it('leaves alone an unlinked issue that only shares the title and kind', async () => {
+    const { store, github, issue } = await withBlockers();
+    github.addIssue(PROJECT, { title: 'Hosting', labels: ['wayfinder:grilling'], body: '### Question\nSomething else\n\n### Why it matters\n\n### Assumptions\n\n### Questions\n\n### Blocked by\n' });
+
+    const created = await store.createTicket(PROJECT, blockedTicket());
+
+    expect(created.id.number).toBe(5);
+    expect(issue(4).body).toContain('Something else');
+  });
+
+  it('a damaged issue with the same title never stops a new ticket', async () => {
+    const { store, github } = await withBlockers();
+    github.addIssue(PROJECT, { title: 'Hosting', labels: ['wayfinder:grilling'], body: 'Hand-edited' });
+
+    expect((await store.createTicket(PROJECT, blockedTicket())).id.number).toBe(5);
+  });
+
+  it.each([
+    ['the decision comment', `POST repos/${PROJECT}/issues/2/comments`, null],
+    ['the settled line', `PATCH repos/${PROJECT}/issues/1`, null],
+    ['the close', `PATCH repos/${PROJECT}/issues/2`, null],
+    // The list comes after the close, and the map's own reads match the same path: armed by the close.
+    ['the map-done check', `GET repos/${PROJECT}/issues`, `PATCH repos/${PROJECT}/issues/2`],
+  ])('a retry of a merge that failed at %s ends with one decision, one line and the duplicate link', async (_case, step, armedBy) => {
+    const { github, store, issue, ticket } = await projectWithTicket();
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+    if (armedBy === null) {
+      github.failNext(step);
+    } else {
+      github.before(armedBy, () => github.failNext(step));
+    }
+
+    expect(await refusal(store.mergeTicket(ticket, into.id))).toBe('backend');
+    await store.mergeTicket(ticket, into.id);
+
+    expect(await store.getTicket(ticket)).toMatchObject({ state: 'closed', duplicateOf: 3 });
+    expect(issue(2)).toMatchObject({ stateReason: 'duplicate', duplicateIssueId: issue(3).id });
+    expect((await store.listDecisions(ticket)).map((decision) => decision.text)).toEqual(['Merged into #3']);
+    expect((await store.getMap(PROJECT)).settled).toEqual([{ ticket: 2, gist: 'Merged into #3' }]);
+  });
+});
+
 describe('GitHub issues backend: tags set by hand', () => {
   /** The rule the tagging skill teaches: a comment whose first line is exactly this marks a hand-tagged ticket. */
   const SKILL_MARKER_LINE = '<!-- grillo:tags-by-hand -->';

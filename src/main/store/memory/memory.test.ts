@@ -403,6 +403,104 @@ describe('in-memory store: tickets', () => {
   });
 });
 
+describe('in-memory store: map bookkeeping', () => {
+  const decide = (store: Store, ticket: TicketId, gist: string) => store.createDecision(ticket, { text: gist, gist, sources: [], via: null });
+  const settled = async (store: Store) => (await store.getMap(PROJECT)).settled;
+
+  it('keeps one settled line per ticket, holding the latest gist, after two decisions or a decision then a merge', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const second = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Hosting' }));
+
+    await decide(store, ticket, 'GitHub first');
+    await decide(store, ticket, 'GitHub only');
+    await store.closeTicket(ticket);
+    await decide(store, second.id, 'Free for all');
+    await store.mergeTicket(second.id, into.id);
+
+    expect(await settled(store)).toEqual([
+      { ticket: 2, gist: 'GitHub only' },
+      { ticket: 3, gist: 'Merged into #4' },
+    ]);
+  });
+
+  it('follows only the latest decision on the map when decisions are edited or deleted', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const first = await decide(store, ticket, 'Same words');
+    const latest = await decide(store, ticket, 'Same words');
+
+    await store.updateDecision(ticket, first.id, { gist: 'An older thought' });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'Same words' }]);
+    await store.updateDecision(ticket, latest.id, { gist: 'GitHub only' });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'GitHub only' }]);
+    await store.deleteDecision(ticket, latest.id);
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'An older thought' }]);
+    await store.deleteDecision(ticket, first.id);
+    expect(await settled(store)).toEqual([]);
+  });
+
+  it('does not read a merge that was undone and later decided on its own as a duplicate', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+    await store.mergeTicket(ticket, into.id);
+    await store.reopenTicket(ticket);
+    await decide(store, ticket, 'GitHub only');
+
+    await store.closeTicket(ticket);
+
+    expect(await store.getTicket(ticket)).toMatchObject({ state: 'closed', duplicateOf: null });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'GitHub only' }]);
+  });
+
+  it.each([
+    ['a decision', async (store: Store, ticket: TicketId) => void (await decide(store, ticket, 'GitHub only'))],
+    ['a merge that was undone', async (store: Store, ticket: TicketId) => {
+      const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+      await store.mergeTicket(ticket, into.id);
+      await store.reopenTicket(ticket);
+    }],
+  ])('lists a ticket closed as out of scope only under Out of scope, even after %s', async (_case, before) => {
+    const { store, ticket } = await projectWithTicket();
+    await before(store, ticket);
+
+    await store.updateMap(PROJECT, { outOfScope: ['Login flow: beyond this PRD (#2)'] });
+    await store.closeTicket(ticket);
+
+    expect(await store.getMap(PROJECT)).toMatchObject({ settled: [], outOfScope: ['Login flow: beyond this PRD (#2)'] });
+  });
+
+  it('takes a reopened ticket off Out of scope too, so a decision on it settles it again', async () => {
+    const { store, ticket } = await projectWithTicket();
+    await store.updateMap(PROJECT, { outOfScope: ['Mobile app', 'Login flow: beyond this PRD (#2)'] });
+    await store.closeTicket(ticket);
+
+    await store.reopenTicket(ticket);
+    await decide(store, ticket, 'GitHub only');
+    await store.closeTicket(ticket);
+
+    expect(await store.getMap(PROJECT)).toMatchObject({ settled: [{ ticket: 2, gist: 'GitHub only' }], outOfScope: ['Mobile app'] });
+  });
+
+  it('reports map done when updateMap takes the last fog line off with no open ticket, and only then', async () => {
+    const { store, ticket } = await projectWithTicket();
+    await store.updateMap(PROJECT, { fog: ['Pricing is unclear', 'Hosting is unclear'] });
+    await store.closeTicket(ticket);
+
+    expect(await store.updateMap(PROJECT, { fog: ['Hosting is unclear'] })).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { fog: [] })).toMatchObject({ fog: [], mapDone: true });
+    expect(await store.getMap(PROJECT)).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { notes: 'Done already' })).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { fog: [] })).not.toHaveProperty('mapDone');
+  });
+
+  it('does not report map done when updateMap takes the last fog line off while a ticket is open', async () => {
+    const { store } = await projectWithTicket();
+    await store.updateMap(PROJECT, { fog: ['Pricing is unclear'] });
+
+    expect(await store.updateMap(PROJECT, { fog: [] })).not.toHaveProperty('mapDone');
+  });
+});
+
 describe('in-memory store: taking, sending and releasing tickets', () => {
   it('claims a ticket for the member, and claiming it again keeps it', async () => {
     const { store, ticket } = await projectWithTicket();

@@ -152,7 +152,10 @@ Open) and **Pending invitations** (each with Accept).
 The map and ticket screens arrive with their own stories. What already works underneath them, through `gh`:
 
 - **The map** is one issue titled "Map" with the label `wayfinder:map`. Its body holds five sections: destination,
-  notes, settled (one line per closed ticket), fog and out of scope.
+  notes, settled (one line per ticket, with its latest decision's gist), fog and out of scope. A ticket closed as out
+  of scope shows only under Out of scope, even if it carried a decision. If two laptops change the map at the same
+  moment Grillo writes its change again on the fresh map; if that keeps failing it says the map keeps changing, and
+  trying again in a moment works.
 - **A ticket** is an issue with exactly one kind label (`wayfinder:grilling`, `research`, `prototype` or `task`),
   linked as a native sub-issue of the map. Its questions are numbered `Q<issue number>.<k>`; a removed question
   keeps its line as "(removed)", so a number is never used twice.
@@ -171,8 +174,12 @@ The map and ticket screens arrive with their own stories. What already works und
 - **Answering from a phone or browser:** any comment without a marker waits in the ticket's pick-up list until an
   answer is made from it. Deleting that answer puts the comment back and the question reads unanswered again.
 - **Closing** closes the issue as completed. **Merging** writes the decision "Merged into #<other>" and closes the
-  issue as a duplicate of the other ticket. **Reopening** takes the ticket's line off the map's settled list.
-  After a close or a merge Grillo reports whether the map is done: no open ticket and no fog left.
+  issue as a duplicate of the other ticket. **Reopening** takes the ticket's lines off the map's settled and
+  out-of-scope lists. After a close or a merge Grillo reports whether the map is done: no open ticket and no fog left.
+  A store change of the map that takes the last fog line off reports the same; no control on the map screen does that
+  today, so fog still goes through an agent, which applies the map-done rule itself.
+- **When adding a ticket or merging fails halfway** (a dropped connection), the error shows: do the same thing again
+  with the same words. Grillo finishes the same ticket, with all its links, instead of making a second one.
 - **A closed (archived) project** can still be read; every change to the map or a ticket is refused.
 - Issues without Grillo's labels, and pull requests, are ignored.
 
