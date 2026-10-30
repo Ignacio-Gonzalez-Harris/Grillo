@@ -248,7 +248,7 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
 - **Answer Claude Code's own startup questions yourself** (terminal agents only). The first time it opens a folder it asks whether
   you trust it. Grillo waits; it types the agent's first message, then Enter, only once the message box appears.
 - **Grillo's skills are copied in on every start.** Every `grillo-*` skill goes into the project folder's
-  `.claude/skills/`, so updates arrive. A copy the project's repository tracks is never overwritten: Grillo
+  `.claude/skills/`, so updates arrive; Grillo's own test files and test data stay behind. A copy the project's repository tracks is never overwritten: Grillo
   skips it and logs a warning. The copied folders are listed in `.git/info/exclude`, so they never show as
   changes. Grillo writes no `CLAUDE.md`; your own user-level `CLAUDE.md` still applies.
 - **Several agents run at once**; stopping one leaves the others running. Closing Grillo stops them all.
