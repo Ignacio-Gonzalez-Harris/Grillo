@@ -1,0 +1,1 @@
+A start-up failure now shows its reason in an error dialog and closes Grillo instead of leaving a hidden process, and the setup check proves a private GitHub email appears once the email permission is granted.

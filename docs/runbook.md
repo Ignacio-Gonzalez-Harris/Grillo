@@ -26,6 +26,9 @@ Every screen sits in one window: the title bar ("Grillo" and where you are), the
   5 seconds is skipped: Grillo opens anyway with the short system PATH and logs one warning starting "Grillo kept
   the PATH it was started with". If tools are then missing, check that a new Terminal window starts quickly and
   without errors. Windows needs none of this: it already passes your PATH to Grillo.
+- **When Grillo cannot start**, it shows the reason in the system's error dialog, titled "Grillo could not start"
+  (for example "Feature 'agents' could not start: …"), and closes once you press OK. No Grillo process is left
+  running in the background. Start Grillo again; if the same message comes back, pass it on to whoever supports you.
 - **Developers.** A new screen is a new folder `src/renderer/screens/<name>/index.ts` exporting `id`, `title` and
   `mount(el, params, shell)`; no shared file changes. It may also export `start(shell)`, run once when the shell
   starts (for work that outlives the screen; it may return a cleanup function), and `shell.onAgentTabs(listener)`
@@ -47,7 +50,8 @@ It holds no credentials: it only asks each tool about its own sign-in.
 - **A tool signed out** shows the exact sign-in command to run in a terminal, such as `gh auth login --web`.
 - **"Check again"** asks the tools afresh (it skips the 10-second cache) once you have installed or signed in.
 - **Your GitHub account** shows your login, name and email once gh is signed in. No email means gh may not read it
-  yet: the row shows `gh auth refresh -h github.com -s user:email`; run it once, then press "Check again".
+  yet: the row shows `gh auth refresh -h github.com -s user:email`; run it once in a terminal, approve it in your
+  browser, then press "Check again" and Grillo reads your email again. Sign-in itself stays `gh auth login --web`.
 - **Continue** opens the Project screen. It unlocks when every row is green; a missing email does not lock it.
 - **The update card** appears below the rows once the first check has finished. It always holds the two update
   settings: the app updates switch ("Install automatically on the next restart") and speech model updates
