@@ -36,6 +36,7 @@ async function rig() {
       list: () => running,
       write: (_id, text) => void typed.push(text),
       send: () => Promise.reject(new Error('A terminal agent is typed into, never sent to')),
+      ready: () => Promise.resolve(),
     },
   });
   registerSessionChannels(ipc, host);

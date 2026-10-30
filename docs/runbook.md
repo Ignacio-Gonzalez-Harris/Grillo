@@ -408,7 +408,7 @@ The meeting panel's controls arrive with their own story; the session logic unde
   agreed". The file records who ticked and when; a second tick changes nothing.
 - **Recording** turns every 5-second slice into one line of the transcript, in the order spoken, and writes the
   whole transcript to the file as it grows. Silence (`[BLANK_AUDIO]`) adds nothing. A slice that fails to
-  transcribe, or takes more than 15 seconds once it is next in line, is left out and the stream goes on.
+  transcribe, or takes more than 15 seconds once the speech model starts on it, is left out and the stream goes on.
   Switching the recording off returns once the file holds every slice heard; if that last write fails, the host
   is told and the text is kept for the next try. Switching it on again carries on in the same file.
 - **Open channel** on an agent writes each new line into that agent's input box without sending it. "Use it",
@@ -514,6 +514,24 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
 - **Locked while recording:** both choices are greyed out and the card says "Turn Record off to change the source."
   Turn Record off, pick the other source, and turn Record on again.
 - **One choice for the session:** every grilling agent's tab shows the same choice, as it shows the same Record switch.
+
+### When spoken words could be lost
+
+- **Microphone unplugged, or call audio no longer shared:** the recording stops by itself, Record turns off, the red
+  banner goes, and the meeting panel says why in red. Everything heard before that is kept in the transcript; nothing
+  said after it is recorded. Listen falls back to Type. Plug the microphone back in (or pick the other source), then
+  turn Record on again; the session goes on in the same file.
+- **Transcription behind:** when more than two slices wait for the speech model (a busy laptop can take longer than
+  a slice lasts), a yellow line above the transcript strip says how many and about how many seconds of talk. The
+  words are delayed, not lost; the line goes once the model catches up.
+- **A slow slice:** each slice gets 15 seconds from the moment the speech model starts on it. Slices queued behind a
+  slow one keep their full time, and a slice the model never answers is left out alone; the ones behind it go on.
+- **Agents not ready yet:** nothing (the session file, presence, mode, transcript) is typed into a grilling agent
+  until Claude Code shows its prompt and has taken its first message, so a start-up question (such as "trust this
+  folder?") is never answered by Grillo. Answer it in the agent's tab; the session catches up then.
+- **Sending a message to a terminal agent** waits until Claude Code has shown the whole message and gone quiet before
+  pressing Enter, so a long message is never left unsent in the input box. If the message never shows, Enter is
+  pressed anyway after 10 seconds.
 
 ## Grilling engine
 

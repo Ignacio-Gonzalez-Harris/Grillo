@@ -72,6 +72,55 @@ describe('transcriber queue', () => {
     await expect(next).resolves.toBe('still listening');
   });
 
+  it('says when the engine starts each slice: only once every slice before it is done', async () => {
+    const { engine, pending, settle } = controllableEngine();
+    const transcriber = createTranscriber(engine);
+    const started: number[] = [];
+
+    void transcriber.transcribe(slice(1), { started: () => started.push(1) });
+    void transcriber.transcribe(slice(2), { started: () => started.push(2) });
+    await settle();
+    expect(started).toEqual([1]);
+
+    pending.get(1)?.resolve('first words');
+    await settle();
+    expect(started).toEqual([1, 2]);
+  });
+
+  it('leaves out a slice its caller gives up on, and starts the next one even though the engine never answered', async () => {
+    const { engine, pending, settle } = controllableEngine();
+    const transcriber = createTranscriber(engine);
+    const giveUp = new AbortController();
+
+    const stuck = transcriber.transcribe(slice(1), { signal: giveUp.signal });
+    const next = transcriber.transcribe(slice(2));
+    await settle();
+    expect(pending.has(2)).toBe(false);
+
+    giveUp.abort();
+    await expect(stuck).rejects.toThrow(TranscriptionError);
+    await settle();
+    pending.get(2)?.resolve('still listening');
+
+    await expect(next).resolves.toBe('still listening');
+  });
+
+  it('never hands the engine a slice its caller gave up on before it started', async () => {
+    const { engine, pending, settle } = controllableEngine();
+    const transcriber = createTranscriber(engine);
+    const giveUp = new AbortController();
+
+    void transcriber.transcribe(slice(1));
+    const dropped = transcriber.transcribe(slice(2), { signal: giveUp.signal });
+    giveUp.abort();
+    await settle();
+    pending.get(1)?.resolve('first words');
+
+    await expect(dropped).rejects.toThrow(TranscriptionError);
+    await settle();
+    expect(pending.has(2)).toBe(false);
+  });
+
   it('refuses an empty slice before it reaches the engine', async () => {
     const { engine, pending } = controllableEngine();
 

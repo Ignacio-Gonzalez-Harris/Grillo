@@ -14,6 +14,7 @@ import { createMemorySettings } from '../../../main/store/memory/settings';
 import { createGrilloApi } from '../../../preload/bridge';
 import type { StartCaptureResult } from '../../../shared/audio';
 import type { AudioCapture } from '../../audio';
+import { MICROPHONE_ENDED } from '../../audio/capture';
 import { registerScreens, type ScreenModule } from '../../app/screens';
 import { createShell, type Shell } from '../../app/shell';
 import { FakeTerminalView } from '../../components/terminal/fake-terminal-view';
@@ -22,6 +23,8 @@ import { registerTabPanels } from '../agent-tab/tab-panels';
 import { terminalPanel } from '../agent-tab/terminal-panel';
 import { channelSwitchPanel } from './channel-switch';
 import {
+  BEHIND_AFTER_SLICES,
+  behindText,
   CONSENT_SCRIPT,
   HINT_CHANNELS,
   HINT_PARALLEL,
@@ -68,6 +71,16 @@ class FakeCapture implements AudioCapture {
   async stopCapture(): Promise<void> {
     this.calls.push('stop');
   }
+  private readonly endedListeners = new Set<(message: string) => void>();
+  onEnded(listener: (message: string) => void): () => void {
+    this.endedListeners.add(listener);
+    return () => this.endedListeners.delete(listener);
+  }
+  /** The capture stops by itself, as when the microphone is unplugged. */
+  end(message: string): void {
+    this.calls.push('ended');
+    for (const listener of [...this.endedListeners]) listener(message);
+  }
   listInputDevices = async () => [];
   selectInputDevice = async () => undefined;
   selectedInputDevice = async () => null;
@@ -101,11 +114,21 @@ async function app() {
   const store = createMemoryStore({ now: () => new Date() });
   registerStoreIpc(ipc, store, createMemorySettings());
   const bus = createSliceBus();
-  // Wired as src/main/features/session/ipc.ts wires it: each transcribed slice announces the session.
-  const transcriber = announcingTranscriber({ transcribe: async (pcm) => `Sample words ${pcm[0]}.` }, () =>
-    ipc.send('session:changed', host.state()),
+  // Wired as src/main/features/session/ipc.ts wires it: each transcribed slice and each slice heard announce the
+  // session. While `slow` is on, slices wait for the test to release them, as on a busy laptop.
+  const transcription = { slow: false, waiting: [] as Array<() => void> };
+  const changed = () => ipc.send('session:changed', host.state());
+  const transcriber = announcingTranscriber(
+    {
+      transcribe: (pcm) => {
+        const words = `Sample words ${pcm[0]}.`;
+        if (!transcription.slow) return Promise.resolve(words);
+        return new Promise((resolve) => transcription.waiting.push(() => resolve(words)));
+      },
+    },
+    changed,
   );
-  const host = createSessionHost({ store, slices: bus, transcriber, agents: runtime });
+  const host = createSessionHost({ store, slices: bus, transcriber, agents: runtime, sliceHeard: changed });
   registerSessionChannels(ipc, host);
   let modelReady: () => void = () => undefined;
   let modelFailed: (error: Error) => void = () => undefined;
@@ -164,6 +187,7 @@ async function app() {
     bus,
     ptys,
     capture,
+    transcription,
     /** Every capture still capturing the microphone: started more often than stopped. */
     microphonesOpen: () =>
       captures.filter((made) => made.calls.filter((call) => call === 'start microphone').length > made.calls.filter((call) => call === 'stop').length).length,
@@ -428,6 +452,57 @@ describe('meeting screen: its states', () => {
     expect(sources(panel()).map(({ disabled }) => disabled)).toEqual([false, false]);
   });
 
+  it('Recording stopped by itself: an unplugged microphone turns Record off, the panel says why, and Listen falls back to Type', async () => {
+    const { host, store, bus, capture, panel, modelReady, startMeeting } = await app();
+    const { pty } = await startMeeting();
+    await modelReady();
+    await flip(checkNamed(cardNamed(panel(), 'Consent'), 'Everyone here agreed'), true);
+    await flip(recordSwitch(panel()), true);
+    await click(buttonNamed(panel(), 'Listen'));
+    bus.publish({ source: 'microphone', index: 0, pcm: Int16Array.of(4) });
+    await settle();
+    pty.written.length = 0;
+
+    capture.end(MICROPHONE_ENDED);
+    await settle();
+
+    expect(host.state()?.recording).toBe(false);
+    expect(recordSwitch(panel()).checked).toBe(false);
+    expect(visible(panel().querySelector('.rec-banner'))).toBe(false);
+    expect(text(panel().querySelector('.note.err'))).toBe(MICROPHONE_ENDED);
+    expect(buttonNamed(panel(), 'Type').getAttribute('aria-pressed')).toBe('true');
+    expect(pty.written).toEqual([`${LINE_BREAK}mode: type`, ENTER]);
+    expect((await store.getSession(PROJECT, host.state()!.id)).transcript).toBe('Sample words 4.');
+
+    await flip(recordSwitch(panel()), true);
+    expect(capture.calls).toEqual(['start microphone', 'ended', 'start microphone']);
+    expect(host.state()?.recording).toBe(true);
+    expect(panel().querySelector('.note.err')).toBeNull();
+  });
+
+  it('Transcription behind: with more than two slices waiting the panel says so, and the note goes once they are in', async () => {
+    const { bus, transcription, panel, modelReady, startMeeting } = await app();
+    await startMeeting();
+    await modelReady();
+    await flip(checkNamed(cardNamed(panel(), 'Consent'), 'Everyone here agreed'), true);
+    await flip(recordSwitch(panel()), true);
+    const behind = () => panel().querySelector<HTMLElement>('.meeting-foot .note.warn[role="status"]');
+    transcription.slow = true;
+
+    for (let index = 0; index < BEHIND_AFTER_SLICES; index += 1) bus.publish({ source: 'microphone', index, pcm: Int16Array.of(index) });
+    await settle();
+    expect(visible(behind())).toBe(false);
+    bus.publish({ source: 'microphone', index: BEHIND_AFTER_SLICES, pcm: Int16Array.of(BEHIND_AFTER_SLICES) });
+    await settle();
+    expect(visible(behind())).toBe(true);
+    expect(text(behind())).toBe(behindText(BEHIND_AFTER_SLICES + 1));
+
+    for (const release of transcription.waiting.splice(0)) release();
+    await settle();
+    expect(visible(behind())).toBe(false);
+    expect(panel().querySelectorAll('.transcript p')).toHaveLength(BEHIND_AFTER_SLICES + 1);
+  });
+
   it('turns the recording back off and says why when the microphone cannot be opened', async () => {
     const { host, capture, panel, modelReady, startMeeting } = await app();
     await startMeeting();
@@ -685,6 +760,9 @@ describe('meeting screen: the controls call the session', () => {
     field.dispatchEvent(new Event('input'));
     await settle();
     await click(buttonNamed(cardNamed(panel(), 'Recording'), 'Use it'));
+    // Claude Code echoes the typed message; Enter waits for that echo to settle.
+    pty.print('Sample pasted line.\r\n  Sample reply.\r\n  use it');
+    await settle();
 
     expect(pty.written).toEqual(['Sample pasted line.\nSample reply.\nuse it', ENTER]);
     expect(text(panel().querySelector('.note.ok'))).toBe('Transcript sent with "use it": the agent takes the answer from it.');

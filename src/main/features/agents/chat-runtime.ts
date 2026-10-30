@@ -93,6 +93,10 @@ export function createChatAgentRuntime(deps: ChatAgentRuntimeDeps): AgentRuntime
       const sent = deps.driver.send(id, text);
       if (!sent.ok) throw new Error(sent.reason);
     },
+    /** A chat agent takes messages as soon as it is started: the driver hands them over in turn. */
+    async ready(id) {
+      find(id);
+    },
     resize(id) {
       find(id);
     },
