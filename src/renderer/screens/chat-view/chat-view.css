@@ -21,6 +21,9 @@
 .chat-view .opt[aria-pressed="true"] { background: var(--color-accent-soft); border-color: var(--color-accent); }
 .chat-view .opt:disabled { cursor: default; }
 .chat-view .opt .small { color: var(--color-text-muted); }
+/* Once a choice is made the options not picked grey out, in the prototype's disabled-control look (`.btn:disabled`). */
+.chat-view .opt:disabled:not([aria-pressed="true"]) { background: var(--color-disabled-fill); color: var(--color-text-disabled); border-color: var(--color-divider); }
+.chat-view .opt:disabled:not([aria-pressed="true"]) .small { color: var(--color-text-disabled); }
 .chat-view code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); overflow-wrap: anywhere; }
 .chat-view .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
 .chat-view .note.err { background: var(--color-danger-soft); }
