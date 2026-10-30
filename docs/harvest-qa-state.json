@@ -1,0 +1,1396 @@
+{
+  "tested_through": {
+    "Ignacio-Gonzalez-Harris": "Grillo-20261029-161127-5f2a"
+  },
+  "carried": [
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-000235-a640",
+      "issue": "56",
+      "key": "app/dist-installer",
+      "why": "needs the installer toolchain (Spectre-mitigated libraries) and a Mac; installers are built only on publish"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "67",
+      "key": "src/main/features/tools/detect-signed-out",
+      "why": "needs signing the laptop's shared gh login out, which other runs on this laptop use"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "67",
+      "key": "src/main/features/tools/detect-cache",
+      "why": "needs signing the laptop's shared gh login out, which other runs on this laptop use"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "67",
+      "key": "src/main/features/tools/identity",
+      "why": "its second half needs signing the laptop's shared gh login out"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "66",
+      "key": "audio/microphone-capture",
+      "why": "needs a person speaking aloud or real call sound; an agent cannot produce speech"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "66",
+      "key": "audio/call-capture-windows",
+      "why": "needs real call sound playing and a way to start a raw capture with no screen"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "66",
+      "key": "audio/microphone-permission-denied",
+      "why": "needs changing the laptop's system privacy settings"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "66",
+      "key": "audio/input-device-pick",
+      "why": "needs a second physical microphone plugged in and out"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "69",
+      "key": "site/download-buttons",
+      "why": "needs publishing a release and turning on GitHub Pages"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "69",
+      "key": "pages/skipped-until-enabled",
+      "why": "needs merging to main and a CI run; the repository has no Actions minutes"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "69",
+      "key": "release/installers-attached",
+      "why": "needs a draft release built on Windows and Mac runners"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "79",
+      "key": "setup-check/everything-missing",
+      "why": "needs a laptop without Claude Code and gh"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "79",
+      "key": "setup-check/signed-out-github",
+      "why": "needs signing the laptop's shared gh login out"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "79",
+      "key": "setup-check/missing-email",
+      "why": "needs a second GitHub test account with a private email"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "79",
+      "key": "setup-check/update-offer",
+      "why": "needs an installed build older than a published release"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "79",
+      "key": "setup-check/mac-manual-install",
+      "why": "needs a Mac"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-013907-621e",
+      "issue": "75",
+      "key": "grillo-wayfinder/start-map",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024357-63bc",
+      "issue": "76",
+      "key": "resources/skills/grillo-tagging/first-round",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024357-63bc",
+      "issue": "76",
+      "key": "resources/skills/grillo-tagging/hand-tags-kept",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024357-63bc",
+      "issue": "76",
+      "key": "resources/skills/grillo-tagging/member-joins",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024357-63bc",
+      "issue": "77",
+      "key": "resources/skills/grillo-prd/write-on-map-done",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024357-63bc",
+      "issue": "77",
+      "key": "resources/skills/grillo-prd/section-without-decision",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024357-63bc",
+      "issue": "77",
+      "key": "resources/skills/grillo-prd/feedback",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "82",
+      "key": "src/renderer/screens/tickets/github-answer-undo",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "82",
+      "key": "src/renderer/screens/tickets/pickup-trigger",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "88",
+      "key": "grillo-meeting/type-answer",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "88",
+      "key": "grillo-meeting/listen-use-it",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "88",
+      "key": "grillo-meeting/presence-pick",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "88",
+      "key": "grillo-meeting/skip-jump-done",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "88",
+      "key": "grillo-meeting/drift",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "89",
+      "key": "grillo-generic/pasted-email-clash",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "89",
+      "key": "grillo-generic/own-words-source",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "89",
+      "key": "grillo-generic/marked-map-changes",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "90",
+      "key": "grillo-answer/own-time-chat-close",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "90",
+      "key": "grillo-answer/own-time-chat-release",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "90",
+      "key": "grillo-answer/pickup",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-111958-6832",
+      "issue": "106",
+      "key": "src/main/features/audio-mac/call-capture",
+      "why": "needs a Mac"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-111958-6832",
+      "issue": "106",
+      "key": "src/main/features/audio-mac/permission-missing",
+      "why": "needs a Mac"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-111958-6832",
+      "issue": "106",
+      "key": "src/main/features/audio-mac/old-macos",
+      "why": "needs a Mac"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "91",
+      "key": "src/renderer/screens/meeting/consent-record",
+      "why": "needs a person speaking aloud or real call sound; an agent cannot produce speech"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "91",
+      "key": "src/renderer/screens/meeting/listen-type-controls",
+      "why": "needs a person speaking aloud or real call sound; an agent cannot produce speech"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "97",
+      "key": "resources/skills/grillo-score/score-latest-version",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "97",
+      "key": "resources/skills/grillo-score/guidance-not-gate",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "97",
+      "key": "resources/skills/grillo-score/after-prd-writer",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "97",
+      "key": "resources/skills/grillo-score/rerun",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "99",
+      "key": "resources/skills/grillo-research/research-a-ticket",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "99",
+      "key": "resources/skills/grillo-prototype/prototype-a-ticket",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "99",
+      "key": "resources/skills/grillo-task/task-a-ticket",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "99",
+      "key": "resources/skills/kind-agents/wrong-kind-refused",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-125745-6392",
+      "issue": "121",
+      "key": "src/renderer/screens/meeting/channel-per-agent",
+      "why": "needs a person speaking aloud or real call sound; an agent cannot produce speech"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-125745-6392",
+      "issue": "121",
+      "key": "src/renderer/screens/meeting/no-shared-ticket",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "164",
+      "key": "session/open-channel-live-transcript",
+      "why": "needs a person speaking aloud or real call sound; an agent cannot produce speech"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "165",
+      "key": "tickets/hand-tag-survives-round",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "165",
+      "key": "tickets/remove-last-domain",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "165",
+      "key": "tickets/remove-no-domain-hands-back",
+      "why": "needs a real GitHub test repository and its issues; the person chose the made-up store only for this run, so no GitHub repositories were created"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-140012-b95f",
+      "issue": "116",
+      "key": "src/main/app/startup-path",
+      "why": "needs a Mac and an installed build"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-140120-9437",
+      "issue": "166",
+      "key": "src/renderer/screens/meeting/record-call-audio",
+      "why": "needs a person speaking aloud or real call sound; an agent cannot produce speech"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/open-channel",
+      "why": "needs a person speaking aloud or real call sound; an agent cannot produce speech"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/channel-closed",
+      "why": "needs a person speaking aloud or real call sound; an agent cannot produce speech"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "79",
+      "key": "setup-check/identity",
+      "why": "needs a gh token with the user:email scope; granting it changes the laptop's gh sign-in (the table showed Email 'Not shared yet')"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024651-318e",
+      "issue": "92",
+      "key": "src/renderer/screens/own-time/agent-done",
+      "why": "needs the agent to work on a real GitHub repository ('done' sent, note shown and Done greyed as expected; the agent could not record an outcome)"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "80",
+      "key": "src/renderer/screens/project-creation/refused-invite",
+      "why": "the made-up store accepts every login, so a refused invite needs real GitHub"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "86",
+      "key": "src/main/features/nudges/silent-ticket-notification",
+      "why": "needs a store that survives a restart (the real GitHub store); the made-up store is empty after the restart the steps require"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "86",
+      "key": "src/main/features/nudges/answered-ticket-quiet",
+      "why": "depends on the nudge check above, which cannot run on a store that empties on restart"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-150015-477c",
+      "issue": "98",
+      "key": "src/renderer/screens/prd/score/rerun",
+      "why": "needs the agent to work on a real GitHub repository (Scoring… and greyed Rerun shown as expected; no new score could be produced)"
+    }
+  ],
+  "log": [
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-000235-a640",
+      "issue": "56",
+      "key": "app/dev-window",
+      "result": "obsolete",
+      "why": "The window is no longer empty: the app shell (issue 70) and every screen now fill it.",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-000235-a640",
+      "issue": "57",
+      "key": "docs/demo/",
+      "result": "none",
+      "why": "Documents only; nothing in the app to drive.",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "64",
+      "key": "src/main/features/agents/waiting-dot",
+      "by": "Grillo-20261029-125745-6392/156",
+      "result": "superseded",
+      "why": "same check key, newer record",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "65",
+      "key": "src/main/features/transcription/",
+      "result": "none",
+      "why": "Main-process code and IPC channels only, no screen; a person can drive it once the meeting panel and the setup check screen are built.",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "66",
+      "key": "audio/call-capture-mac-unsupported",
+      "by": "Grillo-20261028-111958-6832/106",
+      "result": "superseded",
+      "why": "issue 106 replaced the Mac refusal with real Mac call-audio capture",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "70",
+      "key": "app/start-shell",
+      "result": "obsolete",
+      "why": "Setup is built (issue 79); the 'Setup is not built yet.' placeholder no longer shows.",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "70",
+      "key": "app/fixed-tabs",
+      "result": "obsolete",
+      "why": "Map, Tickets, PRD and Project are built (issues 80-83); no tab shows 'not built yet'.",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "70",
+      "key": "app/agent-tabs",
+      "result": "obsolete",
+      "why": "The agent tab is built (issue 78); 'The agent tab is not built yet.' no longer shows.",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "70",
+      "key": "app/plus-generic",
+      "result": "obsolete",
+      "why": "'+' opens the New generic agent dialog (issue 93) instead of the placeholder.",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "73",
+      "key": "src/main/store/github/repo/",
+      "result": "none",
+      "why": "Store methods only; no screen or command a person can drive until the project screens land.",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "71",
+      "key": "resources/skills/",
+      "result": "none",
+      "why": "A document and a parser test; nothing on any screen changes",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "74",
+      "key": "src/main/store/github/issues/",
+      "result": "none",
+      "why": "No screen uses these methods yet; driving them needs writes to a real repository (the pull request's throwaway-repository steps, left for a human)",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-111958-6832",
+      "issue": "107",
+      "key": "src/main/features/agent-chat/",
+      "result": "none",
+      "why": "No screen uses the protocol yet; the chat view story (issue #94) makes it visible.",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-130311-d7a4",
+      "issue": "95",
+      "key": "resources/skills/grillo-support/",
+      "result": "none",
+      "why": "The support agent has no screen until issue #96 (support agent tab) lands, and nothing reads a relay request before then; live model behaviour is the demo story's job.",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-125745-6392",
+      "issue": "156",
+      "key": "src/main/features/agents/start-chat-agent",
+      "by": "Grillo-20261029-132329-1858/164",
+      "result": "superseded",
+      "why": "issue 164 made the plain terminal the default again",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-125745-6392",
+      "issue": "156",
+      "key": "src/main/features/agents/waiting-dot",
+      "by": "Grillo-20261029-132329-1858/164",
+      "result": "superseded",
+      "why": "issue 164 put the chat agent behind GRILLO_AGENT_RUNTIME=chat; the terminal waiting dot is checked by agent-tab/terminal-shows-agent",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-125745-6392",
+      "issue": "156",
+      "key": "src/main/features/agents/terminal-fallback",
+      "by": "Grillo-20261029-132329-1858/164",
+      "result": "superseded",
+      "why": "the terminal is now the default, checked by agents/default-runtime-terminal",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "164",
+      "key": "agents/runtime-chat-opt-in",
+      "by": "Grillo-20261029-161127-5f2a/94",
+      "result": "superseded",
+      "why": "the chat runtime now shows the chat view, not raw JSON lines",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-000235-a640",
+      "issue": "56",
+      "key": "app/dev-port-default",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "63",
+      "key": "src/main/store/memory-backend-start",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "63",
+      "key": "src/main/store/unknown-backend-refused",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "64",
+      "key": "src/main/features/agents/first-message",
+      "result": "fail",
+      "bug": "177",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "64",
+      "key": "src/main/features/agents/shipped-skills",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "64",
+      "key": "src/main/features/agents/several-at-once",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "64",
+      "key": "src/main/features/agents/claude-missing",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-091055-e3b1",
+      "issue": "67",
+      "key": "src/main/features/tools/detect-signed-in",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "68",
+      "key": "updates/dev-run-skips-check",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "68",
+      "key": "updates/state-over-ipc",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-103257-5aca",
+      "issue": "70",
+      "key": "app/windows-fallback",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "69",
+      "key": "site/pilot-warning",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "69",
+      "key": "site/signed-state",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "69",
+      "key": "site/no-release-fallback",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261024-141721-56d5",
+      "issue": "79",
+      "key": "setup-check/update-settings",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-013907-621e",
+      "issue": "78",
+      "key": "agent-tab/terminal-shows-agent",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-013907-621e",
+      "issue": "78",
+      "key": "agent-tab/typing-always-available",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-013907-621e",
+      "issue": "78",
+      "key": "agent-tab/type-box-send",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-013907-621e",
+      "issue": "78",
+      "key": "agent-tab/kept-across-tabs",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-013907-621e",
+      "issue": "78",
+      "key": "agent-tab/agent-stops-while-open",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024651-318e",
+      "issue": "92",
+      "key": "src/renderer/screens/own-time/form-answer",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024651-318e",
+      "issue": "92",
+      "key": "src/renderer/screens/own-time/form-done-open",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024651-318e",
+      "issue": "92",
+      "key": "src/renderer/screens/own-time/form-done-all",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024651-318e",
+      "issue": "92",
+      "key": "src/renderer/screens/own-time/agent",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-024651-318e",
+      "issue": "92",
+      "key": "src/renderer/screens/own-time/transcript",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "80",
+      "key": "src/renderer/screens/project-creation/recent-and-invitations",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "80",
+      "key": "src/renderer/screens/project-creation/new-repository",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "80",
+      "key": "src/renderer/screens/project-creation/prefill",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "80",
+      "key": "src/renderer/screens/project-creation/connect-existing",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "80",
+      "key": "src/renderer/screens/project-creation/connect-problems",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "80",
+      "key": "src/renderer/screens/project-creation/edit-structure",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "81",
+      "key": "src/renderer/screens/map/building",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "81",
+      "key": "src/renderer/screens/map/untagged-and-tagging",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "81",
+      "key": "src/renderer/screens/map/tagged-list",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "81",
+      "key": "src/renderer/screens/map/sources",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "81",
+      "key": "src/renderer/screens/map/ticket-actions",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "81",
+      "key": "src/renderer/screens/map/map-done",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "81",
+      "key": "src/renderer/screens/map/close-reopen",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "83",
+      "key": "src/renderer/screens/prd/no-version",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "83",
+      "key": "src/renderer/screens/prd/writing",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "83",
+      "key": "src/renderer/screens/prd/writing-after-map-done",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "83",
+      "key": "src/renderer/screens/prd/versions",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "83",
+      "key": "src/renderer/screens/prd/export",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-042408-7529",
+      "issue": "83",
+      "key": "src/renderer/screens/prd/feedback-and-structure",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "82",
+      "key": "src/renderer/screens/tickets/own-list-groups",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "82",
+      "key": "src/renderer/screens/tickets/take-send-release",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "82",
+      "key": "src/renderer/screens/tickets/locked-by-other",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "82",
+      "key": "src/renderer/screens/tickets/tags-by-hand",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "82",
+      "key": "src/renderer/screens/tickets/merge-map-done",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-052227-f912",
+      "issue": "82",
+      "key": "src/renderer/screens/tickets/empty-list",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "91",
+      "key": "src/renderer/screens/meeting/open-channel-switch",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "91",
+      "key": "src/renderer/screens/meeting/preparing-speech-model",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "91",
+      "key": "src/renderer/screens/meeting/session-greeting",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "91",
+      "key": "src/renderer/screens/meeting/presence",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "93",
+      "key": "src/renderer/screens/generic-agent/name-and-open",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "93",
+      "key": "src/renderer/screens/generic-agent/blank-name-locked",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "93",
+      "key": "src/renderer/screens/generic-agent/no-project",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-112105-d796",
+      "issue": "93",
+      "key": "src/renderer/screens/generic-agent/cancel",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-125928-fde9",
+      "issue": "151",
+      "key": "src/renderer/screens/map/start-meeting",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-125928-fde9",
+      "issue": "151",
+      "key": "src/renderer/screens/map/start-meeting-reuse",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-125928-fde9",
+      "issue": "151",
+      "key": "src/renderer/screens/map/start-meeting-archived",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-150015-477c",
+      "issue": "100",
+      "key": "src/renderer/screens/tickets/launch/research-control",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-150015-477c",
+      "issue": "100",
+      "key": "src/renderer/screens/tickets/launch/start-agent",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-150015-477c",
+      "issue": "100",
+      "key": "src/renderer/screens/tickets/launch/no-relaunch",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-150015-477c",
+      "issue": "100",
+      "key": "src/renderer/screens/tickets/launch/no-control",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-150015-477c",
+      "issue": "98",
+      "key": "src/renderer/screens/prd/score/view",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261028-150015-477c",
+      "issue": "98",
+      "key": "src/renderer/screens/prd/score/unscored",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-125745-6392",
+      "issue": "121",
+      "key": "src/renderer/screens/meeting/open-another-grilling-agent",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-125745-6392",
+      "issue": "121",
+      "key": "src/renderer/screens/meeting/shared-record-switch",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "164",
+      "key": "agents/default-runtime-terminal",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "96",
+      "key": "support-agent/tab-bar-first",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "96",
+      "key": "support-agent/first-open-starts",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "96",
+      "key": "support-agent/no-project",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-132329-1858",
+      "issue": "96",
+      "key": "support-agent/relay",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-140120-9437",
+      "issue": "166",
+      "key": "src/renderer/screens/meeting/source-default",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-140120-9437",
+      "issue": "166",
+      "key": "src/renderer/screens/meeting/source-locked",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-140120-9437",
+      "issue": "166",
+      "key": "src/renderer/screens/meeting/source-shared",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/conversation",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/options",
+      "result": "fail",
+      "bug": "178",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/something-else",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/permission",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/show-terminal",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/channel-badge",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    },
+    {
+      "login": "Ignacio-Gonzalez-Harris",
+      "run": "Grillo-20261029-161127-5f2a",
+      "issue": "94",
+      "key": "src/renderer/screens/chat-view/terminal-fallback",
+      "result": "pass",
+      "commit": "0efdabd4007bdb2f602d40157881de5205f8a78f",
+      "date": "2026-10-30"
+    }
+  ],
+  "last_qa": "2026-10-30"
+}
