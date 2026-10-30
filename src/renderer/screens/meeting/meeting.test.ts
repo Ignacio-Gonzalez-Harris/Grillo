@@ -825,6 +825,37 @@ describe("meeting screen: each meeting agent's tab names its ticket", () => {
     warn.mockRestore();
   });
 
+  it('shows tags given after the panel read the list, once the agent takes that ticket, and keeps naming it if the read fails', async () => {
+    const { store, held, panel, startMeeting } = await app();
+    const [one, five] = await store.listTickets(PROJECT, { state: 'open' });
+    const { id, pty } = await startMeeting();
+    const tags = () => [...questionControls(panel()).querySelectorAll('.question-at-hand .tag')].map(text);
+
+    // A tagging round after the meeting started: the panel's list still says untagged.
+    await store.updateTicket(one.id, { domains: ['developer'] });
+    held.push({ ticket: one.id.number, agentId: id, heldAt: 1 });
+    await talkThenWait(pty);
+
+    expect(tags()).toEqual(['developer']);
+
+    // The next ticket was tagged too, but the list cannot be read just now: the card still names the ticket.
+    await store.updateTicket(five.id, { domains: ['product'] });
+    held.splice(0, 1, { ticket: five.id.number, agentId: id, heldAt: 2 });
+    const failed = vi.spyOn(store, 'listTickets').mockRejectedValueOnce(new Error('made-up read failure'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await talkThenWait(pty);
+
+    expect(failed).toHaveBeenCalled();
+    expect(text(questionControls(panel()).querySelector('.question-at-hand .strong'))).toBe('Sample ticket 5');
+    expect(tags()).toEqual([]);
+
+    // The ticket is read again the next time the agent goes quiet.
+    await talkThenWait(pty);
+
+    expect(tags()).toEqual(['product']);
+    warn.mockRestore();
+  });
+
   it("names the meeting's project in the title bar while its tab is open", async () => {
     const { startMeeting } = await app();
 

@@ -140,6 +140,8 @@ export function meetingPanels({ agents, capture, now = () => new Date() }: Meeti
       let host: Member | null = null;
       let members: Member[] = [];
       let tickets: Ticket[] = [];
+      /** The ticket at hand when the list was last read for it. */
+      let readForTicket: number | null = null;
       let state: SessionState | null = null;
       let model: Model = { status: 'preparing', percent: null };
       let ticked = new Set<string>();
@@ -691,17 +693,25 @@ export function meetingPanels({ agents, capture, now = () => new Date() }: Meeti
 
       /**
        * Titles the tab after the ticket the agent holds (prototype screen-meeting: "Grilling · Sample ticket 3"), or
-       * the live-session name while it holds none, and names that ticket and its question on the question card. A
-       * ticket added since the panel read the list is read afresh.
+       * the live-session name while it holds none, and names that ticket and its question on the question card. The
+       * list is read afresh each time the agent takes another ticket: tags change during a meeting (a tagging round, the
+       * Tickets tab) and tickets are added.
        */
       async function followTicket(): Promise<void> {
         if (project === undefined) return;
         try {
           const number = await session.ticketAtHand(agent.id);
           const find = () => tickets.find((ticket) => ticket.id.number === number);
-          if (number !== null && find() === undefined) {
-            tickets = await store.listTickets(project, { state: 'open' });
-            drawTickets();
+          if (number !== null && (number !== readForTicket || find() === undefined)) {
+            try {
+              tickets = await store.listTickets(project, { state: 'open' });
+              readForTicket = number;
+              drawTickets();
+            } catch (error) {
+              // A ticket already on the list can still be named; the next time the agent goes quiet reads it again.
+              if (find() === undefined) throw error;
+              console.warn('Grillo could not read the tickets afresh; the question card shows the tags it last read.', error);
+            }
           }
           const ticket = number === null ? undefined : find();
           if (number !== null && ticket === undefined) return;
