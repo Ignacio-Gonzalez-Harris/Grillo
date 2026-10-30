@@ -4,6 +4,7 @@ import { FakePty } from './fake-pty';
 import {
   ClaudeNotFoundError,
   createAgentRuntime,
+  ECHO_WAIT_MS,
   ENTER_AFTER_QUIET_MS,
   findClaude,
   WAITING_AFTER_MS,
@@ -97,6 +98,43 @@ describe('agent runtime', () => {
 
     pty.print(READY_PROMPT);
     vi.advanceTimersByTime(ENTER_AFTER_QUIET_MS);
+    expect(pty.written).toEqual([request.firstMessage, '\r']);
+  });
+
+  it('after the trust question, presses Enter only once the typed message shows, however long Claude Code is busy', async () => {
+    const { runtime, ptys } = setup();
+    const id = await runtime.startAgent(request);
+    const pty = ptys[0];
+    pty.print(TRUST_DIALOG);
+    runtime.write(id, '\x1b[B');
+    runtime.write(id, '\r');
+
+    pty.print(READY_PROMPT);
+    expect(pty.written.slice(2)).toEqual([request.firstMessage]);
+    vi.advanceTimersByTime(4 * ENTER_AFTER_QUIET_MS);
+    pty.print('\x1b[>0q');
+    vi.advanceTimersByTime(4 * ENTER_AFTER_QUIET_MS);
+    expect(pty.written.slice(2)).toEqual([request.firstMessage]);
+
+    pty.print(`\x1b[38;2;136;136;136m${RULE}\x1b[m❯ Start grilling the\r\n\x1b[K  Login flow\x1b[1Cticket\x1b[K`);
+    vi.advanceTimersByTime(ENTER_AFTER_QUIET_MS - 1);
+    expect(pty.written.slice(2)).toEqual([request.firstMessage]);
+    vi.advanceTimersByTime(1);
+    expect(pty.written.slice(2)).toEqual([request.firstMessage, '\r']);
+  });
+
+  it('presses Enter anyway when the typed message never shows in a form it recognises', async () => {
+    const { runtime, ptys } = setup();
+    await runtime.startAgent(request);
+    const pty = ptys[0];
+
+    pty.print(READY_PROMPT);
+    vi.advanceTimersByTime(ECHO_WAIT_MS - 1);
+    expect(pty.written).toEqual([request.firstMessage]);
+    vi.advanceTimersByTime(1 + ENTER_AFTER_QUIET_MS);
+    expect(pty.written).toEqual([request.firstMessage, '\r']);
+
+    vi.advanceTimersByTime(ECHO_WAIT_MS);
     expect(pty.written).toEqual([request.firstMessage, '\r']);
   });
 

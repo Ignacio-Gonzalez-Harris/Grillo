@@ -246,7 +246,9 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
   (a terminal agent with no extra flags). Without it, starting an agent fails with "Claude Code was not found:
   there is no `claude` command on PATH".
 - **Answer Claude Code's own startup questions yourself** (terminal agents only). The first time it opens a folder it asks whether
-  you trust it. Grillo waits; it types the agent's first message, then Enter, only once the message box appears.
+  you trust it. Grillo waits; it types the agent's first message once the message box appears, and presses Enter only
+  once Claude Code shows the typed message (or after 10 seconds without it), so the message is sent on its own even
+  when Claude Code is slow right after you answer the trust question.
 - **Grillo's skills are copied in on every start.** Every `grillo-*` skill goes into the project folder's
   `.claude/skills/`, so updates arrive. A copy the project's repository tracks is never overwritten: Grillo
   skips it and logs a warning. The copied folders are listed in `.git/info/exclude`, so they never show as
