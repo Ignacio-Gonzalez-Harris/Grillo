@@ -4,10 +4,11 @@
 import type { ScreenParams, ShellContext } from '../../app/screens';
 import { createStoreClient } from '../../../shared/store';
 import { watchRelays } from './relay';
+import { SUPPORT_SCREEN } from './relay-note';
 import { mountSupportAgent, SUPPORT_TITLE } from './support-agent';
 import { createSupportTab, type SupportTab } from './support-tab';
 
-export const id = 'support-agent';
+export const id = SUPPORT_SCREEN;
 export const title = SUPPORT_TITLE;
 
 let supportTab: SupportTab | undefined;

@@ -2,7 +2,7 @@
  * The meeting screen (prototype `screen-meeting`) on a meeting agent's tab: who is present, the consent tick with the
  * read-aloud script, the recording source (room microphone or call audio, locked while recording), the one Record
  * switch with the red Recording banner, the speech model being prepared before the first recording, Listen or Type,
- * "Use it", skip and jump, an imported transcript and the running transcript strip (PRD 4.5, 4.6 item 4), and the
+ * the ticket and question at hand, "Use it", skip and jump, an imported transcript and the running transcript strip (PRD 4.5, 4.6 item 4), and the
  * session's grilling agents with "Open another grilling agent" (PRD 4.5 item 9). A capture that stops by itself (the
  * microphone unplugged) turns Record off and says why; slices queuing for the speech model show as "behind".
  *
@@ -14,14 +14,14 @@ import './meeting.css';
 import type { Member, Ticket } from '../../../main/store/types';
 import { agentTitle, type AgentInfo } from '../../../shared/agents';
 import { type CaptureSource, SLICE_SECONDS } from '../../../shared/audio';
-import type { AgentMode, SessionState, SliceCounts } from '../../../shared/session';
+import type { AgentMode, QuestionAtHand, SessionState, SliceCounts } from '../../../shared/session';
 import { createSessionClient } from '../../../shared/session-ipc';
 import { createStoreClient } from '../../../shared/store';
 import { AGENT_SCREEN } from '../../app/navigation';
 import type { AudioCapture } from '../../audio';
 import { badge, button, toggle } from '../../theme/components';
-import type { TabPanel } from '../agent-tab/tab-panels';
-import { el, messageOf, note } from '../map/view';
+import { slotPart, type TabPanel } from '../agent-tab/tab-panels';
+import { domainTags, el, messageOf, note } from '../map/view';
 import { sendUseIt } from '../own-time/agents';
 import { MEETING_AGENT_TITLE, startMeetingAgent, type MeetingAgents } from './meeting-agents';
 
@@ -112,7 +112,14 @@ interface Microphone {
   ended: Set<(message: string) => void>;
 }
 
-export function meetingPanel({ agents, capture, now = () => new Date() }: MeetingPanelOptions): TabPanel {
+/** What the question card says of the question at hand (prototype screen-meeting). */
+export function questionCount(at: number, of: number): string {
+  return `Question ${at} of ${of}`;
+}
+
+export function meetingPanels({ agents, capture, now = () => new Date() }: MeetingPanelOptions): TabPanel[] {
+  // The speech model and the question card sit in the tab's slot above the body; everything else in the panel below.
+  const above = slotPart('above', ['grilling'], MEETING_PANEL_PRIORITY, 'stack meeting meeting-head');
   // Each tab's panel turns the same capture on and off: one per tab would hear every slice twice and leave a
   // microphone running that no other tab can stop.
   const microphone: Microphone = {
@@ -122,7 +129,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
     redraws: new Set(),
     ended: new Set(),
   };
-  return {
+  const controls: TabPanel = {
     kinds: ['grilling'],
     slot: 'controls',
     priority: MEETING_PANEL_PRIORITY,
@@ -253,9 +260,12 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         if (Number.isInteger(ticket) && ticket > 0) void act(() => session.jump(agent.id, ticket));
       });
       const questionHint = el('p', '');
-      const questionCard = el('div', 'card stack', [el('div', 'row', [seg, useIt, skip, jump]), questionHint]);
+      const atHand = el('div', 'row question-at-hand');
+      atHand.hidden = true;
+      const questionCard = el('div', 'card stack', [atHand, el('div', 'row', [seg, useIt, skip, jump]), questionHint]);
       const messages = el('div', 'stack');
-      const head = el('div', 'stack meeting-head', [modelCard, messages, questionCard]);
+      const head = above.of(agent.id);
+      head.append(modelCard, messages, questionCard);
 
       const transcript = el('div', 'transcript');
       transcript.setAttribute('aria-label', 'Session transcript');
@@ -263,7 +273,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       behind.setAttribute('role', 'status');
       const foot = el('div', 'meeting-foot stack', [behind, transcript]);
 
-      const root = el('div', 'meeting meeting-panel', [banner, side, head, foot]);
+      const root = el('div', 'meeting meeting-panel', [banner, side, foot]);
       root.hidden = true;
       container.append(root);
       microphone.redraws.add(draw);
@@ -365,6 +375,28 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         openAnother.disabled = busy || state === null;
         const someClosed = ours.length > 1 && ours.some((tab) => !open.has(tab.id));
         agentsHint.textContent = someClosed ? HINT_CHANNELS : HINT_PARALLEL;
+      }
+
+      /** The question card's first row: the ticket at hand and, once the agent has said it, which question it asks. */
+      function drawAtHand(ticket: Ticket | undefined, asked: QuestionAtHand | null): void {
+        atHand.hidden = ticket === undefined;
+        if (ticket === undefined) {
+          atHand.replaceChildren();
+          return;
+        }
+        const declared = [...new Set(members.flatMap((member) => member.domains))];
+        const count = asked?.ticket === ticket.id.number ? [el('span', 'muted small question-count', [questionCount(asked.at, asked.of)])] : [];
+        atHand.replaceChildren(el('span', 'strong', [ticket.title]), ...domainTags(ticket, declared), ...count);
+      }
+
+      /** Which question the agent says it asks; the card goes on without a count when that cannot be read. */
+      async function askedQuestion(): Promise<QuestionAtHand | null> {
+        try {
+          return await session.questionAtHand(agent.id);
+        } catch (error) {
+          console.warn('Grillo could not read which question the meeting agent asks; the question card shows no count.', error);
+          return null;
+        }
       }
 
       function draw(): void {
@@ -659,9 +691,10 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
 
       /**
        * Titles the tab after the ticket the agent holds (prototype screen-meeting: "Grilling · Sample ticket 3"), or
-       * the live-session name while it holds none. A ticket added since the panel read the list is read afresh.
+       * the live-session name while it holds none, and names that ticket and its question on the question card. A
+       * ticket added since the panel read the list is read afresh.
        */
-      async function nameTab(): Promise<void> {
+      async function followTicket(): Promise<void> {
         if (project === undefined) return;
         try {
           const number = await session.ticketAtHand(agent.id);
@@ -672,6 +705,8 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
           }
           const ticket = number === null ? undefined : find();
           if (number !== null && ticket === undefined) return;
+          const asked = ticket === undefined ? null : await askedQuestion();
+          if (!disposed) drawAtHand(ticket, asked);
           const title = ticket === undefined ? MEETING_AGENT_TITLE : agentTitle('grilling', ticket.title);
           const shown = tabs.find((tab) => tab.id === agent.id)?.title;
           if (!disposed && shown !== title) await grillo.invoke('agents:set-title', { id: agent.id, title });
@@ -687,6 +722,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         // The title bar names the meeting's project while its tab is open, and the project tabs follow it.
         if (container.isConnected) shell.showProject(project);
         root.hidden = false;
+        head.hidden = false;
         draw();
         prepareModel();
         void load(project);
@@ -708,7 +744,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         draw();
         void greet();
         // The agent went quiet: it may have taken another ticket, so its tab may need a new name.
-        if (waiting && !wasWaiting) void nameTab();
+        if (waiting && !wasWaiting) void followTicket();
       });
       activate();
 
@@ -737,4 +773,5 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       };
     },
   };
+  return [above.panel, controls];
 }

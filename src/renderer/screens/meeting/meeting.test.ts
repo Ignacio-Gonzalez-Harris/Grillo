@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registerAgentChannels } from '../../../main/features/agents/channels';
 import { FakePty } from '../../../main/features/agents/fake-pty';
@@ -31,7 +33,7 @@ import {
   HINT_PARALLEL,
   LISTENING,
   OPEN_ANOTHER,
-  meetingPanel,
+  meetingPanels,
   NOT_RECORDING,
   REASON_CONSENT,
   REASON_LISTEN,
@@ -167,7 +169,7 @@ async function app() {
   let tabs: AgentTabs | undefined;
   const panels = registerTabPanels({}, [
     terminalPanel(() => new FakeTerminalView()),
-    meetingPanel({ agents: meetingAgents, capture: makeCapture }),
+    ...meetingPanels({ agents: meetingAgents, capture: makeCapture }),
     channelSwitchPanel(),
   ]);
   const agentTabScreen: ScreenModule = {
@@ -212,7 +214,8 @@ async function app() {
       await settle();
     },
     content,
-    panel: () => content().querySelector<HTMLElement>('.agent-tab .meeting-panel') as HTMLElement,
+    /** The whole tab: the panel's parts sit in its column, in the slot above the body and below the body. */
+    panel: () => content().querySelector<HTMLElement>('.agent-tab') as HTMLElement,
     /** Starts a meeting agent, opens its tab, and lets Claude Code show its prompt, take the command and go quiet. */
     async startMeeting() {
       const id = await startMeetingAgent(grillo, meetingAgents, { project: PROJECT, folder });
@@ -244,6 +247,7 @@ const cardNamed = (scope: HTMLElement, heading: string) =>
 const checkNamed = (scope: HTMLElement, label: string) =>
   [...scope.querySelectorAll<HTMLLabelElement>('label')].find((candidate) => text(candidate).startsWith(label))?.querySelector('input') as HTMLInputElement;
 const questionControls = (scope: HTMLElement) => scope.querySelector<HTMLElement>('.meeting-head') as HTMLElement;
+const meetingPanelOf = (tab: HTMLElement) => tab.querySelector<HTMLElement>('.meeting-panel') as HTMLElement;
 const recordSwitch = (scope: HTMLElement) => scope.querySelector<HTMLInputElement>('.switch input.rec') as HTMLInputElement;
 const visible = (el: Element | null) => el !== null && !(el as HTMLElement).closest('[hidden]');
 const sourceChoice = (scope: HTMLElement) => scope.querySelector<HTMLElement>('[role="group"][aria-label="Recording source"]') as HTMLElement;
@@ -275,7 +279,8 @@ describe('meeting screen: where the panels show', () => {
 
     const { id } = await startMeeting();
 
-    expect(panel().hidden).toBe(false);
+    expect(meetingPanelOf(panel()).hidden).toBe(false);
+    expect(visible(panel().querySelector('.agent-tab-above .meeting-head'))).toBe(true);
     const tabs = [...document.querySelectorAll<HTMLElement>('nav .tab[data-agent-id]')];
     expect(tabs.map((tab) => text(tab.querySelector('.tab-name')))).toEqual(['Grilling · Tagging round', 'Grilling · Live session']);
     for (const tab of tabs) {
@@ -285,7 +290,8 @@ describe('meeting screen: where the panels show', () => {
     }
     shell?.navigate('agent-tab', { agentId: tabs[0].dataset['agentId'] ?? '' });
     await settle();
-    expect(panel().hidden).toBe(true);
+    expect(meetingPanelOf(panel()).hidden).toBe(true);
+    expect(visible(panel().querySelector('.agent-tab-above .meeting-head'))).toBe(false);
     expect(tabs[1].dataset['agentId']).toBe(id);
   });
 
@@ -293,7 +299,9 @@ describe('meeting screen: where the panels show', () => {
     const panels = registerTabPanels({ '/src/renderer/screens/meeting/tab-panel.ts': { default: meetingTabPanels } }, [terminalPanel()]);
 
     expect(panels.panelsFor('grilling', 'controls')).toHaveLength(1);
+    expect(panels.panelsFor('grilling', 'above')).toHaveLength(1);
     expect(panels.panelsFor('generic', 'controls')).toEqual([]);
+    expect(panels.panelsFor('generic', 'above')).toEqual([]);
     for (const kind of ['grilling', 'research', 'prototype', 'task', 'support', 'generic'] as const) {
       expect(panels.panelsFor(kind, 'header')).toHaveLength(1);
     }
@@ -755,6 +763,66 @@ describe("meeting screen: each meeting agent's tab names its ticket", () => {
     await talkThenWait(first.pty);
 
     expect(tabNames()).toEqual(['Grilling · Live session', 'Grilling · Sample ticket 5']);
+  });
+
+  it('never shows the red Recording banner while nothing records, by the real stylesheet', async () => {
+    const { panel, startMeeting } = await app();
+    await startMeeting();
+    const sheet = document.createElement('style');
+    sheet.textContent = readFileSync(resolve(__dirname, 'meeting.css'), 'utf8');
+    document.head.append(sheet);
+
+    expect(getComputedStyle(panel().querySelector('.rec-banner') as HTMLElement).display).toBe('none');
+    sheet.remove();
+  });
+
+  it('shows the ticket at hand on the question card: its title, domain tags and "Question n of m", as the agent says', async () => {
+    const { store, held, panel, startMeeting } = await app();
+    const [one, five] = await store.listTickets(PROJECT, { state: 'open' });
+    await store.updateTicket(one.id, { domains: ['developer', 'product'] });
+    const heading = () => questionControls(panel()).querySelector<HTMLElement>('.question-at-hand') as HTMLElement;
+    const { id, pty } = await startMeeting();
+
+    expect(visible(heading())).toBe(false);
+
+    held.push({ ticket: one.id.number, agentId: id, heldAt: 1, question: { at: 2, of: 3 } });
+    await talkThenWait(pty);
+
+    expect(visible(heading())).toBe(true);
+    expect(text(heading().querySelector('.strong'))).toBe('Sample ticket 1');
+    expect([...heading().querySelectorAll('.tag')].map(text)).toEqual(['developer', 'product']);
+    expect(heading().querySelector('.tag')?.className).toBe('tag d2');
+    expect(text(heading().querySelector('.question-count'))).toBe('Question 2 of 3');
+    // The heading comes first on the card, above the Listen or Type controls.
+    expect(heading().nextElementSibling?.querySelector('[aria-label="Answer mode"]')).not.toBeNull();
+
+    // The agent moves on and has not said which question yet: the card names the ticket and no count.
+    held.splice(0, 1, { ticket: five.id.number, agentId: id, heldAt: 2 });
+    await talkThenWait(pty);
+
+    expect(text(heading().querySelector('.strong'))).toBe('Sample ticket 5');
+    expect(heading().querySelector('.question-count')).toBeNull();
+
+    // It holds no ticket any more: the card has nothing to name.
+    held.splice(0, 1);
+    await talkThenWait(pty);
+
+    expect(visible(heading())).toBe(false);
+  });
+
+  it('keeps the question card working when the agent\'s question cannot be read', async () => {
+    const { store, host, held, panel, startMeeting } = await app();
+    const [one] = await store.listTickets(PROJECT, { state: 'open' });
+    const { id, pty } = await startMeeting();
+    held.push({ ticket: one.id.number, agentId: id, heldAt: 1, question: { at: 1, of: 1 } });
+    vi.spyOn(host, 'questionAtHand').mockRejectedValueOnce(new Error('made-up read failure'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await talkThenWait(pty);
+
+    expect(text(questionControls(panel()).querySelector('.question-at-hand .strong'))).toBe('Sample ticket 1');
+    expect(buttonNamed(questionControls(panel()), 'Skip question').disabled).toBe(false);
+    warn.mockRestore();
   });
 
   it("names the meeting's project in the title bar while its tab is open", async () => {

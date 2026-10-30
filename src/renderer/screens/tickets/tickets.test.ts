@@ -232,6 +232,23 @@ describe('the tickets screen: the own list', () => {
     expect(listCard(content()).querySelector('li.selected button.pick')?.getAttribute('aria-current')).toBe('true');
   });
 
+  it('shows every row its kind badge beside the title, as the launch state of the prototype does', async () => {
+    const { store, project, open, content } = await app();
+    await store.createTicket(project, ticketInput('Sample ticket 1', { kind: 'grilling' }));
+    await store.createTicket(project, ticketInput('Sample ticket 2', { kind: 'research' }));
+    await store.createTicket(project, ticketInput('Sample ticket 3', { kind: 'prototype' }));
+    await store.createTicket(project, ticketInput('Sample ticket 4', { kind: 'task' }));
+    await open();
+
+    const rows = [...listCard(content()).querySelectorAll('.ticket-list > li')];
+    expect(rows.map((row) => [text(row.querySelector('button.pick')), text(row.querySelector('.ticket-name .badge'))])).toEqual([
+      ['Sample ticket 1', 'grilling'],
+      ['Sample ticket 2', 'research'],
+      ['Sample ticket 3', 'prototype'],
+      ['Sample ticket 4', 'task'],
+    ]);
+  });
+
   it('search keeps the tickets whose title or questions match, and says when none does', async () => {
     const { store, project, content, open } = await app();
     await ownList(store, project);

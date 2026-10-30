@@ -39,7 +39,8 @@ function markActive(el: HTMLElement, active: boolean): void {
 /**
  * The project tab bar of the prototype: Setup and Project, then Map, Tickets and PRD, then one tab per running agent
  * (its name, the waiting dot and an empty header slot), then "+". Agent tabs are kept across updates, so whatever a
- * later story mounts in a tab's header stays there while the agent runs.
+ * later story mounts in a tab's header stays there while the agent runs. The support agent's tab comes first (prototype
+ * screen-support-agent-tab). A tab is moved only when it is out of place, as moving one takes keyboard focus off it.
  */
 export function createTabBar(handlers: TabBarHandlers): TabBar {
   const el = document.createElement('nav');
@@ -100,6 +101,17 @@ export function createTabBar(handlers: TabBarHandlers): TabBar {
     add.setAttribute('aria-pressed', String(generic));
   }
 
+  /** Puts the tabs in the agents' order, the support agent first, leaving a tab already in place alone. */
+  function placeInOrder(agents: readonly AgentInfo[]): void {
+    const wanted = [...agents.filter(({ kind }) => kind === 'support'), ...agents.filter(({ kind }) => kind !== 'support')];
+    const roots = wanted.map(({ id }) => (agentTabs.get(id) as AgentTab).root);
+    roots.forEach((root, at) => {
+      // Anything else in the strip (the Support screen's own tab) keeps its place.
+      const placed = [...agentStrip.children].filter((child) => roots.includes(child as HTMLElement));
+      if (placed[at] !== root) agentStrip.insertBefore(root, placed[at] ?? null);
+    });
+  }
+
   return {
     el,
     setAgents(agents) {
@@ -115,8 +127,8 @@ export function createTabBar(handlers: TabBarHandlers): TabBar {
         agentTabs.set(agent.id, tab);
         tab.name.textContent = agent.title;
         tab.dot.hidden = !agent.waiting;
-        agentStrip.append(tab.root);
       }
+      placeInOrder(agents);
       refreshActive();
     },
     setActive(next) {

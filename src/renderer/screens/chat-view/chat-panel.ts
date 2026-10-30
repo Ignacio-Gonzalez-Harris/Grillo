@@ -9,7 +9,7 @@
  * "Use it" sends them (the session holds them in main and sends them as one message).
  */
 import './chat-view.css';
-import type { ChatActionResult, ChatAnswer, ChatMessage, ChatQuestionItem } from '../../../shared/agent-chat';
+import { readRelayMark, type ChatActionResult, type ChatAnswer, type ChatMessage, type ChatQuestionItem } from '../../../shared/agent-chat';
 import type { AgentInfo } from '../../../shared/agents';
 import type { GrilloApi, Unsubscribe } from '../../../shared/ipc';
 import { createSessionClient } from '../../../shared/session-ipc';
@@ -299,8 +299,12 @@ function mountChatView(root: HTMLElement, { agent, grillo }: TabPanelContext, lo
     switch (message.type) {
       case 'assistant':
         return bubble([name], [text(message.text)]);
-      case 'user':
-        return bubble([MEMBER], [text(message.text)], true);
+      case 'user': {
+        const relayed = readRelayMark(message.text);
+        return relayed
+          ? bubble([badge(`from Support, for ${relayed.member}`, 'info')], [text(relayed.text)], true)
+          : bubble([MEMBER], [text(message.text)], true);
+      }
       case 'question':
         return questionBubble(message.id, message.questions);
       case 'permission':
