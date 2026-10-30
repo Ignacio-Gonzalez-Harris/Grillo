@@ -6,14 +6,20 @@
  * its slot and its priority:
  * - `body`: the tab's main view. Only the highest-priority body panel for the agent's kind is shown; the built-in
  *   terminal has priority 0, so the chat view takes over by registering a body panel with a higher priority.
- * - `controls`: shown in a side column beside the body, highest priority first.
+ * - `controls`: shown in a side column to the left of the body, highest priority first.
+ * - `above`: shown above the body, highest priority first (prototype screen-meeting's question card,
+ *   screen-own-time-answering's ticket row).
+ * - `aside`: shown in a column to the right of the body, highest priority first (prototype
+ *   screen-own-time-answering's Questions card, screen-support-agent-tab's relayed note).
  * - `header`: drawn inside the agent's tab in the tab bar, beside its name and waiting dot, highest priority first.
+ *
+ * A slot exists only on a tab with a panel for it, and takes no room while its panels hide themselves.
  */
-import { AGENT_KINDS, type AgentInfo, type AgentKind } from '../../../shared/agents';
+import { AGENT_KINDS, type AgentId, type AgentInfo, type AgentKind } from '../../../shared/agents';
 import type { GrilloApi } from '../../../shared/ipc';
 import type { ShellContext } from '../../app/screens';
 
-export const PANEL_SLOTS = ['body', 'controls', 'header'] as const;
+export const PANEL_SLOTS = ['body', 'controls', 'above', 'aside', 'header'] as const;
 export type PanelSlot = (typeof PANEL_SLOTS)[number];
 
 /** What a panel is mounted with. */
@@ -52,6 +58,40 @@ export interface TabPanels {
   bodyFor(kind: AgentKind): TabPanel;
   /** The panels of one slot for this kind, highest priority first. */
   panelsFor(kind: AgentKind, slot: Exclude<PanelSlot, 'body'>): TabPanel[];
+}
+
+/** One element per agent that a panel fills and another slot shows, so one panel's state can reach two slots. */
+export interface SlotPart {
+  /** The panel that shows the part in its slot. */
+  panel: TabPanel;
+  /** The agent's part, hidden until the panel filling it shows it. */
+  of(agentId: AgentId): HTMLElement;
+}
+
+export function slotPart(slot: PanelSlot, kinds: TabPanel['kinds'], priority: number, className: string): SlotPart {
+  const parts = new Map<AgentId, HTMLElement>();
+  function of(agentId: AgentId): HTMLElement {
+    let part = parts.get(agentId);
+    if (part === undefined) {
+      part = document.createElement('div');
+      part.className = className;
+      part.hidden = true;
+      parts.set(agentId, part);
+    }
+    return part;
+  }
+  return {
+    of,
+    panel: {
+      kinds,
+      slot,
+      priority,
+      mount(el, { agent }) {
+        el.append(of(agent.id));
+        return { dispose: () => void parts.delete(agent.id) };
+      },
+    },
+  };
 }
 
 /** A panel and where it came from, for error messages. */
@@ -98,7 +138,7 @@ function panelsOf(folder: string, module: unknown): Found[] {
   if (panels.length === 0 || !panels.every(isTabPanel)) {
     throw new Error(
       `Folder '${folder}' must export as default from its tab-panel.ts a panel or a non-empty array of panels, each ` +
-        "with kinds ('all' or a list of agent kinds, none twice), slot ('body', 'controls' or 'header'), a finite " +
+        "with kinds ('all' or a list of agent kinds, none twice), slot ('body', 'controls', 'above', 'aside' or 'header'), a finite " +
         'priority and mount(el, context)',
     );
   }

@@ -32,6 +32,19 @@ describe('tab-panel discovery', () => {
     expect(panels.panelsFor('task', 'header')).toEqual([]);
   });
 
+  it('offers a slot above the body and a right-hand column, by kind and priority like the controls', () => {
+    const question = panel({ slot: 'above', kinds: ['grilling'] });
+    const questions = panel({ slot: 'aside', kinds: ['grilling'], priority: 10 });
+    const note = panel({ slot: 'aside' });
+
+    const panels = registerTabPanels({ [at('alpha')]: { default: [question, note, questions] } }, [terminal]);
+
+    expect(panels.panelsFor('grilling', 'above')).toEqual([question]);
+    expect(panels.panelsFor('grilling', 'aside')).toEqual([questions, note]);
+    expect(panels.panelsFor('task', 'above')).toEqual([]);
+    expect(panels.panelsFor('task', 'aside')).toEqual([note]);
+  });
+
   it('shows the built-in terminal as the body unless a higher-priority body serves the kind, as the chat view will', () => {
     const chat = panel({ slot: 'body', kinds: ['grilling'], priority: 10 });
     const lower = panel({ slot: 'body', priority: -5 });

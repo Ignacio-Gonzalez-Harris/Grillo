@@ -7,11 +7,12 @@ import { createMemoryStore } from '../../../main/store/memory';
 import { createMemorySettings } from '../../../main/store/memory/settings';
 import { createGrilloApi } from '../../../preload/bridge';
 import type { ChatActionResult, ChatMessage } from '../../../shared/agent-chat';
-import type { AgentInfo, AgentKind, StartAgentRequest } from '../../../shared/agents';
+import { AGENT_KINDS, type AgentInfo, type AgentKind, type StartAgentRequest } from '../../../shared/agents';
 import type { IdentityResult } from '../../../shared/tools';
-import { registerScreens, type ScreenModule } from '../../app/screens';
+import { registerScreens, type ScreenModule, type ShellContext } from '../../app/screens';
 import { createShell, type Shell } from '../../app/shell';
 import * as supportAgentScreen from './index';
+import { RELAYED_HINT, relayNotePanel } from './relay-note';
 import { NO_PROJECT, SUPPORT_COMMAND, SUPPORT_TITLE } from './support-agent';
 
 // Made-up projects, logins, tab names and messages only.
@@ -79,6 +80,7 @@ async function app(options: AppOptions = {}) {
   await store.createProject({ newRepository: { organisation: 'example-org', name: 'sample-project-1' } });
   if (options.opened !== false) await store.openProjectFolder(PROJECT);
 
+  let context: ShellContext | undefined;
   const visited: Array<{ screenId: string; params: Record<string, string> }> = [];
   const recorder = (screenId: string): ScreenModule => ({
     id: screenId,
@@ -89,18 +91,26 @@ async function app(options: AppOptions = {}) {
   });
   const root = document.createElement('div');
   document.body.append(root);
+  const grillo = createGrilloApi(fake.renderer);
   shell = createShell(root, {
-    grillo: createGrilloApi(fake.renderer),
+    grillo,
     screens: registerScreens({
       '/src/renderer/screens/support-agent/index.ts': supportAgentScreen,
       '/src/renderer/screens/agent-tab/index.ts': recorder('agent-tab'),
-      '/src/renderer/screens/map/index.ts': recorder('map'),
+      '/src/renderer/screens/map/index.ts': {
+        ...recorder('map'),
+        start(shellContext: ShellContext) {
+          context = shellContext;
+        },
+      },
     }),
   });
   await flush();
 
   return {
     root,
+    grillo,
+    context: () => context as ShellContext,
     starts,
     sent,
     relays,
@@ -136,6 +146,7 @@ async function openSupport(root: HTMLElement): Promise<void> {
   supportTab(root)?.click();
   await flush();
 }
+const MARKED = `[from Support, for ${MEMBER}] Please ask about the sample edge case.`;
 const relayRequest = (to: string, message: string) => ['I will pass it on.', '```grillo-relay', `to: ${to}`, '', message, '```'].join('\n');
 
 describe('support agent tab: registration', () => {
@@ -281,6 +292,90 @@ describe('support agent tab: Answering about the project', () => {
 
     expect(harness.starts.map((start) => start.firstMessage)).toEqual([SUPPORT_COMMAND]);
     expect(harness.visited.at(-1)).toEqual({ screenId: 'agent-tab', params: { agentId: 'agent-1' } });
+  });
+});
+
+describe('support agent tab: Relayed, seen in the target tab', () => {
+  /** The note's panel on the target tab, mounted as the agent tab mounts it. */
+  async function targetTab(options: { supportRuns: boolean }) {
+    const harness = await app();
+    harness.run('grilling-1', 'grilling', TARGET);
+    if (options.supportRuns) await openSupport(harness.root);
+    const slot = document.createElement('div');
+    document.body.append(slot);
+    relayNotePanel().mount(slot, {
+      agent: { id: 'grilling-1', kind: 'grilling', title: TARGET, folder: '/made-up/folder', waiting: false },
+      grillo: harness.grillo,
+      shell: harness.context(),
+      setInput: () => undefined,
+    });
+    const card = () => slot.firstElementChild as HTMLElement;
+    return { ...harness, card };
+  }
+  const backButton = (card: HTMLElement) =>
+    [...card.querySelectorAll('button')].find((candidate) => text(candidate) === 'Back to Support') as HTMLButtonElement;
+
+  it('shows the note in the tab the message reached, for no other message or tab', async () => {
+    const { says, card } = await targetTab({ supportRuns: true });
+    expect(card().hidden).toBe(true);
+
+    await says('grilling-1', { type: 'user', text: 'A plain message from the member.' });
+    await says('grilling-1', { type: 'assistant', text: MARKED });
+    await says('other-agent', { type: 'user', text: MARKED });
+    expect(card().hidden).toBe(true);
+
+    await says('grilling-1', { type: 'user', text: MARKED });
+
+    expect(card().hidden).toBe(false);
+    expect(text(card().querySelector('h4'))).toBe('Support tab');
+    expect(text(card().querySelector('.note.ok'))).toBe(`Relayed to ${TARGET}.`);
+    expect(text(card().querySelector('p.small.muted'))).toBe(RELAYED_HINT);
+  });
+
+  it('Back to Support opens the support agent and takes the note away', async () => {
+    const { says, card, visited } = await targetTab({ supportRuns: true });
+    await says('grilling-1', { type: 'user', text: MARKED });
+
+    backButton(card()).click();
+    await flush();
+
+    expect(visited.at(-1)).toEqual({ screenId: 'agent-tab', params: { agentId: 'agent-1' } });
+    expect(card().hidden).toBe(true);
+  });
+
+  it('Back to Support opens the Support screen, which starts the agent, when no support agent runs', async () => {
+    const { says, card, starts } = await targetTab({ supportRuns: false });
+    await says('grilling-1', { type: 'user', text: MARKED });
+
+    backButton(card()).click();
+    await flush();
+
+    expect(starts.map(({ kind }) => kind)).toEqual(['support']);
+  });
+
+  it("is offered on every agent tab but the support agent's own, in the right-hand column", () => {
+    const { kinds, slot } = relayNotePanel();
+
+    expect(slot).toBe('aside');
+    expect(kinds).toEqual(AGENT_KINDS.filter((kind) => kind !== 'support'));
+  });
+});
+
+describe('support agent tab: keyboard focus', () => {
+  it("keeps focus on the support agent's tab, kept first, through every agent-list change", async () => {
+    const { root, run, stop } = await app();
+    run('grilling-1', 'grilling', TARGET);
+    await openSupport(root);
+    const support = root.querySelector<HTMLElement>('nav [data-agent-id="agent-1"] .tab-name') as HTMLElement;
+    support.focus();
+
+    run('task-1', 'task', 'Task · Sample ticket 7');
+    await flush();
+    stop('task-1');
+    await flush();
+
+    expect(document.activeElement).toBe(support);
+    expect(agentTabLabels(root)).toEqual(['Support', TARGET]);
   });
 });
 

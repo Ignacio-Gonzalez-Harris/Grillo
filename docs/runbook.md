@@ -16,7 +16,7 @@ and the screen below it.
   an agent's tab, unless it says which project it works for (a meeting agent's tab does). Before you
   have opened a project, Map, Tickets and PRD fall back to the project opened last on this laptop.
 - **Agent tabs** are named "kind · ticket" (for example "Grilling · Sample ticket 1") and follow the agent when it
-  renames itself. A meeting agent's tab is named after the ticket it is grilling (see The meeting panel, below). An orange dot on a tab means that agent is waiting for you. Click the name to open the agent.
+  renames itself. A meeting agent's tab is named after the ticket it is grilling (see The meeting panel, below). An orange dot on a tab means that agent is waiting for you. Click the name to open the agent. Keyboard focus stays on an agent tab or its Channel switch when agents start or stop.
 - **"+"** opens the generic agent tab.
 - **The window frame is Grillo's own.** There is no separate system title bar: drag Grillo's title bar (the strip
   with the logo and "Grillo") to move the window, and double-click it to maximise or restore. The system window
@@ -223,7 +223,8 @@ built the map.
 
 - **Your list** comes in groups: taken by you or sent to you, then your domains (tickets nobody holds in one of your
   domains, or tagged "no domain"), then everything else (held by someone else, shown with their login, in other
-  domains, or not tagged yet), then the closed ones. Nothing is hidden. **Search** keeps the tickets whose title or
+  domains, or not tagged yet), then the closed ones. Every row shows its kind badge (grilling, research, prototype or
+  task) beside the title; a damaged ticket's row says only "Damaged". Nothing is hidden. **Search** keeps the tickets whose title or
   questions contain what you type.
 - **The open ticket** shows its kind and who holds it: "Not assigned", "Assigned to you", or "Locked · assigned to
   <login>". A locked ticket greys out Take and says who holds it; you can still read it.
@@ -290,6 +291,8 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
 
 - **A terminal agent's tab** (the default) shows the agent's own Claude Code terminal, which fills the window and
   follows its size. **A chat agent's tab** (`GRILLO_AGENT_RUNTIME=chat`) shows the chat view (see Chat view below).
+- **Around the terminal or chat** a tab may show parts above it and in columns on either side (the meeting and own-time
+  screens, the relayed note); a tab with nothing to show there gives the room to the terminal or chat.
 - **Typing in a terminal agent's tab is always available.** Click into the terminal and type, exactly as in a
   normal terminal (arrow keys, Esc and Enter included). Or use the box under it ("Type to the agent…"): Enter or
   Send types the line into the agent, then presses Enter. Send on an empty box presses Enter alone.
@@ -480,6 +483,9 @@ drive it by typing the protocol messages (`resources/skills/README.md`).
   agent with `GRILLO_AGENT_ID`) into the folder's `tab` file, so the host's screen names the tab after it. A ticket another agent of the session holds is
   skipped (or a jump to it is refused); the agent removes its hold when it leaves the ticket. A hold left by an agent
   that was stopped mid-ticket keeps that ticket out of this session only; the next session starts free.
+- **The question at hand:** just before each question the agent writes `<n> of <m>` into the `question` file of that
+  same folder, and the host's question card shows it (see The meeting panel, below). The agent's only message to a
+  screen is that file (`resources/skills/README.md`, Agent-to-screen protocol).
 - **Drift:** what else the room says may add a question to the ticket, a new ticket (with no domain until the next
   tagging round), a fog line or an out-of-scope line. The agent says what it added.
 - **Run it by hand (developers):** in a clone of a made-up test project with a map and tagged tickets on `main`, copy
@@ -531,6 +537,9 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   cannot be opened, the recording turns back off and the reason shows. The session has one microphone: every
   grilling agent's tab shows the same Record switch, and turning it off in any tab stops the capture, even one
   started in a tab whose agent has since stopped.
+- **The question card**, above the terminal, names the ticket the agent holds, its domain tags and "Question 2 of 3",
+  once the agent has gone quiet after asking. With no ticket held the row stays away; an agent that has not said which
+  question it asks shows the ticket and tags with no count. The question's own words stay in the terminal or chat.
 - **Listen / Type** per question; Listen needs the recording on and opens this agent's channel. **Use it** (Listen
   only) sends the transcript in the agent's box with `use it`. **Skip question** and **Jump to ticket** type `skip` and
   `jump <number>`. **Import a transcript** pastes or uploads a text file and sends it with `use it`.
@@ -655,7 +664,7 @@ opens. A closed ticket, or one someone else holds, is shown with the reason and 
   turns "Answered". **Edit** changes an answer the same way: the new answer is saved first, then the old one is
   deleted. A save that fails says why and keeps what you typed.
 - **With a grilling agent:** starts `/grillo-answer <ticket>` in the project folder and opens its tab: the ticket's
-  heading above the terminal, the questions with their answered state beside it. They refresh when the agent goes
+  heading above the terminal, the questions with their answered state in the column on its right. They refresh when the agent goes
   quiet and when you come back to the tab. Pressing it again opens the agent already answering that ticket.
   **In a form** goes back to the form; the agent keeps running.
 - **A transcript for the ticket** (Granola, Teams, a file): in the agent's tab press **Import a transcript (paste or
@@ -814,6 +823,9 @@ the support agent (above).
   <message>` and tells the support agent `relayed: <tab name>`. Nothing is posted, and the support agent is told
   `not relayed: <reason>`, when no open tab has that name (the reason lists the open tabs), the target is the
   Support tab itself, the request is malformed, or Grillo cannot read your GitHub login.
+- **In the tab the message reached:** the message shows as a bubble on your side with the badge "from Support, for
+  `<your login>`" instead of the mark. The tab's right-hand column shows a **Support tab** card: "Relayed to `<tab
+  name>`.", where the reply shows, and **Back to Support**, which opens the support agent and takes the card away.
 - **Relays need chat agents.** With the terminal runtime (the default until the chat view lands, see Agents) the
   Support tab still starts and opens the agent, but no relay request is read and nothing is posted. Start Grillo
   with `GRILLO_AGENT_RUNTIME=chat` to relay.

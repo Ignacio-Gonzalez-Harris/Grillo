@@ -322,6 +322,36 @@ describe('app shell', () => {
     expect(stop).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps keyboard focus on an agent tab or its header control through every agent-list change', async () => {
+    const running = [agent('a1', 'Grilling · Map'), agent('a2', 'Task · Sample ticket 5')];
+    const { grillo, emit } = fakeGrillo(Promise.resolve(running));
+    let context: ShellContext | undefined;
+    const watcher = {
+      ...screen('watcher', 'Watcher'),
+      start(shellContext: ShellContext) {
+        context = shellContext;
+      },
+    };
+    const root = start(registry(watcher), grillo);
+    await flush();
+    const control = document.createElement('button');
+    context?.agentTabHeader('a1')?.append(control);
+    const name = agentTab(root, 'a2')?.querySelector<HTMLButtonElement>('.tab-name') as HTMLButtonElement;
+
+    for (const focused of [name, control]) {
+      focused.focus();
+      for (const change of [
+        [agent('a1', 'Grilling · Map', true), running[1]],
+        [...running, agent('a3', 'Generic · Sample note')],
+        running,
+      ]) {
+        emit('agents:list-changed', change);
+        expect(document.activeElement).toBe(focused);
+      }
+    }
+    expect(tabLabels(root)).toEqual(expect.arrayContaining(['Grilling · Map', 'Task · Sample ticket 5']));
+  });
+
   it('tells agent-tab listeners the current tabs at once and after every change, once each tab header exists', async () => {
     const { grillo, emit } = fakeGrillo(Promise.resolve([agent('a1', 'Grilling · Map')]));
     const seen: Array<{ ids: string[]; headers: boolean[] }> = [];

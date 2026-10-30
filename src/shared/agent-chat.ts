@@ -15,6 +15,20 @@ export interface StartChatAgentRequest {
   firstMessage: string;
 }
 
+/** The start of a relayed message; the member's name holds no line break or square bracket (`relayMark`'s caller). */
+const RELAY_MARK = /^\[from Support, for ([^\]\r\n]+)\] /;
+
+/** The mark a relayed message starts with (PRD section 4.6 item 7). */
+export function relayMark(member: string): string {
+  return `[from Support, for ${member}] `;
+}
+
+/** A message split into who it was relayed for and what it says, or undefined when it does not start with the mark. */
+export function readRelayMark(message: string): { member: string; text: string } | undefined {
+  const mark = RELAY_MARK.exec(message);
+  return mark ? { member: mark[1], text: message.slice(mark[0].length) } : undefined;
+}
+
 /** One option of a clickable-options question (Claude Code's `AskUserQuestion` tool). */
 export interface ChatQuestionOption {
   label: string;

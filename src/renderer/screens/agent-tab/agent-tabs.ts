@@ -2,7 +2,7 @@ import './agent-tab.css';
 import { AGENT_KINDS, type AgentId, type AgentInfo } from '../../../shared/agents';
 import type { ShellContext } from '../../app/screens';
 import { glassPanel } from '../../theme/components';
-import type { MountedPanel, TabPanel, TabPanelContext, TabPanels } from './tab-panels';
+import type { MountedPanel, PanelSlot, TabPanel, TabPanelContext, TabPanels } from './tab-panels';
 
 export interface AgentTabs {
   /** Shows the agent's tab content in `el`; returns the function that takes it out again (it keeps running). */
@@ -71,11 +71,14 @@ function element(tag: 'div' | 'span', className: string): HTMLElement {
 }
 
 /**
- * Follows the agent tabs: when a tab appears it mounts that agent's panels (the body, the controls beside it and the
- * header panels inside the tab itself), and when it goes away it takes them down.
+ * Follows the agent tabs: when a tab appears it mounts that agent's panels (the body, the controls to its left, what
+ * goes above it and to its right, and the header panels inside the tab itself), and when it goes away it takes them
+ * down.
  */
 export function createAgentTabs(shell: ShellContext, panels: TabPanels): AgentTabs {
   const sessions = new Map<AgentId, Session>();
+  /** Tabs opened before their agent was on the list: the answer to a start can reach the screen before the list does. */
+  const awaited = new Map<AgentId, HTMLElement>();
 
   function mountPanel(agent: AgentInfo, panel: TabPanel, el: HTMLElement, context: TabPanelContext): MountedPanel {
     return asMounted(safely(agent.id, 'mount', () => panel.mount(el, context)));
@@ -106,7 +109,20 @@ export function createAgentTabs(shell: ShellContext, panels: TabPanels): AgentTa
       root.classList.add('with-controls');
       root.append(column);
     }
-    root.append(bodySlot);
+
+    /** One slot around the body, there only when a panel of this kind fills it. */
+    function around(slot: Exclude<PanelSlot, 'body' | 'controls' | 'header'>): HTMLElement[] {
+      const slotPanels = panels.panelsFor(agent.kind, slot);
+      if (slotPanels.length === 0) return [];
+      const holder = element('div', `agent-tab-${slot} stack`);
+      for (const panel of slotPanels) {
+        const part = element('div', 'agent-tab-part');
+        holder.append(part);
+        mounted.push(mountPanel(agent, panel, part, context));
+      }
+      return [holder];
+    }
+    root.append(...around('above'), bodySlot, ...around('aside'));
 
     const header = shell.agentTabHeader(agent.id);
     const headerSlots = header
@@ -133,6 +149,10 @@ export function createAgentTabs(shell: ShellContext, panels: TabPanels): AgentTa
     sessions.delete(agentId);
   }
 
+  function shown(agentId: AgentId, session: Session): void {
+    session.mounted.forEach((panel) => safely(agentId, 'show', () => panel.shown?.()));
+  }
+
   const stopFollowing = shell.onAgentTabs((list: readonly unknown[]) => {
     const agents = list.filter(isAgentInfo);
     const running = new Set(agents.map(({ id }) => id));
@@ -140,7 +160,15 @@ export function createAgentTabs(shell: ShellContext, panels: TabPanels): AgentTa
       if (!running.has(id)) close(id, session);
     }
     for (const agent of agents) {
-      if (!sessions.has(agent.id)) sessions.set(agent.id, open(agent));
+      if (sessions.has(agent.id)) continue;
+      const session = open(agent);
+      sessions.set(agent.id, session);
+      const placeholder = awaited.get(agent.id);
+      if (placeholder) {
+        awaited.delete(agent.id);
+        placeholder.replaceWith(session.root);
+        shown(agent.id, session);
+      }
     }
   });
 
@@ -148,11 +176,17 @@ export function createAgentTabs(shell: ShellContext, panels: TabPanels): AgentTa
     show(el, agentId) {
       const session = sessions.get(agentId);
       if (!session) {
-        el.append(notRunning());
-        return () => undefined;
+        const placeholder = notRunning();
+        el.append(placeholder);
+        awaited.set(agentId, placeholder);
+        return () => {
+          if (awaited.get(agentId) === placeholder) awaited.delete(agentId);
+          placeholder.remove();
+          sessions.get(agentId)?.root.remove();
+        };
       }
       el.append(session.root);
-      session.mounted.forEach((panel) => safely(agentId, 'show', () => panel.shown?.()));
+      shown(agentId, session);
       return () => session.root.remove();
     },
     dispose() {
