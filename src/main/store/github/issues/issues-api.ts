@@ -343,6 +343,11 @@ export function createIssuesApi(gh: Gh) {
       await write('POST', `${issuePath(ref, parent)}/sub_issues`, { sub_issue_id: child }, noIssue(ref, parent));
     },
 
+    /** The native sub-issues of the issue. */
+    subIssues(ref: RepositoryRef, parent: number): Promise<{ id: number; number: number }[]> {
+      return refusing(paged(`${issuePath(ref, parent)}/sub_issues`, parseIssueRefs), noIssue(ref, parent));
+    },
+
     /** GitHub's native "blocked by" relation of the issue. */
     blockers(ref: RepositoryRef, number: number): Promise<{ id: number; number: number }[]> {
       return refusing(paged(`${issuePath(ref, number)}/dependencies/blocked_by`, parseIssueRefs), noIssue(ref, number));

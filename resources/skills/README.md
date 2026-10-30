@@ -1,8 +1,8 @@
 # Grillo's skills: commands, the screen-to-agent protocol and the map-done rule
 
-Every Grillo skill and every screen that starts or drives an agent follows this file. It holds three things:
-the command each skill answers to, the messages a screen types into a running agent, and the rule every skill
-applies after closing a ticket. The records the skills read and write are in `docs/store-layout.md`; the
+Every Grillo skill and every screen that starts or drives an agent follows this file. It holds four things:
+the command each skill answers to, the messages a screen types into a running agent, the message a running agent
+leaves for a screen, and the rule every skill applies after closing a ticket. The records the skills read and write are in `docs/store-layout.md`; the
 product is the PRD (`docs/PRDs/PRD.md`). A change here is a change to every skill and screen that uses it.
 
 - **This file is never shipped.** The agent runtime copies only the `grillo-*` folders beside it into a
@@ -85,6 +85,17 @@ are the messages a screen types, and what the agent must do with each.
   posts it through the agent chat relay and types back `relayed: <tab name>` or `not relayed: <reason>`
   (`grillo-support/SKILL.md`, "Grillo's answer to a relay request").
 
+## Agent-to-screen protocol
+
+A running agent tells a screen something by writing one small file beside its hold on the ticket
+(`grillo-meeting`, "Holding a ticket in this session"), inside the project folder's `.git`, so it is never committed.
+A file works on both agent runtimes, where a line of chat would reach a screen only from a chat agent, and the
+default runtime is the terminal. The screen reads it when the agent goes quiet.
+
+| Message | Exact file | Written by | What the file holds | What the screen does |
+|---|---|---|---|---|
+| Question at hand | `.git/meeting-holds/<session id>/<ticket number>/question` | `/grillo-meeting`, just before it asks a question | One line, `<n> of <m>`: this question's place among the ticket's live questions in their order, answered ones counted, and how many there are (`2 of 3`) | The meeting screen's question card shows the ticket's title and domain tags from the store and `Question <n> of <m>`. A missing file or any other content shows the title and tags with no count. The file goes when the agent lets go of its hold. |
+
 ## The map-done rule
 
 The PRD is written the moment the map is done: no open tickets and no fog (PRD 4.7 item 1). Two paths reach
@@ -99,7 +110,8 @@ agent applies this rule:
 3. No open ticket and no fog line: tell the member the map is done and run `/grillo-prd` in the same agent.
 4. Otherwise carry on; nothing is written.
 
-**On a screen.** The store's `closeTicket` and `mergeTicket` return `{ mapDone }`, worked out the same way.
+**On a screen.** The store's `closeTicket` and `mergeTicket` return `{ mapDone }`, worked out the same way, and
+`updateMap` returns `mapDone: true` with the map when that change took the last fog line off with no ticket open.
 When a close or merge from a screen returns `mapDone: true`, that screen starts a grilling agent with the
 first message `/grillo-prd`.
 

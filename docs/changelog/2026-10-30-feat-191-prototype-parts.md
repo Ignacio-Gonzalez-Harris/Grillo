@@ -1,0 +1,1 @@
+Agent tabs gain a slot above the body and a right-hand column; the meeting question card names its ticket and question, ticket rows show their kind, relayed messages are marked with a way back to Support, focus survives agent-list changes, Start meeting no longer opens on "not running", and the Recording banner shows only while recording.

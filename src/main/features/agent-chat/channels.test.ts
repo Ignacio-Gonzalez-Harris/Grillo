@@ -87,6 +87,25 @@ describe('agent chat IPC channels', () => {
     expect(processes[0].stopped).toBe(true);
   });
 
+  it('reports a stop through agent-chat:stop as an end with no exit code, once, to every listener', async () => {
+    const seen: string[] = [];
+    const { grillo, processes, exits } = connect({
+      message: () => undefined,
+      raw: () => undefined,
+      exited: (id, exitCode) => seen.push(`${id} exited ${exitCode}`),
+    });
+    const id = await grillo.invoke('agent-chat:start', start);
+
+    await grillo.invoke('agent-chat:stop', { id });
+    await grillo.invoke('agent-chat:stop', { id });
+    await grillo.invoke('agent-chat:stop', { id: 'no-such-agent' });
+    processes[0].exit(0);
+
+    expect(processes[0].stopped).toBe(true);
+    expect(exits).toEqual([{ id, exitCode: null }]);
+    expect(seen).toEqual([`${id} exited null`]);
+  });
+
   it('hands every driver event to another listener too, such as the agent runtime', async () => {
     const seen: string[] = [];
     const { grillo, processes } = connect({

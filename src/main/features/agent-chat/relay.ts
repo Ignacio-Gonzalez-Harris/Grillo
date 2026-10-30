@@ -1,4 +1,4 @@
-import type { ChatActionResult, ChatAgentId } from '../../../shared/agent-chat';
+import { relayMark, type ChatActionResult, type ChatAgentId } from '../../../shared/agent-chat';
 import type { ChatDriver } from './driver';
 
 const WHITESPACE_RUN = /\s+/g;
@@ -23,5 +23,5 @@ export function relay(driver: ChatDriver, targetAgentId: ChatAgentId, member: st
   if (typeof text !== 'string' || text.trim() === '') {
     return { ok: false, reason: 'A relay needs a message' };
   }
-  return driver.send(targetAgentId, `[from Support, for ${prefixName(member)}] ${text}`);
+  return driver.send(targetAgentId, `${relayMark(prefixName(member))}${text}`);
 }

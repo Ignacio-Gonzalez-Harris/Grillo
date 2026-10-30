@@ -48,6 +48,7 @@ export const REPO_METHODS = [
   'currentMember',
   'viewerPermission',
   'listOrganisations',
+  'listRepositories',
   'listPendingInvitations',
   'acceptInvitation',
   'listProjects',
@@ -283,6 +284,7 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
       return (await api.repository(repositoryOf(id))).permission;
     },
     listOrganisations: () => api.organisations(),
+    listRepositories: () => api.repositories(),
     listPendingInvitations: () => api.invitations(),
     async acceptInvitation(id) {
       if (!Number.isSafeInteger(id)) {

@@ -16,7 +16,7 @@ and the screen below it.
   an agent's tab, unless it says which project it works for (a meeting agent's tab does). Before you
   have opened a project, Map, Tickets and PRD fall back to the project opened last on this laptop.
 - **Agent tabs** are named "kind · ticket" (for example "Grilling · Sample ticket 1") and follow the agent when it
-  renames itself. A meeting agent's tab is named after the ticket it is grilling (see The meeting panel, below). An orange dot on a tab means that agent is waiting for you. Click the name to open the agent.
+  renames itself. A meeting agent's tab is named after the ticket it is grilling (see The meeting panel, below). An orange dot on a tab means that agent is waiting for you. Click the name to open the agent. Keyboard focus stays on an agent tab or its Channel switch when agents start or stop.
 - **"+"** opens the generic agent tab.
 - **The window frame is Grillo's own.** There is no separate system title bar: drag Grillo's title bar (the strip
   with the logo and "Grillo") to move the window, and double-click it to maximise or restore. The system window
@@ -128,8 +128,10 @@ Open) and **Pending invitations** (each with Accept).
 - **New project** opens the form, in four cards:
   1. **Repository.** "Create a new repository": a project name (it suggests the repository name), the
      organisation (the GitHub organisations your sign-in belongs to) and the repository name. "Connect an existing
-     one": type `owner/repository` and press "Check access". With write access only, inviting is greyed out with the
-     reason; admin access allows it.
+     one": your repositories are listed with your access to each. Search narrows the list; pick one. Read access only
+     says it cannot be connected. "Check access" asks GitHub again, and also checks a repository typed in full as
+     `owner/repository` that the list does not hold. With write access only, inviting is greyed out with the reason;
+     admin access allows it.
   2. **PRD structure.** "Start from" Grillo's default of 13 sections or an earlier project's structure, then move
      sections up or down, rename them, change their notes, remove them or add new ones. When connecting, it is
      folded until you press Edit.
@@ -140,6 +142,11 @@ Open) and **Pending invitations** (each with Accept).
   folder, your role and domains, the invites, the idea saved as source S1 (attached documents as S2, S3, …), then a
   grilling agent started in the project folder with `/grillo-wayfinder .grillo/sources/S1.md`. A failed step shows
   its reason; "Try again" carries on from that step. Then open the map or the grilling agent.
+- **A grilling agent that was refused** can be started again later, also after leaving this screen or closing Grillo:
+  press Open on the project under Your projects (it is listed even if its folder never opened, as "created <date>").
+  It shows the failed start with its reason, "Try again" and "Open the map"; once the agent has started, or the
+  project has a map, Open goes to the map as usual. The refusals are kept in the app data folder's `settings.json`
+  under `unstartedGrillingAgents`.
 - **A repository that already holds a Grillo project** is not connected twice: "Open it" opens that project. One
   that cannot be connected (issues turned off, read access only) says why, with "Check again".
 - **Editing the structure later.** The PRD view's "Edit structure and regenerate" opens this screen with the
@@ -152,7 +159,10 @@ Open) and **Pending invitations** (each with Accept).
 The map and ticket screens arrive with their own stories. What already works underneath them, through `gh`:
 
 - **The map** is one issue titled "Map" with the label `wayfinder:map`. Its body holds five sections: destination,
-  notes, settled (one line per closed ticket), fog and out of scope.
+  notes, settled (one line per ticket, with its latest decision's gist), fog and out of scope. A ticket closed as out
+  of scope shows only under Out of scope, even if it carried a decision. If two laptops change the map at the same
+  moment Grillo writes its change again on the fresh map; if that keeps failing it says the map keeps changing, and
+  trying again in a moment works.
 - **A ticket** is an issue with exactly one kind label (`wayfinder:grilling`, `research`, `prototype` or `task`),
   linked as a native sub-issue of the map. Its questions are numbered `Q<issue number>.<k>`; a removed question
   keeps its line as "(removed)", so a number is never used twice.
@@ -171,8 +181,12 @@ The map and ticket screens arrive with their own stories. What already works und
 - **Answering from a phone or browser:** any comment without a marker waits in the ticket's pick-up list until an
   answer is made from it. Deleting that answer puts the comment back and the question reads unanswered again.
 - **Closing** closes the issue as completed. **Merging** writes the decision "Merged into #<other>" and closes the
-  issue as a duplicate of the other ticket. **Reopening** takes the ticket's line off the map's settled list.
-  After a close or a merge Grillo reports whether the map is done: no open ticket and no fog left.
+  issue as a duplicate of the other ticket. **Reopening** takes the ticket's lines off the map's settled and
+  out-of-scope lists. After a close or a merge Grillo reports whether the map is done: no open ticket and no fog left.
+  A store change of the map that takes the last fog line off reports the same; no control on the map screen does that
+  today, so fog still goes through an agent, which applies the map-done rule itself.
+- **When adding a ticket or merging fails halfway** (a dropped connection), the error shows: do the same thing again
+  with the same words. Grillo finishes the same ticket, with all its links, instead of making a second one.
 - **A closed (archived) project** can still be read; every change to the map or a ticket is refused.
 - Issues without Grillo's labels, and pull requests, are ignored.
 
@@ -209,7 +223,8 @@ built the map.
 
 - **Your list** comes in groups: taken by you or sent to you, then your domains (tickets nobody holds in one of your
   domains, or tagged "no domain"), then everything else (held by someone else, shown with their login, in other
-  domains, or not tagged yet), then the closed ones. Nothing is hidden. **Search** keeps the tickets whose title or
+  domains, or not tagged yet), then the closed ones. Every row shows its kind badge (grilling, research, prototype or
+  task) beside the title; a damaged ticket's row says only "Damaged". Nothing is hidden. **Search** keeps the tickets whose title or
   questions contain what you type.
 - **The open ticket** shows its kind and who holds it: "Not assigned", "Assigned to you", or "Locked · assigned to
   <login>". A locked ticket greys out Take and says who holds it; you can still read it.
@@ -266,7 +281,9 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
   changes. Grillo writes no `CLAUDE.md`; your own user-level `CLAUDE.md` still applies.
 - **Several agents run at once**; stopping one leaves the others running. Closing Grillo stops them all.
 - **The waiting dot:** a chat agent counts as waiting for you once its turn ends or it asks a question or a
-  permission, and stops waiting when it starts a turn, says something or is sent a message. A terminal agent counts
+  permission, and stops waiting when it starts a turn, says something or is sent a message. Answering, allowing or
+  denying takes the dot off at once (unless another question or permission still waits), and so does Claude Code
+  withdrawing the question; a tool that runs, or the agent thinking, after its turn ended counts as work too. A terminal agent counts
   as waiting once it has printed nothing for 3 seconds after printing something, and stops waiting as soon as it
   prints again.
 
@@ -274,6 +291,8 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
 
 - **A terminal agent's tab** (the default) shows the agent's own Claude Code terminal, which fills the window and
   follows its size. **A chat agent's tab** (`GRILLO_AGENT_RUNTIME=chat`) shows the chat view (see Chat view below).
+- **Around the terminal or chat** a tab may show parts above it and in columns on either side (the meeting and own-time
+  screens, the relayed note); a tab with nothing to show there gives the room to the terminal or chat.
 - **Typing in a terminal agent's tab is always available.** Click into the terminal and type, exactly as in a
   normal terminal (arrow keys, Esc and Enter included). Or use the box under it ("Type to the agent…"): Enter or
   Send types the line into the agent, then presses Enter. Send on an empty box presses Enter alone.
@@ -310,6 +329,13 @@ label is in English.
   stay greyed out and your pick stays highlighted.
 - **Permission prompts** ("Asks permission") show the tool and what it would run, with **Allow** and **Deny**. A
   question or prompt Claude Code repeats is shown, and answered, once.
+- **Withdrawn questions:** when Claude Code withdraws a question or permission prompt before you answer it, its
+  buttons disappear and "The agent withdrew this question." (or "this request.") shows in their place. A
+  "Something else" answer you had started for it is dropped: the next Send is a plain message.
+- **When Claude Code fails:** if the agent's Claude Code ends with an error (it could not start, or stopped with
+  an exit code other than 0), the chat shows a red note with the exit code and the last 10 lines of Claude Code's
+  own error text (for example a flag it does not know). The tab then closes, and the same note stays under "This
+  agent is not running." while you are on that tab.
 - **The message box:** Enter or Send writes one chat message to the agent. A message that cannot be sent, an answer
   that is refused, an error the agent reports, a turn that ends in error, or a message Grillo cannot read shows as a
   red note in the chat; the agent carries on.
@@ -334,8 +360,8 @@ label is in English.
 ### Agent chat protocol (release 2)
 
 The chat view's engine, and what every agent tab runs on under the chat runtime. Its `agent-chat:*` channels take a
-tab's id, since the tab and its chat agent share it; stop a tab with `agents:stop`, which also takes it off the tab
-bar. While a chat agent's Open channel holds transcript words, main sends them on `session:held` (`''` once sent);
+tab's id, since the tab and its chat agent share it; stop a tab with `agents:stop` or `agent-chat:stop`, and either
+takes it off the tab bar (`agent-chat:stop` reports the end on `agent-chat:exited` with no exit code). While a chat agent's Open channel holds transcript words, main sends them on `session:held` (`''` once sent);
 `session:sendBox` sends the message box with the held words it showed, so they are never sent twice;
 `session:editBox` keeps a grilling agent's box as the member edits it, so a meeting control sends what the box shows
 (`session:held` then carries `sent: true` and the view empties the box); `session:releaseHeld` forgets the box when
@@ -347,8 +373,12 @@ an answer took it.
   apply. Grillo's skills are copied in first, as for every agent, so the folder must be a git clone.
 - **What comes back** on `agent-chat:message`: `init` (each turn), `assistant` (text bubbles), `user` (every
   message Grillo wrote in, first message and relays included), `question` (clickable options), `permission` (a
-  tool waiting for Allow or Deny), `result` (turn end) and `error` (a line it could not read; the agent carries
-  on). Every raw line also goes out on `agent-chat:raw`, for the "show terminal" switch.
+  tool waiting for Allow or Deny), `result` (turn end), `answered` (an answer, allow or deny went to Claude Code:
+  the agent works on), `cancelled` (Claude Code withdrew that question or permission, matched by its request id),
+  `working` (a tool event or thinking after the agent waited), `failed` (Claude Code ended with an error: the exit
+  code and the last lines of its stderr) and `error` (a line it could not read; the agent carries on). A withdrawal
+  for a request Claude Code never sent, or one with no id, is an `error`; one for a request already answered is
+  ignored. Every raw line also goes out on `agent-chat:raw`, for the "show terminal" switch.
 - **Answering:** `agent-chat:answer` with the question's id and the chosen label (or free text; with several
   questions, question text to answer), `agent-chat:allow` and `agent-chat:deny` with the permission's id. Deny also
   dismisses a question. Each id is answered once; a second answer, an unknown id or an empty answer comes back as
@@ -456,6 +486,9 @@ drive it by typing the protocol messages (`resources/skills/README.md`).
   skipped (or a jump to it is refused); the agent removes its hold when it leaves the ticket. When a tab stops
   mid-ticket (closed, ended on its own, or stopped as Grillo quits), Grillo removes every hold whose `tab` file names
   that tab, so the other agents can take the ticket at once.
+- **The question at hand:** just before each question the agent writes `<n> of <m>` into the `question` file of its
+  hold folder, and the host's question card shows it (see The meeting panel, below). The agent's only message to a
+  screen is that file (`resources/skills/README.md`, Agent-to-screen protocol).
 - **Drift:** what else the room says may add a question to the ticket, a new ticket (with no domain until the next
   tagging round), a fog line or an out-of-scope line. The agent says what it added.
 - **Run it by hand (developers):** in a clone of a made-up test project with a map and tagged tickets on `main`, copy
@@ -507,6 +540,9 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   cannot be opened, the recording turns back off and the reason shows. The session has one microphone: every
   grilling agent's tab shows the same Record switch, and turning it off in any tab stops the capture, even one
   started in a tab whose agent has since stopped.
+- **The question card**, above the terminal, names the ticket the agent holds, its domain tags and "Question 2 of 3",
+  once the agent has gone quiet after asking. With no ticket held the row stays away; an agent that has not said which
+  question it asks shows the ticket and tags with no count. The question's own words stay in the terminal or chat.
 - **Listen / Type** per question; Listen needs the recording on and opens this agent's channel. **Use it** (Listen
   only) sends the transcript in the agent's box with `use it`. **Skip question** and **Jump to ticket** type `skip` and
   `jump <number>`. **Import a transcript** pastes or uploads a text file and sends it with `use it`.
@@ -638,7 +674,7 @@ opens. A closed ticket, or one someone else holds, is shown with the reason and 
   turns "Answered". **Edit** changes an answer the same way: the new answer is saved first, then the old one is
   deleted. A save that fails says why and keeps what you typed.
 - **With a grilling agent:** starts `/grillo-answer <ticket>` in the project folder and opens its tab: the ticket's
-  heading above the terminal, the questions with their answered state beside it. They refresh when the agent goes
+  heading above the terminal, the questions with their answered state in the column on its right. They refresh when the agent goes
   quiet and when you come back to the tab. Pressing it again opens the agent already answering that ticket.
   **In a form** goes back to the form; the agent keeps running.
 - **A transcript for the ticket** (Granola, Teams, a file): in the agent's tab press **Import a transcript (paste or
@@ -797,6 +833,9 @@ the support agent (above).
   <message>` and tells the support agent `relayed: <tab name>`. Nothing is posted, and the support agent is told
   `not relayed: <reason>`, when no open tab has that name (the reason lists the open tabs), the target is the
   Support tab itself, the request is malformed, or Grillo cannot read your GitHub login.
+- **In the tab the message reached:** the message shows as a bubble on your side with the badge "from Support, for
+  `<your login>`" instead of the mark. The tab's right-hand column shows a **Support tab** card: "Relayed to `<tab
+  name>`.", where the reply shows, and **Back to Support**, which opens the support agent and takes the card away.
 - **Relays need chat agents.** With the terminal runtime (the default until the chat view lands, see Agents) the
   Support tab still starts and opens the agent, but no relay request is read and nothing is posted. Start Grillo
   with `GRILLO_AGENT_RUNTIME=chat` to relay.
@@ -961,7 +1000,11 @@ Grillo reads and writes its data through one store. Which one is picked when the
 
 1. GitHub (the default): `npm run dev` with `GRILLO_STORE` unset.
 2. Made-up data in memory: set `GRILLO_STORE=memory` in the shell, then `npm run dev`. Nothing reaches
-   GitHub, and the data is gone when the app closes, except the recent-projects list in the settings file.
+   GitHub, and the data is gone when the app closes, except the recent-projects list in the settings file. It
+   starts with one organisation, three repositories to connect (`example-org/team-code` with write access,
+   `example-org/team-docs` with admin, `example-org/company-handbook` read only) and one invitation
+   (`example-org/kickoff-notes`). Its project folders do not exist on disk, so starting a grilling agent is always
+   refused here.
 
 With any other value of `GRILLO_STORE` the app opens no window, and the terminal names the two allowed
 values. How the data lives in GitHub is pinned in `docs/store-layout.md`.

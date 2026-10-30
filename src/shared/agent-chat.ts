@@ -15,6 +15,20 @@ export interface StartChatAgentRequest {
   firstMessage: string;
 }
 
+/** The start of a relayed message; the member's name holds no line break or square bracket (`relayMark`'s caller). */
+const RELAY_MARK = /^\[from Support, for ([^\]\r\n]+)\] /;
+
+/** The mark a relayed message starts with (PRD section 4.6 item 7). */
+export function relayMark(member: string): string {
+  return `[from Support, for ${member}] `;
+}
+
+/** A message split into who it was relayed for and what it says, or undefined when it does not start with the mark. */
+export function readRelayMark(message: string): { member: string; text: string } | undefined {
+  const mark = RELAY_MARK.exec(message);
+  return mark ? { member: mark[1], text: message.slice(mark[0].length) } : undefined;
+}
+
 /** One option of a clickable-options question (Claude Code's `AskUserQuestion` tool). */
 export interface ChatQuestionOption {
   label: string;
@@ -42,6 +56,14 @@ export type ChatMessage =
   | { type: 'permission'; id: string; toolName: string; input: Record<string, unknown>; description: string }
   /** The turn ended. */
   | { type: 'result'; isError: boolean; text: string }
+  /** The member's answer, allow or deny for question or permission `id` went to Claude Code: the agent works on. */
+  | { type: 'answered'; id: string }
+  /** Claude Code withdrew question or permission `id` before it was answered: its buttons go. */
+  | { type: 'cancelled'; id: string }
+  /** A tool ran, or the agent thought, while Grillo showed it waiting: the agent is at work again. */
+  | { type: 'working' }
+  /** Claude Code ended with an error; the message holds the exit code and the last lines of its own error text. */
+  | { type: 'failed'; message: string }
   /** Something in the stream could not be read; the agent carries on. */
   | { type: 'error'; message: string };
 
@@ -72,7 +94,10 @@ declare module './ipc' {
     'agent-chat:message': { id: ChatAgentId; message: ChatMessage };
     /** One raw event line, as Claude Code printed it, for the chat view's "show terminal" switch. */
     'agent-chat:raw': { id: ChatAgentId; line: string };
-    /** A chat agent's Claude Code ended on its own (not through stop). Null when it could not start. */
+    /**
+     * A chat agent's Claude Code ended on its own, or through `agent-chat:stop`. Null when it could not start or was
+     * stopped.
+     */
     'agent-chat:exited': { id: ChatAgentId; exitCode: number | null };
   }
 }

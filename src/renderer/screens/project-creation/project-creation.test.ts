@@ -12,6 +12,7 @@ import { APP_TABS } from '../../app/navigation';
 import type { ScreenParams, ShellContext } from '../../app/screens';
 import * as screen from './index';
 import { LAST_MEMBERSHIP_KEY } from './membership';
+import { UNSTARTED_AGENTS_KEY } from './unstarted';
 
 // Made-up organisations, people, repositories and ideas only.
 const NOW = new Date('2026-10-22T10:00:00.000Z');
@@ -340,7 +341,7 @@ describe('project creation: connecting an existing repository', () => {
     click(context.root, 'New project');
     await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
     click(context.root, 'Connect an existing one');
-    type(context.root, 'input[aria-label="Repository to connect"]', repository);
+    type(context.root, 'input[aria-label="Search repositories"]', repository);
   }
 
   it('greys out inviting with the reason, folds the structure, and starts the agent on a pasted transcript', async () => {
@@ -408,6 +409,337 @@ describe('project creation: connecting an existing repository', () => {
     click(root, 'Check again');
     await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form again');
     expect(root.querySelector<HTMLTextAreaElement>('textarea[aria-label="The idea"]')?.value).toBe(IDEA);
+  });
+});
+
+describe('project creation: the repository list', () => {
+  const seed: MemoryStoreOptions['seed'] = {
+    repositories: [
+      { repository: { owner: 'example-org', name: 'sample-repo-1' }, permission: 'write', issuesEnabled: true },
+      { repository: { owner: 'example-org', name: 'sample-repo-2' }, permission: 'admin', issuesEnabled: true },
+      { repository: { owner: 'example-org', name: 'other-repo' }, permission: 'read', issuesEnabled: true },
+    ],
+  };
+  const repositoryRows = (root: HTMLElement) => [...cardTitled(root, '1 · Repository').querySelectorAll('.rows > li')];
+  const radio = (root: HTMLElement, label: string) =>
+    repositoryRows(root).find((row) => text(row.querySelector('label')) === label)?.querySelector<HTMLInputElement>('input[type="radio"]');
+
+  async function listed(context: ReturnType<typeof app>) {
+    await context.open();
+    click(context.root, 'New project');
+    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
+    click(context.root, 'Connect an existing one');
+  }
+
+  it('lists the member\'s repositories with their access, narrows them as you search, and keeps the search box focused', async () => {
+    const context = app({ seed });
+    const { root } = context;
+    await listed(context);
+
+    expect(repositoryRows(root).map((row) => [text(row.querySelector('label')), text(row.querySelector('.badge'))])).toEqual([
+      ['example-org/other-repo', 'Read access only'],
+      ['example-org/sample-repo-1', 'Write access'],
+      ['example-org/sample-repo-2', 'Admin access'],
+    ]);
+
+    type(root, 'input[aria-label="Search repositories"]', 'SAMPLE');
+
+    expect(repositoryRows(root).map((row) => text(row.querySelector('label')))).toEqual(['example-org/sample-repo-1', 'example-org/sample-repo-2']);
+    expect(document.activeElement).toBe(root.querySelector('input[aria-label="Search repositories"]'));
+
+    type(root, 'input[aria-label="Search repositories"]', 'no-such-thing');
+    expect(repositoryRows(root)).toEqual([]);
+    expect(text(cardTitled(root, '1 · Repository'))).toContain('No repository of yours matches this search.');
+  });
+
+  it('picking a repository selects it with no Check access: an admin may invite, and connecting uses that repository', async () => {
+    const context = app({ seed });
+    const { store, starts, root } = context;
+    await listed(context);
+
+    (radio(root, 'example-org/sample-repo-2') as HTMLInputElement).click();
+
+    expect(radio(root, 'example-org/sample-repo-2')?.checked).toBe(true);
+    expect(radio(root, 'example-org/sample-repo-1')?.checked).toBe(false);
+    expect(repositoryRows(root)[2].classList.contains('selected')).toBe(true);
+    expect(root.querySelector<HTMLInputElement>('input[aria-label="GitHub login to invite"]')?.disabled).toBe(false);
+
+    type(root, 'textarea[aria-label="The idea"]', IDEA);
+    click(root, 'Connect and start');
+    await until(() => starts.length === 1, 'the grilling agent to start');
+    expect((await store.getProject('example-org/sample-repo-2')).id).toBe('example-org/sample-repo-2');
+  });
+
+  it('Check access says Checking… on the picked row, then Access not known with the reason when GitHub gives no answer', async () => {
+    const context = app({ seed });
+    const { store, root } = context;
+    await listed(context);
+    (radio(root, 'example-org/sample-repo-1') as HTMLInputElement).click();
+    let refuse: (reason: Error) => void = () => undefined;
+    vi.spyOn(store, 'viewerPermission').mockReturnValue(new Promise((_resolve, reject) => (refuse = reject)));
+
+    click(root, 'Check access');
+    await until(() => text(repositoryRows(root)[1].querySelector('.badge')) === 'Checking…', 'the check to run');
+    expect(buttonNamed(root, 'Check access')?.disabled).toBe(true);
+    expect(radio(root, 'example-org/sample-repo-1')?.disabled).toBe(true);
+
+    refuse(new Error('GitHub did not answer'));
+    await until(() => text(repositoryRows(root)[1].querySelector('.badge')) === 'Access not known', 'the check to end');
+    expect(text(repositoryRows(root)[1].querySelector('p'))).toBe('GitHub did not answer');
+    expect(radio(root, 'example-org/sample-repo-1')?.checked).toBe(true);
+    expect(text(cardTitled(root, '3 · Members').querySelector('.reason'))).toContain('Grillo has not confirmed your access yet');
+  });
+
+  it.each([
+    ['picking a row', (root: HTMLElement) => (radio(root, 'example-org/sample-repo-1') as HTMLInputElement).click()],
+    ['typing a repository in full', (root: HTMLElement) => type(root, 'input[aria-label="Search repositories"]', 'example-org/sample-repo-1')],
+  ])('takes the "pick a repository" note away on %s', async (_case, choose) => {
+    const context = app({ seed });
+    const { root } = context;
+    await listed(context);
+    click(root, 'Check access');
+    await flush();
+    expect(text(root.querySelector('.note.err'))).toContain('Pick the repository to connect');
+
+    choose(root);
+
+    expect(root.querySelector('.note.err')).toBeNull();
+  });
+
+  it('keeps the picked repository while a search hides it, and says it cannot be connected when read access is all there is', async () => {
+    const context = app({ seed });
+    const { root } = context;
+    await listed(context);
+
+    (radio(root, 'example-org/other-repo') as HTMLInputElement).click();
+    expect(text(repositoryRows(root)[0])).toContain('Connecting needs write access.');
+
+    type(root, 'input[aria-label="Search repositories"]', 'sample');
+    expect(text(cardTitled(root, '3 · Members'))).toContain('Inviting needs admin rights on example-org/other-repo');
+    expect(repositoryRows(root).map((row) => text(row.querySelector('.strong')))).toContain('example-org/other-repo');
+  });
+
+  it('checks a repository typed in full that the list does not hold, and drops it when the typing no longer names one', async () => {
+    const context = app({ seed });
+    const { root } = context;
+    await listed(context);
+    vi.spyOn(context.store, 'viewerPermission').mockResolvedValue('admin');
+
+    type(root, 'input[aria-label="Search repositories"]', 'example-org/not-listed');
+    click(root, 'Check access');
+    await until(() => root.querySelector('.rows .badge.ok') !== null, 'the access check');
+    expect(text(repositoryRows(root)[0])).toBe('example-org/not-listedAdmin access');
+
+    type(root, 'input[aria-label="Search repositories"]', 'example-org/');
+    expect(repositoryRows(root).map((row) => text(row.querySelector('.strong')))).not.toContain('example-org/not-listed');
+    click(root, 'Connect and start');
+    await flush();
+    expect(text(root.querySelector('.note.err'))).toContain('Pick the repository to connect');
+  });
+
+  it('says so when the list cannot be read, and a repository can still be typed in full', async () => {
+    const context = app({ seed });
+    const { store, root } = context;
+    vi.spyOn(store, 'listRepositories').mockRejectedValue(new Error('gh is signed out'));
+    await listed(context);
+
+    expect(text(cardTitled(root, '1 · Repository').querySelector('.note.warn'))).toBe(
+      'Grillo could not list your repositories: gh is signed out. Type the repository in full as owner/repository instead.',
+    );
+
+    type(root, 'input[aria-label="Search repositories"]', 'example-org/sample-repo-1');
+    click(root, 'Check access');
+    await until(() => root.querySelector('.rows .badge.warn') !== null, 'the access check');
+    expect(text(root.querySelector('.rows .badge.warn'))).toBe('Write access');
+  });
+
+  it('ignores list entries it cannot read, and asks for a repository when Check access has none to check', async () => {
+    const context = app({ seed });
+    const { store, root } = context;
+    vi.spyOn(store, 'listRepositories').mockResolvedValue([
+      null,
+      { repository: null, permission: 'write' },
+      { repository: { owner: 'example-org', name: 'sample-repo-1' }, permission: 'owner' },
+      { repository: { owner: 'example-org', name: 'sample-repo-2' }, permission: 'admin' },
+    ] as never);
+    await listed(context);
+
+    expect(repositoryRows(root).map((row) => text(row.querySelector('label')))).toEqual(['example-org/sample-repo-2']);
+
+    click(root, 'Check access');
+    await flush();
+    expect(text(root.querySelector('.note.err'))).toContain('Pick the repository to connect');
+  });
+});
+
+describe('project creation: the demo path in the in-memory store', () => {
+  it('Check access on the seeded repository shows its real access level', async () => {
+    const context = app();
+    const { root } = context;
+    await context.open();
+    click(root, 'New project');
+    await until(() => cardTitled(root, '1 · Repository') !== undefined, 'the form');
+    click(root, 'Connect an existing one');
+
+    type(root, 'input[aria-label="Search repositories"]', 'example-org/team-code');
+    click(root, 'Check access');
+    await flush();
+    await until(() => root.querySelector('.rows > li.selected') !== null, 'the access check');
+
+    expect(text(root.querySelector('.rows > li.selected .badge'))).toBe('Write access');
+    expect(root.textContent).not.toContain('Access not known');
+  });
+
+  it('accepting the seeded invitation, with no project made by hand first, saves and opens the project', async () => {
+    const { store, root, navigate, open } = app();
+    await open();
+
+    click(cardTitled(root, 'Pending invitations'), 'Accept');
+    await until(() => text(root.querySelector('h3')) === 'You joined kickoff-notes', 'the invitee state');
+    click(root, 'Save and open the project');
+    await until(() => navigate.mock.calls.length > 0, 'the project to open');
+
+    expect(navigate).toHaveBeenCalledWith('map', { project: 'example-org/kickoff-notes' });
+    expect((await store.listRecentProjects()).map(({ project }) => project)).toEqual(['example-org/kickoff-notes']);
+  });
+});
+
+describe('project creation: starting the grilling agent again', () => {
+  const PROJECT = 'example-org/sample-project-1';
+
+  /** The form filled in and created, with the first start of the agent refused. */
+  async function refusedStart(context: ReturnType<typeof app>) {
+    const { root } = context;
+    await context.open();
+    click(root, 'New project');
+    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form');
+    type(root, 'input[aria-label="Project name"]', 'Sample project 1');
+    type(root, 'textarea[aria-label="The idea"]', IDEA);
+    click(root, 'Create project');
+    await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step');
+  }
+
+  /** Leaves the screen, as a member going to another tab does, and comes back to Your projects. */
+  async function leaveAndComeBack(context: ReturnType<typeof app>) {
+    context.root.replaceChildren();
+    await context.open();
+  }
+
+  it('opening the project later shows the failed start with its reason, and Try again starts the same agent once', async () => {
+    const context = app({ failAgentStarts: 1 });
+    const { root, starts, navigate, store } = context;
+    await refusedStart(context);
+
+    await leaveAndComeBack(context);
+    click(cardTitled(root, 'Your projects'), 'Open');
+    await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step again');
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(texts(root.querySelectorAll('.rows.card > li'))).toEqual(['Grilling agent started; it is building the map and ticketsFailed']);
+    expect(text(root.querySelector('.note.err'))).toBe('Claude Code is not installed on this laptop');
+
+    click(root, 'Try again');
+    await until(() => starts.length === 1, 'the grilling agent to start');
+    expect(starts[0]).toEqual({
+      kind: 'grilling',
+      folder: '/memory/Grillo/example-org/sample-project-1',
+      firstMessage: '/grillo-wayfinder .grillo/sources/S1.md',
+      title: 'Grilling · Sample project 1',
+    });
+    expect((await store.listSources(PROJECT)).map((source) => source.code)).toEqual(['S1']);
+
+    await until(() => buttonNamed(root, 'Open the grilling agent') !== undefined, 'the agent to be started');
+    click(root, 'Open the grilling agent');
+    expect(navigate).toHaveBeenLastCalledWith('agent-tab', { agentId: 'agent-1' });
+
+    await leaveAndComeBack(context);
+    click(cardTitled(root, 'Your projects'), 'Open');
+    await until(() => navigate.mock.calls.some(([screenId]) => screenId === 'map'), 'the map, the agent being started now');
+    expect(starts).toHaveLength(1);
+  });
+
+  it('remembers a start refused after the member left the screen, while the run was still going', async () => {
+    const context = app({ failAgentStarts: 1 });
+    const { root, settings } = context;
+    await context.open();
+    click(root, 'New project');
+    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form');
+    type(root, 'input[aria-label="Repository name"]', 'sample-project-1');
+    type(root, 'textarea[aria-label="The idea"]', IDEA);
+
+    click(root, 'Create project');
+    root.replaceChildren();
+    await until(() => JSON.stringify(settings.get(UNSTARTED_AGENTS_KEY, [])).includes(PROJECT), 'the refused start to be kept');
+
+    await context.open();
+    click(cardTitled(root, 'Your projects'), 'Open');
+    await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step');
+  });
+
+  it('lists a project whose folder could not be opened, and from the failed start Open the map still leaves', async () => {
+    const context = app();
+    const { store, root, navigate } = context;
+    vi.useFakeTimers({ toFake: ['Date'], now: NOW });
+    vi.spyOn(store, 'openProjectFolder').mockRejectedValueOnce(new Error('git could not clone the repository'));
+    await refusedStart(context);
+    expect(text(root.querySelector('.note.err'))).toBe('git could not clone the repository');
+
+    await leaveAndComeBack(context);
+    const projects = cardTitled(root, 'Your projects');
+    expect(text(projects.querySelector('.rows .small'))).toBe(`${PROJECT} · created 2026-10-22`);
+    click(projects, 'Open');
+    await until(() => buttonNamed(root, 'Open the map') !== undefined, 'the failed step');
+
+    click(root, 'Open the map');
+    expect(navigate).toHaveBeenCalledWith('map', { project: PROJECT });
+  });
+
+  it('keeps the date of the first refusal as the created date, however many later tries are refused', async () => {
+    const context = app();
+    const { store, root } = context;
+    vi.useFakeTimers({ toFake: ['Date'], now: NOW });
+    vi.spyOn(store, 'openProjectFolder').mockRejectedValue(new Error('git could not clone the repository'));
+    await refusedStart(context);
+
+    vi.setSystemTime(new Date('2026-11-05T10:00:00.000Z'));
+    click(root, 'Try again');
+    await flush();
+    await until(() => buttonNamed(root, 'Try again')?.disabled === false, 'the second refusal');
+
+    await leaveAndComeBack(context);
+    expect(text(cardTitled(root, 'Your projects').querySelector('.rows .small'))).toBe(`${PROJECT} · created 2026-10-22`);
+  });
+
+  it('goes straight to the map, starting nothing, when the project has a map by now', async () => {
+    const context = app({ failAgentStarts: 1 });
+    const { store, root, starts, navigate, settings } = context;
+    await refusedStart(context);
+    await store.createMap(PROJECT, { destination: 'A PRD', notes: '', fog: [], outOfScope: [] });
+
+    await leaveAndComeBack(context);
+    click(cardTitled(root, 'Your projects'), 'Open');
+    await until(() => navigate.mock.calls.length > 0, 'the map');
+
+    expect(navigate).toHaveBeenCalledWith('map', { project: PROJECT });
+    expect(starts).toEqual([]);
+    expect(settings.get(UNSTARTED_AGENTS_KEY, [])).toEqual([]);
+  });
+
+  it.each([
+    ['text', 'not a list'],
+    ['a null entry and a half record', [null, { project: PROJECT }]],
+  ])('treats a settings file holding %s as no refused start', async (_case, value) => {
+    const context = app();
+    const { store, root, navigate, settings } = context;
+    await store.createProject({ newRepository: { organisation: 'example-org', name: 'sample-project-1' } });
+    await store.openProjectFolder(PROJECT);
+    settings.set(UNSTARTED_AGENTS_KEY, value as never);
+
+    await context.open();
+    click(cardTitled(root, 'Your projects'), 'Open');
+    await until(() => navigate.mock.calls.length > 0, 'the map');
+
+    expect(navigate).toHaveBeenCalledWith('map', { project: PROJECT });
   });
 });
 

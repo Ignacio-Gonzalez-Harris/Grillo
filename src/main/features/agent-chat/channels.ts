@@ -4,30 +4,29 @@ import { relay } from './relay';
 
 /**
  * Builds the chat driver with its events sent to the renderer, and to `also` when given (the agent runtime, which
- * shows the driver's agents as tabs), and answers the renderer's agent chat channels.
+ * shows the driver's agents as tabs), and answers the renderer's agent chat channels. A stop through
+ * `agent-chat:stop` is reported as an end with no exit code, so the agent's tab goes too.
  */
 export function registerAgentChatChannels(
   ipc: MainIpc,
   deps: Omit<ChatDriverDeps, 'events'>,
   also?: ChatDriverEvents,
 ): ChatDriver {
-  const driver = createClaudeChatDriver({
-    ...deps,
-    events: {
-      message: (id, message) => {
-        ipc.send('agent-chat:message', { id, message });
-        also?.message(id, message);
-      },
-      raw: (id, line) => {
-        ipc.send('agent-chat:raw', { id, line });
-        also?.raw(id, line);
-      },
-      exited: (id, exitCode) => {
-        ipc.send('agent-chat:exited', { id, exitCode });
-        also?.exited(id, exitCode);
-      },
+  const events: ChatDriverEvents = {
+    message: (id, message) => {
+      ipc.send('agent-chat:message', { id, message });
+      also?.message(id, message);
     },
-  });
+    raw: (id, line) => {
+      ipc.send('agent-chat:raw', { id, line });
+      also?.raw(id, line);
+    },
+    exited: (id, exitCode) => {
+      ipc.send('agent-chat:exited', { id, exitCode });
+      also?.exited(id, exitCode);
+    },
+  };
+  const driver = createClaudeChatDriver({ ...deps, events });
 
   ipc.handle('agent-chat:start', (request) => driver.startChatAgent(request));
   ipc.handle('agent-chat:send', ({ id, text }) => driver.send(id, text));
@@ -35,6 +34,8 @@ export function registerAgentChatChannels(
   ipc.handle('agent-chat:allow', ({ id }) => driver.allow(id));
   ipc.handle('agent-chat:deny', ({ id }) => driver.deny(id));
   ipc.handle('agent-chat:relay', ({ targetAgentId, member, text }) => relay(driver, targetAgentId, member, text));
-  ipc.handle('agent-chat:stop', ({ id }) => driver.stop(id));
+  ipc.handle('agent-chat:stop', ({ id }) => {
+    if (driver.stop(id)) events.exited(id, null);
+  });
   return driver;
 }

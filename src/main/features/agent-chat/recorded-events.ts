@@ -82,6 +82,8 @@ export const recorded = {
       tool_use_id: 'toolu_made_up_2',
     },
   }),
+  /** Claude Code withdrawing a control request it sent (the Agent SDK's `control_cancel_request`). */
+  cancelRequest: (requestId: string): string => line({ type: 'control_cancel_request', request_id: requestId }),
   thinkingTokens: line({ type: 'system', subtype: 'thinking_tokens', estimated_tokens: 50, session_id: SESSION }),
   assistantText: (text: string): string =>
     line({

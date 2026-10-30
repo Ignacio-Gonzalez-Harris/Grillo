@@ -39,28 +39,6 @@
 .own-time .note.ok { background: var(--color-success-soft); }
 
 /*
- * On the agent tab of an agent this screen started (the prototype's `.split.rev`): the ticket's heading row above
- * the terminal, the questions card and Done in the column on the right. The panel's wrappers step aside
- * (`display: contents`) so its two parts take their places in the agent tab's grid.
+ * On the agent tab of an agent this screen started (the prototype's `.split.rev`): the ticket's heading row sits in the
+ * tab's slot above the terminal, the questions card and Done in its column on the right (agent-tab.css lays them out).
  */
-.agent-tab.with-controls:has(.own-time-panel:not([hidden])) {
-  grid-template-columns: minmax(0, 1fr) var(--size-side-column);
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-areas: "head side" "body side";
-}
-.agent-tab:has(.own-time-panel:not([hidden])) .agent-tab-controls,
-.agent-tab:has(.own-time-panel:not([hidden])) .agent-tab-control,
-.own-time-panel:not([hidden]) { display: contents; }
-.agent-tab:has(.own-time-panel:not([hidden])) > .agent-tab-body { grid-area: body; }
-.own-time-panel .own-time-head { grid-area: head; }
-.own-time-panel .own-time-side { grid-area: side; align-self: start; }
-
-/* A grilling agent this screen did not start keeps its tab as it was: no empty column. */
-.own-time-panel[hidden] { display: none; }
-.agent-tab-controls:has(> .agent-tab-control:only-child > .own-time-panel[hidden]) { display: none; }
-.agent-tab.with-controls:has(> .agent-tab-controls > .agent-tab-control:only-child > .own-time-panel[hidden]) { grid-template-columns: minmax(0, 1fr); }
-
-/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
-@media (max-width: 760px) {
-  .agent-tab.with-controls:has(.own-time-panel:not([hidden])) { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "body" "side"; grid-template-rows: auto minmax(0, 1fr) auto; }
-}

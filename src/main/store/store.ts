@@ -17,6 +17,7 @@ import type {
   ProjectMap,
   QuestionCode,
   RecentProject,
+  RepositoryAccess,
   RepositoryRef,
   Score,
   Source,
@@ -48,6 +49,12 @@ export type MemberPatch = Partial<Pick<Member, 'role' | 'domains'>>;
 export type NewMap = Pick<ProjectMap, 'destination' | 'notes' | 'fog' | 'outOfScope'>;
 
 export type MapPatch = Partial<NewMap>;
+
+/**
+ * The map after a change. `mapDone` is there only when this change took the last fog line off with no ticket open:
+ * the moment the PRD writer starts, as after the last close. Any later change to a map already done does not repeat it.
+ */
+export type MapUpdate = ProjectMap & { mapDone?: true };
 
 export interface NewTicket {
   title: string;
@@ -149,6 +156,8 @@ export interface Store {
   currentMember(project: ProjectId): Promise<Member>;
   viewerPermission(project: ProjectId): Promise<Permission>;
   listOrganisations(): Promise<Organisation[]>;
+  /** Every repository the member can reach, except archived ones, which cannot be connected. */
+  listRepositories(): Promise<RepositoryAccess[]>;
   listPendingInvitations(): Promise<Invitation[]>;
   acceptInvitation(id: number): Promise<void>;
 
@@ -178,7 +187,7 @@ export interface Store {
   // The map: one per project, created by the engine, never deleted.
   createMap(project: ProjectId, map: NewMap): Promise<ProjectMap>;
   getMap(project: ProjectId): Promise<ProjectMap>;
-  updateMap(project: ProjectId, patch: MapPatch): Promise<ProjectMap>;
+  updateMap(project: ProjectId, patch: MapPatch): Promise<MapUpdate>;
 
   // Tickets. A ticket is never deleted: closing it ends its life, and reopening undoes that.
   createTicket(project: ProjectId, ticket: NewTicket): Promise<Ticket>;
@@ -191,11 +200,14 @@ export interface Store {
    * ticket back to the tagging round: the tags go and every marker is deleted.
    */
   tagTicketByHand(id: TicketId, tags: TicketTags): Promise<Ticket>;
-  /** A ticket with a decision and no gist line on the map (closed again after a reopen) gets its latest one back. */
+  /**
+   * The ticket's one gist line on the map then holds its latest decision. A ticket named under Out of scope has no
+   * gist line, even with a decision (docs/store-layout.md, "The map issue").
+   */
   closeTicket(id: TicketId): Promise<CloseResult>;
   /** Closes `id` as a duplicate of `into`, with a decision comment pointing at it. */
   mergeTicket(id: TicketId, into: TicketId): Promise<CloseResult>;
-  /** Undoes a close: the ticket's gist line leaves the map's settled list; its decision comments stay. */
+  /** Undoes a close: the ticket leaves the map's settled and out-of-scope lists; its decision comments stay. */
   reopenTicket(id: TicketId): Promise<Ticket>;
   /**
    * Takes the ticket for the signed-in member under the claim rule (docs/store-layout.md): assign, re-read,
@@ -223,11 +235,11 @@ export interface Store {
   listDiscussions(id: TicketId): Promise<Discussion[]>;
   updateDiscussion(id: TicketId, discussionId: string, transcript: string): Promise<Discussion>;
   deleteDiscussion(id: TicketId, discussionId: string): Promise<void>;
-  /** Writes the resolution comment and the gist line on the map; closing the ticket is `closeTicket`. */
+  /** Writes the resolution comment and the ticket's one gist line on the map; closing the ticket is `closeTicket`. */
   createDecision(id: TicketId, decision: NewDecision): Promise<Decision>;
   listDecisions(id: TicketId): Promise<Decision[]>;
   updateDecision(id: TicketId, decisionId: string, patch: Partial<Pick<Decision, 'text' | 'gist'>>): Promise<Decision>;
-  /** Also removes its gist line from the map. */
+  /** Deleting the latest decision puts the one before it on the map's gist line, or takes the line off when none is left. */
   deleteDecision(id: TicketId, decisionId: string): Promise<void>;
   /** Plain member comments not yet turned into answers. */
   listPickupComments(id: TicketId): Promise<PickupComment[]>;

@@ -21,7 +21,7 @@ import { createAgentTabs, type AgentTabs } from '../agent-tab/agent-tabs';
 import { registerTabPanels } from '../agent-tab/tab-panels';
 import { terminalPanel } from '../agent-tab/terminal-panel';
 import * as ownTimeScreen from './index';
-import ownTimeTabPanel from './tab-panel';
+import ownTimeTabPanels from './tab-panel';
 import { readTicketView } from './ticket';
 
 // Made-up project, member and ticket only.
@@ -103,7 +103,7 @@ async function app(options: { claudeMissing?: boolean } = {}) {
     id: 'agent-tab',
     title: 'Agent',
     start(shellContext) {
-      tabs = createAgentTabs(shellContext, registerTabPanels({}, [terminal, ownTimeTabPanel]));
+      tabs = createAgentTabs(shellContext, registerTabPanels({}, [terminal, ...ownTimeTabPanels]));
       return () => tabs?.dispose();
     },
     mount: (el, params) => (tabs as AgentTabs).show(el, params['agentId'] ?? ''),
@@ -147,6 +147,7 @@ afterEach(() => {
 
 const text = (el: Element | null | undefined) => el?.textContent?.trim() ?? '';
 const texts = (els: Iterable<Element>) => [...els].map(text);
+const visible = (el: Element | null) => el !== null && !(el as HTMLElement).closest('[hidden]');
 const buttonNamed = (scope: HTMLElement, label: string) =>
   [...scope.querySelectorAll<HTMLButtonElement>('button')].find((candidate) => text(candidate) === label);
 async function click(scope: HTMLElement, label: string): Promise<void> {
@@ -389,6 +390,8 @@ describe('own-time answering: reading what the store returns', () => {
 
 describe('own-time answering: with a grilling agent', () => {
   const panel = (content: HTMLElement) => content.querySelector<HTMLElement>('.agent-tab .own-time-panel');
+  /** The whole tab: the heading row sits in the slot above the body, the questions in the column on the right. */
+  const tab = (content: HTMLElement) => content.querySelector<HTMLElement>('.agent-tab') as HTMLElement;
 
   it('starts /grillo-answer <ticket> as a grilling agent in the project folder and opens its tab, questions and Done beside the terminal', async () => {
     const { store, ticket, starts, content, code, open } = await app();
@@ -404,9 +407,9 @@ describe('own-time answering: with a grilling agent', () => {
     const shown = panel(content()) as HTMLElement;
     expect(shown.hidden).toBe(false);
     expect(content().querySelector('.agent-tab .agent-tab-body .agent-terminal')).not.toBeNull();
-    expect(text(shown.querySelector('.own-time-head h3'))).toBe('Sample ticket 4');
-    expect(text(shown.querySelector('.own-time-head .seg [aria-pressed="true"]'))).toBe('With a grilling agent');
-    expect(texts(shown.querySelectorAll('.own-time-side .rows li'))).toEqual([
+    expect(text(tab(content()).querySelector('.agent-tab-above .own-time-head h3'))).toBe('Sample ticket 4');
+    expect(text(tab(content()).querySelector('.agent-tab-above .own-time-head .seg [aria-pressed="true"]'))).toBe('With a grilling agent');
+    expect(texts(tab(content()).querySelectorAll('.agent-tab-aside .own-time-side .rows li'))).toEqual([
       `${code(1)} ${QUESTIONS[0]}Answered`,
       `${code(2)} ${QUESTIONS[1]}Open`,
       `${code(3)} ${QUESTIONS[2]}Open`,
@@ -419,7 +422,7 @@ describe('own-time answering: with a grilling agent', () => {
     await open();
     await click(content(), 'With a grilling agent');
 
-    await click(panel(content()) as HTMLElement, 'In a form');
+    await click(tab(content()), 'In a form');
     expect(content().querySelector('.own-time > .card textarea')).not.toBeNull();
     await click(content(), 'With a grilling agent');
 
@@ -462,7 +465,7 @@ describe('own-time answering: with a grilling agent', () => {
     for (const k of [1, 2, 3]) await store.createAnswer(ticket.id, answerFrom(code(k), 'Sample answer.'));
     await open();
     await click(content(), 'With a grilling agent');
-    await click(panel(content()) as HTMLElement, 'In a form');
+    await click(tab(content()), 'In a form');
 
     await click(content(), 'Done');
     await enterPressed();
@@ -486,7 +489,7 @@ describe('own-time answering: with a grilling agent', () => {
     await store.releaseTicket(ticket.id);
     for (const k of [1, 2, 3]) await store.createAnswer(ticket.id, answerFrom(code(k), 'Sample answer.'));
 
-    await click(panel(content()) as HTMLElement, 'In a form');
+    await click(tab(content()), 'In a form');
     await click(content(), 'Done');
 
     expect(ptys[0].written).toEqual(['done', '\r']);
@@ -547,7 +550,8 @@ describe('own-time answering: with a grilling agent', () => {
     await flush();
 
     expect(panel(content())?.hidden).toBe(true);
-    expect(panel(content())?.querySelector('h3')).toBeNull();
+    expect(tab(content()).querySelector('.own-time-head h3')).toBeNull();
+    expect(visible(tab(content()).querySelector('.own-time-head'))).toBe(false);
     expect(content().querySelector('.agent-tab .agent-terminal')).not.toBeNull();
   });
 

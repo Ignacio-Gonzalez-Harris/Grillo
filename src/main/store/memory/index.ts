@@ -1,5 +1,6 @@
 import type { Settings } from '../../app/settings';
 import { DEFAULT_PRD_STRUCTURE } from '../defaults';
+import { withClosedTicket, withLatestGist, withReopenedTicket, withSettledLine } from '../map-lines';
 import { readRecentProjects, recordRecentProject } from '../recent-projects';
 import { StoreError, type CloseResult, type CommentInput, type Store, type TicketPatch, type TicketTags } from '../store';
 import type {
@@ -18,6 +19,7 @@ import type {
   Project,
   ProjectId,
   ProjectMap,
+  RepositoryAccess,
   RepositoryRef,
   Score,
   Source,
@@ -69,6 +71,8 @@ export const DEFAULT_MEMORY_SEED: MemorySeed = {
   organisations: [{ login: 'example-org', name: 'Example Org' }],
   repositories: [
     { repository: { owner: 'example-org', name: 'team-code' }, permission: 'write', issuesEnabled: true },
+    { repository: { owner: 'example-org', name: 'team-docs' }, permission: 'admin', issuesEnabled: true },
+    { repository: { owner: 'example-org', name: 'company-handbook' }, permission: 'read', issuesEnabled: true },
   ],
   invitations: [
     {
@@ -202,7 +206,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
 
   function toTicket(record: TicketRecord): Ticket {
     const answered = new Set(record.answers.map((answer) => answer.question));
-    const merge = record.decisions.map((decision) => MERGE_POINTER.exec(decision.text)).findLast((match) => match !== null);
+    const merge = MERGE_POINTER.exec(record.decisions.at(-1)?.text ?? '');
     return clone({
       ...record.ticket,
       duplicateOf: record.ticket.state === 'closed' && merge ? Number(merge[1]) : null,
@@ -268,7 +272,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
 
   function addDecision(record: ProjectRecord, entry: TicketRecord, decision: Decision): Decision {
     entry.decisions.push(decision);
-    map(record).settled.push({ ticket: entry.ticket.id.number, gist: decision.gist });
+    record.map = withSettledLine(map(record), entry.ticket.id.number, decision.gist);
     return clone(decision);
   }
 
@@ -293,6 +297,18 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
     return record;
   }
 
+  function seededRepository(id: ProjectId): MemoryRepository | undefined {
+    return seed.repositories.find((entry) => projectIdOf(entry.repository) === id);
+  }
+
+  /** Joining puts the member in the members file; a repository with no project yet gets one, as if its admin had made it. */
+  function joinInvited(repository: RepositoryRef): void {
+    const record = projects.get(projectIdOf(repository)) ?? newProject(repository, 'write', DEFAULT_PRD_STRUCTURE);
+    if (!record.members.some((entry) => entry.login === me())) {
+      record.members.push({ ...seed.identity, role: '', domains: [] });
+    }
+  }
+
   function session(record: ProjectRecord, sessionId: string): GrillingSession {
     return record.sessions.find((entry) => entry.id === sessionId) ?? refuse('not-found', `No session ${sessionId}`);
   }
@@ -307,10 +323,22 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       return clone({ ...seed.identity, role: line?.role ?? '', domains: line?.domains ?? [] });
     },
     async viewerPermission(id) {
-      return project(id).permission;
+      const permission = projects.get(id)?.permission ?? seededRepository(id)?.permission;
+      return permission ?? refuse('not-found', `No repository ${id}, or you have no access to it`);
     },
     async listOrganisations() {
       return clone(seed.organisations);
+    },
+    async listRepositories() {
+      const reachable = new Map<ProjectId, RepositoryAccess>();
+      for (const { repository, permission } of seed.repositories) {
+        reachable.set(projectIdOf(repository), { repository, permission });
+      }
+      for (const { id, repository, permission, archived } of projects.values()) {
+        if (archived) reachable.delete(id);
+        else reachable.set(id, { repository, permission });
+      }
+      return clone([...reachable.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, access]) => access));
     },
     async listPendingInvitations() {
       return clone(seed.invitations);
@@ -320,7 +348,8 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       if (index < 0) {
         refuse('not-found', `No pending invitation ${id}`);
       }
-      seed.invitations.splice(index, 1);
+      const [{ repository }] = seed.invitations.splice(index, 1);
+      joinInvited(repository);
     },
 
     async listProjects() {
@@ -351,8 +380,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       if (existing) {
         return toProject(existing);
       }
-      const found =
-        seed.repositories.find((entry) => projectIdOf(entry.repository) === id) ?? refuse('not-found', `No repository ${id}`);
+      const found = seededRepository(id) ?? refuse('not-found', `No repository ${id}`);
       if (found.permission === 'read') {
         refuse('forbidden', `Connecting ${id} needs write access; you have read access`);
       }
@@ -417,9 +445,12 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       return clone(map(project(id)));
     },
     async updateMap(id, patch) {
-      const current = map(writable(id));
+      const record = writable(id);
+      const current = map(record);
+      const hadFog = current.fog.length > 0;
       Object.assign(current, clone(patch));
-      return clone(current);
+      const lastFogGone = hadFog && current.fog.length === 0;
+      return lastFogGone && mapDone(record).mapDone ? { ...clone(current), mapDone: true } : clone(current);
     },
 
     async createTicket(id, input) {
@@ -491,11 +522,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       const record = writable(id.project);
       const entry = ticketIn(record, id.number);
       entry.ticket.state = 'closed';
-      const latest = entry.decisions.at(-1);
-      const settled = map(record).settled;
-      if (latest && !settled.some((line) => line.ticket === id.number)) {
-        settled.push({ ticket: id.number, gist: latest.gist });
-      }
+      record.map = withClosedTicket(map(record), id.number, entry.decisions.at(-1)?.gist);
       return mapDone(record);
     },
     async mergeTicket(id, into) {
@@ -514,8 +541,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       const record = writable(id.project);
       const entry = ticketIn(record, id.number);
       entry.ticket.state = 'open';
-      const current = map(record);
-      current.settled = current.settled.filter((line) => line.ticket !== id.number);
+      record.map = withReopenedTicket(map(record), id.number);
       return toTicket(entry);
     },
     async claimTicket(id) {
@@ -624,24 +650,24 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
     },
     async updateDecision(id, decisionId, patch) {
       const record = writable(id.project);
-      const decision = comment(ticketIn(record, id.number).decisions, decisionId);
-      const line = map(record).settled.find((entry) => entry.ticket === id.number && entry.gist === decision.gist);
+      const { decisions } = ticketIn(record, id.number);
+      const decision = comment(decisions, decisionId);
+      const current = map(record);
       Object.assign(decision, clone(patch));
-      if (line) {
-        line.gist = decision.gist;
+      if (decisions.at(-1) === decision) {
+        record.map = withLatestGist(current, id.number, decision.gist);
       }
       return clone(decision);
     },
     async deleteDecision(id, decisionId) {
       const record = writable(id.project);
       const entry = ticketIn(record, id.number);
-      const decision = comment(entry.decisions, decisionId);
-      const settled = map(record).settled;
-      const line = settled.findIndex((item) => item.ticket === id.number && item.gist === decision.gist);
-      if (line >= 0) {
-        settled.splice(line, 1);
-      }
+      const wasLatest = entry.decisions.at(-1) === comment(entry.decisions, decisionId);
+      const current = map(record);
       remove(entry.decisions, decisionId);
+      if (wasLatest) {
+        record.map = withLatestGist(current, id.number, entry.decisions.at(-1)?.gist);
+      }
     },
     async listPickupComments(id) {
       const entry = ticket(id, false);

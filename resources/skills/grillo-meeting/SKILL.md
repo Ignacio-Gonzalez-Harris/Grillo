@@ -109,7 +109,8 @@ line and carry on.
 4. Take the one with the lowest issue number. Tickets of absent domains stay on the map for another day.
 5. [Hold it in this session](#holding-a-ticket-in-this-session), then claim it (`grillo-wayfinder`, "Claiming a
    ticket"). Held by another grilling agent of this session, or lost to another laptop: take the next one.
-6. Read it in full with its comments, say its title in one line, and ask its first open question (a live question no
+6. Read it in full with its comments, say its title in one line, [tell the screen the question at
+   hand](#telling-the-screen-the-question-at-hand), and ask its first open question (a live question no
    answer comment names yet), in plain words a newcomer would follow, as grillo-wayfinder grills
    (`grillo-wayfinder`, "The four kinds of ticket"). In Type mode offer clickable options (`AskUserQuestion`) with
    your recommendation marked; in Listen mode ask aloud in one short paragraph the host can read to the room.
@@ -144,6 +145,20 @@ apart. Before you claim any ticket, hold it in this session, so two grilling age
    ```
 
    When your tab stops first, Grillo lets go of its holds.
+
+## Telling the screen the question at hand
+
+The host's question card shows the ticket, its tags and "Question 2 of 3". The screen knows the ticket from your hold;
+only you know the question. **Every time, just before you ask a question**, in the project folder:
+
+```bash
+printf '%s' '<n> of <m>' > .git/meeting-holds/<session id>/<ticket number>/question
+```
+
+`<session id>` and `<ticket number>` are those of your hold. `<m>` is how many live questions the ticket has now;
+`<n>` is the place of the question you are about to ask among them, in their order, answered ones counted. A question
+added by drift raises `<m>` the next time you write it. Letting go of the hold removes the file. If the write fails,
+carry on: the card just shows no count.
 
 ## Recording an answer
 
@@ -197,7 +212,8 @@ Every answer follows `.claude/skills/grillo-wayfinder/references/record-answer.m
    asked after its other open questions), a new ticket, a fog line or an out-of-scope line, as grillo-wayfinder does
    (`grillo-wayfinder`, "Working a ticket" and "Ticket, fog or out of scope"), with its duplicate search first. A new
    ticket has no domain label: the next tagging round gives it one. Say in one line what you added.
-8. Ask the ticket's next open question after this one. None left after it: re-read the ticket's answer comments
+8. [Tell the screen](#telling-the-screen-the-question-at-hand) and ask the ticket's next open question after this
+   one. None left after it: re-read the ticket's answer comments
    and count its live questions that still have no answer (the ones skipped). None: say every question is answered
    and that the host may press "Done", which closes the ticket. Some: say how many stay open, naming their codes,
    and that "Done" now releases the ticket with them open.

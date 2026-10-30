@@ -3,7 +3,7 @@
  * still stops the project from being created, and the draft the creation steps run from.
  */
 import { DEFAULT_PRD_STRUCTURE } from '../../../main/store/defaults';
-import type { Login, Permission, PrdStructure, ProjectId, RepositoryRef } from '../../../main/store/types';
+import type { Login, Permission, PrdStructure, ProjectId, RepositoryAccess, RepositoryRef } from '../../../main/store/types';
 import type { Attachment, ProjectDraft, RepositoryChoice } from './create';
 import { cleanDomains, type LastMembership } from './membership';
 import { structureProblem } from './structure';
@@ -28,7 +28,9 @@ export interface ProjectForm {
   repositoryName: string;
   /** True once the member typed a repository name: the project name stops suggesting one. */
   repositoryNameTyped: boolean;
-  /** `<owner>/<repo>` to connect. */
+  /** What the member typed in the repository search. */
+  connectSearch: string;
+  /** `<owner>/<repo>` to connect: picked from the list, or typed in full in the search. */
   connectTo: string;
   access: Access;
   /** `default`, or the id of the earlier project whose structure the member started from. */
@@ -54,6 +56,7 @@ export function newProjectForm(organisations: readonly Login[], last: LastMember
     organisation: organisations[0] ?? '',
     repositoryName: '',
     repositoryNameTyped: false,
+    connectSearch: '',
     connectTo: '',
     access: { state: 'unchecked' },
     structureFrom: DEFAULT_STRUCTURE_CHOICE,
@@ -70,6 +73,7 @@ export function newProjectForm(organisations: readonly Login[], last: LastMember
   };
 }
 
+export const NO_REPOSITORY_PICKED = 'Pick the repository to connect from the list, or type it in full as owner/repository.';
 const REPOSITORY_NAME = /^[A-Za-z0-9._-]+$/;
 const REPOSITORY_ID = /^([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)$/;
 /** GitHub's rule for a login: letters, digits and single hyphens, not at either end, at most 39 characters. */
@@ -88,6 +92,12 @@ export function suggestedRepositoryName(projectName: string): string {
 export function repositoryToConnect(typed: string): RepositoryRef | null {
   const match = REPOSITORY_ID.exec(typed.trim());
   return match ? { owner: match[1], name: match[2] } : null;
+}
+
+/** The repositories whose `owner/name` holds what was searched, whatever the case; all of them for an empty search. */
+export function matchingRepositories(repositories: readonly RepositoryAccess[], search: string): RepositoryAccess[] {
+  const wanted = search.trim().toLowerCase();
+  return repositories.filter(({ repository }) => `${repository.owner}/${repository.name}`.toLowerCase().includes(wanted));
 }
 
 /** Why this login cannot go on the invite list, or null when it can. */
@@ -116,7 +126,7 @@ export function formProblem(form: ProjectForm): string | null {
       return 'Give the repository a name: letters, digits, ".", "-" and "_" only.';
     }
   } else if (repositoryToConnect(form.connectTo) === null) {
-    return 'Name the repository to connect as owner/repository, for example example-org/sample-repo-1.';
+    return NO_REPOSITORY_PICKED;
   }
   const structure = structureProblem(form.structure);
   if (structure !== null) return structure;

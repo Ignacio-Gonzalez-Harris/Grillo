@@ -4,7 +4,7 @@ import type { ChatMessage } from '../../../shared/agent-chat';
 import { CHAT_FLAGS, createClaudeChatDriver } from '../agent-chat/driver';
 import { createChatEventHub } from '../agent-chat/event-hub';
 import { FakeChatProcess } from '../agent-chat/fake-process';
-import { recorded } from '../agent-chat/recorded-events';
+import { PERMISSION_REQUEST_ID, QUESTION_REQUEST_ID, recorded } from '../agent-chat/recorded-events';
 import { relay } from '../agent-chat/relay';
 import { createChatAgentRuntime, NO_EXIT_CODE } from './chat-runtime';
 import { ClaudeNotFoundError } from './runtime';
@@ -55,6 +55,9 @@ function setup(findClaude: () => string = () => CLAUDE_PATH) {
 }
 
 const userLine = (content: string) => ({ type: 'user', message: { role: 'user', content } });
+
+/** A clickable-options question with its own request id. */
+const questionLine = (requestId: string) => recorded.questionRequest.replace(QUESTION_REQUEST_ID, requestId);
 
 describe('chat agent runtime', () => {
   it('starts each tab as a chat agent with the tab id: exactly one claude process per tab, with the chat flags', async () => {
@@ -123,6 +126,56 @@ describe('chat agent runtime', () => {
     expect(waiting()).toBe(false);
     claude.emit(recorded.permissionRequest);
     expect(waiting()).toBe(true);
+  });
+
+  it('shows the tab working after an answer, allow or deny, until it next waits or ends its turn; tool events count as work', async () => {
+    const { runtime, driver, processes, lists } = setup();
+    await runtime.startAgent(request);
+    const waiting = () => runtime.list()[0].waiting;
+    const claude = processes[0];
+
+    claude.emit(recorded.questionRequest);
+    driver.answer(QUESTION_REQUEST_ID, 'Blue');
+    expect(waiting()).toBe(false);
+    expect(lists.at(-1)?.[0].waiting).toBe(false);
+
+    claude.emit(recorded.toolResult, recorded.permissionRequest);
+    expect(waiting()).toBe(true);
+    driver.allow(PERMISSION_REQUEST_ID);
+    expect(waiting()).toBe(false);
+
+    claude.emit(questionLine('q-2'));
+    driver.deny('q-2');
+    expect(waiting()).toBe(false);
+
+    claude.emit(recorded.result('Sample turn end'));
+    expect(waiting()).toBe(true);
+    claude.emit(recorded.assistantToolUse);
+    expect(waiting()).toBe(false);
+  });
+
+  it('keeps the dot on while another question or permission still waits for the member', async () => {
+    const { runtime, driver, processes } = setup();
+    await runtime.startAgent(request);
+    const waiting = () => runtime.list()[0].waiting;
+
+    processes[0].emit(recorded.questionRequest, recorded.permissionRequest);
+    driver.answer(QUESTION_REQUEST_ID, 'Blue');
+    expect(waiting()).toBe(true);
+    processes[0].emit(recorded.toolResult);
+    expect(waiting()).toBe(true);
+
+    driver.allow(PERMISSION_REQUEST_ID);
+    expect(waiting()).toBe(false);
+  });
+
+  it('takes the dot off when Claude Code withdraws the question it waited on', async () => {
+    const { runtime, processes } = setup();
+    await runtime.startAgent(request);
+
+    processes[0].emit(recorded.questionRequest, recorded.cancelRequest(QUESTION_REQUEST_ID));
+
+    expect(runtime.list()[0].waiting).toBe(false);
   });
 
   it('shows every raw event line on the tab, as lines of terminal output', async () => {
@@ -208,7 +261,8 @@ describe('chat agent runtime', () => {
       hub.events.message('no-such-tab', { type: 'result', isError: false, text: '' });
       hub.events.raw('no-such-tab', recorded.init);
       hub.events.exited('no-such-tab', 0);
-      for (const bad of [null, undefined, 'result', 42, [], {}, { type: null }, { type: 'no-such-type' }]) {
+      const badStatus = [{ type: 'answered' }, { type: 'answered', id: 7 }, { type: 'cancelled', id: null }, { type: 'cancelled', id: 'never-asked' }];
+      for (const bad of [null, undefined, 'result', 42, [], {}, { type: null }, { type: 'no-such-type' }, ...badStatus]) {
         hub.events.message(id, bad as unknown as ChatMessage);
       }
       for (const bad of [null, undefined, 42, {}]) hub.events.raw(id, bad as unknown as string);

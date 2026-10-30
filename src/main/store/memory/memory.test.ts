@@ -72,6 +72,56 @@ describe('in-memory store: the member and their GitHub surroundings', () => {
     expect(await refusal(store.acceptInvitation(invitation.id))).toBe('not-found');
   });
 
+  it('answers the access level of a repository that is no project yet, and refuses one the member cannot reach', async () => {
+    const store = createMemoryStore();
+
+    expect(await store.viewerPermission('example-org/team-code')).toBe('write');
+    expect(await refusal(store.viewerPermission('example-org/kickoff-notes'))).toBe('not-found');
+  });
+
+  it('makes a seeded invitation a project the member belongs to, so their role and domains can be saved', async () => {
+    const store = createMemoryStore();
+    const [invitation] = await store.listPendingInvitations();
+
+    await store.acceptInvitation(invitation.id);
+
+    expect(await store.viewerPermission('example-org/kickoff-notes')).toBe('write');
+    expect((await store.currentMember('example-org/kickoff-notes')).login).toBe('ada-example');
+    await expect(store.updateMember('example-org/kickoff-notes', 'ada-example', { role: 'developer' })).resolves.toMatchObject({ role: 'developer' });
+  });
+
+  it('adds the member to the project of an invitation when that project already exists', async () => {
+    const store = createMemoryStore();
+    await store.createProject({ newRepository: { organisation: 'example-org', name: 'kickoff-notes' } });
+    await store.removeMember('example-org/kickoff-notes', 'ada-example');
+    const [invitation] = await store.listPendingInvitations();
+
+    await store.acceptInvitation(invitation.id);
+
+    expect((await store.listMembers('example-org/kickoff-notes')).map((member) => member.login)).toEqual(['ada-example']);
+  });
+
+  it('lists the repositories the member can reach by name, with their access: projects too, but no archived one', async () => {
+    const store = createMemoryStore({
+      seed: {
+        repositories: [
+          { repository: { owner: 'example-org', name: 'zebra' }, permission: 'read', issuesEnabled: true },
+          { repository: { owner: 'example-org', name: 'alpha' }, permission: 'write', issuesEnabled: true },
+        ],
+      },
+    });
+    await store.createProject({ connectRepository: { owner: 'example-org', name: 'alpha' } });
+    await store.createProject({ newRepository: { organisation: 'example-org', name: 'grilling-demo' } });
+    await store.createProject({ newRepository: { organisation: 'example-org', name: 'closed-demo' } });
+    await store.archiveProject('example-org/closed-demo');
+
+    expect(await store.listRepositories()).toEqual([
+      { repository: { owner: 'example-org', name: 'alpha' }, permission: 'write' },
+      { repository: { owner: 'example-org', name: 'grilling-demo' }, permission: 'admin' },
+      { repository: { owner: 'example-org', name: 'zebra' }, permission: 'read' },
+    ]);
+  });
+
   it('gives the creator of a new repository admin and a connected repository its own permission', async () => {
     const store = createMemoryStore();
     await store.createProject({ newRepository: { organisation: 'example-org', name: 'grilling-demo' } });
@@ -400,6 +450,104 @@ describe('in-memory store: tickets', () => {
     await store.reopenTicket(ticket);
 
     expect((await store.getMap(PROJECT)).settled).toEqual([{ ticket: 3, gist: 'Sign in with GitHub' }]);
+  });
+});
+
+describe('in-memory store: map bookkeeping', () => {
+  const decide = (store: Store, ticket: TicketId, gist: string) => store.createDecision(ticket, { text: gist, gist, sources: [], via: null });
+  const settled = async (store: Store) => (await store.getMap(PROJECT)).settled;
+
+  it('keeps one settled line per ticket, holding the latest gist, after two decisions or a decision then a merge', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const second = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Hosting' }));
+
+    await decide(store, ticket, 'GitHub first');
+    await decide(store, ticket, 'GitHub only');
+    await store.closeTicket(ticket);
+    await decide(store, second.id, 'Free for all');
+    await store.mergeTicket(second.id, into.id);
+
+    expect(await settled(store)).toEqual([
+      { ticket: 2, gist: 'GitHub only' },
+      { ticket: 3, gist: 'Merged into #4' },
+    ]);
+  });
+
+  it('follows only the latest decision on the map when decisions are edited or deleted', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const first = await decide(store, ticket, 'Same words');
+    const latest = await decide(store, ticket, 'Same words');
+
+    await store.updateDecision(ticket, first.id, { gist: 'An older thought' });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'Same words' }]);
+    await store.updateDecision(ticket, latest.id, { gist: 'GitHub only' });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'GitHub only' }]);
+    await store.deleteDecision(ticket, latest.id);
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'An older thought' }]);
+    await store.deleteDecision(ticket, first.id);
+    expect(await settled(store)).toEqual([]);
+  });
+
+  it('does not read a merge that was undone and later decided on its own as a duplicate', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+    await store.mergeTicket(ticket, into.id);
+    await store.reopenTicket(ticket);
+    await decide(store, ticket, 'GitHub only');
+
+    await store.closeTicket(ticket);
+
+    expect(await store.getTicket(ticket)).toMatchObject({ state: 'closed', duplicateOf: null });
+    expect(await settled(store)).toEqual([{ ticket: 2, gist: 'GitHub only' }]);
+  });
+
+  it.each([
+    ['a decision', async (store: Store, ticket: TicketId) => void (await decide(store, ticket, 'GitHub only'))],
+    ['a merge that was undone', async (store: Store, ticket: TicketId) => {
+      const into = await store.createTicket(PROJECT, newTicket({ title: 'Sign-in' }));
+      await store.mergeTicket(ticket, into.id);
+      await store.reopenTicket(ticket);
+    }],
+  ])('lists a ticket closed as out of scope only under Out of scope, even after %s', async (_case, before) => {
+    const { store, ticket } = await projectWithTicket();
+    await before(store, ticket);
+
+    await store.updateMap(PROJECT, { outOfScope: ['Login flow: beyond this PRD (#2)'] });
+    await store.closeTicket(ticket);
+
+    expect(await store.getMap(PROJECT)).toMatchObject({ settled: [], outOfScope: ['Login flow: beyond this PRD (#2)'] });
+  });
+
+  it('takes a reopened ticket off Out of scope too, so a decision on it settles it again', async () => {
+    const { store, ticket } = await projectWithTicket();
+    await store.updateMap(PROJECT, { outOfScope: ['Mobile app', 'Login flow: beyond this PRD (#2)'] });
+    await store.closeTicket(ticket);
+
+    await store.reopenTicket(ticket);
+    await decide(store, ticket, 'GitHub only');
+    await store.closeTicket(ticket);
+
+    expect(await store.getMap(PROJECT)).toMatchObject({ settled: [{ ticket: 2, gist: 'GitHub only' }], outOfScope: ['Mobile app'] });
+  });
+
+  it('reports map done when updateMap takes the last fog line off with no open ticket, and only then', async () => {
+    const { store, ticket } = await projectWithTicket();
+    await store.updateMap(PROJECT, { fog: ['Pricing is unclear', 'Hosting is unclear'] });
+    await store.closeTicket(ticket);
+
+    expect(await store.updateMap(PROJECT, { fog: ['Hosting is unclear'] })).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { fog: [] })).toMatchObject({ fog: [], mapDone: true });
+    expect(await store.getMap(PROJECT)).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { notes: 'Done already' })).not.toHaveProperty('mapDone');
+    expect(await store.updateMap(PROJECT, { fog: [] })).not.toHaveProperty('mapDone');
+  });
+
+  it('does not report map done when updateMap takes the last fog line off while a ticket is open', async () => {
+    const { store } = await projectWithTicket();
+    await store.updateMap(PROJECT, { fog: ['Pricing is unclear'] });
+
+    expect(await store.updateMap(PROJECT, { fog: [] })).not.toHaveProperty('mapDone');
   });
 });
 
