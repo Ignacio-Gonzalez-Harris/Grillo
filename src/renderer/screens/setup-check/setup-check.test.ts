@@ -212,8 +212,26 @@ describe('setup check screen: the requirement rows', () => {
     expect(account?.textContent).toContain('NameNot set on GitHub');
     expect(account?.textContent).toContain('EmailNot shared yet');
     expect(account?.querySelector('code')?.textContent).toBe('gh auth refresh -h github.com -s user:email');
+    expect(account?.textContent).toContain('approve it in your browser, then press Check again.');
     expect(buttonNamed(el, 'Check again')).toBeDefined();
     expect(continueButton(el)?.disabled).toBe(false);
+  });
+
+  it('reads the email again on "Check again" once the email step has run, and drops the step', async () => {
+    const noEmail: IdentityResult = { ok: true, identity: { login: 'member-b', name: null, email: null } };
+    const withEmail: IdentityResult = { ok: true, identity: { ...noEmail.identity, email: 'member-b@example.com' } };
+    const answers = [noEmail, withEmail];
+    const fake = fakeGrillo({ 'tools:identity': () => answers.shift() });
+    const el = await open(fake.grillo);
+
+    buttonNamed(el, 'Check again')?.click();
+    await flush();
+
+    const account = rowNamed(el, ACCOUNT);
+    expect(fake.calls('tools:identity')).toHaveLength(2);
+    expect(account?.textContent).toContain('Emailmember-b@example.com');
+    expect(account?.querySelector('code')).toBeNull();
+    expect(buttonNamed(el, 'Check again')).toBeUndefined();
   });
 
   it('"Check again" forces a fresh check and shows its answer', async () => {

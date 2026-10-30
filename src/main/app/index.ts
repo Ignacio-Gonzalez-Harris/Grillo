@@ -1,12 +1,13 @@
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, dialog, shell } from 'electron';
 import icon from '../../../build/icon.png?asset';
 import { mainIpc } from '../ipc';
 import { loadFeatures } from './features';
 import { isAppPage, webUrlToOpenOutside } from './navigation';
 import { createSettings, SETTINGS_FILE_NAME } from './settings';
 import { repairPathFromLoginShell, runLoginShell } from './shell-path';
+import { startOrQuit } from './startup';
 import { windowFrameOptions } from './window-frame';
 
 const WINDOW_WIDTH = 1280;
@@ -64,7 +65,7 @@ const pathRepaired = repairPathFromLoginShell({
   warn: console.warn,
 });
 
-void app.whenReady().then(async () => {
+async function start(): Promise<void> {
   await pathRepaired;
   loadFeatures({
     ipc: mainIpc,
@@ -77,7 +78,16 @@ void app.whenReady().then(async () => {
       createWindow();
     }
   });
-});
+}
+
+// A start-up that throws shows its reason in the system's error dialog and quits (app.quit, so every feature's
+// will-quit clean-up still runs), never leaving a Grillo process running with no window.
+void app.whenReady().then(() =>
+  startOrQuit(start, {
+    showError: (title, content) => dialog.showErrorBox(title, content),
+    quit: () => app.quit(),
+  }),
+);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

@@ -135,7 +135,7 @@ function signedInAccountRow(identity: GitHubIdentity): DocumentFragment {
       el('p', 'small muted', [
         'GitHub shares your email with Grillo only once gh may read it. Run ',
         code(EMAIL_SCOPE_COMMAND),
-        ' once in a terminal, then press Check again.',
+        ' once in a terminal and approve it in your browser, then press Check again.',
       ]),
     );
   }

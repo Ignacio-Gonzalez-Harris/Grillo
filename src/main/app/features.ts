@@ -36,7 +36,12 @@ export function registerFeatures(modules: Record<string, unknown>, context: Feat
     if (!isFeatureModule(module)) {
       throw new Error(`Feature '${name}' must export a register(context) function from its ipc.ts`);
     }
-    module.register(context);
+    try {
+      module.register(context);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new Error(`Feature '${name}' could not start: ${reason}`, { cause: error });
+    }
   }
   return features.map(({ name }) => name);
 }
