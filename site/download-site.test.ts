@@ -30,8 +30,8 @@ function sampleRelease() {
       { name: 'latest.yml', browser_download_url: `${DOWNLOADS}/latest.yml` },
       { name: 'Grillo-Setup-1.0.0.exe.blockmap', browser_download_url: `${DOWNLOADS}/Grillo-Setup-1.0.0.exe.blockmap` },
       { name: 'Grillo-Setup-1.0.0.exe', browser_download_url: `${DOWNLOADS}/Grillo-Setup-1.0.0.exe` },
-      { name: 'Grillo-1.0.0-arm64-mac.zip', browser_download_url: `${DOWNLOADS}/Grillo-1.0.0-arm64-mac.zip` },
-      { name: 'Grillo-1.0.0.dmg', browser_download_url: `${DOWNLOADS}/Grillo-1.0.0.dmg` },
+      { name: 'Grillo-1.0.0-universal-mac.zip', browser_download_url: `${DOWNLOADS}/Grillo-1.0.0-universal-mac.zip` },
+      { name: 'Grillo-1.0.0-universal.dmg', browser_download_url: `${DOWNLOADS}/Grillo-1.0.0-universal.dmg` },
     ],
   };
 }
@@ -69,12 +69,12 @@ function releaseLine(window: Window): string {
 }
 
 describe('reading the latest release from GitHub', () => {
-  it('finds the Windows installer and the Mac disk image, the version and the day it was published', () => {
+  it('finds the Windows installer and the universal Mac disk image (never its update zip), the version and the day it was published', () => {
     expect(readLatestRelease(sampleRelease(), REPOSITORY)).toEqual({
       version: '1.0.0',
       date: '2026-10-22',
       windows: { name: 'Grillo-Setup-1.0.0.exe', url: `${DOWNLOADS}/Grillo-Setup-1.0.0.exe` },
-      mac: { name: 'Grillo-1.0.0.dmg', url: `${DOWNLOADS}/Grillo-1.0.0.dmg` },
+      mac: { name: 'Grillo-1.0.0-universal.dmg', url: `${DOWNLOADS}/Grillo-1.0.0-universal.dmg` },
     });
   });
 
@@ -89,7 +89,7 @@ describe('reading the latest release from GitHub', () => {
     ['a release with no publish date', { ...sampleRelease(), published_at: null }],
     ['a release with a date that is not a date', { ...sampleRelease(), published_at: 'yesterday' }],
     ['a release whose assets are missing', { ...sampleRelease(), assets: null }],
-    ['a release whose assets are not a list', { ...sampleRelease(), assets: { name: 'Grillo-1.0.0.dmg' } }],
+    ['a release whose assets are not a list', { ...sampleRelease(), assets: { name: 'Grillo-1.0.0-universal.dmg' } }],
   ])('rejects %s with a release data error', (_case, answer) => {
     expect(() => readLatestRelease(answer, REPOSITORY)).toThrow(ReleaseDataError);
   });
@@ -106,15 +106,15 @@ describe('reading the latest release from GitHub', () => {
         { name: 'Grillo-Setup-1.0.0.exe', browser_download_url: 'javascript:alert(1)' },
         { name: 'Grillo-Setup-1.0.0.exe', browser_download_url: elsewhere },
         { name: 'Grillo-Setup-1.0.0.exe', browser_download_url: `https://github.com/${REPOSITORY}/../x/Grillo-Setup-1.0.0.exe` },
-        { name: 'Grillo-1.0.0.dmg', browser_download_url: `http://github.com/${REPOSITORY}/releases/download/v1.0.0/Grillo-1.0.0.dmg` },
-        { name: 'Grillo-1.0.0.dmg', browser_download_url: `${DOWNLOADS}/Grillo-1.0.0.dmg` },
-        { name: 'Grillo-1.0.0.dmg', browser_download_url: `${DOWNLOADS}/Grillo-1.0.0.dmg` },
+        { name: 'Grillo-1.0.0-universal.dmg', browser_download_url: `http://github.com/${REPOSITORY}/releases/download/v1.0.0/Grillo-1.0.0-universal.dmg` },
+        { name: 'Grillo-1.0.0-universal.dmg', browser_download_url: `${DOWNLOADS}/Grillo-1.0.0-universal.dmg` },
+        { name: 'Grillo-1.0.0-universal.dmg', browser_download_url: `${DOWNLOADS}/Grillo-1.0.0-universal.dmg` },
       ],
     };
 
     expect(readLatestRelease(release, REPOSITORY)).toMatchObject({
       windows: null,
-      mac: { name: 'Grillo-1.0.0.dmg', url: `${DOWNLOADS}/Grillo-1.0.0.dmg` },
+      mac: { name: 'Grillo-1.0.0-universal.dmg', url: `${DOWNLOADS}/Grillo-1.0.0-universal.dmg` },
     });
   });
 });
@@ -140,12 +140,12 @@ describe('the download page', () => {
     showRelease(documentOf(page), readLatestRelease(sampleRelease(), REPOSITORY));
 
     expect(downloadLink(page, 'windows')).toBe(`${DOWNLOADS}/Grillo-Setup-1.0.0.exe`);
-    expect(downloadLink(page, 'mac')).toBe(`${DOWNLOADS}/Grillo-1.0.0.dmg`);
+    expect(downloadLink(page, 'mac')).toBe(`${DOWNLOADS}/Grillo-1.0.0-universal.dmg`);
     expect(releaseLine(page)).toBe(
-      'Latest release: version 1.0.0 · 2026-10-22 · Grillo-Setup-1.0.0.exe · Grillo-1.0.0.dmg',
+      'Latest release: version 1.0.0 · 2026-10-22 · Grillo-Setup-1.0.0.exe · Grillo-1.0.0-universal.dmg',
     );
     expect(page.document.querySelector('[data-file="windows"]')?.textContent).toBe('Grillo-Setup-1.0.0.exe');
-    expect(page.document.querySelector('[data-file="mac"]')?.textContent).toBe('Grillo-1.0.0.dmg');
+    expect(page.document.querySelector('[data-file="mac"]')?.textContent).toBe('Grillo-1.0.0-universal.dmg');
     expect(isShown(page, '[data-warning="unsigned"]')).toBe(true);
   });
 

@@ -1,5 +1,5 @@
-# Packaging. Product identity (productName, appId, targets) is fixed by issue 56 and never changes after the
-# first release; after the scaffold only the signing story edits this file.
+# Packaging. Product identity (productName, appId) is fixed by issue 56 and never changes after the first release.
+# Issue 187 set the targets, the files left out and the native-module handling; the signing story adds signing.
 appId: com.grillo.app
 productName: Grillo
 
@@ -7,9 +7,15 @@ directories:
   output: dist
   buildResources: build
 
+# electron-builder adds the production dependencies under node_modules by itself; the `!` rules leave out the
+# speech-engine variants the app never loads. It opens whisper.cpp's default build for the system and chip
+# (@fugood/node-whisper-<system>-<chip>), never the graphics-card builds (CUDA, Vulkan) or the browser build (WASM),
+# which would add about 170 MB to the Windows installer.
 files:
   - out/**/*
   - package.json
+  - "!**/node_modules/@fugood/node-whisper-*-{cuda,vulkan}/**"
+  - "!**/node_modules/@fugood/node-whisper-wasm/**"
 
 # Files shipped beside the app (skills, the project template): resources/<path> in the repository
 # becomes <process.resourcesPath>/<path> in the installed app.
@@ -22,16 +28,28 @@ asarUnpack:
   - "**/*.node"
   - "**/node_modules/node-pty/**"
 
-# Rebuild native dependencies for Electron's ABI while packaging.
-npmRebuild: true
+# Never compile native modules while packaging. node-pty and whisper.cpp ship prebuilt Node-API binaries (an
+# interface that does not change between Node and Electron versions), which Electron loads as they are; compiling
+# node-pty from source on Windows needs Visual Studio's Spectre-mitigated libraries, which no build machine is
+# promised to have.
+npmRebuild: false
 
 win:
   target:
     - target: nsis
       arch: [x64]
 
+# One universal app (Apple silicon and Intel code in one file), so every Mac downloads the same disk image and the
+# update check finds one zip. The native binaries ship once per chip (node-pty's prebuilds, the two whisper.cpp
+# packages): they are identical in both halves of the build, which the universal merge refuses unless they are named
+# here.
 mac:
-  target: [dmg, zip]
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+  x64ArchFiles: "**/node_modules/{node-pty/prebuilds/darwin-*,@fugood/node-whisper-darwin-*}/**"
   category: public.app-category.productivity
   extendInfo:
     NSMicrophoneUsageDescription: Grillo records the meeting you host so its agent can listen to the answers.

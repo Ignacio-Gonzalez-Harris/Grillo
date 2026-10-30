@@ -1,0 +1,1 @@
+Installers: one universal Mac app that also runs on Intel Macs, a Windows installer about 110 MB smaller without unused speech-engine builds, no source compiling of node-pty, and Node pinned to 24.22.2 LTS.

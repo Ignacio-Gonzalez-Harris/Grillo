@@ -57,6 +57,11 @@ jobs:
       - name: install
         run: npm ci
 
+      # Electron downloads its binary on first use. Several test files start it at once on a fresh runner, and they
+      # raced that first download and corrupted it, so it is downloaded once here, before any test runs.
+      - name: electron binary
+        run: npx --no install-electron
+
       - name: build
         run: npm run build
 
@@ -68,6 +73,31 @@ jobs:
 
       - name: test
         run: npm test
+
+      # The Mac app is universal (Apple silicon and Intel in one file, electron-builder.yml), so it needs whisper.cpp
+      # for both chips, but npm installs only the runner's own. The missing one is fetched at the exact version
+      # package-lock.json records and refused unless its checksum matches the lockfile's.
+      - name: speech engine for both Mac chips
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for chip in arm64 x64; do
+            package="@fugood/node-whisper-darwin-$chip"
+            folder="node_modules/$package"
+            if [ -d "$folder" ]; then continue; fi
+            version="$(node -p "require('./package-lock.json').packages['$folder'].version")"
+            integrity="$(node -p "require('./package-lock.json').packages['$folder'].integrity")"
+            tarball="$(npm pack "$package@$version" --silent)"
+            actual="sha512-$(openssl dgst -sha512 -binary "$tarball" | base64 | tr -d '\n')"
+            if [ "$actual" != "$integrity" ]; then
+              echo "::error::$package $version does not match the checksum in package-lock.json."
+              exit 1
+            fi
+            mkdir -p "$folder"
+            tar -xzf "$tarball" -C "$folder" --strip-components=1
+            rm "$tarball"
+          done
 
       - name: installers
         run: npm run dist

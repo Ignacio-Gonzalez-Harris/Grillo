@@ -916,6 +916,17 @@ Installers are built only when a version is published; the download site is publ
   `npm run dist` on a Windows and a Mac runner, and attaches the installers, `latest.yml`, `latest-mac.yml` and
   their blockmaps to the release (installed apps read those to offer the update). A tag that does not match the
   version fails the run before anything is built. The pilot installers are unsigned.
+- **What the installers hold.**
+  - **Windows:** one x64 installer (`Grillo Setup <version>.exe`, about 114 MB at version 0.1.0).
+  - **Mac:** one universal app (Apple silicon and Intel in one file), so every Mac downloads the same
+    `Grillo-<version>-universal.dmg` and the update check reads one `-universal-mac.zip`. The release job adds
+    the speech engine for the chip npm skipped, checked against `package-lock.json`, before it builds.
+  - **Left out:** the speech engine's graphics-card builds (CUDA, Vulkan) and its browser build (WASM). Grillo
+    never loads them, and on Windows they added about 110 MB to the installer.
+- **Building an installer on your own machine:** `npm run dist` (Windows builds the `.exe`, a Mac the `.dmg` and
+  `.zip`, into `dist/`). Nothing is compiled from source: node-pty and the speech engine ship ready-made binaries
+  that Electron loads as they are, so no Visual Studio or Xcode setup is needed. Use the Node version in `.nvmrc`
+  (24.22.2, a long-term-support release).
 - **Trying it first on a draft release** (nothing is offered to installed apps until it is published):
   1. Create a draft release with the tag `v<version from package.json>`; do not publish it.
   2. Under Actions, run the `release` workflow by hand from `main`, giving that tag.
