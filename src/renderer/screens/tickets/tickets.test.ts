@@ -249,6 +249,26 @@ describe('the tickets screen: the own list', () => {
     ]);
   });
 
+  it('selects a ticket from anywhere beside its title, the kind badge and the empty part of the row included', async () => {
+    const { store, project, open, content } = await app();
+    for (const title of ['Sample ticket 1', 'Sample ticket 2', 'Sample ticket 3']) await store.createTicket(project, ticketInput(title));
+    await open();
+    const row = (title: string) =>
+      [...listCard(content()).querySelectorAll<HTMLElement>('.ticket-list > li')].find((item) => text(item.querySelector('button.pick')) === title) as HTMLElement;
+
+    row('Sample ticket 2').querySelector<HTMLElement>('.ticket-name .badge')?.click();
+    await settle();
+    expect(heading(content())[0]).toBe('Sample ticket 2');
+
+    row('Sample ticket 3').querySelector<HTMLElement>('.ticket-name')?.click();
+    await settle();
+    expect(heading(content())[0]).toBe('Sample ticket 3');
+
+    row('Sample ticket 1').querySelector<HTMLElement>('button.pick')?.click();
+    await settle();
+    expect(heading(content())[0]).toBe('Sample ticket 1');
+  });
+
   it('search keeps the tickets whose title or questions match, and says when none does', async () => {
     const { store, project, content, open } = await app();
     await ownList(store, project);

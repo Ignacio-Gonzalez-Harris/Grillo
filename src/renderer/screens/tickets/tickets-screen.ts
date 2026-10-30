@@ -329,10 +329,11 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
     if (ticket.state === 'open' && lockedByOther(ticket, view.member)) label.push(el('span', 'muted', [` · ${ticket.assignee}`]));
     const pick = el('button', 'pick', label);
     pick.type = 'button';
-    pick.addEventListener('click', () => select(ticket));
     const marks = ticket.damaged === undefined ? domainTags(ticket, declared) : [badge('Damaged', 'warn')];
     // As the prototype's states do: the kind beside the title, and a damaged ticket's row says only that it is damaged.
     const name = el('span', 'ticket-name', [pick, ...(ticket.damaged === undefined ? [kindBadge(ticket.kind)] : [])]);
+    // On the wrapper, so the badge and the empty part beside the title select too; the button's click and keys reach it.
+    name.addEventListener('click', () => select(ticket));
     const row = el('li', ticket.id.number === selected ? 'selected' : '', [name, el('span', 'row', marks)]);
     if (ticket.id.number === selected) pick.setAttribute('aria-current', 'true');
     return row;
