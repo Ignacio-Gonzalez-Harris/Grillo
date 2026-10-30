@@ -1,0 +1,40 @@
+{
+  "run_id": "Grillo-20261030-160426-fe5c",
+  "issue": 189,
+  "title": "Map bookkeeping: one settled line per ticket, out of scope never settled, map done from every path",
+  "login": "nachogl1",
+  "started_at": "2026-10-30T16:04:31Z",
+  "finished_at": "2026-10-30T16:27:39Z",
+  "outcome": "needs-human",
+  "pr": 200,
+  "summary": "Makes the map tell the PRD writer the truth: one settled line per ticket, out-of-scope tickets never settled, updateMap reports map done, safer two-laptop writes and repeatable create and merge. Not merged: the criterion that the map screen starts the PRD writer from updateMap needs a person's decision, because no screen control removes fog.",
+  "agents": [
+    { "name": "dev-189", "model": "opus", "tokens_total": 266122 },
+    { "name": "review-189", "model": "opus", "tokens_total": 157230 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 894, "review_seconds": 278, "ci_seconds": 0 },
+  "rounds": { "review": 1, "ci": 0 },
+  "friction": [
+    "The machine-wide gate lock /c/wt/with-gate-lock.sh that CLAUDE.md requires is not in the repository and did not exist on this laptop, so both full gates ran without it; a second laptop or fresh setup always hits this.",
+    "The pinned Node 24.22.2 was not installed on this laptop after the pin was raised, which stopped the first preflight until a person installed it."
+  ],
+  "lessons_learned": [
+    "A story filed agent-ready can ask for a screen behaviour with no control in the prototype or PRD: issue #189's fourth criterion did, and it surfaced only at review after a full build. Check that every screen clause has a prototype control when filing."
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/map-lines.ts",
+      "what": "Any mention of a ticket under Out of scope counts as closed as out of scope: with the line 'Mobile app: ruled out by the decision on #2', closing decided ticket 2 writes no settled line, so its decision is missing from the map, and reopening ticket 2 deletes the Mobile app line.",
+      "why": "Telling a mention from a closing line needs a format decision shared with the skills, which write free text.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "A map write from another laptop based on an older read that lands after this laptop's read-back still loses a settled line, and neither side notices; the repair, closing the ticket again, has no control on an already closed ticket short of reopening it.",
+      "why": "Closing it for good needs a real lock (a git ref as a mutex), with stale locks and an extra ref in every project; the issue allows re-read and retry.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
