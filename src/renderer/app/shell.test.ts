@@ -245,6 +245,23 @@ describe('app shell', () => {
       expect(lastParams(screens.map)).toEqual({ project: PROJECT_B });
     });
 
+    it("names no project on an agent's tab that does not say which project it belongs to", async () => {
+      const agentScreen = screen('agent-tab', 'Agent');
+      const screens = projectScreens(agentScreen);
+      const { grillo } = fakeGrillo(Promise.resolve([agent('a1', 'Generic · Sample notes')]));
+      const root = start(screens.registry, grillo);
+      await flush();
+
+      shell?.navigate('map', { project: PROJECT_A });
+      shell?.navigate('map', { project: PROJECT_B });
+      agentTab(root, 'a1')?.querySelector<HTMLElement>('.tab-name')?.click();
+
+      expect(titlebarContext(root)).toBe('Generic · Sample notes');
+      expect(titlebarProject(root)).toBeUndefined();
+      click(root, 'Map');
+      expect(titlebarProject(root)).toBe(PROJECT_B);
+    });
+
     it('opens the project tabs with no project before the member has opened one, and ignores a malformed one', () => {
       const screens = projectScreens();
       const root = start(screens.registry, fakeGrillo().grillo);

@@ -12,7 +12,8 @@ and the screen below it.
 - **The current project** is the one you opened last in this window: opening a project (from the Project tab, a
   link such as Open the map, or a meeting agent's tab) makes it current. The title bar names it (`<owner>/<repo>`),
   and Map, Tickets, PRD and "+" open on it, so with two projects open you never see one project's map, tickets or
-  PRD while working in the other. Setup and the Project tab stand outside any project and show none. Before you
+  PRD while working in the other. Setup and the Project tab stand outside any project and show none, and so does
+  an agent's tab, unless it says which project it works for (a meeting agent's tab does). Before you
   have opened a project, Map, Tickets and PRD fall back to the project opened last on this laptop.
 - **Agent tabs** are named "kind · ticket" (for example "Grilling · Sample ticket 1") and follow the agent when it
   renames itself. A meeting agent's tab is named after the ticket it is grilling (see The meeting panel, below). An orange dot on a tab means that agent is waiting for you. Click the name to open the agent.

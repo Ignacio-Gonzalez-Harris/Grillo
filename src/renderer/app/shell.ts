@@ -55,12 +55,16 @@ function emptyState(title: string): HTMLElement {
  * The current project is the one the member opened last in this window: the last screen opened with
  * `{ project }`, or the one a screen says it shows (`showProject`). The title bar names it, and the Map, Tickets and
  * PRD tabs and "+" open on it, so with two projects open each screen shows the project the member is working in.
+ * An agent's tab names a project only when its panel says which one (a meeting agent's does): any other agent may
+ * work in a project other than the current one.
  */
 export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions): Shell {
   let agents: readonly AgentInfo[] = [];
   let current: { screenId: string; params: ScreenParams } = { screenId: START_SCREEN, params: {} };
   let closeScreen: (() => void) | undefined;
   let project: string | null = null;
+  /** True once the open screen has said which project it shows, since it was opened. */
+  let screenNamedProject = false;
 
   const context = document.createElement('span');
   context.className = 'context';
@@ -124,6 +128,7 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
     },
     showProject(shown) {
       followProject(shown);
+      screenNamedProject = project === shown;
       drawProject();
     },
   };
@@ -134,7 +139,8 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
 
   function drawProject(): void {
     projectLabel.textContent = project ?? '';
-    projectLabel.hidden = project === null || OUTSIDE_PROJECT.has(current.screenId);
+    const unnamedAgent = current.screenId === AGENT_SCREEN && !screenNamedProject;
+    projectLabel.hidden = project === null || OUTSIDE_PROJECT.has(current.screenId) || unnamedAgent;
   }
 
   function activeTabFor(screenId: string, params: ScreenParams): ActiveTab {
@@ -154,6 +160,7 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
     closeScreen?.();
     closeScreen = undefined;
     current = { screenId, params };
+    screenNamedProject = false;
     followProject(params['project']);
     content.replaceChildren();
     tabBar.setActive(activeTabFor(screenId, params));
