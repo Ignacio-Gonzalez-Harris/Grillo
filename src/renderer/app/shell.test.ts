@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import type { AgentInfo } from '../../shared/agents';
 import type { EventChannel, EventPayload, GrilloApi } from '../../shared/ipc';
@@ -52,10 +54,21 @@ const content = (root: HTMLElement) => root.querySelector('main') as HTMLElement
 const titlebarContext = (root: HTMLElement) => root.querySelector('.titlebar .context')?.textContent;
 const agentTab = (root: HTMLElement, id: string) => root.querySelector<HTMLElement>(`[data-agent-id="${id}"]`);
 
+/** The stylesheets the shell runs under in the app: the tokens, the glass components and its own. */
+const SHELL_STYLESHEETS = ['../theme/tokens.css', '../theme/glass.css', 'shell.css'].map((sheet) => resolve(__dirname, sheet));
+function useRealStylesheets(): void {
+  for (const sheet of SHELL_STYLESHEETS) {
+    const style = document.createElement('style');
+    style.textContent = readFileSync(sheet, 'utf8');
+    document.head.append(style);
+  }
+}
+
 afterEach(() => {
   shell?.dispose();
   shell = undefined;
   document.body.replaceChildren();
+  document.head.replaceChildren();
 });
 
 describe('app shell', () => {
@@ -248,5 +261,31 @@ describe('app shell', () => {
     shell = undefined;
 
     expect(fake.listenerCount('agents:list-changed')).toBe(0);
+  });
+
+  it("makes Grillo's title bar the window's drag area, while anything clickable in it stays clickable", () => {
+    useRealStylesheets();
+    const root = start(registry(), fakeGrillo().grillo);
+    const titlebar = root.querySelector<HTMLElement>('.titlebar') as HTMLElement;
+    const link = document.createElement('a');
+    link.href = '#sample';
+    titlebar.append(document.createElement('button'), link);
+    const region = (el: Element) => getComputedStyle(el).getPropertyValue('app-region');
+
+    expect(region(titlebar)).toBe('drag');
+    expect([...titlebar.querySelectorAll('button, a')].map(region)).toEqual(['no-drag', 'no-drag']);
+  });
+
+  it('fills the whole window with the glass panel: no gap and no rounded corners around it', () => {
+    useRealStylesheets();
+    const root = start(registry(), fakeGrillo().grillo);
+    const frame = getComputedStyle(root.querySelector('.shell') as HTMLElement);
+    const panel = getComputedStyle(root.querySelector('.window') as HTMLElement);
+
+    // An unset length reads as an empty string here; both mean no gap.
+    const pixels = (value: string) => Number.parseFloat(value) || 0;
+
+    expect([frame.paddingTop, frame.paddingRight, frame.paddingBottom, frame.paddingLeft].map(pixels)).toEqual([0, 0, 0, 0]);
+    expect(pixels(panel.borderTopLeftRadius)).toBe(0);
   });
 });

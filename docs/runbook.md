@@ -11,6 +11,10 @@ Every screen sits in one window: the title bar ("Grillo" and where you are), the
 - **Agent tabs** are named "kind · ticket" (for example "Grilling · Sample ticket 1") and follow the agent when it
   renames itself. An orange dot on a tab means that agent is waiting for you. Click the name to open the agent.
 - **"+"** opens the generic agent tab.
+- **The window frame is Grillo's own.** There is no separate system title bar: drag Grillo's title bar (the strip
+  with the logo and "Grillo") to move the window, and double-click it to maximise or restore. The system window
+  buttons sit inside that title bar: minimise, maximise and close at the top right on Windows (hover over maximise
+  for the snap layouts), the red, yellow and green buttons at the top left on Mac. Drag any window edge to resize.
 - **Windows fallback.** The panels are frosted glass. Where the blur is unavailable, or the system asks for less
   transparency (on Windows: Settings, Personalisation, Colours, Transparency effects off), they turn nearly opaque so
   text stays readable. To preview it, open the developer tools console and run

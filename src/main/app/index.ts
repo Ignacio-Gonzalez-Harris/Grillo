@@ -7,6 +7,7 @@ import { loadFeatures } from './features';
 import { isAppPage, webUrlToOpenOutside } from './navigation';
 import { createSettings, SETTINGS_FILE_NAME } from './settings';
 import { repairPathFromLoginShell, runLoginShell } from './shell-path';
+import { windowFrameOptions } from './window-frame';
 
 const WINDOW_WIDTH = 1280;
 const WINDOW_HEIGHT = 800;
@@ -18,6 +19,7 @@ function createWindow(): void {
     title: 'Grillo',
     icon,
     show: false,
+    ...windowFrameOptions(process.platform),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
