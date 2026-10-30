@@ -1,0 +1,26 @@
+{
+  "run_id": "Grillo-20261030-151309-3a92",
+  "issue": 186,
+  "title": "Which project and which ticket: screens follow the current project, meeting tabs name their ticket",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-30T15:13:10Z",
+  "finished_at": "2026-10-30T16:15:00Z",
+  "outcome": "merged",
+  "pr": 199,
+  "summary": "The PRD, Map, Tickets and + tabs now follow the active project and the title bar names it; Start meeting refuses to open another project's live session and says which one runs; each meeting agent tab is titled with its ticket. 1869 tests green; the missing prototype state went in as the first commit.",
+  "agents": [
+    { "name": "dev-186", "model": "opus", "tokens_total": 317463 },
+    { "name": "review-186-r1", "model": "opus", "tokens_total": 151428 },
+    { "name": "review-186-r2", "model": "opus", "tokens_total": 150834 },
+    { "name": "review-186-r3", "model": "opus", "tokens_total": 141628 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 2146, "review_seconds": 1127, "ci_seconds": 0 },
+  "rounds": { "review": 3, "ci": 0 },
+  "friction": [
+    "C:\\wt\\in-flight.json is shared with another repository's /dev-next runs (project-morph entries were listed), and the phase 1 stagger counts every other run on the machine, so a Grillo run would skip top candidates for runs that cannot compete for them; this run counted only Grillo runs (k=0)"
+  ],
+  "lessons_learned": [
+    "With the in-memory store no agent can start, so Start meeting and meeting-tab titles cannot be tried in npm run dev; meeting and agent-tab stories need their screen evidence planned up front (tests, or a fake agent) rather than discovered at the try-out"
+  ],
+  "deferred": []
+}

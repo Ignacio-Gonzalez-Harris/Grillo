@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261030-151309-3a92",
+  "issue": 186,
+  "title": "Which project and which ticket: screens follow the current project, meeting tabs name their ticket",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 199,
+  "merged_at": "2026-10-30T16:11:40Z",
+  "merge_commit": "ddc54f6a37b92ae0c284a25faacdc1273ba3a3d9",
+  "seam": "src/renderer/app/ (the shell's current-project context) and the tab-title code of src/renderer/screens/meeting/ and src/renderer/screens/map/",
+  "story": "Before this change, the Map, Tickets, PRD and + tabs showed whichever project was opened last on the laptop; now they follow the project you are working in, and the title bar names it (agent tabs that are not part of a meeting show no project). Pressing Start meeting while another project's meeting runs used to open that meeting's tab without a word; now it opens nothing, names the other project, says how to end that session, and offers Open that session. Meeting tabs used to stay 'Grilling · Live session' for good; now each is named after the ticket its agent is grilling.",
+  "checks": [
+    {
+      "key": "app/current-project-tabs",
+      "criterion": "The PRD, Map and Tickets tabs show the active project, and follow it when the member switches project.",
+      "steps": "Start Grillo signed in with two made-up projects, example-org/demo-alpha and example-org/demo-beta. Go to the Project tab and press Open on demo-alpha. Click PRD, then Tickets, then +. Go to the Project tab and press Open on demo-beta. Click PRD, then Map.",
+      "expected": "Every screen after opening demo-alpha shows demo-alpha, and every screen after opening demo-beta shows demo-beta. The title bar names the project each time. Setup and the Project tab show no project in the title bar."
+    },
+    {
+      "key": "map/start-meeting-other-project",
+      "criterion": "Start meeting never opens another project's meeting as if it were this project's, and tells the member which project's meeting is running.",
+      "steps": "On demo-alpha's map, press Start meeting and leave its agent running. Open demo-beta's map and press Start meeting. Press Open that session.",
+      "expected": "After the second Start meeting the Map tab stays active and no agent starts. A warning note says: 'A live session of example-org/demo-alpha is running on this laptop, and Grillo runs one live session at a time. To start one for this project, end that session first: type /exit in each of its grilling agent tabs, or quit Grillo.' After Open that session, the demo-alpha meeting tab opens and its title bar names example-org/demo-alpha."
+    },
+    {
+      "key": "meeting/tab-named-after-ticket",
+      "criterion": "Each meeting agent's tab is titled with its ticket, and is renamed when the agent moves to another ticket.",
+      "steps": "Start a meeting on a project with made-up tickets 'Sample ticket 1' and 'Sample ticket 5'. Tick consent and press Open another grilling agent. Let both agents take a ticket and ask their first question. In one tab, answer every question and let that agent move on (Done).",
+      "expected": "Both tabs start as 'Grilling · Live session'. Once each agent goes quiet, its tab reads 'Grilling · <its ticket title>', and the Grilling agents card shows the same names. After Done that tab takes the next ticket's title."
+    }
+  ],
+  "no_qa_reason": null
+}
