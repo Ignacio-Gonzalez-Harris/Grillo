@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inviteProblem, repositoryToConnect, suggestedRepositoryName } from './form';
+import { inviteProblem, matchingRepositories, repositoryToConnect, suggestedRepositoryName } from './form';
 
 describe('the new-project form', () => {
   it.each([
@@ -39,5 +39,22 @@ describe('the new-project form', () => {
   it('suggests a repository name from the project name', () => {
     expect(suggestedRepositoryName('  Sample project 1 ')).toBe('sample-project-1');
     expect(suggestedRepositoryName('Sample: project (2)!')).toBe('sample-project-2');
+  });
+
+  it.each([
+    ['', ['example-org/team-code', 'example-org/team-docs', 'other-org/Handbook']],
+    ['  ', ['example-org/team-code', 'example-org/team-docs', 'other-org/Handbook']],
+    ['team', ['example-org/team-code', 'example-org/team-docs']],
+    ['TEAM-DOCS', ['example-org/team-docs']],
+    ['other-org/', ['other-org/Handbook']],
+    [' handbook ', ['other-org/Handbook']],
+    ['nothing-like-it', []],
+  ])('searching the repositories for "%s" keeps the ones whose owner/name holds it, whatever the case', (search, expected) => {
+    const repositories = ['example-org/team-code', 'example-org/team-docs', 'other-org/Handbook'].map((id) => {
+      const [owner, name] = id.split('/');
+      return { repository: { owner, name }, permission: 'write' as const };
+    });
+
+    expect(matchingRepositories(repositories, search).map(({ repository }) => `${repository.owner}/${repository.name}`)).toEqual(expected);
   });
 });

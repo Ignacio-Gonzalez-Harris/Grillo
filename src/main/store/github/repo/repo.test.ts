@@ -4,13 +4,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_PRD_STRUCTURE } from '../../defaults';
+import { createGh } from '../../gh';
 import { createMemorySettings } from '../../memory/settings';
 import { StoreError, type NewSource } from '../../store';
 import type { Score } from '../../types';
 import { createRepoStore, REPO_METHODS } from '.';
 import { createFakeGithub, readTree, type FakeRepository } from './fake-github';
 import type { PullRequestNotice } from './folder';
-import { GRILLO_LABELS } from './github-api';
+import { createGithubApi, GRILLO_LABELS } from './github-api';
 
 const PROJECT = 'example-org/demo';
 const START = new Date('2026-10-24T09:15:00.000Z');
@@ -280,6 +281,39 @@ describe('GitHub repository backend: members and invitations', () => {
     expect(github.calls).toContain('gh api --method PATCH user/repository_invitations/7');
     await expect(store.listPendingInvitations()).resolves.toEqual([]);
     expect((await refusal(store.acceptInvitation(7))).kind).toBe('not-found');
+  });
+
+  it('lists every repository the member can reach, page by page, with the access GitHub gives, and no archived one', async () => {
+    const { store, github } = await setup();
+    const names = Array.from({ length: 101 }, (_, index) => `sample-repo-${String(index).padStart(3, '0')}`);
+    for (const name of names) github.addRepository(`example-org/${name}`, { permission: 'write' });
+    github.addRepository('example-org/read-only', { permission: 'read' });
+    github.addRepository('example-org/owned', { permission: 'admin' });
+    github.addRepository('example-org/closed', { archived: true });
+
+    const listed = await store.listRepositories();
+
+    expect(listed).toHaveLength(103);
+    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'sample-repo-100' }, permission: 'write' });
+    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'read-only' }, permission: 'read' });
+    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'owned' }, permission: 'admin' });
+    expect(listed.map(({ repository }) => repository.name)).not.toContain('closed');
+    expect(github.calls.filter((call) => call.includes('user/repos'))).toEqual([
+      'gh api user/repos?per_page=100&page=1',
+      'gh api user/repos?per_page=100&page=2',
+    ]);
+  });
+
+  it.each([
+    ['a list that is no list', { message: 'nope' }],
+    ['a null entry', [null]],
+    ['an entry with no owner', [{ name: 'sample-repo', archived: false, permissions: { admin: true } }]],
+    ['an entry with no permissions', [{ name: 'sample-repo', owner: { login: 'example-org' }, archived: false }]],
+    ['an entry with no archived flag', [{ name: 'sample-repo', owner: { login: 'example-org' }, permissions: { admin: true } }]],
+  ])('refuses %s from GitHub as unexpected output, the one error the store gives for it', async (_case, answer) => {
+    const gh = createGh(async () => ({ exitCode: 0, stdout: JSON.stringify(answer), stderr: '' }));
+
+    await expect(createGithubApi(gh).repositories()).rejects.toMatchObject({ kind: 'backend', reason: 'invalid-output' });
   });
 
   it('lists the organisations from gh api user/orgs and the recent projects from the settings file', async () => {
@@ -654,7 +688,7 @@ describe('GitHub repository backend: untrusted input', () => {
 
   it('refuses every method called without its arguments as invalid, before running gh or git', async () => {
     const { store, github } = await setup();
-    const takingNone = ['listOrganisations', 'listPendingInvitations', 'listProjects', 'listRecentProjects'];
+    const takingNone = ['listOrganisations', 'listRepositories', 'listPendingInvitations', 'listProjects', 'listRecentProjects'];
 
     for (const method of REPO_METHODS.filter((name) => !takingNone.includes(name))) {
       const error = await refusal((store[method] as () => Promise<unknown>)());

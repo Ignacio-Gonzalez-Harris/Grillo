@@ -178,6 +178,14 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
     if (route === 'GET user') return json(me);
     if (route === 'GET user/emails') return json(me.email ? [{ email: me.email, primary: true }] : []);
     if (route === 'GET user/orgs?per_page=100') return json(organisations.map((login) => ({ login })));
+    if ((match = /^GET user\/repos\?per_page=(\d+)&page=(\d+)$/.exec(route))) {
+      const [size, page] = [Number(match[1]), Number(match[2])];
+      const all = [...repositories.entries()].map(([id, repository]) => {
+        const [owner, name] = id.split('/');
+        return { name, owner: { login: owner }, ...repositoryJson(repository) };
+      });
+      return json(all.slice((page - 1) * size, page * size));
+    }
     if (route === 'GET user/repository_invitations?per_page=100') {
       return json(
         invitations.map((invitation) => {

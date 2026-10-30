@@ -37,6 +37,7 @@ export const STORE_METHODS = [
   'currentMember',
   'viewerPermission',
   'listOrganisations',
+  'listRepositories',
   'listPendingInvitations',
   'acceptInvitation',
   'listProjects',

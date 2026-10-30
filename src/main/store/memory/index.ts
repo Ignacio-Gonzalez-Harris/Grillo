@@ -19,6 +19,7 @@ import type {
   Project,
   ProjectId,
   ProjectMap,
+  RepositoryAccess,
   RepositoryRef,
   Score,
   Source,
@@ -70,6 +71,8 @@ export const DEFAULT_MEMORY_SEED: MemorySeed = {
   organisations: [{ login: 'example-org', name: 'Example Org' }],
   repositories: [
     { repository: { owner: 'example-org', name: 'team-code' }, permission: 'write', issuesEnabled: true },
+    { repository: { owner: 'example-org', name: 'team-docs' }, permission: 'admin', issuesEnabled: true },
+    { repository: { owner: 'example-org', name: 'company-handbook' }, permission: 'read', issuesEnabled: true },
   ],
   invitations: [
     {
@@ -294,6 +297,18 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
     return record;
   }
 
+  function seededRepository(id: ProjectId): MemoryRepository | undefined {
+    return seed.repositories.find((entry) => projectIdOf(entry.repository) === id);
+  }
+
+  /** Joining puts the member in the members file; a repository with no project yet gets one, as if its admin had made it. */
+  function joinInvited(repository: RepositoryRef): void {
+    const record = projects.get(projectIdOf(repository)) ?? newProject(repository, 'write', DEFAULT_PRD_STRUCTURE);
+    if (!record.members.some((entry) => entry.login === me())) {
+      record.members.push({ ...seed.identity, role: '', domains: [] });
+    }
+  }
+
   function session(record: ProjectRecord, sessionId: string): GrillingSession {
     return record.sessions.find((entry) => entry.id === sessionId) ?? refuse('not-found', `No session ${sessionId}`);
   }
@@ -308,10 +323,22 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       return clone({ ...seed.identity, role: line?.role ?? '', domains: line?.domains ?? [] });
     },
     async viewerPermission(id) {
-      return project(id).permission;
+      const permission = projects.get(id)?.permission ?? seededRepository(id)?.permission;
+      return permission ?? refuse('not-found', `No repository ${id}, or you have no access to it`);
     },
     async listOrganisations() {
       return clone(seed.organisations);
+    },
+    async listRepositories() {
+      const reachable = new Map<ProjectId, RepositoryAccess>();
+      for (const { repository, permission } of seed.repositories) {
+        reachable.set(projectIdOf(repository), { repository, permission });
+      }
+      for (const { id, repository, permission, archived } of projects.values()) {
+        if (archived) reachable.delete(id);
+        else reachable.set(id, { repository, permission });
+      }
+      return clone([...reachable.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, access]) => access));
     },
     async listPendingInvitations() {
       return clone(seed.invitations);
@@ -321,7 +348,8 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       if (index < 0) {
         refuse('not-found', `No pending invitation ${id}`);
       }
-      seed.invitations.splice(index, 1);
+      const [{ repository }] = seed.invitations.splice(index, 1);
+      joinInvited(repository);
     },
 
     async listProjects() {
@@ -352,8 +380,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       if (existing) {
         return toProject(existing);
       }
-      const found =
-        seed.repositories.find((entry) => projectIdOf(entry.repository) === id) ?? refuse('not-found', `No repository ${id}`);
+      const found = seededRepository(id) ?? refuse('not-found', `No repository ${id}`);
       if (found.permission === 'read') {
         refuse('forbidden', `Connecting ${id} needs write access; you have read access`);
       }

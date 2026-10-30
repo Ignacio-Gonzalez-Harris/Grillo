@@ -17,6 +17,7 @@ import type {
   ProjectMap,
   QuestionCode,
   RecentProject,
+  RepositoryAccess,
   RepositoryRef,
   Score,
   Source,
@@ -155,6 +156,8 @@ export interface Store {
   currentMember(project: ProjectId): Promise<Member>;
   viewerPermission(project: ProjectId): Promise<Permission>;
   listOrganisations(): Promise<Organisation[]>;
+  /** Every repository the member can reach, except archived ones, which cannot be connected. */
+  listRepositories(): Promise<RepositoryAccess[]>;
   listPendingInvitations(): Promise<Invitation[]>;
   acceptInvitation(id: number): Promise<void>;
 

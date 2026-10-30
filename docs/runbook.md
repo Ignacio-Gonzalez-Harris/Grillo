@@ -128,8 +128,10 @@ Open) and **Pending invitations** (each with Accept).
 - **New project** opens the form, in four cards:
   1. **Repository.** "Create a new repository": a project name (it suggests the repository name), the
      organisation (the GitHub organisations your sign-in belongs to) and the repository name. "Connect an existing
-     one": type `owner/repository` and press "Check access". With write access only, inviting is greyed out with the
-     reason; admin access allows it.
+     one": your repositories are listed with your access to each. Search narrows the list; pick one. Read access only
+     says it cannot be connected. "Check access" asks GitHub again, and also checks a repository typed in full as
+     `owner/repository` that the list does not hold. With write access only, inviting is greyed out with the reason;
+     admin access allows it.
   2. **PRD structure.** "Start from" Grillo's default of 13 sections or an earlier project's structure, then move
      sections up or down, rename them, change their notes, remove them or add new ones. When connecting, it is
      folded until you press Edit.
@@ -140,6 +142,11 @@ Open) and **Pending invitations** (each with Accept).
   folder, your role and domains, the invites, the idea saved as source S1 (attached documents as S2, S3, …), then a
   grilling agent started in the project folder with `/grillo-wayfinder .grillo/sources/S1.md`. A failed step shows
   its reason; "Try again" carries on from that step. Then open the map or the grilling agent.
+- **A grilling agent that was refused** can be started again later, also after leaving this screen or closing Grillo:
+  press Open on the project under Your projects (it is listed even if its folder never opened, as "created <date>").
+  It shows the failed start with its reason, "Try again" and "Open the map"; once the agent has started, or the
+  project has a map, Open goes to the map as usual. The refusals are kept in the app data folder's `settings.json`
+  under `unstartedGrillingAgents`.
 - **A repository that already holds a Grillo project** is not connected twice: "Open it" opens that project. One
   that cannot be connected (issues turned off, read access only) says why, with "Check again".
 - **Editing the structure later.** The PRD view's "Edit structure and regenerate" opens this screen with the
@@ -981,7 +988,11 @@ Grillo reads and writes its data through one store. Which one is picked when the
 
 1. GitHub (the default): `npm run dev` with `GRILLO_STORE` unset.
 2. Made-up data in memory: set `GRILLO_STORE=memory` in the shell, then `npm run dev`. Nothing reaches
-   GitHub, and the data is gone when the app closes, except the recent-projects list in the settings file.
+   GitHub, and the data is gone when the app closes, except the recent-projects list in the settings file. It
+   starts with one organisation, three repositories to connect (`example-org/team-code` with write access,
+   `example-org/team-docs` with admin, `example-org/company-handbook` read only) and one invitation
+   (`example-org/kickoff-notes`). Its project folders do not exist on disk, so starting a grilling agent is always
+   refused here.
 
 With any other value of `GRILLO_STORE` the app opens no window, and the terminal names the two allowed
 values. How the data lives in GitHub is pinned in `docs/store-layout.md`.

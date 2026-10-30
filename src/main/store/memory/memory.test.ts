@@ -72,6 +72,56 @@ describe('in-memory store: the member and their GitHub surroundings', () => {
     expect(await refusal(store.acceptInvitation(invitation.id))).toBe('not-found');
   });
 
+  it('answers the access level of a repository that is no project yet, and refuses one the member cannot reach', async () => {
+    const store = createMemoryStore();
+
+    expect(await store.viewerPermission('example-org/team-code')).toBe('write');
+    expect(await refusal(store.viewerPermission('example-org/kickoff-notes'))).toBe('not-found');
+  });
+
+  it('makes a seeded invitation a project the member belongs to, so their role and domains can be saved', async () => {
+    const store = createMemoryStore();
+    const [invitation] = await store.listPendingInvitations();
+
+    await store.acceptInvitation(invitation.id);
+
+    expect(await store.viewerPermission('example-org/kickoff-notes')).toBe('write');
+    expect((await store.currentMember('example-org/kickoff-notes')).login).toBe('ada-example');
+    await expect(store.updateMember('example-org/kickoff-notes', 'ada-example', { role: 'developer' })).resolves.toMatchObject({ role: 'developer' });
+  });
+
+  it('adds the member to the project of an invitation when that project already exists', async () => {
+    const store = createMemoryStore();
+    await store.createProject({ newRepository: { organisation: 'example-org', name: 'kickoff-notes' } });
+    await store.removeMember('example-org/kickoff-notes', 'ada-example');
+    const [invitation] = await store.listPendingInvitations();
+
+    await store.acceptInvitation(invitation.id);
+
+    expect((await store.listMembers('example-org/kickoff-notes')).map((member) => member.login)).toEqual(['ada-example']);
+  });
+
+  it('lists the repositories the member can reach by name, with their access: projects too, but no archived one', async () => {
+    const store = createMemoryStore({
+      seed: {
+        repositories: [
+          { repository: { owner: 'example-org', name: 'zebra' }, permission: 'read', issuesEnabled: true },
+          { repository: { owner: 'example-org', name: 'alpha' }, permission: 'write', issuesEnabled: true },
+        ],
+      },
+    });
+    await store.createProject({ connectRepository: { owner: 'example-org', name: 'alpha' } });
+    await store.createProject({ newRepository: { organisation: 'example-org', name: 'grilling-demo' } });
+    await store.createProject({ newRepository: { organisation: 'example-org', name: 'closed-demo' } });
+    await store.archiveProject('example-org/closed-demo');
+
+    expect(await store.listRepositories()).toEqual([
+      { repository: { owner: 'example-org', name: 'alpha' }, permission: 'write' },
+      { repository: { owner: 'example-org', name: 'grilling-demo' }, permission: 'admin' },
+      { repository: { owner: 'example-org', name: 'zebra' }, permission: 'read' },
+    ]);
+  });
+
   it('gives the creator of a new repository admin and a connected repository its own permission', async () => {
     const store = createMemoryStore();
     await store.createProject({ newRepository: { organisation: 'example-org', name: 'grilling-demo' } });
