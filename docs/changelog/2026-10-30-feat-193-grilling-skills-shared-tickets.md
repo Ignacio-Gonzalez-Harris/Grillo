@@ -1,0 +1,1 @@
+Grilling agents now start the PRD writer themselves once the map is done; several grilling agents on one laptop never take the same ticket or re-ask a meeting ticket another one left open, and a tab that stops no longer locks its ticket away.

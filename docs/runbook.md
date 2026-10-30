@@ -446,13 +446,16 @@ drive it by typing the protocol messages (`resources/skills/README.md`).
   **Jump** leaves the ticket at hand and takes the one picked, whatever its domains; a closed ticket or one someone
   else holds is refused. **Done** closes the ticket with its decision when every question is answered (and starts
   the PRD writer once the map is done), or else releases it with its open questions. Talk above Skip, Jump or Done
-  is never recorded. A ticket left with questions open is not picked again in the same session.
+  is never recorded. A ticket left with questions open is not picked again in the same session by any of its
+  grilling agents: the agent marks it with the folder `meeting-holds/<session id>/left/<ticket number>` inside
+  `.git` before letting go of it. Jump still takes it.
 - **Several grilling agents in one session** all act for the host's login, so before claiming a ticket each one
   holds it in the session: it makes the folder `meeting-holds/<session id>/<ticket number>` inside the project
   folder's `.git` (never committed), which only one agent can make, and writes its tab's id (Grillo starts every
   agent with `GRILLO_AGENT_ID`) into the folder's `tab` file, so the host's screen names the tab after it. A ticket another agent of the session holds is
-  skipped (or a jump to it is refused); the agent removes its hold when it leaves the ticket. A hold left by an agent
-  that was stopped mid-ticket keeps that ticket out of this session only; the next session starts free.
+  skipped (or a jump to it is refused); the agent removes its hold when it leaves the ticket. When a tab stops
+  mid-ticket (closed, ended on its own, or stopped as Grillo quits), Grillo removes every hold whose `tab` file names
+  that tab, so the other agents can take the ticket at once.
 - **Drift:** what else the room says may add a question to the ticket, a new ticket (with no domain until the next
   tagging round), a fog line or an out-of-scope line. The agent says what it added.
 - **Run it by hand (developers):** in a clone of a made-up test project with a map and tagged tickets on `main`, copy
@@ -577,10 +580,16 @@ The screen that starts it arrives with the project creation story; until then a 
 - **Recording an answer** always runs in this order: the contradiction check (the agent re-reads the map and the
   related tickets; on a clash it asks you follow-up questions and records nothing until you settle it), then the
   source file `.grillo/sources/S<n>.md` pushed to `main`, then the answer comment.
-- **Taking a ticket:** the agent assigns you, re-reads the assignees, and backs off when someone else was assigned
-  first.
+- **Taking a ticket:** the agent first holds it on this laptop, then assigns you, re-reads the assignees, and backs
+  off when someone else was assigned first. The hold is the folder `meeting-holds/no-session/<ticket number>` inside
+  the project folder's `.git` (never committed), with the tab's id in its `tab` file: several grilling agents on one
+  laptop all act for your login, so a ticket assigned to you may be another agent's, and only the agent that made the
+  folder takes it. The others take the next ticket on the frontier. The agent removes the folder when it closes,
+  merges or releases the ticket; Grillo removes it when the tab stops. If Grillo itself crashed while an agent held a
+  ticket, that ticket stays held on this laptop: delete `.git/meeting-holds/` in the project folder while no agent runs
+  there.
 - **The map-done rule:** after every ticket the agent closes or merges, it re-reads the map; with no open ticket and no
-  fog left it says the map is done and starts `/grillo-prd`.
+  fog left it says the map is done and starts `/grillo-prd` itself, in the same agent.
 - **Release 1 runs grilling agents only.** Research, prototype and task tickets are created, and you work them as
   grilling (tell the agent what you found, built or saw) until release 3.
 - **Run it by hand (developers):** in a clone of a made-up test project with `.grillo/sources/S1.md` and
@@ -839,7 +848,9 @@ The PRD writer is the skill `grillo-prd`, shipped into the project folder beside
 and regenerate the PRD on the PRD tab ([The PRD view](#the-prd-view) below).
 
 - **When it runs:** by itself the moment the map is done (no open ticket, no fog): the agent that closed the last
-  ticket starts `/grillo-prd`. `/grillo-prd regenerate` writes a new version on demand, in the current PRD structure,
+  ticket starts `/grillo-prd` itself, through Claude Code's Skill tool. That is why `grillo-prd`, unlike the other
+  Grillo skills, leaves `disable-model-invocation` off: with it on, Claude Code refuses an agent that starts the
+  skill. Started before the map is done, it says so and writes nothing. `/grillo-prd regenerate` writes a new version on demand, in the current PRD structure,
   even while other tickets are open; their answers stay out until they close.
 - **What it writes:** the next version `.grillo/prd/v<n>.md` on `main`, numbered and dated. An earlier version is
   never changed; when another laptop saves a version at the same moment, yours takes the next number and both are

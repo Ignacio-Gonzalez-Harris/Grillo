@@ -1,4 +1,4 @@
-import type { AgentRuntimeChoice } from '../../../shared/agents';
+import type { AgentInfo, AgentRuntimeChoice } from '../../../shared/agents';
 import type { MainIpc } from '../../ipc/bridge';
 import { createChatAgentRuntime, type ChatAgentRuntimeDeps } from './chat-runtime';
 import { createAgentRuntime, type AgentRuntime, type AgentRuntimeDeps, type AgentRuntimeEvents } from './runtime';
@@ -7,6 +7,20 @@ import { createAgentRuntime, type AgentRuntime, type AgentRuntimeDeps, type Agen
 export interface AgentRuntimeOptions {
   terminal: Omit<AgentRuntimeDeps, 'events'>;
   chat: Omit<ChatAgentRuntimeDeps, 'events'>;
+}
+
+/**
+ * The same IPC, with `observer` also told every list of running agents sent to the renderer, so a main-process
+ * feature sees a tab stop (the live session lets go of the tickets it held).
+ */
+export function observingAgentList(ipc: MainIpc, observer: (list: AgentInfo[]) => void): MainIpc {
+  return {
+    handle: (channel, fn) => ipc.handle(channel, fn),
+    send(channel, payload) {
+      ipc.send(channel, payload);
+      if (channel === 'agents:list-changed') observer(payload as AgentInfo[]);
+    },
+  };
 }
 
 function rendererEvents(ipc: MainIpc): AgentRuntimeEvents {

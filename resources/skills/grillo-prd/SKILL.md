@@ -2,7 +2,6 @@
 name: grillo-prd
 description: 'Grillo''s PRD writer. Writes the project''s PRD from everything the members said (every answer, discussion, session transcript and source), in stages, in the project''s own PRD structure, and saves it as the next numbered, dated version .grillo/prd/v<n>.md, never overwriting an earlier one. Every decision statement ends with its source and question codes such as [S4, Q12.3], or [no source] when no answer supports it; an audit appendix lists every cited source and question with who, when, where and the exact words. A structure section with no decision is never written: the skill opens a ticket or a fog line for it and says the map is not done. /grillo-prd writes the version the moment the map is done; /grillo-prd regenerate writes a new one on demand; /grillo-prd feedback hears what a member says is wrong, then edits the PRD into a new version or opens tickets, and the PRD is written again when those close. Started by Grillo, or by the map-done rule of another Grillo skill.'
 argument-hint: "[regenerate | feedback]"
-disable-model-invocation: true
 ---
 
 # grillo-prd
@@ -56,6 +55,10 @@ from that: every statement either names the answers it rests on, or says plainly
 | `/grillo-prd` | Grillo, when a screen's close returns that the map is done; another Grillo skill, through grillo-wayfinder's map-done rule | Checks the map is done, then [writes a version](#writing-a-version). |
 | `/grillo-prd regenerate` | "Regenerate" on the PRD view, also after a member edits the structure | [Writes a version](#writing-a-version) from everything, in the current structure. Open tickets and fog elsewhere do not stop it. |
 | `/grillo-prd feedback` | "Talk to an agent about this PRD" on the PRD view | [Hears what is wrong](#feedback-grillo-prd-feedback), then edits the PRD into a new version or opens tickets. |
+
+The agent that closes the last ticket starts `/grillo-prd` itself, through the Skill tool (`grillo-wayfinder`, "The
+map-done rule"), so this skill leaves `disable-model-invocation` off. Started too early, `/grillo-prd` finds the map
+not done and writes nothing.
 
 Before anything else, every command runs grillo-wayfinder's Step 0 (`grillo-wayfinder`, "Step 0: check GitHub and the
 project folder"). When its `git pull --ff-only` is refused, say so in one line and stop: a version written on a stale
