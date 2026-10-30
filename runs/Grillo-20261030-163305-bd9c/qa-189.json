@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261030-163305-bd9c",
+  "login": "nachogl1",
+  "no_qa_reason": null,
+  "issue": 189,
+  "title": "Map bookkeeping: one settled line per ticket, out of scope never settled, map done from every path",
+  "pr": 200,
+  "merged_at": "2026-10-30T16:40:29Z",
+  "merge_commit": "e3b104aead994bc48e0325ff4805ba42590b38b6",
+  "seam": "src/main/store/",
+  "story": "Settled used to be able to show an old decision next to the current one, and a ticket closed as out of scope could also appear under Settled. Now each ticket has one settled line with its latest decision, and an out-of-scope ticket shows only under Out of scope until it is reopened, which also removes that line. Adding a ticket or merging that fails halfway can be repeated with the same words, and Grillo finishes the same ticket instead of making a second one. Two laptops changing the map at once now re-write on the fresh map, and Grillo says the map keeps changing if that keeps failing.",
+  "checks": [
+    {
+      "key": "src/main/store/map-bookkeeping/one-settled-line",
+      "criterion": "A ticket closed after two decisions has exactly one settled line, holding the latest gist.",
+      "steps": "Open a made-up project with a map and an open ticket. Record two decisions on that ticket with different gists, using an agent or the own-time form. Close the ticket and open the Map tab.",
+      "expected": "One line for that ticket under Settled, showing the second gist."
+    },
+    {
+      "key": "src/main/store/map-bookkeeping/out-of-scope-only",
+      "criterion": "Closing a ticket as out of scope lists it only under Out of scope, even when it carried a decision.",
+      "steps": "On the Map tab, take an open ticket that has a decision and that nobody holds. Click Close as out of scope, type a made-up reason and confirm.",
+      "expected": "The ticket under Out of scope as <title>: <why> (#<number>), and no line for it under Settled."
+    },
+    {
+      "key": "src/main/store/map-bookkeeping/undone-merge",
+      "criterion": "A merge that was undone and later decided on its own no longer reads as a duplicate.",
+      "steps": "Merge a made-up ticket into another on the Map tab. Reopen it (no reopen-ticket control exists on the map screen, so use an agent or a store-level path). Record a decision on it and close it.",
+      "expected": "The ticket's settled line shows that decision, and it does not read as a duplicate."
+    },
+    {
+      "key": "src/main/store/map-bookkeeping/retry-after-failure",
+      "criterion": "A ticket create that fails halfway ends with every link after the retry.",
+      "steps": "On the Map tab, click Add ticket and fill in made-up text. Drop the network just after the issue appears on GitHub, so the dialog shows the error. Restore the network and click Add ticket again with the same words.",
+      "expected": "One issue only, a sub-issue of the map."
+    }
+  ]
+}

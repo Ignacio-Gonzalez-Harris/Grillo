@@ -1,0 +1,90 @@
+{
+  "run_id": "Grillo-20261030-163305-bd9c",
+  "login": "nachogl1",
+  "outcome": "merged",
+  "started_at": "2026-10-30T16:33:05Z",
+  "issue": 190,
+  "title": "Connect an existing repository: demo storage, repository list, and starting the grilling agent again",
+  "finished_at": "2026-10-30T19:57:34Z",
+  "pr": 203,
+  "summary": "Connecting a repository now shows a searchable list with access badges, the demo store answers for its seeded repositories and invitation, and a refused grilling agent can be started again from Your projects. Prototype states landed first in their own pull request (#204).",
+  "agents": [
+    {
+      "name": "dev-190",
+      "model": "opus",
+      "tokens_total": 311786
+    },
+    {
+      "name": "review-190",
+      "model": "opus",
+      "tokens_total": 139362
+    },
+    {
+      "name": "review-190-r2",
+      "model": "opus",
+      "tokens_total": 177637
+    },
+    {
+      "name": "review-190-r3",
+      "model": "opus",
+      "tokens_total": 185541
+    },
+    {
+      "name": "review-190-r4",
+      "model": "opus",
+      "tokens_total": 136088
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1658,
+    "review_seconds": 1171,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 4,
+    "ci": 0
+  },
+  "friction": [
+    "The criterion that missing screen states go in a separate prototype pull request first was found unmet at review, twice, because nobody listed the states before building: two review rounds and a person's word to merge it. The dev brief has no step to compare a screen's states with the prototype before the first review.",
+    "A shared scratchpad let one agent overwrite another's gate log, which then named the wrong worktree; agents running side by side need a private log folder in their brief."
+  ],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/map/",
+      "what": "After a refused start the Map tab still says \"The grilling agent is building the map and tickets\", which is false until the member goes to the Project tab and presses Open.",
+      "why": "Outside this story's seam, and the prototype has no state for it.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/memory/",
+      "what": "Under GRILLO_STORE=memory every grilling agent start is refused because the folder it reports (/memory/Grillo/...) is not on disk, so the demo cannot get past the agent step.",
+      "why": "Not in this story's scope; the runbook says so.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "docs/ux/prototypes/",
+      "what": "The prototype still lacks project creation strings already on main, such as \"Cannot connect\", \"Partly done\", \"Back to the form\" and the form's validation messages, so those screens have no design to check against.",
+      "why": "This story does not change them.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/repo/",
+      "what": "One repository whose owner login fails isLogin (such as octo_acme) rejects the whole listRepositories, so the member loses the list of every other repository; typing a repository in full still works. Found by reading the code.",
+      "why": "Tests pin that malformed answers are one error, so skipping one entry is a decision of its own.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/project-creation/",
+      "what": "A project whose run fails on an earlier step (the idea or a document not saved) and is then left has no agent, no kept entry and no way to start one.",
+      "why": "Needs the idea's text kept outside the mounted screen; the issue's scope is a refused start.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

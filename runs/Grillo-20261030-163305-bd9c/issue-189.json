@@ -1,0 +1,49 @@
+{
+  "run_id": "Grillo-20261030-163305-bd9c",
+  "login": "nachogl1",
+  "outcome": "merged",
+  "started_at": "2026-10-30T16:33:05Z",
+  "issue": 189,
+  "title": "Map bookkeeping: one settled line per ticket, out of scope never settled, map done from every path",
+  "finished_at": "2026-10-30T16:40:29Z",
+  "pr": 200,
+  "summary": "Resumed after the owner dropped the map screen clause from the fourth criterion. Merged: one settled line per ticket, out-of-scope tickets never settled, updateMap reports map done, read-back retry on map writes, repeatable create and merge.",
+  "agents": [
+    {
+      "name": "dev-189",
+      "model": "opus",
+      "tokens_total": 269978
+    },
+    {
+      "name": "review-189",
+      "model": "opus",
+      "tokens_total": 157230
+    },
+    {
+      "name": "review-189-r2",
+      "model": "opus",
+      "tokens_total": 147304
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 973,
+    "review_seconds": 558,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/, src/main/store/memory/",
+      "what": "A merge undone with no decision of its own still reads as a duplicate: merge ticket 2 into 3, reopen 2, close 2 as out of scope, and the tickets screen badge says \"Closed · merged into ...\"; a plain close gives the settled line \"Merged into #3\".",
+      "why": "The fix needs a decision on what marks a merge as undone, which the memory store does not record today; the criterion covers only a ticket later decided on its own.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

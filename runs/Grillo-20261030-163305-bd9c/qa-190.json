@@ -1,0 +1,38 @@
+{
+  "run_id": "Grillo-20261030-163305-bd9c",
+  "login": "nachogl1",
+  "no_qa_reason": null,
+  "issue": 190,
+  "title": "Connect an existing repository: demo storage, repository list, and starting the grilling agent again",
+  "pr": 203,
+  "merged_at": "2026-10-30T19:57:34Z",
+  "merge_commit": "5315cd23822d7d557681ff45f50917caa8e5d06e",
+  "seam": "src/renderer/screens/project-creation/",
+  "story": "Connecting a repository used to mean typing owner/repository; it now shows your repositories with your access to each, with a search box, and Check access stays for re-checking or for a repository typed in full. The in-memory demo store now answers for its seeded repositories and invitation, so Check access and saving after Accept work there. A grilling agent that was refused no longer dead-ends: Open on the project under Your projects shows the failed start with Try again, even after leaving the screen or closing Grillo.",
+  "checks": [
+    {
+      "key": "project-creation/connect-repository-list",
+      "criterion": "The connect flow shows the member's repositories in a searchable list.",
+      "steps": "Set GRILLO_STORE=memory and run npm run dev. Open the Project tab, press New project, then Connect an existing one. Type team in Search your repositories. Type no-such, then clear the box. Pick example-org/company-handbook, then example-org/team-docs.",
+      "expected": "Three repositories with Read access only, Write access and Admin access badges. team leaves two rows and the box keeps focus. no-such shows \"No repository of yours matches this search.\" company-handbook says it needs write access with inviting greyed out. team-docs is highlighted with inviting enabled."
+    },
+    {
+      "key": "project-creation/demo-check-access",
+      "criterion": "Under GRILLO_STORE=memory, Check access on the seeded repository shows its real access level.",
+      "steps": "With the same start, on Connect an existing one, pick example-org/team-code and press Check access.",
+      "expected": "\"Write access\" on the highlighted row, and never \"Access not known\"."
+    },
+    {
+      "key": "project-creation/demo-accept-invitation",
+      "criterion": "Saving after accepting the seeded invitation succeeds.",
+      "steps": "On the Project tab under the memory store, press Accept on kickoff-notes, then Save and open the project.",
+      "expected": "The map of example-org/kickoff-notes, with no \"not found\" error."
+    },
+    {
+      "key": "project-creation/start-agent-again",
+      "criterion": "A project whose grilling agent failed to start can start it again later, also after leaving the creation screen.",
+      "steps": "Under the memory store, connect example-org/team-code with a made-up idea and press Connect and start; the agent step fails. Press Open the map, go back to the Project tab and press Open on team-code. Press Try again.",
+      "expected": "One \"Grilling agent started…\" row marked Failed, its reason, and Try again and Open the map. Try again runs the start again; under the memory store it is refused again for the same reason."
+    }
+  ]
+}

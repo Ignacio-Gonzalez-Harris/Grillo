@@ -1,0 +1,58 @@
+{
+  "run_id": "Grillo-20261030-163305-bd9c",
+  "login": "nachogl1",
+  "outcome": "merged",
+  "started_at": "2026-10-30T16:33:05Z",
+  "issue": 191,
+  "title": "Prototype parts missing on agent tabs, the meeting question card, ticket rows and the support relay",
+  "finished_at": "2026-10-30T17:22:53Z",
+  "pr": 205,
+  "summary": "Agent tabs gain slots above the body and on the right, the meeting question card names the ticket, tags and question count, ticket rows show their kind, the support relay shows its note and badge, and agent-list changes keep keyboard focus. It also fixes Start meeting opening on \"This agent is not running.\" and a false Recording banner.",
+  "agents": [
+    {
+      "name": "dev-191",
+      "model": "opus",
+      "tokens_total": 405818
+    },
+    {
+      "name": "review-191",
+      "model": "opus",
+      "tokens_total": 170449
+    },
+    {
+      "name": "review-191-r2",
+      "model": "opus",
+      "tokens_total": 171243
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1887,
+    "review_seconds": 507,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [
+    "The suite missed a start race and a false Recording banner on main that a scripted drive of the real built renderer found; a screen story gains from that drive before review."
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/chat-view/",
+      "what": "The head of a meeting agent's chat keeps saying \"· Live session\" after the tab is renamed to its ticket, because it reads the title once at mount.",
+      "why": "Outside this issue's scope.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/support-agent/",
+      "what": "The support agent's chat shows the raw grillo-relay block as text, where the prototype's \"Relay waiting for Send\" state shows a card with Send, Change it and Cancel.",
+      "why": "Not a state this issue asks for.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

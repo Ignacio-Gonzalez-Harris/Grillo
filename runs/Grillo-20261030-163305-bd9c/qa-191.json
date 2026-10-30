@@ -1,0 +1,62 @@
+{
+  "run_id": "Grillo-20261030-163305-bd9c",
+  "login": "nachogl1",
+  "no_qa_reason": null,
+  "issue": 191,
+  "title": "Prototype parts missing on agent tabs, the meeting question card, ticket rows and the support relay",
+  "pr": 205,
+  "merged_at": "2026-10-30T17:22:53Z",
+  "merge_commit": "aec394dca99d00d759e67d88388cdbb084cfd5b7",
+  "seam": "src/renderer/screens/agent-tab/",
+  "story": "Agent tabs now have a place above the chat or terminal and a column on its right. The meeting screen's question card now names the ticket, its tags and which question is being asked, and own-time's heading and Questions card moved into those places. Ticket list rows show their kind, and a message relayed from Support arrives with a badge and a card with the way back. It also replaces two faults: Start meeting opening on \"This agent is not running.\", and the red Recording banner showing while nothing recorded.",
+  "checks": [
+    {
+      "key": "agent-tab/slots-only-when-filled",
+      "criterion": "Agent tabs offer a slot above the body and a right-hand column, used only by tabs that fill them.",
+      "steps": "Open a made-up project and press Support to start the support agent.",
+      "expected": "The terminal or chat fills the full width, with no empty column or gap beside or above it."
+    },
+    {
+      "key": "own-time/agent-tab-layout",
+      "criterion": "The own-time screen uses the slots as its prototype shows.",
+      "steps": "On Tickets pick a made-up ticket, press Answer now, then With a grilling agent.",
+      "expected": "The ticket's heading row and the With a grilling agent / In a form choice above the terminal; the Questions card and Done in a column on the right. In a form still goes back to the form."
+    },
+    {
+      "key": "meeting/question-card",
+      "criterion": "The question card shows the ticket title, domain tags and \"Question n of m\".",
+      "steps": "On a made-up project with tagged tickets, press Map, then Start meeting. Tick a present member and let the agent ask its first question.",
+      "expected": "Above the terminal, a card with the ticket's title, its domain tags and \"Question 1 of m\" above the Listen/Type controls. After an answer, the count moves on."
+    },
+    {
+      "key": "meeting/no-false-recording-banner",
+      "criterion": "The meeting tab must not claim to record.",
+      "steps": "Press Start meeting and leave Record off.",
+      "expected": "No red Recording banner until Record is on, and it goes again when Record is off."
+    },
+    {
+      "key": "meeting/start-opens-tab",
+      "criterion": "Starting an agent opens its working tab.",
+      "steps": "Press Start meeting, or With a grilling agent on a ticket.",
+      "expected": "The agent's panels at once, never \"This agent is not running.\""
+    },
+    {
+      "key": "tickets/kind-badge-on-rows",
+      "criterion": "Every ticket list row shows its kind badge.",
+      "steps": "Open Tickets on a made-up project with grilling, research, prototype and task tickets.",
+      "expected": "Each row shows its kind beside the title; a damaged ticket's row shows only \"Damaged\"."
+    },
+    {
+      "key": "support-agent/relayed-state",
+      "criterion": "The relay shows the \"Relayed to …\" note with Back to Support, and the badge on the bubble.",
+      "steps": "Start Grillo with GRILLO_AGENT_RUNTIME=chat and open a made-up grilling tab. Ask Support to pass a made-up message to that tab and confirm Send. Open that tab, press Back to Support, then return to the tab.",
+      "expected": "The bubble carries \"from Support, for <login>\" with no bracketed mark; the right column shows \"Relayed to <tab>.\" with Back to Support; Back opens Support; on return the card has gone."
+    },
+    {
+      "key": "app/agent-tab-keyboard-focus",
+      "criterion": "An agent-list change keeps focus on the focused agent tab or header control.",
+      "steps": "With two agents running, Tab to one agent tab's name or its Channel switch, then let another agent start or stop.",
+      "expected": "The focus ring stays where it was."
+    }
+  ]
+}
