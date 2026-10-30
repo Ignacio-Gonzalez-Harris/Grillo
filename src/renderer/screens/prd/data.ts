@@ -49,7 +49,8 @@ function isVersion(value: unknown): value is PrdVersion {
     (version.number as number) > 0 &&
     isText(version.date) &&
     isText(version.body) &&
-    isText(version.appendix)
+    isText(version.appendix) &&
+    (version.damaged === undefined || isText(version.damaged))
   );
 }
 

@@ -24,6 +24,12 @@
 .titlebar .logo { width: var(--size-logo); height: var(--size-logo); }
 .window-body { flex: 1; min-height: 0; overflow: auto; padding: var(--space-5); display: grid; gap: var(--space-5); align-content: start; }
 .empty-screen { padding: var(--space-5); }
+
+/* ---------- Save notice (prototype screen-project-creation, state save-notice): above any screen ---------- */
+.save-notices { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-5) 0; }
+.save-notices:empty { display: none; }
+.save-notices .note { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
+.save-notices .grow { flex: 1; min-width: 0; }
 .empty-screen p { margin: 0; }
 
 /* ---------- Project tab bar ---------- */

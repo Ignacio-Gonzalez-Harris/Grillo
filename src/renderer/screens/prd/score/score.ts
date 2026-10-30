@@ -28,6 +28,7 @@ const WEAK_MARK = 5;
 const WEIGHT_TEXT =
   'Quality and coverage weigh half each, and every criterion and section weighs the same. The score is guidance, not a gate: nothing happens by itself after a low mark.';
 const NOT_SCORED_TEXT = 'This version has no score yet.';
+const DAMAGED_RERUN_TEXT = 'Rerun writes a fresh score over it.';
 
 /** Starts the grader on the latest PRD version; a rerun replaces that version's score. */
 export function startScore(grillo: GrilloApi, folder: string): Promise<AgentId> {
@@ -106,6 +107,8 @@ export interface ScoreCardOptions {
   scoring: boolean;
   /** Another action of the screen is running. */
   disabled: boolean;
+  /** Why the version or its score file cannot be read (the list flagged it); Rerun still writes a fresh score. */
+  damaged?: string;
   onRerun(): void;
 }
 
@@ -120,6 +123,7 @@ export function scoreCard(options: ScoreCardOptions): HTMLElement {
   }
 
   const head = el('div', 'row', [el('h3', 'm0', ['Score'])]);
+  if (options.damaged !== undefined) head.append(badge('Damaged', 'warn'));
   if (score !== null) head.append(el('span', 'score-big', [overallText(score.overall)]), el('span', 'muted', [`out of ${HIGHEST_MARK}`]));
   // A scorer only ever scores the latest version, so only its panel is labelled Scoring and offers Rerun.
   if (options.canRerun) {
@@ -128,7 +132,8 @@ export function scoreCard(options: ScoreCardOptions): HTMLElement {
   }
 
   const body: HTMLElement[] = [];
-  if (error !== null) body.push(note(error, 'err'));
+  if (options.damaged !== undefined) body.push(el('p', 'reason', [`${options.damaged}${options.canRerun ? ` ${DAMAGED_RERUN_TEXT}` : ''}`]));
+  else if (error !== null) body.push(note(error, 'err'));
   else if (score === null) body.push(el('p', 'small muted', [NOT_SCORED_TEXT]));
   else {
     body.push(

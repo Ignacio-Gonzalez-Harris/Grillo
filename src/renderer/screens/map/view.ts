@@ -63,6 +63,9 @@ export function domainTags(ticket: Ticket, declared: readonly string[]): HTMLEle
   });
 }
 
+/** What a member does about a ticket the store could not read (prototype state `damaged-ticket`). */
+export const DAMAGED_TICKET_HINT = 'Fix the issue on GitHub; the other tickets work as usual.';
+
 export function kindBadge(kind: TicketKind): HTMLElement {
   return badge(kind);
 }

@@ -52,12 +52,15 @@ export interface ProjectCreationDeps {
 const PROJECT_ID = /^[^/\s]+\/[^/\s]+$/;
 const TEXT_FILES = '.txt,.md,.markdown,.csv,.json,.vtt,.srt';
 const TRANSCRIPT_FILES = '.txt,.md,.vtt,.srt';
+const DAMAGED_PROJECT_HINT = 'Fix the file on GitHub, then open the project again.';
 
 interface RecentRow {
   id: ProjectId;
   name: string;
   archived: boolean;
   lastOpened: string;
+  /** Why the project's Grillo files or folder cannot be read (prototype state `damaged-project`); null when fine. */
+  damaged: string | null;
 }
 
 interface StartData {
@@ -113,7 +116,12 @@ function isInvitation(value: unknown): value is Invitation {
 
 function isProject(value: unknown): value is Project {
   const project = value as Partial<Record<keyof Project, unknown>> | null;
-  return isText(project?.id) && isText(project.name) && typeof project.archived === 'boolean';
+  return (
+    isText(project?.id) &&
+    isText(project.name) &&
+    typeof project.archived === 'boolean' &&
+    (project.damaged === undefined || isText(project.damaged))
+  );
 }
 
 function isOrganisation(value: unknown): value is Organisation {
@@ -185,6 +193,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
               name: known.get(project)?.name ?? project.slice(project.indexOf('/') + 1),
               archived: known.get(project)?.archived ?? false,
               lastOpened,
+              damaged: known.get(project)?.damaged ?? null,
             }))
           : recentList,
         invitations: listOrError(invitations, isInvitation),
@@ -238,8 +247,10 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
               el('div', 'grow', [
                 el('span', 'strong', [recent.name]),
                 ...(recent.archived ? [' ', badge('Archived')] : []),
+                ...(recent.damaged === null ? [] : [' ', badge('Damaged', 'warn')]),
                 el('br', ''),
                 el('span', 'small muted', [`${recent.id} · opened ${date(recent.lastOpened)}`]),
+                ...(recent.damaged === null ? [] : [el('br', ''), el('span', 'reason', [`${recent.damaged} ${DAMAGED_PROJECT_HINT}`])]),
               ]),
               button('Open', { small: true, disabled: busy, onClick: () => void openProject(recent.id) }),
             ]),
@@ -290,7 +301,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     organisations = orgs.status === 'fulfilled' && Array.isArray(orgs.value) ? orgs.value.filter(isOrganisation) : [];
     earlierProjects = [];
     if (projects.status === 'fulfilled' && Array.isArray(projects.value)) {
-      for (const project of projects.value.filter(isProject)) {
+      for (const project of projects.value.filter(isProject).filter(({ damaged }) => damaged === undefined)) {
         try {
           earlierProjects.push({ ...project, structure: checkedStructure(project.structure, `the structure of ${project.id}`) });
         } catch {

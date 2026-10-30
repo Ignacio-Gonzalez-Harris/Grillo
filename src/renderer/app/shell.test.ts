@@ -289,3 +289,49 @@ describe('app shell', () => {
     expect(pixels(panel.borderTopLeftRadius)).toBe(0);
   });
 });
+
+describe('app shell: a save that became a pull request', () => {
+  const NOTICE = { project: 'example-org/sample-project-1', url: 'https://github.com/example-org/sample-project-1/pull/3', title: 'grillo: add member member-b' };
+  const notes = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('.save-notices .note')];
+
+  it('names the pull request above the open screen, links to it, and Dismiss takes the note away', () => {
+    const fake = fakeGrillo();
+    const root = start(registry(screen('setup-check', 'Setup')), fake.grillo);
+
+    fake.emit('store:pull-request', NOTICE);
+    fake.emit('store:pull-request', NOTICE);
+
+    expect(notes(root).map((note) => note.querySelector('.grow')?.textContent)).toEqual([
+      'Saved as pull request #3, "grillo: add member member-b". The main branch of example-org/sample-project-1 is protected, so the change reaches the project once someone merges that pull request.',
+    ]);
+    expect(notes(root)[0].getAttribute('role')).toBe('status');
+    expect(root.querySelector('.save-notices')?.nextElementSibling).toBe(content(root));
+    const link = notes(root)[0].querySelector('a') as HTMLAnchorElement;
+    expect([link.textContent, link.getAttribute('href'), link.target]).toEqual(['Open on GitHub', NOTICE.url, '_blank']);
+
+    (notes(root)[0].querySelector('button') as HTMLButtonElement).click();
+
+    expect(notes(root)).toEqual([]);
+  });
+
+  it('ignores a notice that is not one, or whose address is not a web address', () => {
+    const fake = fakeGrillo();
+    const root = start(registry(), fake.grillo);
+
+    for (const payload of [null, { ...NOTICE, title: 7 }, { ...NOTICE, url: 'file:///etc/hosts' }]) {
+      fake.emit('store:pull-request', payload as never);
+    }
+
+    expect(notes(root)).toEqual([]);
+  });
+
+  it('stops listening for saves when disposed', () => {
+    const fake = fakeGrillo();
+    start(registry(), fake.grillo);
+
+    shell?.dispose();
+    shell = undefined;
+
+    expect(fake.listenerCount('store:pull-request')).toBe(0);
+  });
+});

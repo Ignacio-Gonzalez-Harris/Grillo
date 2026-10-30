@@ -229,6 +229,7 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
       name,
       ...(latest ? [' ', badge('Latest', 'info')] : []),
       ...(score ? [' ', score] : []),
+      ...(version.damaged === undefined ? [] : [' ', badge('Damaged', 'warn')]),
       el('br', ''),
       el('span', 'muted', [dayOf(version.date)]),
     ]);
@@ -276,6 +277,7 @@ export function mountPrdView(container: HTMLElement, params: ScreenParams, deps:
       canRerun: isLatest,
       scoring: isScoring(project),
       disabled: busy,
+      ...(version.damaged === undefined ? {} : { damaged: version.damaged }),
       onRerun: () => void rerunScore(project),
     });
     const main = el('div', 'stack', [heading, exportRow, ...(actionError ? [note(actionError, 'err')] : []), score, documentOf(version)]);

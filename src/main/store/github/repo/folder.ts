@@ -1,13 +1,14 @@
 /**
  * The project folder: the local clone of a project's repository at `<root>/<owner>/<repo>`, which every agent
  * runs in and every Grillo folder write goes through (committed, then pushed). See docs/store-layout.md:
- * "Codes: S, Q and v" for the retry rule and "Saves to a protected main" for the pull request fallback.
+ * "Codes: S, Q and v" for the retry rule and "Saves to a protected main" for the pull request fallback and the
+ * saves still waiting in one.
  */
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, posix } from 'node:path';
 import type { Gh, ProcessRunner, RunResult } from '../../gh';
-import { StoreError } from '../../store';
+import { StoreError, type PullRequestNotice } from '../../store';
 import type { ProjectId, RepositoryRef } from '../../types';
 import type { GithubApi } from './github-api';
 import { projectIdOf } from './names';
@@ -38,10 +39,18 @@ interface PendingChange extends FileChange {
   existed: boolean;
 }
 
-/** Told when a save reached a protected main as a pull request: the screen tells the member. */
-export interface PullRequestNotice {
-  project: ProjectId;
+export type { PullRequestNotice };
+
+/**
+ * A save that went to a pull request because main is protected, while that pull request is still open: its files
+ * as the pull request has them (null for a file it deletes). Reads see them over main, so the next number is free
+ * and a record saved a moment ago can be read and changed again (docs/store-layout.md, "Saves to a protected main").
+ */
+interface WaitingSave {
+  head: string;
   url: string;
+  title: string;
+  files: Map<string, string | null>;
 }
 
 export interface ProjectFoldersOptions {
@@ -75,6 +84,25 @@ export type ProjectFolders = ReturnType<typeof createProjectFolders>;
 export function createProjectFolders({ gh, api, git, root, now, onPullRequest }: ProjectFoldersOptions) {
   /** One operation per project folder at a time: two git commands in one clone would trip over its lock. */
   const queues = new Map<ProjectId, Promise<unknown>>();
+  /** Per project, the saves this run of Grillo sent to a pull request that is still open, oldest first. */
+  const waiting = new Map<ProjectId, WaitingSave[]>();
+  /** Every branch name a save used in this run, so two saves in one millisecond never share a branch. */
+  const usedHeads = new Set<string>();
+
+  const waitingIn = (ref: RepositoryRef): WaitingSave[] => waiting.get(projectIdOf(ref)) ?? [];
+
+  /** Forgets the waiting saves whose pull request was merged or closed: main (or nothing) has the last word again. */
+  async function forgetSettledSaves(ref: RepositoryRef): Promise<void> {
+    const saves = waitingIn(ref);
+    if (saves.length === 0) {
+      return;
+    }
+    const open = new Set(await api.openPullRequestUrls(ref));
+    waiting.set(
+      projectIdOf(ref),
+      saves.filter((save) => open.has(save.url)),
+    );
+  }
 
   function serially<T>(ref: RepositoryRef, work: () => Promise<T>): Promise<T> {
     const id = projectIdOf(ref);
@@ -138,16 +166,21 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
     }
   }
 
-  /** Clones the repository, or pulls it: every read and every save starts from main as GitHub has it. */
+  /**
+   * Clones the repository, or pulls it: every read and every save starts from main as GitHub has it, plus the saves
+   * still waiting in an open pull request.
+   */
   async function update(ref: RepositoryRef): Promise<void> {
     if (isClone(ref)) {
       await pull(ref);
     } else {
       await clone(ref);
     }
+    await forgetSettledSaves(ref);
   }
 
-  function reader(ref: RepositoryRef): FolderReader {
+  /** The files on main, as the project folder has them. */
+  function mainReader(ref: RepositoryRef): FolderReader {
     const folder = pathOf(ref);
     return {
       async read(path) {
@@ -161,12 +194,49 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
     };
   }
 
+  /** The newest waiting save that holds the file. */
+  const waitingSaveOf = (ref: RepositoryRef, path: string): WaitingSave | undefined => waitingIn(ref).findLast((save) => save.files.has(path));
+
+  /**
+   * The files as the member last saved them: main, with the waiting saves over it. A file read from a waiting save
+   * is noted in `used`, so a save built on it joins that save's pull request.
+   */
+  function reader(ref: RepositoryRef, used?: Set<WaitingSave>): FolderReader {
+    const main = mainReader(ref);
+    return {
+      async read(path) {
+        const save = waitingSaveOf(ref, path);
+        if (save === undefined) {
+          return main.read(path);
+        }
+        used?.add(save);
+        return save.files.get(path) ?? null;
+      },
+      async list(path) {
+        const names = new Set(await main.list(path));
+        for (const save of waitingIn(ref)) {
+          for (const [file, content] of save.files) {
+            if (posix.dirname(file) === posix.normalize(path)) {
+              const name = posix.basename(file);
+              if (content === null) {
+                names.delete(name);
+              } else {
+                names.add(name);
+              }
+            }
+          }
+        }
+        return [...names];
+      },
+    };
+  }
+
   /**
    * The changes that differ from what is there, each noting whether its file exists on main. A file the member
    * changed in the folder without saving it is never written over: the save is refused instead.
    */
   async function pendingChanges(ref: RepositoryRef, changes: FileChange[]): Promise<PendingChange[]> {
-    const files = reader(ref);
+    const files = mainReader(ref);
     const changed: PendingChange[] = [];
     for (const change of changes) {
       const current = await files.read(change.path);
@@ -239,23 +309,84 @@ export function createProjectFolders({ gh, api, git, root, now, onPullRequest }:
     }
   }
 
-  /** The commit goes to a branch of its own, and a pull request asks to bring it into main. */
-  async function proposeChange(ref: RepositoryRef, base: string, changes: PendingChange[], message: string): Promise<void> {
-    const head = `grillo/save-${now().getTime()}`;
+  /** A branch name no save of this run has used: the save's moment, plus a count when two share a millisecond. */
+  function newHead(): string {
+    const base = `grillo/save-${now().getTime()}`;
+    let head = base;
+    for (let count = 2; usedHeads.has(head); count++) {
+      head = `${base}-${count}`;
+    }
+    usedHeads.add(head);
+    return head;
+  }
+
+  /** Pushes the commit to `head` and takes it back out of main in the folder, whatever the push did. */
+  async function pushToBranch(ref: RepositoryRef, changes: PendingChange[], head: string, replace: boolean): Promise<void> {
     try {
-      await gitOk(ref, ['push', 'origin', `HEAD:refs/heads/${head}`]);
+      await gitOk(ref, ['push', 'origin', `${replace ? '+' : ''}HEAD:refs/heads/${head}`]);
     } finally {
       await undoCommit(ref, changes);
     }
+  }
+
+  const filesOf = (changes: FileChange[]): Map<string, string | null> => new Map(changes.map((change) => [change.path, change.content]));
+
+  /** The commit goes to a branch of its own, and a pull request asks to bring it into main. */
+  async function proposeChange(ref: RepositoryRef, base: string, changes: PendingChange[], message: string): Promise<void> {
+    const head = newHead();
+    await pushToBranch(ref, changes, head, false);
     const body = `Grillo could not save this change straight to \`${base}\`, which is protected. Merge this pull request to keep it.`;
     const url = await api.openPullRequest(ref, { base, head, title: message, body });
-    onPullRequest({ project: projectIdOf(ref), url });
+    waiting.set(projectIdOf(ref), [...waitingIn(ref), { head, url, title: message, files: filesOf(changes) }]);
+    onPullRequest({ project: projectIdOf(ref), url, title: message });
+  }
+
+  /**
+   * A save built on a waiting save joins its pull request: the branch is replaced by one commit holding both, so
+   * the pull request never conflicts with itself. Only Grillo writes to its save branches.
+   */
+  async function joinWaitingSave<T>(ref: RepositoryRef, save: WaitingSave, plan: SavePlan<T>): Promise<T> {
+    const files = new Map([...save.files, ...filesOf(plan.changes)]);
+    const unchanged = [...files].every(([path, content]) => save.files.has(path) && save.files.get(path) === content);
+    if (unchanged) {
+      return plan.result;
+    }
+    const pending = await pendingChanges(ref, [...files].map(([path, content]) => ({ path, content })));
+    if (pending.length === 0) {
+      return plan.result;
+    }
+    await commit(ref, pending, save.title);
+    await pushToBranch(ref, pending, save.head, true);
+    save.files = files;
+    onPullRequest({ project: projectIdOf(ref), url: save.url, title: save.title });
+    return plan.result;
+  }
+
+  /** The one waiting save a plan builds on, by the files it read or writes; none when it touches main alone. */
+  function waitingSaveUsed(ref: RepositoryRef, used: Set<WaitingSave>, changes: FileChange[]): WaitingSave | undefined {
+    for (const change of changes) {
+      const save = waitingSaveOf(ref, change.path);
+      if (save !== undefined) {
+        used.add(save);
+      }
+    }
+    if (used.size > 1) {
+      const urls = [...used].map((save) => save.url).join(', ');
+      throw new StoreError('conflict', `This change builds on several saves still waiting as pull requests (${urls}); merge them first, then try again`);
+    }
+    return [...used][0];
   }
 
   async function save<T>(ref: RepositoryRef, branch: string, plan: (files: FolderReader) => Promise<SavePlan<T>>): Promise<T> {
     for (let attempt = 1; ; attempt++) {
       await update(ref);
-      const { changes, message, result } = await plan(reader(ref));
+      const used = new Set<WaitingSave>();
+      const planned = await plan(reader(ref, used));
+      const { changes, message, result } = planned;
+      const joined = waitingSaveUsed(ref, used, changes);
+      if (joined !== undefined) {
+        return joinWaitingSave(ref, joined, planned);
+      }
       const pending = await pendingChanges(ref, changes);
       if (pending.length === 0) {
         return result;

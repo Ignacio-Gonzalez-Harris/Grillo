@@ -173,6 +173,11 @@ export function createFakeIssues(me = 'ada-example') {
       });
       return json(issueJson(repository, issue));
     }
+    if (rest === '/issues/comments' && verb === 'GET') {
+      const repositoryId = [...repositories.entries()].find(([, entry]) => entry === repository)![0];
+      const listed = repository.comments.map((comment) => ({ ...commentJson(comment), issue_url: `https://api.github.com/repos/${repositoryId}/issues/${comment.issue}` }));
+      return json(page(listed, query));
+    }
     if ((match = /^\/issues\/comments\/(\d+)$/.exec(rest))) {
       const comment = repository.comments.find((entry) => entry.id === Number(match![1]));
       if (!comment) return notFound();

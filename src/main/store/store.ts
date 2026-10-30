@@ -120,6 +120,17 @@ export interface NewPrdVersion {
   appendix: string;
 }
 
+/**
+ * Told when a save reached a repository whose main branch is protected as a pull request instead of a direct push
+ * (docs/store-layout.md, "Saves to a protected main"): the screen tells the member which pull request holds it.
+ */
+export interface PullRequestNotice {
+  project: ProjectId;
+  url: string;
+  /** The pull request's title: the message of the save that opened it. */
+  title: string;
+}
+
 /** What closing or merging a ticket leaves behind: the map is done when no ticket is open and no fog is left. */
 export interface CloseResult {
   mapDone: boolean;
@@ -220,6 +231,8 @@ export interface Store {
   deleteDecision(id: TicketId, decisionId: string): Promise<void>;
   /** Plain member comments not yet turned into answers. */
   listPickupComments(id: TicketId): Promise<PickupComment[]>;
+  /** The same for every open ticket of the project at once, in ticket order: one call for a whole list of tickets. */
+  listProjectPickupComments(project: ProjectId): Promise<PickupComment[]>;
 
   // Grilling sessions: files in the Grillo folder. Never deleted: removing words is a manual history rewrite.
   createSession(project: ProjectId, session: NewSession): Promise<GrillingSession>;

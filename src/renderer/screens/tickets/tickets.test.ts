@@ -258,6 +258,26 @@ describe('the tickets screen: the own list', () => {
 
     expect(heading(content())[0]).toBe('Sample ticket 4');
   });
+
+  it('flags a ticket the store could not read in the list and on its card, with the reason and nothing to act on', async () => {
+    const { store, project, content, open } = await app();
+    const tickets = await ownList(store, project);
+    const reason = 'Issue #4 is not in the format Grillo writes: the Questions section';
+    const listed = await store.listTickets(project);
+    vi.spyOn(store, 'listTickets').mockResolvedValue(listed.map((ticket) => (ticket.id.number === tickets.product.id.number ? { ...ticket, damaged: reason } : ticket)));
+    const detailReads = vi.spyOn(store, 'listAnswers');
+    await open({ project, ticket: String(tickets.product.id.number) });
+
+    const row = [...listCard(content()).querySelectorAll('li')].find((item) => text(item.querySelector('button.pick')) === 'Sample ticket 4');
+    expect(texts(row?.querySelectorAll('.badge') ?? [])).toEqual(['Damaged']);
+    expect(heading(content())).toEqual(['Sample ticket 4', 'grilling', 'Damaged']);
+    expect(text(detailCard(content()).querySelector('.note.warn'))).toBe(
+      `Grillo cannot read this ticket: ${reason} Fix the issue on GitHub; the other tickets work as usual.`,
+    );
+    expect(detailCard(content()).querySelectorAll('button')).toHaveLength(0);
+    expect(detailReads).not.toHaveBeenCalled();
+    expect(groups(content())).toContain('Taken by you or sent to you: Sample ticket 1');
+  });
 });
 
 describe('the tickets screen: an unassigned ticket', () => {
@@ -761,7 +781,7 @@ describe('tickets data: grouping, tags and what the store answers', () => {
     expect(answerLine({ ...broken, sources: null, via: null } as unknown as Answer, []).sources).toEqual([]);
   });
 
-  function storeAnswering(answers: { comments?: unknown; discussions?: unknown }): Store {
+  function storeAnswering(answers: { comments?: unknown; discussions?: unknown }, calls: string[] = []): Store {
     const project = { id: base.id.project, name: 'sample-project-1', archived: false, members: [{ ...member, login: 'ada-example' }] };
     return {
       getProject: async () => project,
@@ -770,16 +790,25 @@ describe('tickets data: grouping, tags and what the store answers', () => {
       getMap: async () => ({ number: 9, destination: '', notes: '', settled: [], fog: [], outOfScope: [] }),
       listTickets: async () => [base, { ...base, id: { ...base.id, number: 2 }, state: 'closed' }],
       listSources: async () => [],
-      listPickupComments: async () => answers.comments,
+      listPickupComments: async () => {
+        calls.push('listPickupComments');
+        return answers.comments;
+      },
+      listProjectPickupComments: async () => {
+        calls.push('listProjectPickupComments');
+        return answers.comments;
+      },
       getTicket: async () => base,
       listAnswers: async () => [],
       listDiscussions: async () => answers.discussions,
     } as unknown as Store;
   }
 
-  it('counts each waiting comment once, on open tickets only, and refuses a comment list that is no list', async () => {
-    const view = await readTicketsView(storeAnswering({ comments: [{ id: 'c1' }, { id: 'c1' }, null, { id: 'c2' }] }), base.id.project);
+  it('counts each waiting comment once with one store call for the whole project, and refuses a comment list that is no list', async () => {
+    const calls: string[] = [];
+    const view = await readTicketsView(storeAnswering({ comments: [{ id: 'c1' }, { id: 'c1' }, null, { id: 'c2' }] }, calls), base.id.project);
     expect(view.pickupComments).toBe(2);
+    expect(calls).toEqual(['listProjectPickupComments']);
     const refusal = readTicketsView(storeAnswering({ comments: null }), base.id.project);
     await expect(refusal).rejects.toMatchObject({ kind: 'backend' });
   });

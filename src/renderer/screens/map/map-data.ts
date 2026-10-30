@@ -123,7 +123,8 @@ function checkedTicket(value: unknown, id: ProjectId): Ticket {
     !isTextList(ticket.domains) ||
     typeof ticket.noDomain !== 'boolean' ||
     !Array.isArray(ticket.blockers) ||
-    !ticket.blockers.every(isIssueNumber)
+    !ticket.blockers.every(isIssueNumber) ||
+    !(ticket.damaged === undefined || isText(ticket.damaged))
   ) {
     unreadable(`the tickets of ${id}`);
   }

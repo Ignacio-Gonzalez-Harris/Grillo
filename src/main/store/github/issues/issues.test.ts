@@ -710,6 +710,77 @@ describe('GitHub issues backend: answers, discussions and decisions', () => {
   });
 });
 
+describe('GitHub issues backend: lists that survive one damaged ticket', () => {
+  const QUESTIONS_DAMAGED = '### Question\n\n### Why it matters\n\n### Assumptions\n\n### Questions\n- Q7.1 x\n\n### Blocked by\n';
+
+  it.each([
+    ['a second kind label', (context: Awaited<ReturnType<typeof projectWithTicket>>) => context.issue(3).labels.push('wayfinder:task')],
+    ['a hand-edited section', (context: Awaited<ReturnType<typeof projectWithTicket>>) => (context.issue(3).body = QUESTIONS_DAMAGED)],
+    ['a damaged marked comment', (context: Awaited<ReturnType<typeof projectWithTicket>>) =>
+      context.github.addComment(PROJECT, 3, OTHER, '<!-- grillo:answer -->\nwho: ben-example\n\nGitHub')],
+  ])('lists every other ticket and flags one with %s, with the reason', async (_case, damage) => {
+    const context = await projectWithTicket();
+    const { store, issue } = context;
+    await store.createTicket(PROJECT, newTicket({ title: 'Pricing', kind: 'research' }));
+    await store.createTicket(PROJECT, newTicket({ title: 'Hosting' }));
+    issue(3).assignees.push(OTHER);
+    damage(context);
+
+    const tickets = await store.listTickets(PROJECT);
+
+    expect(tickets.map((ticket) => [ticket.id.number, ticket.title, ticket.damaged ?? null])).toEqual([
+      [2, 'Login flow', null],
+      [3, 'Pricing', expect.stringMatching(/Issue #3|comment/)],
+      [4, 'Hosting', null],
+    ]);
+    expect(tickets[1]).toMatchObject({ kind: 'research', assignee: OTHER, state: 'open', questions: [] });
+  });
+
+  it('reports a close and a merge as done when another ticket or the map turns out damaged afterwards', async () => {
+    const { store, issue, ticket } = await projectWithTicket();
+    const into = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    const third = await store.createTicket(PROJECT, newTicket({ title: 'Hosting' }));
+    await store.createTicket(PROJECT, newTicket({ title: 'Roles' }));
+    issue(5).labels.push('wayfinder:task');
+
+    expect(await store.closeTicket(third.id)).toEqual({ mapDone: false });
+    expect(await store.mergeTicket(ticket, into.id)).toEqual({ mapDone: false });
+    expect([issue(2).state, issue(4).state]).toEqual(['closed', 'closed']);
+
+    issue(5).state = 'closed';
+    await store.reopenTicket(third.id);
+    await store.closeTicket(into.id);
+    issue(1).body = 'Hand-edited map';
+    expect(await store.closeTicket(third.id)).toEqual({ mapDone: false });
+    expect(issue(4).state).toBe('closed');
+  });
+
+  it('lists the waiting comments of every open ticket with one comment listing, however many tickets there are', async () => {
+    const { store, github, ticket } = await projectWithTicket();
+    const others = [];
+    for (const title of ['Pricing', 'Hosting', 'Roles']) {
+      others.push(await store.createTicket(PROJECT, newTicket({ title })));
+    }
+    const first = github.addComment(PROJECT, 2, OTHER, 'Use GitHub');
+    const turned = github.addComment(PROJECT, 3, OTHER, 'Free for all');
+    await store.createAnswer(others[0].id, { ...plainAnswer('Q3.1'), via: 'github', fromComment: String(turned.id) });
+    const later = github.addComment(PROJECT, 4, null, 'Self-hosted');
+    github.addComment(PROJECT, 4, OTHER, '<!-- grillo:answer -->\nwho: ben-example\n\nDamaged');
+    await store.closeTicket(others[2].id);
+    github.addComment(PROJECT, 5, OTHER, 'On a closed ticket');
+    github.calls.length = 0;
+
+    const comments = await store.listProjectPickupComments(PROJECT);
+
+    expect(comments).toEqual([
+      { id: String(first.id), ticket, author: OTHER, when: first.createdAt, text: 'Use GitHub' },
+      { id: String(later.id), ticket: others[1].id, author: 'ghost', when: later.createdAt, text: 'Self-hosted' },
+    ]);
+    expect(github.calls.filter((call) => call.includes('/comments'))).toEqual([`gh api repos/${PROJECT}/issues/comments?per_page=100&page=1`]);
+    expect(github.calls.filter((call) => /issues\/\d+/.test(call))).toEqual([]);
+  });
+});
+
 describe('GitHub issues backend: what GitHub hands back is checked', () => {
   const ISSUE = `GET repos/${PROJECT}/issues/2`;
   const body = '### Question\n\n### Why it matters\n\n### Assumptions\n\n### Questions\n- Q2.1 Which provider?\n\n### Blocked by\n';

@@ -12,6 +12,7 @@ import {
 } from './navigation';
 import type { ScreenParams, ScreenRegistry, ShellContext } from './screens';
 import { createTabBar, type ActiveTab } from './tab-bar';
+import { createSaveNotice } from './save-notice';
 import { createUpdatePopup } from './update-popup';
 
 export interface ShellOptions {
@@ -70,13 +71,14 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
   const content = document.createElement('main');
   content.className = 'window-body';
 
+  const saveNotice = createSaveNotice(grillo);
   const updatePopup = createUpdatePopup({
     grillo,
     screenShowsOffer: () => current.screenId === SETUP_CHECK_SCREEN,
-    behind: [tabBar.el, content],
+    behind: [tabBar.el, saveNotice.root, content],
   });
 
-  const appWindow = glassPanel([titlebar, tabBar.el, content, updatePopup.root]);
+  const appWindow = glassPanel([titlebar, tabBar.el, saveNotice.root, content, updatePopup.root]);
   appWindow.classList.add('window', 'overlay-host');
   const frame = document.createElement('div');
   frame.className = 'shell';
@@ -167,6 +169,7 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
     dispose() {
       stopListening();
       updatePopup.dispose();
+      saveNotice.dispose();
       closeScreen?.();
       closeScreen = undefined;
       stopScreens.forEach((stop) => stop());

@@ -1,0 +1,1 @@
+Saves on a protected main now read back and number correctly while their pull request is open, the member sees which pull request holds a save, and one damaged project, ticket or score file no longer empties its whole list.

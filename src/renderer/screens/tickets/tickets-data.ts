@@ -81,24 +81,17 @@ export function firstTicket(groups: TicketGroups): Ticket | undefined {
   return [...groups.mine, ...groups.domains, ...groups.others, ...groups.closed][0];
 }
 
-function checkedPickupCount(value: unknown, number: number): number {
-  if (!Array.isArray(value)) unreadable(`the GitHub comments on ticket ${number}`);
-  return new Set(value.map((comment) => (comment as { id?: unknown } | null)?.id).filter(isText)).size;
-}
-
-/** How many plain member comments on open tickets wait to be turned into answers. */
-async function pickupCount(store: Store, tickets: readonly Ticket[]): Promise<number> {
-  const open = tickets.filter((ticket) => ticket.state === 'open');
-  const counts = await Promise.all(
-    open.map(async ({ id }) => checkedPickupCount(await store.listPickupComments(id), id.number)),
-  );
-  return counts.reduce((sum, count) => sum + count, 0);
+/** How many plain member comments on open tickets wait to be turned into answers: one store call for the project. */
+async function pickupCount(store: Store, project: string): Promise<number> {
+  const comments: unknown = await store.listProjectPickupComments(project);
+  if (!Array.isArray(comments)) unreadable(`the GitHub comments on the tickets of ${project}`);
+  return new Set(comments.map((comment) => (comment as { id?: unknown } | null)?.id).filter(isText)).size;
 }
 
 /** Reads the project, every ticket and source, and the waiting GitHub comments, fresh from the store. */
 export async function readTicketsView(store: Store, project: string): Promise<TicketsView> {
-  const view = await readMapView(store, project);
-  return { ...view, pickupComments: await pickupCount(store, view.tickets) };
+  const [view, pickupComments] = await Promise.all([readMapView(store, project), pickupCount(store, project)]);
+  return { ...view, pickupComments };
 }
 
 function isDiscussion(value: unknown): value is Discussion {

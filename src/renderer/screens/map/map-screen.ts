@@ -40,6 +40,7 @@ import {
 import {
   choice,
   codeChip,
+  DAMAGED_TICKET_HINT,
   dayOf,
   domainTags,
   el,
@@ -337,6 +338,11 @@ export function mountMap(container: HTMLElement, params: ScreenParams, deps: Map
   }
 
   function ticketRow(ticket: Ticket, view: MapView, declared: string[]): Content[] {
+    if (ticket.damaged !== undefined) {
+      // Prototype state `damaged-ticket`: the reason under the title, and no action Grillo could not carry out.
+      const title = el('span', '', [ticket.title, ' ', badge('Damaged', 'warn'), el('br', ''), el('span', 'reason', [`${ticket.damaged} ${DAMAGED_TICKET_HINT}`])]);
+      return [title, kindBadge(ticket.kind), '—', ticket.assignee ?? '—', '—', ''];
+    }
     const titles = new Map(view.tickets.map((other) => [other.id.number, other.title]));
     const domains = el('span', 'row', domainTags(ticket, declared));
     const assignee: Content = ticket.assignee === null ? '—' : el('span', 'row', [ticket.assignee, badge('Locked', 'warn')]);

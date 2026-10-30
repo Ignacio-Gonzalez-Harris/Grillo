@@ -263,7 +263,8 @@ domains: product, platform
   because GitHub allocates issue numbers. A removed question's code is never reused.
 - **Sources and PRD versions:** `S<n>` and `v<n>` take the next free number read from `main` after
   `git pull --ff-only`, then the file is written and pushed. A rejected push means someone wrote first: pull,
-  renumber your own file to the next free number, push again.
+  renumber your own file to the next free number, push again. On a protected `main`, a number held by one of the
+  app's own saves still waiting in a pull request counts as taken too (see "Saves to a protected main").
 - **A number never changes once pushed.** PRD versions cite sources and questions by these codes.
 
 ## The claim rule
@@ -282,7 +283,25 @@ the project folder's `.git`, never committed and never on GitHub.
 ## Saves to a protected main
 
 Every save to the Grillo folder is first a direct push to `main`. When the repository refuses it (a
-protected `main`), Grillo opens a pull request with the change and tells the member.
+protected `main`), Grillo pushes the change to a branch of its own, `grillo/save-<milliseconds>` (with `-2`,
+`-3`… when two saves share a millisecond), opens a pull request into `main` titled with the save's commit message,
+and tells the member which pull request holds it.
+
+While that pull request is open, the save is **waiting**:
+
+- **Reads see it.** Every read shows `main` with the app's waiting saves over it, so a record saved a moment
+  ago can be read and changed again, and the next `S<n>` or `v<n>` skips a number a waiting save holds.
+- **A save built on a waiting save joins its pull request.** When a save writes a file a waiting save holds,
+  or reads one (an update of a session started a moment ago, a score of a version written a moment ago), the
+  waiting save's branch is replaced by one commit holding both changes: one pull request per record, never two
+  that conflict. A save that would build on two different waiting saves is refused as a conflict until one of
+  them is merged. A save that touches neither opens a pull request of its own.
+- **Merged or closed, it stops waiting.** Before each read and save, while any of its saves waits, the app asks
+  GitHub for the repository's open pull requests (`gh pr list --state open`); a save whose pull request is no
+  longer open is forgotten, and `main` (merged, or not) has the last word again.
+- **Only for this run of the app.** The app remembers its waiting saves in memory. After a restart it reads
+  `main` alone again, so a save then can take a number an unmerged pull request also uses; GitHub then shows
+  the two pull requests in conflict, and one of them is renumbered by hand.
 
 ## Merging and reopening tickets
 

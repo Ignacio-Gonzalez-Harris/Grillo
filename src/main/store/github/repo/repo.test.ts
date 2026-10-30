@@ -362,7 +362,7 @@ describe('GitHub repository backend: Grillo folder files', () => {
     const head = `grillo/save-${START.getTime()}`;
     expect(repository.pullRequests).toEqual([{ base: 'main', head, title: 'grillo: add source S1' }]);
     expect(repository.branches.get(head)?.get('.grillo/sources/S1.md')).toContain(SOURCE.text);
-    expect(notices).toEqual([{ project: PROJECT, url: `https://github.com/${PROJECT}/pull/1` }]);
+    expect(notices).toEqual([{ project: PROJECT, url: `https://github.com/${PROJECT}/pull/1`, title: 'grillo: add source S1' }]);
     expect(readTree(folder())).toEqual(repository.files);
     expect(github.calls).toContain('git reset --keep HEAD~1');
   });
@@ -448,6 +448,130 @@ describe('GitHub repository backend: Grillo folder files', () => {
     expect((await refusal(store.setScore(PROJECT, 1, { ...SCORE, overall: 11 }))).kind).toBe('invalid');
     expect((await refusal(store.getScore(PROJECT, 3))).kind).toBe('not-found');
     expect((await refusal(store.createPrdVersion(PROJECT, { body: 'a\n<!-- grillo:appendix -->\nb', appendix: '' }))).kind).toBe('invalid');
+  });
+});
+
+describe('GitHub repository backend: saves to a protected main', () => {
+  const branchFiles = (repository: FakeRepository, number: number): string[] =>
+    [...(repository.branches.get(repository.pullRequests[number - 1].head)?.keys() ?? [])].filter((path) => path.startsWith('.grillo/') && !path.endsWith('.json'));
+
+  it('numbers two saves in a row apart while the first waits as a pull request, each in a pull request of its own', async () => {
+    const { store, seed, notices } = await setup();
+    const repository = seed(PROJECT, { protected: true });
+
+    const first = await store.createSource(PROJECT, SOURCE);
+    const second = await store.createSource(PROJECT, { ...SOURCE, text: 'Second' });
+
+    expect([first.code, second.code]).toEqual(['S1', 'S2']);
+    expect(repository.pullRequests.map((pull) => pull.title)).toEqual(['grillo: add source S1', 'grillo: add source S2']);
+    expect(new Set(repository.pullRequests.map((pull) => pull.head)).size).toBe(2);
+    expect([branchFiles(repository, 1), branchFiles(repository, 2)]).toEqual([['.grillo/sources/S1.md'], ['.grillo/sources/S2.md']]);
+    expect(notices.map((notice) => notice.url)).toEqual([`https://github.com/${PROJECT}/pull/1`, `https://github.com/${PROJECT}/pull/2`]);
+    await expect(store.listSources(PROJECT)).resolves.toEqual([first, second]);
+    expect(repository.files.has('.grillo/sources/S1.md')).toBe(false);
+  });
+
+  it('reads and updates a session straight after starting it, adding the change to the same pull request', async () => {
+    const { store, seed, later, notices } = await setup();
+    const repository = seed(PROJECT, { protected: true });
+
+    const started = await store.createSession(PROJECT, { present: ['ada-example'] });
+    later(60);
+    const updated = await store.updateSession(PROJECT, started.id, { transcript: 'Ada: hello.' });
+
+    expect(updated.transcript).toBe('Ada: hello.');
+    await expect(store.getSession(PROJECT, started.id)).resolves.toEqual(updated);
+    expect(repository.pullRequests).toHaveLength(1);
+    expect(repository.branches.get(repository.pullRequests[0].head)?.get(`.grillo/sessions/${started.id}.md`)).toContain('Ada: hello.');
+    expect(notices.map((notice) => notice.url)).toEqual([`https://github.com/${PROJECT}/pull/1`, `https://github.com/${PROJECT}/pull/1`]);
+  });
+
+  it('scores a PRD version straight after writing it, in the version\'s own pull request', async () => {
+    const { store, seed } = await setup();
+    const repository = seed(PROJECT, { protected: true });
+
+    const version = await store.createPrdVersion(PROJECT, { body: '# PRD', appendix: '' });
+    await expect(store.setScore(PROJECT, version.number, SCORE)).resolves.toEqual(SCORE);
+
+    await expect(store.getScore(PROJECT, version.number)).resolves.toEqual(SCORE);
+    expect(repository.pullRequests).toHaveLength(1);
+    expect(remoteJson({ ...repository, files: repository.branches.get(repository.pullRequests[0].head)! }, '.grillo/prd/v1.score.json')).toEqual(SCORE);
+  });
+
+  it('reads from main again once the pull request is merged, and forgets a save whose pull request was closed', async () => {
+    const { store, github, seed } = await setup();
+    const repository = seed(PROJECT, { protected: true });
+    await store.createSource(PROJECT, SOURCE);
+    await store.createSource(PROJECT, { ...SOURCE, text: 'Second' });
+
+    github.settlePullRequest(PROJECT, 1, 'merge');
+    github.settlePullRequest(PROJECT, 2, 'close');
+
+    await expect(store.listSources(PROJECT)).resolves.toEqual([{ code: 'S1', ...SOURCE }]);
+    await expect(store.createSource(PROJECT, { ...SOURCE, text: 'Again' })).resolves.toMatchObject({ code: 'S2' });
+    expect(repository.pullRequests.map((pull) => pull.title)).toEqual(['grillo: add source S1', 'grillo: add source S2', 'grillo: add source S2']);
+    expect(github.calls).toContain(`gh pr list --repo ${PROJECT} --state open --json url --limit 500`);
+  });
+
+  it('asks GitHub about open pull requests only while a save of its own waits in one', async () => {
+    const { store, github, seed } = await setup();
+    seed();
+
+    await store.createSource(PROJECT, SOURCE);
+    await store.listSources(PROJECT);
+
+    expect(github.calls.filter((call) => call.startsWith('gh pr'))).toEqual([]);
+  });
+});
+
+describe('GitHub repository backend: lists that survive one damaged record', () => {
+  it('lists every other project and flags one with a damaged Grillo file or a folder that cannot be brought up to date', async () => {
+    const { store, github, seed, folder, later } = await setup();
+    seed();
+    github.addRepository('example-org/broken', { files: { '.grillo/members.json': 'not json', '.grillo/structure.json': JSON.stringify(STRUCTURE) } });
+    seed('example-org/stuck');
+    for (const id of [PROJECT, 'example-org/broken', 'example-org/stuck']) {
+      await store.openProjectFolder(id).catch(() => undefined);
+      later(60);
+    }
+    writeFileSync(join(folder('example-org/stuck'), 'README.md'), 'Edited here, never saved\n');
+    github.pushFromElsewhere('example-org/stuck', 'README.md', 'Edited on GitHub\n');
+
+    const projects = await store.listProjects();
+
+    expect(projects.map((project) => [project.id, project.damaged ?? null])).toEqual([
+      ['example-org/stuck', expect.stringContaining('could not be brought up to date')],
+      ['example-org/broken', expect.stringContaining('.grillo/members.json')],
+      [PROJECT, null],
+    ]);
+    expect(projects[1]).toMatchObject({ name: 'broken', repository: { owner: 'example-org', name: 'broken' }, members: [], archived: false });
+  });
+
+  it('lists every other PRD version and flags one with a malformed score file, which a rerun can still replace', async () => {
+    const { store, seed } = await setup();
+    const repository = seed();
+    const first = await store.createPrdVersion(PROJECT, { body: '# PRD', appendix: '' });
+    const second = await store.createPrdVersion(PROJECT, { body: '# PRD v2', appendix: '' });
+    repository.files.set('.grillo/prd/v1.score.json', '{ not json');
+    repository.version++;
+
+    const versions = await store.listPrdVersions(PROJECT);
+
+    expect(versions).toEqual([{ ...first, damaged: expect.stringContaining('.grillo/prd/v1.score.json') }, second]);
+    await expect(store.setScore(PROJECT, 1, SCORE)).resolves.toEqual(SCORE);
+    await expect(store.listPrdVersions(PROJECT)).resolves.toEqual([{ ...first, score: SCORE }, second]);
+  });
+
+  it('flags a PRD version whose own file is damaged with nothing but its number', async () => {
+    const { store, seed } = await setup();
+    const repository = seed();
+    await store.createPrdVersion(PROJECT, { body: '# PRD', appendix: '' });
+    repository.files.set('.grillo/prd/v1.md', 'no header at all');
+    repository.version++;
+
+    const [version] = await store.listPrdVersions(PROJECT);
+
+    expect(version).toEqual({ number: 1, date: '', body: '', appendix: '', score: null, damaged: expect.stringContaining('.grillo/prd/v1.md') });
   });
 });
 

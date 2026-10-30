@@ -1,8 +1,18 @@
 /**
  * Grillo's records (PRD section 6.1), as every screen and backend sees them. Where each one lives in
  * GitHub is pinned in docs/store-layout.md. A field that may have no value is typed `| null`; nothing is
- * optional by omission. Every record survives a structured clone, so it crosses IPC unchanged.
+ * optional by omission, except `damaged`, which only a list item that could not be read carries. Every record
+ * survives a structured clone, so it crosses IPC unchanged.
  */
+
+/**
+ * Set on an item of a list (`listProjects`, `listTickets`, `listPrdVersions`) whose record could not be read: a
+ * damaged file or issue, or a project folder that cannot be brought up to date. It says why, in words a screen
+ * shows; the item's other fields hold only what could be read, and the list still returns every other item.
+ */
+export interface Damage {
+  damaged?: string;
+}
 
 /** A GitHub login, such as `ada-example`. */
 export type Login = string;
@@ -50,7 +60,7 @@ export interface Member {
   domains: string[];
 }
 
-export interface Project {
+export interface Project extends Damage {
   /** `<owner>/<repo>`. */
   id: ProjectId;
   name: string;
@@ -99,7 +109,7 @@ export interface Question {
   answered: boolean;
 }
 
-export interface Ticket {
+export interface Ticket extends Damage {
   id: TicketId;
   title: string;
   /** The ticket's own question, as wayfinder writes it. */
@@ -208,7 +218,7 @@ export interface Score {
   sections: ScoreItem[];
 }
 
-export interface PrdVersion {
+export interface PrdVersion extends Damage {
   number: number;
   date: IsoDateTime;
   /** Markdown with `[S<n>, Q<n>.<k>]` codes. */
