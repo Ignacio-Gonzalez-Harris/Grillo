@@ -1358,7 +1358,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 5 · flows 4.5 (Live grilling session) · 4.6 items 2 to 4 (tabs, typing, controls on the tab)</dd>
       <dt>Controls</dt><dd>Agent tabs named "kind · ticket" with a dot for "waiting for you" and an Open channel switch on each; "+" for a generic agent; present-member ticks; consent tick and read-aloud script; recording source choice beside Record (Room microphone, the default, or Call audio, the virtual meeting's sound on this laptop; locked while recording); global Record switch; red Recording banner; Listen or Type per question; Use it; Skip question; Jump to ticket; running transcript strip; import a transcript; type box; terminal panel (release 1); Grilling agents card with Open another grilling agent (starts one more grilling agent with <code>/grillo-meeting</code> in the running session, in its own tab with its own Open channel switch; each agent claims a different ticket).</dd>
-      <dt>States</dt><dd>Preparing speech model (downloading, before the first recording) · Before consent (Record disabled; source on its default, Room microphone) · Recording, Listen (Call audio chosen, source locked) · Recording, Type · Another grilling agent opened</dd>
+      <dt>States</dt><dd>Preparing speech model (downloading, before the first recording) · Before consent (Record disabled; source on its default, Room microphone) · Recording, Listen (Call audio chosen, source locked) · Recording, Type · Another grilling agent opened · Recording stopped by itself (microphone unplugged or call audio no longer shared) · Transcription behind</dd>
     </dl>
   </header>
   <div class="states">
@@ -1368,6 +1368,8 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="listen">Recording, Listen</button>
       <button class="btn sm" data-state="type">Recording, Type</button>
       <button class="btn sm" data-state="extra-agent">Another grilling agent opened</button>
+      <button class="btn sm" data-state="capture-stopped">Recording stopped by itself</button>
+      <button class="btn sm" data-state="transcription-behind">Transcription behind</button>
     </div>
 
     <div class="state" data-state="preparing">
@@ -1636,6 +1638,96 @@ Sample transcript line 2: a made-up reply.</textarea>
 
 <span class="t-prompt">❯</span> </pre>
             <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="capture-stopped">
+      <p class="state-caption">State: Recording stopped by itself (the picked microphone was unplugged, or Windows stopped sharing the call audio; the panel says why and Record is off)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span>
+          <span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <button class="tab add" aria-label="Open a generic agent">+</button>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="true">Room microphone</button><button aria-pressed="false">Call audio</button></div>
+              <p class="small muted">Room microphone records the people in this room. Call audio records the virtual meeting's sound playing on this laptop.</p>
+              <label class="switch"><input type="checkbox" class="rec"> Record</label>
+              <button class="btn sm">Import a transcript (paste or upload)</button>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="note err" role="alert">Recording stopped: the microphone stopped sending sound (unplugged or switched off). Nothing said after that was recorded. Connect a microphone, then turn Record on again.</div>
+            <div class="card stack">
+              <div class="row"><span class="strong">Sample ticket 3</span><span class="tag d2">developer</span><span class="muted small">Question 2 of 3</span></div>
+              <p>Sample question 3.2: a made-up question for the room.</p>
+              <div class="row"><div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="false" disabled>Listen</button><button aria-pressed="true">Type</button></div><button class="btn">Skip question</button><select class="w-auto" aria-label="Jump to ticket"><option>Jump to ticket…</option></select></div>
+              <p class="reason">Listen needs the recording on.</p>
+            </div>
+<pre class="terminal"><span class="t-hl">Sample question 3.2: a made-up question for the room.</span>
+<span class="t-muted">Type the answer below.</span>
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
+            <div class="transcript">
+              <p><span class="muted">10:20:05</span> Sample transcript line: the last words before the microphone stopped.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="transcription-behind">
+      <p class="state-caption">State: Recording, transcription behind (more than two slices wait for the speech model; their words come late, and a slice the model takes more than 15 seconds over is left out)</p>
+      <div class="window glass">
+        <div class="rec-banner"><span class="sdot"></span>Recording<span class="small">· audio and transcription stay on this laptop</span><span class="spacer"></span><span class="small">00:21:40</span></div>
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span>
+          <span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" checked aria-label="Open channel"> Channel</label></span>
+          <button class="tab add" aria-label="Open a generic agent">+</button>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="true" disabled>Room microphone</button><button aria-pressed="false" disabled>Call audio</button></div>
+              <label class="switch"><input type="checkbox" class="rec" checked> Record</label>
+              <p class="reason">Turn Record off to change the source.</p>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card stack">
+              <div class="row"><span class="strong">Sample ticket 3</span><span class="tag d2">developer</span><span class="muted small">Question 2 of 3</span></div>
+              <p>Sample question 3.2: a made-up question for the room.</p>
+              <div class="row"><div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="true">Listen</button><button aria-pressed="false">Type</button></div><button class="btn primary">Use it</button><button class="btn">Skip question</button><select class="w-auto" aria-label="Jump to ticket"><option>Jump to ticket…</option></select></div>
+              <p class="small muted">Use it: the agent distils the answer from the talk and keeps the whole talk as the question's discussion.</p>
+            </div>
+<pre class="terminal"><span class="t-hl">Sample question 3.2: a made-up question for the room.</span>
+<span class="t-muted">Listening…</span>
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" value="…sample live transcript words appear here while the channel is open" aria-label="Type to the agent"><button class="btn">Send</button></div>
+            <div class="note warn" role="status">Transcription is behind: 3 slices (about 15 seconds of talk) are waiting for the speech model. They appear here once transcribed; a slice the model takes more than 15 seconds over is left out of the transcript.</div>
+            <div class="transcript">
+              <p><span class="muted">10:21:05</span> Sample transcript line: a made-up remark, transcribed late.</p>
+            </div>
           </div>
         </div>
       </div>

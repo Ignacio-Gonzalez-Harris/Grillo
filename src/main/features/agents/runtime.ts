@@ -25,6 +25,8 @@ export const INITIAL_COLS = 120;
 export const INITIAL_ROWS = 30;
 /** Enough of the latest output to hold Claude Code's whole input box while looking for its prompt. */
 const PROMPT_SCAN_CHARS = 4000;
+/** How many characters of output per typed character an echo may take, escape codes and redraws included. */
+const ECHO_SCAN_FACTOR = 4;
 /**
  * Claude Code's input box, once escape codes and spaces are removed: a horizontal rule followed directly by the
  * prompt glyph. Its startup questions (trust this folder, use this MCP server) show the same glyph beside an
@@ -74,8 +76,16 @@ export interface AgentRuntime {
   startAgent(request: StartAgentRequest): Promise<AgentId>;
   /** Types raw text into the agent's terminal. A chat agent has no terminal and refuses it. */
   write(id: AgentId, text: string): void;
-  /** Sends one whole, non-empty message: a chat message, or on a terminal agent the text, then Enter. */
+  /**
+   * Sends one whole, non-empty message: a chat message, or on a terminal agent the text, then Enter once the text's
+   * echo has appeared and the terminal has gone quiet.
+   */
   send(id: AgentId, text: string): Promise<void>;
+  /**
+   * Resolves once the agent takes input: on a terminal agent, once Claude Code's prompt is up and the first message
+   * has been sent, never while a start-up question shows. Rejects if the agent ends first or is unknown.
+   */
+  ready(id: AgentId): Promise<void>;
   resize(id: AgentId, cols: number, rows: number): void;
   /** Ends the agent's Claude Code. Does nothing for an agent that is already gone. */
   stop(id: AgentId): void;
@@ -94,19 +104,25 @@ export class ClaudeNotFoundError extends Error {
   }
 }
 
+/** Text typed into the terminal whose Enter waits for its echo to settle. */
+interface EchoWait {
+  /** Takes the agent's next output. */
+  watch(data: string): void;
+  /** Stops waiting at once, without pressing Enter: the agent has gone. */
+  cancel(): void;
+}
+
 interface RunningAgent {
   info: AgentInfo;
   pty: Pty;
   firstMessage: string;
   /** The latest output, kept only until the prompt has appeared. */
   promptScan: string | undefined;
-  /** The latest output since the first message was typed, kept only until its echo has appeared. */
-  echoScan: string | undefined;
-  /** Set while waiting for the echo: presses Enter anyway once ECHO_WAIT_MS have passed without it. */
-  echoTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Typed text waiting for its echo to settle before Enter: the first message's and each sent message's. */
+  echoWaits: Set<EchoWait>;
   waitingTimer: ReturnType<typeof setTimeout> | undefined;
-  /** Set from typing the first message until its Enter is pressed. */
-  enterTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Settles once the agent takes input (`ready`). */
+  readiness: { promise: Promise<void>; resolve(): void; reject(error: Error): void };
 }
 
 // eslint-disable-next-line no-control-regex -- terminal escape sequences start with the ESC control character
@@ -151,6 +167,22 @@ function isTerminalDimension(value: number): boolean {
   return Number.isInteger(value) && value > 0;
 }
 
+function readiness(): RunningAgent['readiness'] {
+  let resolve: () => void = () => undefined;
+  let reject: (error: Error) => void = () => undefined;
+  const promise = new Promise<void>((settle, fail) => {
+    resolve = settle;
+    reject = fail;
+  });
+  // A readiness nobody asked for must not surface as an unhandled rejection when its agent ends.
+  promise.catch(() => undefined);
+  return { promise, resolve, reject };
+}
+
+function gone(id: AgentId): Error {
+  return new Error(`The agent '${id}' has gone`);
+}
+
 export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
   const agents = new Map<AgentId, RunningAgent>();
 
@@ -170,47 +202,57 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
 
   function forget(agent: RunningAgent): void {
     clearTimeout(agent.waitingTimer);
-    clearTimeout(agent.echoTimer);
-    clearTimeout(agent.enterTimer);
+    for (const wait of [...agent.echoWaits]) wait.cancel();
+    agent.readiness.reject(gone(agent.info.id));
     agents.delete(agent.info.id);
   }
 
-  function pressEnterOnceQuiet(agent: RunningAgent): void {
-    clearTimeout(agent.enterTimer);
-    agent.enterTimer = setTimeout(() => {
-      agent.enterTimer = undefined;
-      agent.pty.write(ENTER);
-    }, ENTER_AFTER_QUIET_MS);
-  }
-
-  function stopWaitingForEcho(agent: RunningAgent): void {
-    clearTimeout(agent.echoTimer);
-    agent.echoTimer = undefined;
-    agent.echoScan = undefined;
-    pressEnterOnceQuiet(agent);
-  }
-
-  function waitForEcho(agent: RunningAgent): void {
-    agent.echoScan = '';
-    agent.echoTimer = setTimeout(() => stopWaitingForEcho(agent), ECHO_WAIT_MS);
-  }
-
-  function watchForEcho(agent: RunningAgent, data: string): void {
-    agent.echoScan = (agent.echoScan + data).slice(-PROMPT_SCAN_CHARS);
-    if (visibleText(agent.echoScan).includes(visibleText(agent.firstMessage))) {
-      stopWaitingForEcho(agent);
-    }
+  /**
+   * Types the text, then presses Enter once its echo has appeared (or ECHO_WAIT_MS have passed without it) and the
+   * terminal has then been quiet for ENTER_AFTER_QUIET_MS; `entered` runs right after the Enter.
+   */
+  function typeThenEnter(agent: RunningAgent, text: string, done: { entered(): void; cancelled(): void }): void {
+    // The scan holds the whole echo, however long the text: Claude Code redraws its input box around it.
+    const scanChars = Math.max(PROMPT_SCAN_CHARS, ECHO_SCAN_FACTOR * text.length);
+    const expected = visibleText(text);
+    let scan = '';
+    let echoed = false;
+    let quietTimer: ReturnType<typeof setTimeout> | undefined;
+    const stop = (): void => {
+      clearTimeout(echoTimer);
+      clearTimeout(quietTimer);
+      agent.echoWaits.delete(wait);
+    };
+    const enterOnceQuiet = (): void => {
+      echoed = true;
+      clearTimeout(echoTimer);
+      clearTimeout(quietTimer);
+      quietTimer = setTimeout(() => {
+        stop();
+        agent.pty.write(ENTER);
+        done.entered();
+      }, ENTER_AFTER_QUIET_MS);
+    };
+    const echoTimer = setTimeout(enterOnceQuiet, ECHO_WAIT_MS);
+    const wait: EchoWait = {
+      watch(data) {
+        if (echoed) {
+          enterOnceQuiet();
+          return;
+        }
+        scan = (scan + data).slice(-scanChars);
+        if (visibleText(scan).includes(expected)) enterOnceQuiet();
+      },
+      cancel() {
+        stop();
+        done.cancelled();
+      },
+    };
+    agent.echoWaits.add(wait);
+    agent.pty.write(text);
   }
 
   function typeFirstMessageOnPrompt(agent: RunningAgent, data: string): void {
-    if (agent.enterTimer !== undefined) {
-      pressEnterOnceQuiet(agent);
-      return;
-    }
-    if (agent.echoScan !== undefined) {
-      watchForEcho(agent, data);
-      return;
-    }
     if (agent.promptScan === undefined) {
       return;
     }
@@ -220,10 +262,10 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
     }
     agent.promptScan = undefined;
     if (agent.firstMessage === '') {
+      agent.readiness.resolve();
       return;
     }
-    agent.pty.write(agent.firstMessage);
-    waitForEcho(agent);
+    typeThenEnter(agent, agent.firstMessage, { entered: () => agent.readiness.resolve(), cancelled: () => undefined });
   }
 
   function restartWaitingTimer(agent: RunningAgent): void {
@@ -255,10 +297,9 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
       pty,
       firstMessage: request.firstMessage,
       promptScan: '',
-      echoScan: undefined,
-      echoTimer: undefined,
+      echoWaits: new Set(),
       waitingTimer: undefined,
-      enterTimer: undefined,
+      readiness: readiness(),
     };
     agents.set(id, agent);
 
@@ -267,6 +308,7 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
         return;
       }
       deps.events.output(id, data);
+      for (const wait of [...agent.echoWaits]) wait.watch(data);
       typeFirstMessageOnPrompt(agent, data);
       restartWaitingTimer(agent);
     });
@@ -293,12 +335,16 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
     announce();
   }
 
-  /** Types the message, then presses Enter as a write of its own (Claude Code reads both in one write as a paste). */
-  async function send(id: AgentId, text: string): Promise<void> {
-    const agent = find(id);
-    assertSendableMessage(text);
-    agent.pty.write(text);
-    agent.pty.write(ENTER);
+  /**
+   * Types the message, then presses Enter as a write of its own (Claude Code reads both in one write as a paste),
+   * once the echo has settled: an Enter that arrives earlier, as on a long line, is swallowed.
+   */
+  function send(id: AgentId, text: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const agent = find(id);
+      assertSendableMessage(text);
+      typeThenEnter(agent, text, { entered: resolve, cancelled: () => reject(gone(id)) });
+    });
   }
 
   return {
@@ -308,6 +354,10 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
       find(id).pty.write(text);
     },
     send,
+    ready(id) {
+      const agent = agents.get(id);
+      return agent ? agent.readiness.promise : Promise.reject(new Error(`No agent with id '${id}'`));
+    },
     resize(id, cols, rows) {
       const agent = find(id);
       if (!isTerminalDimension(cols) || !isTerminalDimension(rows)) {

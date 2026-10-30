@@ -412,7 +412,7 @@ The meeting panel's controls arrive with their own story; the session logic unde
   agreed". The file records who ticked and when; a second tick changes nothing.
 - **Recording** turns every 5-second slice into one line of the transcript, in the order spoken, and writes the
   whole transcript to the file as it grows. Silence (`[BLANK_AUDIO]`) adds nothing. A slice that fails to
-  transcribe, or takes more than 15 seconds once it is next in line, is left out and the stream goes on.
+  transcribe, or takes more than 15 seconds once the speech model starts on it, is left out and the stream goes on.
   Switching the recording off returns once the file holds every slice heard; if that last write fails, the host
   is told and the text is kept for the next try. Switching it on again carries on in the same file.
 - **Open channel** on an agent writes each new line into that agent's input box without sending it. "Use it",
@@ -518,6 +518,28 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
 - **Locked while recording:** both choices are greyed out and the card says "Turn Record off to change the source."
   Turn Record off, pick the other source, and turn Record on again.
 - **One choice for the session:** every grilling agent's tab shows the same choice, as it shows the same Record switch.
+
+### When spoken words could be lost
+
+- **Microphone unplugged, or call audio no longer shared:** the recording stops by itself, Record turns off, the red
+  banner goes, and the meeting panel says why in red. Everything heard before that is kept in the transcript; nothing
+  said after it is recorded. Listen falls back to Type. Plug the microphone back in (or pick the other source), then
+  turn Record on again; the session goes on in the same file.
+- **Transcription behind:** when more than two slices wait for the speech model (a busy laptop can take longer than
+  a slice lasts), a yellow line above the transcript strip says how many and about how many seconds of talk. Their
+  words come late; a slice the model takes more than 15 seconds over is still left out (see the next point), and the
+  panel does not count those. The line goes once the model catches up.
+- **A slow slice:** each slice gets 15 seconds from the moment the speech model starts on it. Slices queued behind a
+  slow one keep their full time, and a slice the model never answers is left out alone; the ones behind it go on.
+  The model works on one slice at a time and cannot stop one midway, so a slice left out keeps working in the
+  background on its own copy of the model while the next slices go to a fresh copy (loaded again, about 150 MB more
+  memory until the left-out slice finishes; for one that never finishes, until Grillo is closed).
+- **Agents not ready yet:** nothing (the session file, presence, mode, transcript) is typed into a grilling agent
+  until Claude Code shows its prompt and has taken its first message, so a start-up question (such as "trust this
+  folder?") is never answered by Grillo. Answer it in the agent's tab; the session catches up then.
+- **Sending a message to a terminal agent** waits until Claude Code has shown the whole message and gone quiet before
+  pressing Enter, so a long message is never left unsent in the input box. If the message never shows, Enter is
+  pressed anyway after 10 seconds.
 
 ## Grilling engine
 
@@ -947,6 +969,17 @@ Installers are built only when a version is published; the download site is publ
   `npm run dist` on a Windows and a Mac runner, and attaches the installers, `latest.yml`, `latest-mac.yml` and
   their blockmaps to the release (installed apps read those to offer the update). A tag that does not match the
   version fails the run before anything is built. The pilot installers are unsigned.
+- **What the installers hold.**
+  - **Windows:** one x64 installer (`Grillo Setup <version>.exe`, about 114 MB at version 0.1.0).
+  - **Mac:** one universal app (Apple silicon and Intel in one file), so every Mac downloads the same
+    `Grillo-<version>-universal.dmg` and the update check reads one `-universal-mac.zip`. The release job adds
+    the speech engine for the chip npm skipped, checked against `package-lock.json`, before it builds.
+  - **Left out:** the speech engine's graphics-card builds (CUDA, Vulkan) and its browser build (WASM). Grillo
+    never loads them, and on Windows they added about 110 MB to the installer.
+- **Building an installer on your own machine:** `npm run dist` (Windows builds the `.exe`, a Mac the `.dmg` and
+  `.zip`, into `dist/`). Nothing is compiled from source: node-pty and the speech engine ship ready-made binaries
+  that Electron loads as they are, so no Visual Studio or Xcode setup is needed. Use the Node version in `.nvmrc`
+  (24.22.2, a long-term-support release).
 - **Trying it first on a draft release** (nothing is offered to installed apps until it is published):
   1. Create a draft release with the tag `v<version from package.json>`; do not publish it.
   2. Under Actions, run the `release` workflow by hand from `main`, giving that tag.

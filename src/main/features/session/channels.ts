@@ -49,8 +49,9 @@ export function registerSessionChannels(ipc: MainIpc, host: SessionHost): void {
 export function announcingTranscriber(transcriber: Transcriber, changed: () => void): Transcriber {
   const announce = () => setTimeout(changed, 0);
   return {
-    transcribe(pcm) {
-      const text = transcriber.transcribe(pcm);
+    // The control goes through: the session's outlier clock starts on `started` and gives up through `signal`.
+    transcribe(pcm, control) {
+      const text = transcriber.transcribe(pcm, control);
       text.then(announce, announce);
       return text;
     },

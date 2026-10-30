@@ -37,6 +37,11 @@ jobs:
       - name: install
         run: npm ci
 
+      # Electron downloads its binary on first use. Several test files start it at once on a fresh runner, and they
+      # raced that first download and corrupted it, so it is downloaded once here, before any test runs.
+      - name: electron binary
+        run: npx --no install-electron
+
       - name: build
         run: npm run build
 

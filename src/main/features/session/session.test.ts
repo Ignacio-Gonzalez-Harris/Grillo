@@ -3,9 +3,10 @@ import type { AgentInfo } from '../../../shared/agents';
 import type { AudioSlice, CaptureSource } from '../../../shared/audio';
 import { SessionError, type SessionErrorKind } from '../../../shared/session';
 import { StoreError } from '../../../shared/store';
-import { ENTER_AFTER_QUIET_MS } from '../agents/runtime';
+import { FakePty } from '../agents/fake-pty';
+import { createAgentRuntime, ENTER_AFTER_QUIET_MS } from '../agents/runtime';
 import { createSliceBus, type SliceBus } from '../audio/slices';
-import type { Transcriber } from '../transcription/transcriber';
+import { createTranscriber, type SliceControl, type Transcriber } from '../transcription/transcriber';
 import { formatSession } from '../../store/github/repo/records';
 import { createMemoryStore, type MemoryStore } from '../../store/memory';
 import type { GrillingSession } from '../../store/types';
@@ -22,13 +23,17 @@ function slice(index: number, source: CaptureSource = 'microphone'): AudioSlice 
   return { source, index, pcm: Int16Array.of(index) };
 }
 
-/** A transcriber whose answer per slice the test decides; by default slice n says "Words n." */
+/**
+ * A transcriber whose answer per slice the test decides; by default slice n says "Words n." It works on every slice
+ * at once, so each slice starts as it arrives.
+ */
 class FakeTranscriber implements Transcriber {
   readonly answers = new Map<number, () => Promise<unknown>>();
   calls = 0;
 
-  transcribe(pcm: Int16Array): Promise<string> {
+  transcribe(pcm: Int16Array, control?: SliceControl): Promise<string> {
     this.calls += 1;
+    control?.started?.();
     const answer = this.answers.get(pcm[0]);
     return (answer ? answer() : Promise.resolve(`Words ${pcm[0]}.`)) as Promise<string>;
   }
@@ -62,6 +67,10 @@ class FakeAgents {
 
   send(): Promise<void> {
     return Promise.reject(new Error('A terminal agent is typed into, never sent to'));
+  }
+
+  ready(): Promise<void> {
+    return Promise.resolve();
   }
 
   text(id: string): string {
@@ -360,6 +369,72 @@ describe('grilling session: the recording switch and the transcript file', () =>
 
     expect((await sessionFile(store, id)).transcript).toBe('Words 0.\nWords 2.');
     expect(host.state()?.slices).toEqual({ heard: 3, transcribed: 2, silent: 0, dropped: 1 });
+  });
+
+  describe('over the transcriber that takes one slice at a time', () => {
+    /** The real queue over a made-up engine: slice n answers "Words n." after the time the test gives it. */
+    async function sequentialRig(takes: Map<number, number | 'never'>, normalMs: number) {
+      const setup = await rig();
+      const transcriber = createTranscriber({
+        transcribe: (pcm) =>
+          new Promise((resolve) => {
+            const ms = takes.get(pcm[0]) ?? normalMs;
+            if (ms !== 'never') setTimeout(() => resolve(`Words ${pcm[0]}.`), ms);
+          }),
+      });
+      const host = createSessionHost({ store: setup.store, slices: setup.bus, transcriber, agents: setup.agents });
+      await host.startSession(PROJECT);
+      await host.tickConsent(HOST);
+      await host.setRecording(true);
+      return { host, store: setup.store, bus: setup.bus };
+    }
+
+    it('keeps the healthy slices queued behind a long one: their clock starts only when the transcriber starts them', async () => {
+      const slow = OUTLIER_AFTER_MS + 10_000;
+      const { host, store, bus } = await sequentialRig(new Map([[0, slow]]), OUTLIER_AFTER_MS - 2000);
+      const { id } = host.state()!;
+
+      for (const index of [0, 1, 2]) bus.publish(slice(index));
+      await vi.advanceTimersByTimeAsync(4 * OUTLIER_AFTER_MS);
+      await stopRecording(host);
+
+      expect((await sessionFile(store, id)).transcript).toBe('Words 1.\nWords 2.');
+      expect(host.state()?.slices).toEqual({ heard: 3, transcribed: 2, silent: 0, dropped: 1 });
+    });
+
+    it('drops only an engine call that never answers, and the slices behind it are transcribed', async () => {
+      const { host, store, bus } = await sequentialRig(new Map([[1, 'never']]), 1000);
+      const { id } = host.state()!;
+
+      for (const index of [0, 1, 2, 3]) bus.publish(slice(index));
+      await vi.advanceTimersByTimeAsync(OUTLIER_AFTER_MS + 3000);
+      await stopRecording(host);
+
+      expect((await sessionFile(store, id)).transcript).toBe('Words 0.\nWords 2.\nWords 3.');
+      expect(host.state()?.slices).toEqual({ heard: 4, transcribed: 3, silent: 0, dropped: 1 });
+    });
+  });
+
+  it('says each time a slice arrives, so the screen can show slices waiting', async () => {
+    const setup = await rig();
+    let heard = 0;
+    const host = createSessionHost({
+      store: setup.store,
+      slices: setup.bus,
+      transcriber: setup.transcriber,
+      agents: setup.agents,
+      sliceHeard: () => {
+        heard = host.state()?.slices.heard ?? -1;
+      },
+    });
+    await host.startSession(PROJECT);
+    await host.tickConsent(HOST);
+    await host.setRecording(true);
+    setup.transcriber.answers.set(0, () => new Promise(() => undefined));
+
+    setup.bus.publish(slice(0));
+
+    expect(heard).toBe(1);
   });
 
   it('keeps a slow slice that answers within the limit, in its place', async () => {
@@ -782,6 +857,40 @@ describe('grilling session: per-agent channels', () => {
 
     expect(await refusal(call()(host))).toBe('invalid');
     expect(agents.typed.get('a1')).toEqual([]);
+  });
+
+  it('types nothing into a terminal agent before its runtime reports it ready, so a start-up question is never answered', async () => {
+    const setup = await rig();
+    const ptys: FakePty[] = [];
+    const runtime = createAgentRuntime({
+      findClaude: () => '/opt/made-up/bin/claude',
+      shipSkills: async () => undefined,
+      spawnPty: (file, args, options) => {
+        const pty = new FakePty(file, args, options);
+        ptys.push(pty);
+        return pty;
+      },
+      env: {},
+      events: { output: () => undefined, exited: () => undefined, listChanged: () => undefined },
+    });
+    const host = createSessionHost({ store: setup.store, slices: setup.bus, transcriber: setup.transcriber, agents: runtime });
+    await host.startSession(PROJECT);
+    const firstMessage = '/grillo-meeting';
+    const agentId = await runtime.startAgent({ kind: 'grilling', folder: '/memory/Grillo', title: 'Grilling', firstMessage });
+    const pty = ptys[0];
+    pty.print('Quick safety check: Is this a project you trust?\r\n ❯ No, exit\r\n   Yes, I trust this folder');
+
+    const telling = host.tellSession(agentId);
+    await settle();
+    expect(pty.written).toEqual([]);
+
+    pty.print('──────\r\n❯ ');
+    pty.print(firstMessage);
+    await settle();
+    await telling;
+
+    const sessionMessage = `session: ${host.state()?.file}`;
+    expect(pty.written).toEqual([firstMessage, ENTER, sessionMessage, ENTER]);
   });
 
   it('closes every channel and the recording when the session ends', async () => {

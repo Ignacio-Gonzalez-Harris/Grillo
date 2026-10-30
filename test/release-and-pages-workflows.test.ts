@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 interface Step {
   name?: string;
+  if?: string;
   uses?: string;
   run?: string;
   with?: Record<string, unknown>;
@@ -116,5 +117,30 @@ describe('CI gate', () => {
     for (const step of allSteps(workflow('ci.yml'))) {
       expect(step.run ?? '').not.toMatch(/npm run dist|electron-builder/);
     }
+  });
+});
+
+describe("Electron's binary", () => {
+  it.each(['ci.yml', 'release.yml'])(
+    '%s downloads it once, before the tests: test files starting Electron in parallel raced its first download',
+    (fileName) => {
+      const steps = allSteps(workflow(fileName));
+      const download = stepRunning(steps, 'install-electron');
+
+      expect(download).toBeGreaterThan(stepRunning(steps, 'npm ci'));
+      expect(download).toBeLessThan(stepRunning(steps, 'npm test'));
+    },
+  );
+});
+
+describe('universal Mac build', () => {
+  it('adds the speech engine for both Mac chips, checked against the lockfile, before the installers are built', () => {
+    const steps = allSteps(workflow('release.yml'));
+    const engines = steps.findIndex((step) => step.run?.includes('node-whisper-darwin-'));
+
+    expect(engines).toBeGreaterThan(stepRunning(steps, 'npm ci'));
+    expect(engines).toBeLessThan(stepRunning(steps, 'npm run dist'));
+    expect(steps[engines].if).toBe("runner.os == 'macOS'");
+    expect(steps[engines].run).toContain('integrity');
   });
 });
