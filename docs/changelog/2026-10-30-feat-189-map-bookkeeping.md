@@ -1,0 +1,1 @@
+The map now keeps one settled line per ticket with its latest decision, never settles an out-of-scope ticket, survives two laptops writing at once, and a retried ticket create or merge finishes every link.

@@ -61,6 +61,8 @@ export function createFakeIssues(me = 'ada-example') {
   const hooks = new Map<string, () => void>();
   /** Answers the next call whose `<METHOD> <path>` starts with the key with this result instead. */
   const answers = new Map<string, RunResult>();
+  /** How many more calls whose `<METHOD> <path>` starts with the key pass before one fails. */
+  const failures = new Map<string, number>();
   let nextCommentId = COMMENT_ID_START;
   let clock = START;
   const moment = (): string => new Date((clock += 1000)).toISOString();
@@ -224,6 +226,10 @@ export function createFakeIssues(me = 'ada-example') {
       const comment = addComment([...repositories.entries()].find(([, entry]) => entry === repository)![0], issue.number, me, String(input.body));
       return json(commentJson(comment));
     }
+    if (tail === '/sub_issues' && verb === 'GET') {
+      const children = [...repository.issues.values()].filter((entry) => issue.subIssues.includes(entry.id));
+      return json(page(children.map((entry) => issueJson(repository, entry)), query));
+    }
     if (tail === '/sub_issues' && verb === 'POST') {
       issue.subIssues.push(input.sub_issue_id as number);
       return json(issueJson(repository, issue));
@@ -253,6 +259,15 @@ export function createFakeIssues(me = 'ada-example') {
       if (route.startsWith(prefix)) {
         hooks.delete(prefix);
         hook();
+      }
+    }
+    for (const [prefix, after] of failures) {
+      if (route.startsWith(prefix)) {
+        if (after === 0) {
+          failures.delete(prefix);
+          return failed('gh: Server Error (HTTP 500)');
+        }
+        failures.set(prefix, after - 1);
       }
     }
     for (const [prefix, answer] of answers) {
@@ -310,6 +325,10 @@ export function createFakeIssues(me = 'ada-example') {
     /** Answers the next call to `<METHOD> <path prefix>` with standard output `stdout`, as a damaged answer would. */
     answerNext(prefix: string, stdout: string) {
       answers.set(prefix, ok(stdout));
+    },
+    /** Fails a call to `<METHOD> <path prefix>`, once `after` such calls have passed, as a dropped connection would. */
+    failNext(prefix: string, after = 0) {
+      failures.set(prefix, after);
     },
   };
 }

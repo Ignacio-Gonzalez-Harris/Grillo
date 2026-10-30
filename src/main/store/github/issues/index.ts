@@ -4,6 +4,7 @@ import type { GithubDeps } from '..';
 import { damageOf } from '../damage';
 import { createGithubApi } from '../repo/github-api';
 import { isLogin, projectIdOf, repositoryOf, sameLogin, sourceNumberOf } from '../repo/names';
+import { withClosedTicket, withLatestGist, withReopenedTicket, withSettledLine } from '../../map-lines';
 import {
   domainLabel,
   domainOf,
@@ -84,6 +85,8 @@ type IssuesStore = Pick<Store, (typeof ISSUES_METHODS)[number]>;
 const MERGE_POINTER = /^Merged into #(\d+)$/;
 const mergePointer = (number: number): string => `Merged into #${number}`;
 const SECTION_LINE = /^### /m;
+/** How many times a map change is written before two laptops writing at once is refused as a conflict. */
+const MAP_WRITE_TRIES = 5;
 /** The domain name `domain:none` already stands for: the visible "no domain" tag. */
 const NO_DOMAIN = domainOf(NO_DOMAIN_LABEL);
 const VIAS = ['github', 'generic-agent'] as const;
@@ -229,9 +232,7 @@ const bodyOf = (issue: IssueData): TicketBody => parseTicketBody(issue.body, iss
 function toTicket(ref: RepositoryRef, issue: IssueData, comments: IssueComment[]): Ticket {
   const body = bodyOf(issue);
   const answered = new Set(answersIn(comments).map((answer) => answer.question));
-  const merge = decisionsIn(comments)
-    .map((decision) => MERGE_POINTER.exec(decision.text))
-    .findLast((match) => match !== null);
+  const merge = MERGE_POINTER.exec(decisionsIn(comments).at(-1)?.text ?? '');
   return {
     id: { project: projectIdOf(ref), number: issue.number },
     title: issue.title,
@@ -317,10 +318,27 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
   const mapBodyOf = (issue: IssueData): MapBody => parseMapBody(issue.body, `The map, issue #${issue.number}`);
   const mapOf = (issue: IssueData): ProjectMap => ({ number: issue.number, ...mapBodyOf(issue) });
 
-  /** Reads the map afresh, changes it and writes its body back. */
+  /** A map body as it reads back from GitHub, so a written body and its read-back compare equal. */
+  const canonicalBody = (map: MapBody): string => formatMapBody(parseMapBody(formatMapBody(map), 'The changed map'));
+
+  /**
+   * Reads the map afresh, changes it and writes its body back, then reads it again: GitHub has no conditional write
+   * for an issue body, so another laptop's write can land on top of this one. While the fresh body does not hold the
+   * change it is applied again to that body, so `change` must give the same result when applied twice.
+   */
   async function changeMap(ref: RepositoryRef, change: (map: MapBody) => MapBody): Promise<ProjectMap> {
-    const issue = await mapIssue(ref);
-    return mapOf(await api.editIssue(ref, issue.number, { body: formatMapBody(change(mapBodyOf(issue))) }));
+    for (let tries = 0; ; tries++) {
+      const issue = await mapIssue(ref);
+      const current = mapBodyOf(issue);
+      const wanted = change(current);
+      if (canonicalBody(wanted) === canonicalBody(current)) {
+        return mapOf(issue);
+      }
+      if (tries === MAP_WRITE_TRIES) {
+        refuse('conflict', `The map of ${projectIdOf(ref)} keeps changing on another laptop: try again in a moment`);
+      }
+      await api.editIssue(ref, issue.number, { body: formatMapBody(wanted) });
+    }
   }
 
   // Tickets.
@@ -390,6 +408,39 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       damageOf(error);
       return { mapDone: false };
     }
+  }
+
+  /**
+   * What a create that failed halfway left behind, for its retry to finish: an open ticket with the same title, kind
+   * and words, missing its sub-issue link or a blocker link. A finished one with the same words is another ticket.
+   */
+  async function unfinishedTicket(ref: RepositoryRef, map: IssueData, title: string, kind: TicketKind, body: TicketBody, questions: string[]) {
+    const sameWords = (issue: IssueData): boolean => {
+      try {
+        const found = bodyOf(issue);
+        const blank = (entry: TicketBody): string => formatTicketBody({ ...entry, questions: [] }, issue.number);
+        const texts = found.questions.map((line) => line.text);
+        return blank(found) === blank(body) && (texts.length === 0 || JSON.stringify(texts) === JSON.stringify(questions));
+      } catch (error) {
+        damageOf(error);
+        return false;
+      }
+    };
+    const candidates = (await api.listIssues(ref, 'open', kindLabel(kind))).filter(
+      (issue) => !issue.pullRequest && issue.title === title && isTicketIssue(issue) && sameWords(issue),
+    );
+    if (candidates.length === 0) {
+      return null;
+    }
+    const children = await api.subIssues(ref, map.number);
+    for (const issue of candidates) {
+      const linked = children.some((child) => child.number === issue.number);
+      const native = await api.blockers(ref, issue.number);
+      if (!linked || !body.blockers.every((blocker) => native.some((entry) => entry.number === blocker))) {
+        return { issue, linked };
+      }
+    }
+    return null;
   }
 
   /** The blockers as tickets of the same project, each with its global id for the native relation. */
@@ -522,14 +573,8 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
 
   async function writeDecision(ref: RepositoryRef, number: number, decision: Omit<DecisionComment, 'id' | 'who' | 'when'>): Promise<DecisionComment> {
     const created = (await addComment(ref, number, decision)) as DecisionComment;
-    await changeMap(ref, (map) => ({ ...map, settled: [...map.settled, { ticket: number, gist: created.gist }] }));
+    await changeMap(ref, (map) => withSettledLine(map, number, created.gist));
     return created;
-  }
-
-  /** Removes the first settled line of the ticket that shows the gist. */
-  function withoutLine(map: MapBody, number: number, gist: string): MapBody {
-    const index = map.settled.findIndex((line) => line.ticket === number && line.gist === gist);
-    return index < 0 ? map : { ...map, settled: map.settled.filter((_line, at) => at !== index) };
   }
 
   return {
@@ -562,7 +607,13 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
         ...(outOfScope === undefined ? {} : { outOfScope: checkItems(outOfScope, 'outOfScope') }),
       };
       await writable(ref);
-      return changeMap(ref, (map) => ({ ...map, ...changed }));
+      let hadFog = false;
+      const map = await changeMap(ref, (current) => {
+        hadFog ||= current.fog.length > 0;
+        return { ...current, ...changed };
+      });
+      const lastFogGone = changed.fog !== undefined && hadFog && map.fog.length === 0;
+      return lastFogGone && (await listTicketIssues(ref, 'open')).length === 0 ? { ...map, mapDone: true } : map;
     },
 
     async createTicket(project, input) {
@@ -584,16 +635,18 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       await writable(ref);
       const map = await mapIssue(ref);
       const blockers = await blockerIssues(ref, body.blockers);
-      let issue = await api.createIssue(ref, { title, body: formatTicketBody(body, 0), labels: [kindLabel(kind)] });
+      // Several calls in a row with no rollback on GitHub: a retry finishes what a failure halfway left behind.
+      const unfinished = await unfinishedTicket(ref, map, title, kind, body, questions);
+      let issue = unfinished?.issue ?? (await api.createIssue(ref, { title, body: formatTicketBody(body, 0), labels: [kindLabel(kind)] }));
       if (questions.length > 0) {
         // The codes carry the issue number, known only now (docs/store-layout.md, "Ticket issues").
         const numbered = { ...body, questions: questions.map((text, index) => ({ k: index + 1, text })) };
         issue = await api.editIssue(ref, issue.number, { body: formatTicketBody(numbered, issue.number) });
       }
-      await api.addSubIssue(ref, map.number, issue.id);
-      for (const blocker of blockers) {
-        await api.addBlocker(ref, issue.number, blocker.id);
+      if (!unfinished?.linked) {
+        await api.addSubIssue(ref, map.number, issue.id);
       }
+      await syncBlockers(ref, issue.number, blockers);
       return toTicket(ref, issue, []);
     },
     async getTicket(id) {
@@ -674,14 +727,12 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       await api.editIssue(ref, number, { state: 'closed', state_reason: 'completed' });
       const latest = decisionsIn(comments).at(-1);
       if (latest !== undefined) {
-        await changeMap(ref, (map) =>
-          map.settled.some((line) => line.ticket === number) ? map : { ...map, settled: [...map.settled, { ticket: number, gist: latest.gist }] },
-        );
+        await changeMap(ref, (map) => withClosedTicket(map, number, latest.gist));
       }
       return mapDone(ref, number);
     },
     async mergeTicket(id, into) {
-      const { ref, number } = await readTicket(id, true);
+      const { ref, number, comments } = await readTicket(id, true);
       const target = fieldsOf(into, 'the ticket to merge into');
       const sameProject = typeof target.project === 'string' && target.project.toLowerCase() === projectIdOf(ref).toLowerCase();
       const other = sameProject && isIssueNumber(target.number) && target.number !== number ? await api.issue(ref, target.number) : null;
@@ -689,14 +740,19 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
         refuse('invalid', `Ticket ${number} can only merge into another open ticket of ${projectIdOf(ref)}`);
       }
       const pointer = mergePointer(other.number);
-      await writeDecision(ref, number, { kind: 'decision', sources: [], via: null, gist: pointer, text: pointer });
+      if (decisionsIn(comments).at(-1)?.text === pointer) {
+        // A retry after a failure halfway: the decision is already there, so only what came after it is finished.
+        await changeMap(ref, (map) => withSettledLine(map, number, pointer));
+      } else {
+        await writeDecision(ref, number, { kind: 'decision', sources: [], via: null, gist: pointer, text: pointer });
+      }
       await api.editIssue(ref, number, { state: 'closed', state_reason: 'duplicate', duplicate_issue_id: other.id });
       return mapDone(ref, number);
     },
     async reopenTicket(id) {
       const { ref, number, comments } = await readTicket(id, true);
       const issue = await api.editIssue(ref, number, { state: 'open', state_reason: 'reopened' });
-      await changeMap(ref, (map) => ({ ...map, settled: map.settled.filter((line) => line.ticket !== number) }));
+      await changeMap(ref, (map) => withReopenedTicket(map, number));
       return toTicket(ref, issue, comments);
     },
     async claimTicket(id) {
@@ -827,18 +883,18 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       const { ref, number, comments, ticket } = await readTicket(id, true);
       const decision = find<DecisionComment>(comments, 'decision', decisionId);
       const updated = await rewrite(ref, decision, change);
-      if (updated.gist !== decision.gist) {
-        await changeMap(ref, (map) => {
-          const index = map.settled.findIndex((line) => line.ticket === number && line.gist === decision.gist);
-          return index < 0 ? map : { ...map, settled: map.settled.map((line, at) => (at === index ? { ticket: number, gist: updated.gist } : line)) };
-        });
+      if (updated.gist !== decision.gist && decisionsIn(comments).at(-1)?.id === decision.id) {
+        await changeMap(ref, (map) => withLatestGist(map, number, updated.gist));
       }
       return toDecision(ticket.id, updated);
     },
     async deleteDecision(id, decisionId) {
       const { ref, number, comments } = await readTicket(id, true);
       const decision = find<DecisionComment>(comments, 'decision', decisionId);
-      await changeMap(ref, (map) => withoutLine(map, number, decision.gist));
+      const decisions = decisionsIn(comments);
+      if (decisions.at(-1)?.id === decision.id) {
+        await changeMap(ref, (map) => withLatestGist(map, number, decisions.at(-2)?.gist));
+      }
       await api.deleteComment(ref, decision.id);
     },
     async listPickupComments(id) {

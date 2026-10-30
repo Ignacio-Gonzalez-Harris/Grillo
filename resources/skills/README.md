@@ -99,7 +99,8 @@ agent applies this rule:
 3. No open ticket and no fog line: tell the member the map is done and run `/grillo-prd` in the same agent.
 4. Otherwise carry on; nothing is written.
 
-**On a screen.** The store's `closeTicket` and `mergeTicket` return `{ mapDone }`, worked out the same way.
+**On a screen.** The store's `closeTicket` and `mergeTicket` return `{ mapDone }`, worked out the same way, and
+`updateMap` returns `mapDone: true` with the map when that change took the last fog line off with no ticket open.
 When a close or merge from a screen returns `mapDone: true`, that screen starts a grilling agent with the
 first message `/grillo-prd`.
 
