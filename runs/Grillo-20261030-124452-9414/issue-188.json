@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261030-124452-9414",
+  "issue": 188,
+  "title": "Start-up failure is always visible, and a private GitHub email still gives the member's email",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-30T12:44:53Z",
+  "finished_at": "2026-10-30T13:19:00Z",
+  "outcome": "merged",
+  "pr": 195,
+  "summary": "A feature that fails at start-up now shows the reason in the system error dialog and quits instead of leaving a hidden process; the setup check offers the email-scope command when a private GitHub email comes back empty and reads it again.",
+  "agents": [
+    {
+      "name": "dev-188",
+      "model": "opus",
+      "tokens_total": 153034
+    },
+    {
+      "name": "review-188",
+      "model": "opus",
+      "tokens_total": 97653
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1700,
+    "review_seconds": 122,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}
