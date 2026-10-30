@@ -1,10 +1,14 @@
 import type { Pty, PtySpawnOptions } from './runtime';
 
+const ENTER = '\r';
+
 /** A stand-in for a node-pty terminal, for tests: records what was typed and lets the test play Claude Code. */
 export class FakePty implements Pty {
   readonly written: string[] = [];
   readonly sizes: Array<[number, number]> = [];
   killed = false;
+  /** On, typed text shows in the output at once, as Claude Code echoes what is typed into its input box. */
+  echoTyping = false;
   private readonly dataListeners: Array<(data: string) => void> = [];
   private readonly exitListeners: Array<(event: { exitCode: number }) => void> = [];
 
@@ -24,6 +28,7 @@ export class FakePty implements Pty {
 
   write(data: string): void {
     this.written.push(data);
+    if (this.echoTyping && data !== ENTER) this.print(data);
   }
 
   resize(cols: number, rows: number): void {

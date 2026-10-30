@@ -1,0 +1,1 @@
+A live meeting now stops and says why when the microphone or call audio goes away, shows when transcription falls behind, keeps the healthy slices behind a slow one, and never types into an agent before it is ready.

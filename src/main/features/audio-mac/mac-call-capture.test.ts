@@ -15,12 +15,18 @@ const SLICES = 3;
 interface FakeTrack {
   readyState: 'live' | 'ended';
   stop: () => void;
+  addEventListener: () => void;
+  removeEventListener: () => void;
+}
+
+function fakeTrack(readyState: 'live' | 'ended'): FakeTrack {
+  return { readyState, stop: vi.fn(), addEventListener: () => undefined, removeEventListener: () => undefined };
 }
 
 /** A fake loopback stream as Electron hands it to the page: one screen track and one audio track. */
 function loopbackStream(audioState: 'live' | 'ended' = 'live') {
-  const video: FakeTrack = { readyState: 'live', stop: vi.fn() };
-  const audio: FakeTrack = { readyState: audioState, stop: vi.fn() };
+  const video = fakeTrack('live');
+  const audio = fakeTrack(audioState);
   return {
     video,
     audio,

@@ -3,7 +3,8 @@
  * read-aloud script, the recording source (room microphone or call audio, locked while recording), the one Record
  * switch with the red Recording banner, the speech model being prepared before the first recording, Listen or Type,
  * "Use it", skip and jump, an imported transcript and the running transcript strip (PRD 4.5, 4.6 item 4), and the
- * session's grilling agents with "Open another grilling agent" (PRD 4.5 item 9).
+ * session's grilling agents with "Open another grilling agent" (PRD 4.5 item 9). A capture that stops by itself (the
+ * microphone unplugged) turns Record off and says why; slices queuing for the speech model show as "behind".
  *
  * The controls call the live session in main (`session:*`); the session types the protocol messages
  * (`resources/skills/README.md`, Screen-to-agent protocol) into the agent and writes the transcript file. On any
@@ -12,8 +13,8 @@
 import './meeting.css';
 import type { Member, Ticket } from '../../../main/store/types';
 import type { AgentInfo } from '../../../shared/agents';
-import type { CaptureSource } from '../../../shared/audio';
-import type { AgentMode, SessionState } from '../../../shared/session';
+import { type CaptureSource, SLICE_SECONDS } from '../../../shared/audio';
+import type { AgentMode, SessionState, SliceCounts } from '../../../shared/session';
 import { createSessionClient } from '../../../shared/session-ipc';
 import { createStoreClient } from '../../../shared/store';
 import { AGENT_SCREEN } from '../../app/navigation';
@@ -50,6 +51,8 @@ export const HINT_PARALLEL = 'Grills one more ticket in parallel, in this sessio
 export const HINT_CHANNELS = 'Each agent receives the transcript only while its own Channel switch is on.';
 const TRANSCRIPT_SENT = 'Transcript sent with "use it": the agent takes the answer from it.';
 const TRANSCRIPT_FILES = '.txt,.md,.vtt,.srt,text/plain';
+/** More slices than this waiting for the speech model, and the panel says transcription is behind. */
+export const BEHIND_AFTER_SLICES = 2;
 const TAG_COLOURS = 4;
 const SECOND_MS = 1000;
 const PERCENT = 100;
@@ -72,6 +75,19 @@ function elapsed(ms: number): string {
   return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
 }
 
+/** The slices heard that have not been transcribed, found silent or left out yet. */
+function slicesWaiting(slices: SliceCounts): number {
+  return slices.heard - slices.transcribed - slices.silent - slices.dropped;
+}
+
+export function behindText(waiting: number): string {
+  return (
+    `Transcription is behind: ${waiting} slices (about ${waiting * SLICE_SECONDS} seconds of talk) are waiting for ` +
+    'the speech model. They appear here once transcribed; a slice the model takes more than 15 seconds over is ' +
+    'left out of the transcript.'
+  );
+}
+
 function transcriptLines(state: SessionState | null): string[] {
   return (state?.transcript ?? '').split('\n').filter((line) => line.trim() !== '');
 }
@@ -92,12 +108,20 @@ interface Microphone {
   since: number | null;
   /** Each mounted panel's redraw, so a source picked in one tab shows in every tab. */
   redraws: Set<() => void>;
+  /** Each mounted panel's handler for a capture that stopped by itself, given the reason. */
+  ended: Set<(message: string) => void>;
 }
 
 export function meetingPanel({ agents, capture, now = () => new Date() }: MeetingPanelOptions): TabPanel {
   // Each tab's panel turns the same capture on and off: one per tab would hear every slice twice and leave a
   // microphone running that no other tab can stop.
-  const microphone: Microphone = { source: SOURCE_CHOICES[0].source, capturing: false, since: null, redraws: new Set() };
+  const microphone: Microphone = {
+    source: SOURCE_CHOICES[0].source,
+    capturing: false,
+    since: null,
+    redraws: new Set(),
+    ended: new Set(),
+  };
   return {
     kinds: ['grilling'],
     slot: 'controls',
@@ -235,12 +259,15 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
 
       const transcript = el('div', 'transcript');
       transcript.setAttribute('aria-label', 'Session transcript');
-      const foot = el('div', 'meeting-foot', [transcript]);
+      const behind = note('', 'warn');
+      behind.setAttribute('role', 'status');
+      const foot = el('div', 'meeting-foot stack', [behind, transcript]);
 
       const root = el('div', 'meeting meeting-panel', [banner, side, head, foot]);
       root.hidden = true;
       container.append(root);
       microphone.redraws.add(draw);
+      microphone.ended.add(captureEnded);
       showImport(false);
 
       // ---------- Drawing ----------
@@ -390,6 +417,9 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         questionHint.hidden = questionHint.textContent === '';
 
         messages.replaceChildren(...(message ? [note(message.text, message.error ? 'err' : 'ok')] : []));
+        const waiting = recording && state ? slicesWaiting(state.slices) : 0;
+        behind.hidden = waiting <= BEHIND_AFTER_SLICES;
+        behind.textContent = behind.hidden ? '' : behindText(waiting);
         drawTranscript();
         drawAgents();
       }
@@ -433,8 +463,33 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
       }
 
       function audioCapture(): AudioCapture {
-        microphone.audio ??= capture();
+        if (microphone.audio === undefined) {
+          microphone.audio = capture();
+          // The one capture stopped by itself (the microphone unplugged): the session stops recording, once.
+          microphone.audio.onEnded((why) => {
+            microphone.capturing = false;
+            microphone.since = null;
+            for (const handler of [...microphone.ended]) handler(why);
+            // A last transcript write that fails is said too, as when Record is turned off by hand.
+            session.setRecording(false).catch((error: unknown) => {
+              for (const handler of [...microphone.ended]) handler(`${why} ${messageOf(error)}`);
+            });
+          });
+        }
         return microphone.audio;
+      }
+
+      /** Record went off by itself: this tab says why, and Listen falls back to Type as when Record is turned off. */
+      function captureEnded(why: string): void {
+        message = { text: why, error: true };
+        stopTimer();
+        draw();
+        if (mode !== 'listen') return;
+        mode = 'type';
+        session.typeMode(agent.id, 'type').catch((error: unknown) => {
+          message = { text: messageOf(error), error: true };
+          draw();
+        });
       }
 
       function stopTimer(): void {
@@ -633,6 +688,7 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
         dispose() {
           disposed = true;
           microphone.redraws.delete(draw);
+          microphone.ended.delete(captureEnded);
           stopSession();
           stopAgents();
           stopTabs();
