@@ -4,7 +4,9 @@ import { app } from 'electron';
 import { spawn } from 'node-pty';
 import type { FeatureContext } from '../../app/features';
 import { appChatDriver, observeAppChatDriver } from '../agent-chat/ipc';
-import { registerChosenAgentChannels } from './channels';
+import type { AgentInfo } from '../../../shared/agents';
+import type { Unsubscribe } from '../../../shared/ipc';
+import { observingAgentList, registerChosenAgentChannels } from './channels';
 import { agentRuntimeChoice } from './runtime-choice';
 import { findClaude, type AgentRuntime } from './runtime';
 import { shipSkills } from './ship-skills';
@@ -22,6 +24,13 @@ function skillsSourceDir(): string {
 }
 
 let appRuntime: AgentRuntime | undefined;
+const agentListObservers = new Set<(list: AgentInfo[]) => void>();
+
+/** Tells `observer` every new list of the app's running agents, for a feature that acts when a tab stops. */
+export function observeAgentList(observer: (list: AgentInfo[]) => void): Unsubscribe {
+  agentListObservers.add(observer);
+  return () => agentListObservers.delete(observer);
+}
 
 /** The app's one agent runtime, for a feature that sends to agents (the live session). Set once agents register. */
 export function appAgentRuntime(): AgentRuntime {
@@ -30,7 +39,10 @@ export function appAgentRuntime(): AgentRuntime {
 }
 
 export function register({ ipc }: FeatureContext): void {
-  const runtime = registerChosenAgentChannels(ipc, agentRuntimeChoice(process.env, console.warn), {
+  const observed = observingAgentList(ipc, (list) => {
+    for (const observer of agentListObservers) observer(list);
+  });
+  const runtime = registerChosenAgentChannels(observed, agentRuntimeChoice(process.env, console.warn), {
     terminal: {
       findClaude: () => findClaude(process.env, process.platform, isFile),
       shipSkills: (folder) => shipSkills({ sourceDir: skillsSourceDir(), folder, warn: console.warn }),

@@ -1,18 +1,19 @@
 import { app } from 'electron';
 import type { FeatureContext } from '../../app/features';
-import { appAgentRuntime } from '../agents/ipc';
+import { appAgentRuntime, observeAgentList } from '../agents/ipc';
 import { audioSlices } from '../audio/slices';
 import { appStore } from '../store/ipc';
 import { speechModelPathIn } from '../transcription/model';
 import { createTranscriber } from '../transcription/transcriber';
 import { createWhisperEngine } from '../transcription/whisper-engine';
 import { announcingTranscriber, registerSessionChannels } from './channels';
-import { readTicketHolds } from './holds';
+import { readTicketHolds, releaseHoldsOf, releasingHoldsOfStoppedTabs } from './holds';
 import { createSessionHost, type SessionHost } from './session';
 
 /**
  * The live grilling session on IPC: the app's one store, the captured slices, whisper.cpp with the speech model the
- * transcription feature prepares, and the agent runtime the session types or sends into.
+ * transcription feature prepares, and the agent runtime the session types or sends into. A tab that stops has its
+ * ticket holds let go of.
  */
 export function register({ ipc, settings }: FeatureContext): void {
   const engine = createWhisperEngine({ modelPath: speechModelPathIn(app.getPath('userData')) });
@@ -37,4 +38,7 @@ export function register({ ipc, settings }: FeatureContext): void {
     holds: readTicketHolds,
   });
   registerSessionChannels(ipc, host);
+  // A tab that stops mid-ticket never lets go of its hold itself, so the ticket would stay out of reach of every other
+  // grilling agent on this laptop: Grillo lets go of it.
+  observeAgentList(releasingHoldsOfStoppedTabs(releaseHoldsOf, console.warn));
 }

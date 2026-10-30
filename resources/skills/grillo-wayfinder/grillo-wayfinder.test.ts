@@ -1,11 +1,15 @@
-import { existsSync } from 'node:fs';
+import { execFile, execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join, normalize, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 import { formatMapBody, formatTicketBody, parseComment, parseMapBody, parseTicketBody } from '../../../src/main/store/github/issues/bodies';
 import { parseSource } from '../../../src/main/store/github/repo/records';
+import { MEETING_HOLDS_FOLDER, releaseHoldsOf } from '../../../src/main/features/session/holds';
+import { AGENT_ID_VARIABLE } from '../../../src/shared/agents';
 import { readCommandCatalogue } from '../catalogue';
 import { checkProjectFixture, readFixtureFolder } from '../fixture-check';
 
@@ -17,7 +21,8 @@ import { checkProjectFixture, readFixtureFolder } from '../fixture-check';
 
 const SKILL_FOLDER = dirname(fileURLToPath(import.meta.url));
 const SKILL_NAME = 'grillo-wayfinder';
-const REPOSITORY_ROOT = join(SKILL_FOLDER, '..', '..', '..');
+const SKILLS_ROOT = join(SKILL_FOLDER, '..');
+const REPOSITORY_ROOT = join(SKILLS_ROOT, '..', '..');
 const SKILL_FILES = ['SKILL.md', 'references/record-answer.md'];
 const FIXTURE = join(SKILL_FOLDER, 'fixtures', 'after-first-answers');
 
@@ -32,9 +37,14 @@ function frontmatterOf(markdown: string): Record<string, unknown> {
   return parseYaml(match[1]) as Record<string, unknown>;
 }
 
-/** The contents of every fenced code block. */
+/** The contents of every fenced code block, a block indented under a list item taken out of its indent. */
 function codeBlocksOf(markdown: string): string[] {
-  return [...markdown.matchAll(/^```[a-z]*\n([\s\S]*?)^```$/gm)].map((match) => match[1]);
+  return [...markdown.matchAll(/^( *)```[a-z]*\n([\s\S]*?)^\1```$/gm)].map(([, indent, body]) =>
+    body
+      .split('\n')
+      .map((line) => (line.startsWith(indent) ? line.slice(indent.length) : line))
+      .join('\n'),
+  );
 }
 
 /** The cells of the table rows in one `## ` section of a Markdown file, the header and divider left out. */
@@ -46,6 +56,12 @@ function tableRows(markdown: string, heading: string): string[][] {
     .filter((line) => line.startsWith('|'))
     .slice(2)
     .map((line) => line.slice(1, -1).split('|').map((cell) => cell.trim()));
+}
+
+/** One `## ` section of a Markdown file, up to the next one, found by its heading's name (any ` (...)` note left off). */
+function sectionOf(markdown: string, heading: string): string {
+  const start = markdown.search(new RegExp(`\\n## ${heading}(?: \\(.*\\))?\\n`));
+  return start === -1 ? '' : markdown.slice(start + 1).split(/\n## /)[0];
 }
 
 const codeSpans = (cell: string): string[] => [...cell.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
@@ -178,6 +194,158 @@ describe('the fixture of a session: the map, its tickets and the first answers',
       expect(source.kind).toBe('own-time-answer');
       expect(source.where).toContain(`GitHub comment ${origin?.id}`);
       expect(source.text.trim()).toBe(origin?.kind === 'plain' ? origin.text.trim() : undefined);
+    }
+  });
+});
+
+describe('starting the PRD writer once the map is done', () => {
+  const oneLine = (text: string): string => text.replace(/\s+/g, ' ');
+
+  /** The skills that tell the agent closing the last ticket to start the PRD writer itself, in the same agent. */
+  async function skillsStartingThePrdWriter(): Promise<string[]> {
+    const folders = readdirSync(SKILLS_ROOT, { withFileTypes: true }).filter(
+      (entry) => entry.isDirectory() && existsSync(join(SKILLS_ROOT, entry.name, 'SKILL.md')),
+    );
+    const texts = await Promise.all(
+      folders.map(async ({ name }) => [name, oneLine(await readFile(join(SKILLS_ROOT, name, 'SKILL.md'), 'utf8'))] as const),
+    );
+    return texts.filter(([, text]) => /run `\/grillo-prd` in (?:this|the) same agent/.test(text)).map(([name]) => name);
+  }
+
+  it("lets the agent that closes the last ticket start /grillo-prd itself: the rule and the PRD writer's flag agree", async () => {
+    const rule = oneLine(sectionOf(await read('SKILL.md'), 'The map-done rule'));
+    const prd = frontmatterOf((await readFile(join(SKILLS_ROOT, 'grillo-prd', 'SKILL.md'), 'utf8')).replace(/\r\n/g, '\n'));
+    const starters = await skillsStartingThePrdWriter();
+
+    expect(rule).toContain('run `/grillo-prd` in this same agent');
+    expect(starters).toEqual(expect.arrayContaining([SKILL_NAME, 'grillo-answer', 'grillo-research', 'grillo-prototype', 'grillo-task']));
+    // `disable-model-invocation: true` would make the Skill tool refuse every agent that follows the rule.
+    expect(prd['disable-model-invocation'] ?? false).toBe(false);
+    expect(prd['user-invocable'] ?? true).toBe(true);
+  });
+});
+
+/** Where Git for Windows puts its bash by default. */
+const GIT_BASH = 'C:\\Program Files\\Git\\bin\\bash.exe';
+
+/** Bash as the agents run it: Git for Windows' own on Windows, found beside git when it is not in its default place. */
+function findBash(): string {
+  if (process.platform !== 'win32') return 'bash';
+  if (existsSync(GIT_BASH)) return GIT_BASH;
+  const bundled = join(execFileSync('git', ['--exec-path'], { encoding: 'utf8' }).trim(), '..', '..', '..', 'bin', 'bash.exe');
+  return existsSync(bundled) ? bundled : 'bash';
+}
+
+/** Runs a script in the project folder, as an agent's shell would, and gives back what it printed, one line each. */
+function runInProject(script: string, cwd: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    execFile(findBash(), ['-c', script], { cwd }, (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout.split('\n').filter((line) => line !== ''));
+    });
+  });
+}
+
+describe('holding a ticket on this laptop, outside a live session', () => {
+  // Every grilling agent on one laptop acts for the same login, so to GitHub they are one member.
+  const HOLDING = 'Holding a ticket on this laptop';
+  const OUTSIDE_A_SESSION = `${MEETING_HOLDS_FOLDER.replaceAll('\\', '/')}/no-session/`;
+  const fill = (command: string, ticket: number) => command.replaceAll('<ticket number>', String(ticket));
+  const asTab = (tab: string, command: string) => `export ${AGENT_ID_VARIABLE}=${tab}; ${command}`;
+
+  async function holdCommands(): Promise<{ hold: string; release: string }> {
+    const blocks = codeBlocksOf(sectionOf(await read('SKILL.md'), HOLDING)).map((block) => block.trim());
+    expect(blocks).toHaveLength(2);
+    const [hold, release] = blocks;
+    return { hold, release };
+  }
+
+  async function inEmptyProject(run: (project: string) => Promise<void>): Promise<void> {
+    // A project folder as the commands see it: only its .git folder matters to them.
+    const project = mkdtempSync(join(tmpdir(), 'grillo-laptop-hold-'));
+    mkdirSync(join(project, '.git'));
+    try {
+      await run(project);
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  }
+
+  it('keeps its holds inside .git, beside the holds of a live session, so they are never committed', async () => {
+    const { hold, release } = await holdCommands();
+    const paths = fill(`${hold} ${release}`, 3)
+      .split(/[\s"'>]+/)
+      .filter((word) => word.includes('meeting-holds'));
+
+    expect(paths.length).toBeGreaterThan(0);
+    expect(paths.filter((path) => !path.startsWith(OUTSIDE_A_SESSION) && `${path}/` !== OUTSIDE_A_SESSION)).toEqual([]);
+  });
+
+  it('lets only one of two grilling agents under one login take the same frontier ticket, until it lets go', async () => {
+    const { hold, release } = await holdCommands();
+    await inEmptyProject(async (project) => {
+      const outcome = (commands: string) => `{ ${commands}; } 2>/dev/null && echo free || echo held`;
+      // Two agents hold the first frontier ticket at the same moment; the loser's next ticket is free, and once the
+      // winner lets go the first ticket can be held again.
+      const script = [
+        `(${asTab('tab-1', fill(hold, 3))}) 2>/dev/null & first=$!`,
+        `(${asTab('tab-2', fill(hold, 3))}) 2>/dev/null & second=$!`,
+        'wait $first && echo held-by-me || echo refused',
+        'wait $second && echo held-by-me || echo refused',
+        outcome(asTab('tab-2', fill(hold, 8))),
+        outcome(`${fill(release, 3)} && ${asTab('tab-2', fill(hold, 3))}`),
+      ].join('\n');
+
+      const [first, second, next, afterLettingGo] = await runInProject(script, project);
+
+      expect([first, second].sort()).toEqual(['held-by-me', 'refused']);
+      expect([next, afterLettingGo]).toEqual(['free', 'free']);
+    });
+  });
+
+  it('names the tab that holds it, so Grillo lets go of the hold once that tab stops', async () => {
+    const { hold } = await holdCommands();
+    await inEmptyProject(async (project) => {
+      await runInProject([asTab('tab-1', fill(hold, 3)), asTab('tab-2', fill(hold, 8))].join('\n'), project);
+
+      expect(releaseHoldsOf(project, 'tab-1')).toEqual([{ session: 'no-session', ticket: 3 }]);
+      expect(await runInProject(`{ ${asTab('tab-3', fill(hold, 3))}; } && echo free`, project)).toEqual(['free']);
+    });
+  });
+
+  it('holds before every claim, so a ticket assigned to the member is never taken as won without it, and lets go on leaving', async () => {
+    const skill = await read('SKILL.md');
+    const link = '(#holding-a-ticket-on-this-laptop)';
+    const claiming = sectionOf(skill, 'Claiming a ticket');
+    const working = sectionOf(skill, 'Working a ticket');
+    const holdStep = claiming.indexOf(link);
+
+    expect(holdStep).toBeGreaterThan(-1);
+    expect(holdStep).toBeLessThan(claiming.indexOf('Already assigned to the member'));
+    expect(holdStep).toBeLessThan(claiming.indexOf('--add-assignee @me'));
+    expect(/^7\. [\s\S]*/m.exec(working)?.[0]).toContain(link);
+  });
+
+  it('lets go of the hold when a claimed ticket turns out to be another login\'s, as when its claim is lost', async () => {
+    const claiming = sectionOf(await read('SKILL.md'), 'Claiming a ticket');
+    const steps = claiming.split(/^(?=\d\. )/m).slice(1);
+    const [, othersStep] = steps;
+
+    expect(steps).toHaveLength(4);
+    expect(othersStep).toContain('Assigned to another login');
+    for (const step of [steps[1], steps[3]]) {
+      expect(step.replace(/\s+/g, ' ')).toContain('let go of its hold');
+    }
+  });
+
+  it('is let go of at done by every skill that claims through it, whether the ticket closes or is released', async () => {
+    const claimers = ['grillo-answer', 'grillo-research', 'grillo-prototype', 'grillo-task'];
+    for (const name of claimers) {
+      const skill = (await readFile(join(SKILLS_ROOT, name, 'SKILL.md'), 'utf8')).replace(/\r\n/g, '\n');
+      const done = sectionOf(skill, 'Done: finishing the ticket').replace(/\s+/g, ' ');
+
+      expect(skill.replace(/\s+/g, ' '), name).toContain('`grillo-wayfinder`, "Claiming a ticket"');
+      expect(done, name).toMatch(/\*\*Either way\*\*, then let go of its hold \(`grillo-wayfinder`, "Holding a ticket on this laptop"\)/);
     }
   });
 });

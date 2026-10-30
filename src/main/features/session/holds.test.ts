@@ -1,8 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { MEETING_HOLDS_FOLDER, QUESTION_FILE, readTicketHolds, TAB_FILE } from './holds';
+import { join, relative, sep } from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { AgentInfo } from '../../../shared/agents';
+import { MEETING_HOLDS_FOLDER, QUESTION_FILE, readTicketHolds, releaseHoldsOf, releasingHoldsOfStoppedTabs, TAB_FILE } from './holds';
 
 // Made-up session ids and tab ids only. The skill's own test checks these readings against the commands it runs.
 const SESSION = '2026-10-30-140000';
@@ -64,5 +65,115 @@ describe('reading the tickets a live session holds', () => {
 
     expect(await readTicketHolds(folder, SESSION)).toEqual([]);
     await expect(readTicketHolds(folder, '../..')).rejects.toThrow("'../..' is not a session id");
+  });
+});
+
+describe('letting go of the holds of a tab that stopped', () => {
+  const OUTSIDE_A_SESSION = 'no-session';
+  const LEFT_MARKS = 'left';
+
+  /** Every folder under the holds folder, as `<session>/<entry>[/<entry>]`, sorted. */
+  function heldFolders(folder: string): string[] {
+    const root = join(folder, MEETING_HOLDS_FOLDER);
+    return readdirSync(root, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => relative(root, join(entry.parentPath, entry.name)).split(sep).join('/'))
+      .sort();
+  }
+
+  function holdIn(folder: string, session: string, entry: string, tab: string | null): void {
+    const hold = join(folder, MEETING_HOLDS_FOLDER, session, entry);
+    mkdirSync(hold, { recursive: true });
+    if (tab !== null) writeFileSync(join(hold, TAB_FILE), tab);
+  }
+
+  it('lets go of every ticket the tab held, in a session or outside one, and nothing any other tab holds', () => {
+    const folder = projectWith({ '3': 'tab-1\n', '8': 'tab-2', '12': null, notes: 'tab-1' });
+    holdIn(folder, OUTSIDE_A_SESSION, '5', 'tab-1');
+    holdIn(folder, OUTSIDE_A_SESSION, '6', 'tab-3');
+    holdIn(folder, SESSION, `${LEFT_MARKS}/3`, null);
+
+    const released = releaseHoldsOf(folder, 'tab-1');
+
+    expect(released.sort((a, b) => a.ticket - b.ticket)).toEqual([
+      { session: SESSION, ticket: 3 },
+      { session: OUTSIDE_A_SESSION, ticket: 5 },
+    ]);
+    expect(heldFolders(folder)).toEqual([
+      SESSION,
+      `${SESSION}/12`,
+      `${SESSION}/8`,
+      `${SESSION}/left`,
+      `${SESSION}/left/3`,
+      `${SESSION}/notes`,
+      OUTSIDE_A_SESSION,
+      `${OUTSIDE_A_SESSION}/6`,
+    ]);
+  });
+
+  it.each([
+    ['an empty tab id', ''],
+    ['a blank tab id', '  \n'],
+    ['a tab id with a path in it', '../tab-1'],
+  ])('lets go of nothing for %s, even beside holds with an empty tab file', (_what, agentId) => {
+    const folder = projectWith({ '3': '', '4': '\n', '8': 'tab-1' });
+
+    expect(releaseHoldsOf(folder, agentId)).toEqual([]);
+    expect(heldFolders(folder)).toEqual([SESSION, `${SESSION}/3`, `${SESSION}/4`, `${SESSION}/8`]);
+  });
+
+  it('lets go of nothing, and never throws, in a project folder whose holds are missing or the wrong shape', () => {
+    const empty = projectWith({});
+    expect(releaseHoldsOf(empty, 'tab-1')).toEqual([]);
+    expect(releaseHoldsOf(join(empty, 'no-such-folder'), 'tab-1')).toEqual([]);
+
+    const odd = projectWith({ '3': 'tab-1' });
+    writeFileSync(join(odd, MEETING_HOLDS_FOLDER, 'a-file-not-a-session'), 'tab-1');
+    writeFileSync(join(odd, MEETING_HOLDS_FOLDER, SESSION, '9'), 'tab-1');
+    mkdirSync(join(odd, MEETING_HOLDS_FOLDER, SESSION, '10', TAB_FILE), { recursive: true });
+    expect(releaseHoldsOf(odd, 'tab-1')).toEqual([{ session: SESSION, ticket: 3 }]);
+    expect(heldFolders(odd)).toEqual([SESSION, `${SESSION}/10`, `${SESSION}/10/tab`]);
+  });
+
+  it('when the holds folder is itself a file, lets go of nothing', () => {
+    const folder = projectWith({});
+    mkdirSync(join(folder, '.git'));
+    writeFileSync(join(folder, MEETING_HOLDS_FOLDER), 'tab-1');
+
+    expect(releaseHoldsOf(folder, 'tab-1')).toEqual([]);
+  });
+});
+
+describe('watching for tabs that stop', () => {
+  const agent = (id: string, folder: string): AgentInfo => ({ id, kind: 'grilling', title: 'Grilling · Live session', folder, waiting: false });
+
+  it('lets go once of the holds of each tab that left the list, in its own project folder', () => {
+    const release = vi.fn<(folder: string, agentId: string) => void>();
+    const listChanged = releasingHoldsOfStoppedTabs(release, vi.fn());
+
+    listChanged([agent('tab-1', '/made-up/garden')]);
+    listChanged([agent('tab-1', '/made-up/garden'), agent('tab-2', '/made-up/shed')]);
+    listChanged([agent('tab-2', '/made-up/shed')]);
+    listChanged([agent('tab-2', '/made-up/shed')]);
+    listChanged([]);
+
+    expect(release.mock.calls).toEqual([
+      ['/made-up/garden', 'tab-1'],
+      ['/made-up/shed', 'tab-2'],
+    ]);
+  });
+
+  it('reports a release that fails and still lets go of the other stopped tabs', () => {
+    const warn = vi.fn();
+    const release = vi.fn((_folder: string, agentId: string) => {
+      if (agentId === 'tab-1') throw new Error('made-up disk failure');
+    });
+    const listChanged = releasingHoldsOfStoppedTabs(release, warn);
+
+    listChanged([agent('tab-1', '/made-up/garden'), agent('tab-2', '/made-up/garden')]);
+    expect(() => listChanged([])).not.toThrow();
+
+    expect(release.mock.calls.map(([, id]) => id)).toEqual(['tab-1', 'tab-2']);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('made-up disk failure'));
   });
 });

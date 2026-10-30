@@ -7,7 +7,7 @@ import type { AgentRuntimeChoice } from '../../../shared/agents';
 import { createClaudeChatDriver } from '../agent-chat/driver';
 import { createChatEventHub } from '../agent-chat/event-hub';
 import { FakeChatProcess } from '../agent-chat/fake-process';
-import { registerAgentChannels, registerChosenAgentChannels } from './channels';
+import { observingAgentList, registerAgentChannels, registerChosenAgentChannels } from './channels';
 import { FakePty } from './fake-pty';
 import { agentRuntimeChoice } from './runtime-choice';
 
@@ -172,5 +172,27 @@ describe('agent IPC channels over the chosen runtime', () => {
       { type: 'user', message: { role: 'user', content: 'Sample message' } },
     ]);
     await expect(grillo.invoke('agents:send', { id: 'no-such-tab', text: 'x' })).rejects.toThrow('No agent with id');
+  });
+});
+
+describe('watching the list of running agents in main', () => {
+  it('tells a main-process observer every new list the renderer gets, a stopped tab included', async () => {
+    const fake = createFakeIpc();
+    const seen: AgentInfo[][] = [];
+    registerAgentChannels(observingAgentList(createMainIpc(fake.main, () => [fake.window]), (list) => seen.push(list)), {
+      findClaude: () => '/opt/made-up/bin/claude',
+      shipSkills: async () => undefined,
+      spawnPty: (file, args, options) => new FakePty(file, args, options),
+      env: {},
+    });
+    const grillo = createGrilloApi(fake.renderer);
+    const toRenderer: AgentInfo[][] = [];
+    grillo.on('agents:list-changed', (list) => toRenderer.push(list));
+
+    const id = await grillo.invoke('agents:start', request);
+    await grillo.invoke('agents:stop', { id });
+
+    expect(seen.map((list) => list.map((agent) => agent.id))).toEqual([[id], []]);
+    expect(toRenderer).toEqual(seen);
   });
 });

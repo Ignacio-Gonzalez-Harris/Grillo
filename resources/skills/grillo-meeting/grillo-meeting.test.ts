@@ -505,6 +505,45 @@ describe('holding a ticket in a live session', () => {
     }
   });
 
+  it("holds in the session instead of on the laptop, so it never refuses the ticket it holds itself", async () => {
+    const holding = sectionOf(await read('SKILL.md'), HOLDING);
+
+    expect(holding).toContain('`grillo-wayfinder`, "Holding a ticket on this laptop"');
+    expect(holding).toMatch(/skip/i);
+  });
+
+  it('marks a ticket left with questions open for the whole session: no other agent picks it, a jump still takes it', async () => {
+    const skill = await read('SKILL.md');
+    const { hold, release } = await holdCommands();
+    const [mark] = codeBlocksOf(sectionOf(skill, 'Leaving a ticket')).map((block) => block.trim());
+    const [check] = codeBlocksOf(sectionOf(skill, 'Picking the next ticket')).map((block) => block.trim());
+    const project = mkdtempSync(join(tmpdir(), 'grillo-left-'));
+    mkdirSync(join(project, '.git'));
+    const isLeft = (session: string, ticket: number) => `{ ${fill(check, session, ticket)}; } && echo left || echo pickable`;
+    try {
+      // Tab 1 leaves ticket 3 with questions open: it marks it left, then lets go of its hold. Tab 2 then picks.
+      const script = [
+        `export ${AGENT_ID_VARIABLE}=tab-1; ${fill(hold, SESSION, 3)} && ${fill(mark, SESSION, 3)} && ${fill(release, SESSION, 3)}`,
+        `export ${AGENT_ID_VARIABLE}=tab-2`,
+        isLeft(SESSION, 3),
+        isLeft(SESSION, 8),
+        isLeft(EARLIER_SESSION, 3),
+        `{ ${fill(hold, SESSION, 3)}; } 2>/dev/null && echo jumped || echo refused`,
+      ].join('\n');
+
+      const [leftThree, leftEight, earlierThree, jump] = await runInProject(script, project);
+
+      expect([leftThree, leftEight, earlierThree]).toEqual(['left', 'pickable', 'pickable']);
+      expect(jump).toBe('jumped');
+      expect((await readTicketHolds(project, SESSION)).map(({ ticket, agentId }) => [ticket, agentId])).toEqual([[3, 'tab-2']]);
+      expect(fill(`${mark} ${check}`, SESSION, 3).split(/\s+/).filter((word) => word.includes(SESSION))).toEqual(
+        expect.arrayContaining([expect.stringMatching(new RegExp(`^\\.git/meeting-holds/${SESSION}/left/3$`))]),
+      );
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
   it('tells the screen the question at hand with a command Grillo reads back, each time it asks', async () => {
     const { hold } = await holdCommands();
     const section = sectionOf(await read('SKILL.md'), QUESTION_AT_HAND);

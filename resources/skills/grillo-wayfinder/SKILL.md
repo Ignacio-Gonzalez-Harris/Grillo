@@ -31,7 +31,8 @@ then answer the tickets, alone or together, until every question has an answer; 
 - **Fog**: questions you expect but cannot yet write precisely enough to become a ticket.
 - **Out of scope**: anything beyond the PRD destination.
 - **Frontier**: the tickets a session may take now: open, every blocker closed, and assigned to nobody or to the
-  member.
+  member. A ticket assigned to the member may be another grilling agent's on this laptop: the
+  [hold](#holding-a-ticket-on-this-laptop) decides.
 - **Structure section**: one section of the project's PRD structure, `.grillo/structure.json`.
 - **Project folder**: the clone of the project's repository the agent runs in. Its default branch is called `main`
   below, whatever its real name.
@@ -254,28 +255,58 @@ the map, the tickets and their questions **alone**: no conversation is needed be
      of scope. Then apply [the map-done rule](#the-map-done-rule).
    - **Questions still open:** release the ticket (`gh issue edit <N> --remove-assignee @me`). It returns to the pool,
      unlocked, its open questions visible.
+   - **Either way**, then [let go of its hold](#holding-a-ticket-on-this-laptop), so another grilling agent on this
+     laptop may take it (a `/grillo-meeting` agent lets go of its session's hold instead).
 8. Report the ticket's title, the decision in one line, and what is on the frontier now.
 
 **Merging** a ticket into another open ticket (the same question asked twice): post a decision comment whose gist and
 text are both `Merged into #<other number>`, close it as a duplicate (`gh api -X PATCH
-repos/{owner}/{repo}/issues/<N> -f state=closed -f state_reason=duplicate`), then apply the map-done rule. A merged
-ticket gets no line under Settled.
+repos/{owner}/{repo}/issues/<N> -f state=closed -f state_reason=duplicate`), let go of its hold, then apply the
+map-done rule. A merged ticket gets no line under Settled.
 
 ## Claiming a ticket
 
 Taking a ticket is atomic: two laptops must never both work one ticket. Before working any ticket, claim it for the
 member with the store's claim rule, through `gh`:
 
-1. **Re-read its assignees**: `gh issue view <N> --json assignees`. Assigned to another login: it is theirs. Say who
-   holds it, write nothing on it, and take the next ticket on the frontier (or stop, when the member named this
-   ticket). Already assigned to the member (they took it or were sent it): it is yours; carry on.
-2. **Assign yourself**: `gh issue edit <N> --add-assignee @me`.
-3. **Re-read the assignees.** If another login is also assigned, the earlier assignment wins, judged by each login's
+1. **Hold it on this laptop** ([Holding a ticket on this laptop](#holding-a-ticket-on-this-laptop)). Held by another
+   grilling agent: write nothing on it and take the next ticket on the frontier (or stop, saying so in one line, when
+   the member named this ticket). A `/grillo-meeting` agent has already held it in its session and skips this step.
+2. **Re-read its assignees**: `gh issue view <N> --json assignees`. Assigned to another login: it is theirs. Say who
+   holds it, write nothing on it, let go of its hold, and take the next ticket on the frontier (or stop, when the
+   member named this ticket). Already assigned to the member (they took it or were sent it): it is yours, since you hold it on this
+   laptop; carry on.
+3. **Assign yourself**: `gh issue edit <N> --add-assignee @me`.
+4. **Re-read the assignees.** If another login is also assigned, the earlier assignment wins, judged by each login's
    **latest** `assigned` event (an earlier assignment that was undone does not count). Read the events oldest first
    with `gh api repos/{owner}/{repo}/issues/<N>/timeline --paginate --jq '.[] | select(.event == "assigned") |
    .assignee.login'` and find the last line naming each login. When the other login's latest event comes before
-   yours, unassign yourself (`gh issue edit <N> --remove-assignee @me`) and take the next ticket; otherwise the ticket
-   is yours.
+   yours, unassign yourself (`gh issue edit <N> --remove-assignee @me`), let go of its hold and take the next ticket;
+   otherwise the ticket is yours.
+
+## Holding a ticket on this laptop
+
+Several grilling agents can run on one laptop at once (own-time answering, a research or task agent, a second tab).
+They all act for the same member, so to GitHub they are one login and the claim rule alone cannot keep them apart: a
+ticket one of them took is assigned to the member, and every other one would take it as its own. Outside a live
+session, hold the ticket on this laptop before you claim it:
+
+1. **Hold it**, in the project folder. `<ticket number>` is the ticket's number:
+
+   ```bash
+   mkdir -p .git/meeting-holds/no-session && mkdir .git/meeting-holds/no-session/<ticket number> && printf '%s' "$GRILLO_AGENT_ID" > .git/meeting-holds/no-session/<ticket number>/tab
+   ```
+
+   Only one agent can make that folder, and it lives inside `.git`, so it is never committed. Made: the ticket is
+   yours on this laptop, and its `tab` file names your tab (Grillo starts you with `GRILLO_AGENT_ID`). `mkdir` says
+   it exists: another grilling agent on this laptop holds the ticket.
+2. **Let go** when you close, merge or release the ticket, or lose its claim:
+
+   ```bash
+   rm -r .git/meeting-holds/no-session/<ticket number>
+   ```
+
+When a tab stops before it lets go, Grillo lets go of its holds, so the ticket is free again for the other agents.
 
 ## The map-done rule
 
@@ -285,8 +316,8 @@ another, or the last fog line you take off**:
 1. Read the map issue (the issue labelled `wayfinder:map`) and its `### Fog` section, fresh from GitHub.
 2. Read every open ticket: the open issues labelled `wayfinder:grilling`, `wayfinder:research`,
    `wayfinder:prototype` or `wayfinder:task`, every page of them.
-3. No open ticket and no fog line: tell the member the map is done and run `/grillo-prd` in this same agent, following
-   that skill's steps (Grillo ships it beside this one).
+3. No open ticket and no fog line: tell the member the map is done and run `/grillo-prd` in this same agent, through
+   the Skill tool (Grillo ships it beside this one, and it is a skill an agent may start), following its steps.
 4. Otherwise carry on; nothing is written.
 
 A screen's Done button only types `done` into the agent: closing or releasing the ticket, and this rule, are always
@@ -319,3 +350,4 @@ Short, one fact per line: what changed first; tickets by title; anything blocked
 | Keeping a list of open tickets in the map | It is out of date at once; GitHub's list is the real one. |
 | Closing a ticket without the map-done rule | Nobody starts `/grillo-prd`, and the finished map waits for nothing. |
 | Working a ticket without claiming it | Two laptops answer the same questions twice. |
+| Taking a ticket assigned to the member as won without holding it | Two grilling agents on one laptop, one login to GitHub, grill the same ticket. |
