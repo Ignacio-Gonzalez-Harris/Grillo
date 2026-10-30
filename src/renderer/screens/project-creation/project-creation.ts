@@ -411,6 +411,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     const listed = (Array.isArray(repositories) ? repositories : []).find(({ repository }) => idOf(repository).toLowerCase() === id.toLowerCase());
     form.connectTo = listed ? idOf(listed.repository) : id;
     form.access = listed ? { state: 'known', permission: listed.permission } : { state: 'unchecked' };
+    actionError = null;
   }
 
   /** A full `owner/repo` typed is chosen; other typing only narrows the list, and drops a choice that was only typed. */

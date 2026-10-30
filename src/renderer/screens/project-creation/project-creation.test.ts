@@ -490,6 +490,22 @@ describe('project creation: the repository list', () => {
     expect(text(cardTitled(root, '3 · Members').querySelector('.reason'))).toContain('Grillo has not confirmed your access yet');
   });
 
+  it.each([
+    ['picking a row', (root: HTMLElement) => (radio(root, 'example-org/sample-repo-1') as HTMLInputElement).click()],
+    ['typing a repository in full', (root: HTMLElement) => type(root, 'input[aria-label="Search repositories"]', 'example-org/sample-repo-1')],
+  ])('takes the "pick a repository" note away on %s', async (_case, choose) => {
+    const context = app({ seed });
+    const { root } = context;
+    await listed(context);
+    click(root, 'Check access');
+    await flush();
+    expect(text(root.querySelector('.note.err'))).toContain('Pick the repository to connect');
+
+    choose(root);
+
+    expect(root.querySelector('.note.err')).toBeNull();
+  });
+
   it('keeps the picked repository while a search hides it, and says it cannot be connected when read access is all there is', async () => {
     const context = app({ seed });
     const { root } = context;
