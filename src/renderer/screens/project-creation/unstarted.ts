@@ -15,7 +15,7 @@ export interface UnstartedAgent {
   title: string;
   /** Why the start was refused. */
   error: string;
-  /** When it was refused. */
+  /** When it was first refused: the project was created then, and the list says so. */
   at: IsoDateTime;
 }
 
@@ -37,10 +37,12 @@ async function write(grillo: GrilloApi, entries: UnstartedAgent[]): Promise<void
   await grillo.invoke('settings:set', { key: UNSTARTED_AGENTS_KEY, value });
 }
 
-/** A later refusal of the same project replaces the earlier one. */
+/** A later refusal of the same project replaces the earlier one's reason, and keeps its date. */
 export async function rememberUnstartedAgent(grillo: GrilloApi, unstarted: UnstartedAgent): Promise<void> {
-  const others = (await readUnstartedAgents(grillo)).filter(({ project }) => project !== unstarted.project);
-  await write(grillo, [unstarted, ...others]);
+  const entries = await readUnstartedAgents(grillo);
+  const earlier = entries.find(({ project }) => project === unstarted.project);
+  const others = entries.filter((entry) => entry !== earlier);
+  await write(grillo, [{ ...unstarted, at: earlier?.at ?? unstarted.at }, ...others]);
 }
 
 export async function forgetUnstartedAgent(grillo: GrilloApi, project: ProjectId): Promise<void> {

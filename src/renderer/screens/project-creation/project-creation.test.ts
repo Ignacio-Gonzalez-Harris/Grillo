@@ -470,6 +470,26 @@ describe('project creation: the repository list', () => {
     expect((await store.getProject('example-org/sample-repo-2')).id).toBe('example-org/sample-repo-2');
   });
 
+  it('Check access says Checking… on the picked row, then Access not known with the reason when GitHub gives no answer', async () => {
+    const context = app({ seed });
+    const { store, root } = context;
+    await listed(context);
+    (radio(root, 'example-org/sample-repo-1') as HTMLInputElement).click();
+    let refuse: (reason: Error) => void = () => undefined;
+    vi.spyOn(store, 'viewerPermission').mockReturnValue(new Promise((_resolve, reject) => (refuse = reject)));
+
+    click(root, 'Check access');
+    await until(() => text(repositoryRows(root)[1].querySelector('.badge')) === 'Checking…', 'the check to run');
+    expect(buttonNamed(root, 'Check access')?.disabled).toBe(true);
+    expect(radio(root, 'example-org/sample-repo-1')?.disabled).toBe(true);
+
+    refuse(new Error('GitHub did not answer'));
+    await until(() => text(repositoryRows(root)[1].querySelector('.badge')) === 'Access not known', 'the check to end');
+    expect(text(repositoryRows(root)[1].querySelector('p'))).toBe('GitHub did not answer');
+    expect(radio(root, 'example-org/sample-repo-1')?.checked).toBe(true);
+    expect(text(cardTitled(root, '3 · Members').querySelector('.reason'))).toContain('Grillo has not confirmed your access yet');
+  });
+
   it('keeps the picked repository while a search hides it, and says it cannot be connected when read access is all there is', async () => {
     const context = app({ seed });
     const { root } = context;
@@ -656,6 +676,22 @@ describe('project creation: starting the grilling agent again', () => {
 
     click(root, 'Open the map');
     expect(navigate).toHaveBeenCalledWith('map', { project: PROJECT });
+  });
+
+  it('keeps the date of the first refusal as the created date, however many later tries are refused', async () => {
+    const context = app();
+    const { store, root } = context;
+    vi.useFakeTimers({ toFake: ['Date'], now: NOW });
+    vi.spyOn(store, 'openProjectFolder').mockRejectedValue(new Error('git could not clone the repository'));
+    await refusedStart(context);
+
+    vi.setSystemTime(new Date('2026-11-05T10:00:00.000Z'));
+    click(root, 'Try again');
+    await flush();
+    await until(() => buttonNamed(root, 'Try again')?.disabled === false, 'the second refusal');
+
+    await leaveAndComeBack(context);
+    expect(text(cardTitled(root, 'Your projects').querySelector('.rows .small'))).toBe(`${PROJECT} · created 2026-10-22`);
   });
 
   it('goes straight to the map, starting nothing, when the project has a map by now', async () => {
