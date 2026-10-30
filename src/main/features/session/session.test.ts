@@ -287,6 +287,25 @@ describe("grilling session: each meeting agent's ticket at hand", () => {
     expect(asked.at(-1)).toBe(`/memory/Grillo ${id}`);
   });
 
+  it('is the question the agent last said on the newest ticket it holds; none before a session, a hold or its word', async () => {
+    const setup = await rig({
+      holds: async () => [
+        { ticket: 3, agentId: 'tab-1', heldAt: 100, question: { at: 3, of: 3 } },
+        { ticket: 5, agentId: 'tab-1', heldAt: 200, question: { at: 2, of: 4 } },
+        { ticket: 8, agentId: 'tab-2', heldAt: 100 },
+      ],
+    });
+    setup.agents.add('tab-1', 'tab-2', 'tab-3');
+    expect(await setup.host.questionAtHand('tab-1')).toBeNull();
+
+    await setup.host.startSession(PROJECT);
+
+    expect(await setup.host.questionAtHand('tab-1')).toEqual({ ticket: 5, at: 2, of: 4 });
+    expect(await setup.host.questionAtHand('tab-2')).toBeNull();
+    expect(await setup.host.questionAtHand('tab-3')).toBeNull();
+    expect(await refusal(setup.host.questionAtHand('tab-9'))).toBe('unknown-agent');
+  });
+
   it('refuses an agent that is not running, and a hold folder Grillo cannot read, each as a SessionError', async () => {
     const setup = await rig({
       holds: () => Promise.reject(new Error('EACCES: permission denied')),

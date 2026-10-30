@@ -9,7 +9,7 @@ import { parse as parseYaml } from 'yaml';
 import { domainOf, isDomainLabel, NO_DOMAIN_LABEL, parseComment } from '../../../src/main/store/github/issues/bodies';
 import { parseMembers, parseSession, parseSource } from '../../../src/main/store/github/repo/records';
 import { sameLogin } from '../../../src/main/store/github/repo/names';
-import { readTicketHolds } from '../../../src/main/features/session/holds';
+import { QUESTION_FILE, readTicketHolds } from '../../../src/main/features/session/holds';
 import { AGENT_ID_VARIABLE } from '../../../src/shared/agents';
 import { readCommandCatalogue } from '../catalogue';
 import { checkProjectFixture, type CheckedTicket, readFixtureFolder } from '../fixture-check';
@@ -434,6 +434,7 @@ describe('holding a ticket in a live session', () => {
   const SESSION = '2026-10-26-140000';
   const EARLIER_SESSION = '2026-10-25-090000';
   const HOLDING = 'Holding a ticket in this session';
+  const QUESTION_AT_HAND = 'Telling the screen the question at hand';
   const fill = (command: string, session: string, ticket: number) =>
     command.replaceAll('<session id>', session).replaceAll('<ticket number>', String(ticket));
 
@@ -502,6 +503,39 @@ describe('holding a ticket in a live session', () => {
     } finally {
       rmSync(project, { recursive: true, force: true });
     }
+  });
+
+  it('tells the screen the question at hand with a command Grillo reads back, each time it asks', async () => {
+    const { hold } = await holdCommands();
+    const section = sectionOf(await read('SKILL.md'), QUESTION_AT_HAND);
+    const [tell] = codeBlocksOf(section).map((block) => block.trim());
+    const project = mkdtempSync(join(tmpdir(), 'grillo-hold-'));
+    mkdirSync(join(project, '.git'));
+    try {
+      await runInProject(`export ${AGENT_ID_VARIABLE}=tab-1; ${fill(hold, SESSION, 3)}`, project);
+      await runInProject(fill(tell, SESSION, 3).replaceAll('<n>', '2').replaceAll('<m>', '3'), project);
+
+      expect((await readTicketHolds(project, SESSION)).map(({ ticket, agentId, question }) => ({ ticket, agentId, question }))).toEqual([
+        { ticket: 3, agentId: 'tab-1', question: { at: 2, of: 3 } },
+      ]);
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+    const link = '(#telling-the-screen-the-question-at-hand)';
+    expect(sectionOf(await read('SKILL.md'), 'Picking the next ticket')).toContain(link);
+    expect(sectionOf(await read('SKILL.md'), 'Recording an answer')).toContain(link);
+  });
+
+  it("sends exactly the message the catalogue's agent-to-screen table gives it", async () => {
+    const readme = unixLines(await readFile(join(SKILLS_ROOT, 'README.md'), 'utf8'));
+    const rows = tableRows(sectionOf(readme, 'Agent-to-screen protocol'));
+    const [tell] = codeBlocksOf(sectionOf(await read('SKILL.md'), QUESTION_AT_HAND)).map((block) => block.trim());
+    const file = `.git/meeting-holds/<session id>/<ticket number>/${QUESTION_FILE}`;
+
+    expect(rows.map((row) => row[0])).toEqual(['Question at hand']);
+    expect(rows[0].join(' ')).toContain(`\`${file}\``);
+    expect(rows[0].join(' ')).toContain('`<n> of <m>`');
+    expect(tell).toContain(file);
   });
 
   it('holds before every claim (picking, jumping) and lets go on leaving a ticket', async () => {

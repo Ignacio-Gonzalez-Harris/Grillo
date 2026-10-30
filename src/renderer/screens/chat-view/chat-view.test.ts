@@ -207,6 +207,26 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
     expect(view.box().value).toBe('');
   });
 
+  it('shows a relayed message as the member-side bubble with the "from Support, for <member>" badge, without the mark', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('grilling', 'Sample ticket 3');
+
+    await view.grillo.invoke('agent-chat:relay', { targetAgentId: id, member: 'member-example', text: 'Please ask about the sample edge case.\nSecond line.' });
+    process.emit(recorded.assistantText('Noted.'));
+    await flush();
+    view.box().value = 'A sample remark';
+    view.box().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await flush();
+
+    const [relayed, reply, mine] = [...view.chat().querySelectorAll('.msgs .bubble')];
+    expect(relayed.classList.contains('me')).toBe(true);
+    expect(relayed.querySelector('.who .badge.info')?.textContent).toBe('from Support, for member-example');
+    expect(relayed.querySelector('.chat-text')?.textContent).toBe('Please ask about the sample edge case.\nSecond line.');
+    expect(reply.querySelector('.badge')).toBeNull();
+    expect(mine.querySelector('.badge')).toBeNull();
+    expect(mine.querySelector('.chat-text')?.textContent).toBe('A sample remark');
+  });
+
   it('answers a clickable-options question with one click on an option', async () => {
     const view = await app();
     const { process } = await view.startAgent('generic', 'Sample customer email');

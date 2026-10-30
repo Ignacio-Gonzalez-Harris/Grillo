@@ -20,6 +20,7 @@ import {
   SKIP,
   type SliceCounts,
   USE_IT,
+  type QuestionAtHand,
 } from '../../../shared/session';
 import { StoreError } from '../../../shared/store';
 import { GRILLO_FILES, isLogin, isSessionId, sameLogin } from '../../store/github/repo/names';
@@ -112,6 +113,11 @@ export interface SessionHost {
    * in this session"). Null before a session, or while the agent holds none.
    */
   ticketAtHand(agentId: AgentId): Promise<number | null>;
+  /**
+   * The question a meeting agent says it asks on its ticket at hand (`resources/skills/README.md`, Agent-to-screen
+   * protocol). Null before a session, while it holds no ticket, or until it has said.
+   */
+  questionAtHand(agentId: AgentId): Promise<QuestionAtHand | null>;
 }
 
 interface RunningSession {
@@ -268,6 +274,17 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
     if (current.savedTranscript !== transcriptOf(current)) {
       throw new SessionError('store', 'The transcript could not be written to the session file; try again');
     }
+  }
+
+  /** The agent's ticket at hand: the newest it holds in this session; none before a session or a hold. */
+  async function newestHold(agentId: AgentId): Promise<TicketHold | undefined> {
+    const agent = deps.agents.list().find(({ id }) => id === agentId);
+    if (agent === undefined) throw new SessionError('unknown-agent', `No running agent with id '${String(agentId)}'`);
+    const { holds } = deps;
+    if (!session || !holds) return undefined;
+    const { id } = session;
+    const held = await fromStore('Grillo could not read the tickets held in this session', () => holds(agent.folder, id));
+    return held.filter((hold) => hold.agentId === agentId).sort((a, b) => b.heldAt - a.heldAt)[0];
   }
 
   function knownBox(agentId: AgentId): AgentBox {
@@ -649,14 +666,11 @@ export function createSessionHost(deps: SessionHostDeps): SessionHost {
       return session ? snapshot(session) : null;
     },
     async ticketAtHand(agentId) {
-      const agent = deps.agents.list().find(({ id }) => id === agentId);
-      if (agent === undefined) throw new SessionError('unknown-agent', `No running agent with id '${String(agentId)}'`);
-      const { holds } = deps;
-      if (!session || !holds) return null;
-      const { id } = session;
-      const held = await fromStore('Grillo could not read the tickets held in this session', () => holds(agent.folder, id));
-      const newest = held.filter((hold) => hold.agentId === agentId).sort((a, b) => b.heldAt - a.heldAt)[0];
-      return newest?.ticket ?? null;
+      return (await newestHold(agentId))?.ticket ?? null;
+    },
+    async questionAtHand(agentId) {
+      const hold = await newestHold(agentId);
+      return hold?.question ? { ticket: hold.ticket, ...hold.question } : null;
     },
   };
 }

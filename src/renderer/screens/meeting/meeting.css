@@ -26,6 +26,7 @@
 .meeting .tag.d2 { background: var(--color-tag-2); }
 .meeting .tag.d3 { background: var(--color-tag-3); }
 .meeting .tag.d4 { background: var(--color-tag-4); }
+.meeting .tag.none { background: var(--color-tag-none); }
 
 /* ---------- Consent script, notes, the speech model ---------- */
 .meeting .script { font-style: italic; padding: var(--space-3); border-left: var(--focus-ring-width) solid var(--color-accent); background: var(--color-accent-soft); border-radius: var(--radius-s); }
@@ -42,48 +43,25 @@
 .meeting select:disabled, .meeting textarea:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
 
 /* ---------- The red Recording banner and the running transcript strip ---------- */
-.meeting .rec-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-danger); color: var(--color-text-on-danger); font-weight: var(--font-weight-strong); }
+.meeting .rec-banner:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-danger); color: var(--color-text-on-danger); font-weight: var(--font-weight-strong); }
 .meeting .sdot { display: inline-block; width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-on-danger); flex: none; }
 .meeting .transcript { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); max-height: calc(var(--size-textarea-min) + var(--space-6)); overflow-y: auto; }
 .meeting .transcript p { margin: 0 0 var(--space-1); }
 
 /*
  * On a meeting agent's tab (the prototype's `.split`): the banner across the top, Present, Consent and Recording in
- * the column on the left, the speech model and the question controls above the terminal and the transcript strip
- * below it. The panel's wrappers step aside (`display: contents`) so its parts take their places in the tab's grid.
+ * the column on the left, and the transcript strip below the terminal. The panel's wrappers step aside
+ * (`display: contents`) so its parts take their places in the tab's grid (agent-tab.css); the speech model and the
+ * question card are in the tab's slot above the terminal.
  */
-.agent-tab.with-controls:has(.meeting-panel:not([hidden])) {
-  grid-template-columns: var(--size-side-column) minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  grid-template-areas: "banner banner" "side head" "side body" "side foot";
-}
-.agent-tab.with-controls:has(.meeting-panel:not([hidden]) > .rec-banner[hidden]) {
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  grid-template-areas: "side head" "side body" "side foot";
-}
 .agent-tab:has(.meeting-panel:not([hidden])) .agent-tab-controls,
 .agent-tab:has(.meeting-panel:not([hidden])) .agent-tab-control,
 .meeting-panel:not([hidden]) { display: contents; }
-.agent-tab:has(.meeting-panel:not([hidden])) > .agent-tab-body { grid-area: body; }
-.meeting-panel .rec-banner { grid-area: banner; }
-.meeting-panel .meeting-side { grid-area: side; align-self: start; }
-.meeting-panel .meeting-head { grid-area: head; }
-.meeting-panel .meeting-foot { grid-area: foot; }
-
-/* A panel that hides itself leaves no gap, and a tab whose panels all hide keeps the terminal full width. */
-.meeting-panel[hidden], .agent-tab-control:has(> [hidden]) { display: none; }
-.agent-tab-controls:not(:has(> .agent-tab-control > :not([hidden]))) { display: none; }
-.agent-tab.with-controls:not(:has(> .agent-tab-controls > .agent-tab-control > :not([hidden]))) { grid-template-columns: minmax(0, 1fr); }
+.meeting-panel .rec-banner { grid-area: banner; margin-bottom: var(--space-5); }
+.meeting-panel .meeting-side { grid-area: side; align-self: start; width: var(--size-side-column); margin-right: var(--space-5); }
+.meeting-panel .meeting-foot { grid-area: foot; margin-top: var(--space-5); }
 
 /* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
 @media (max-width: 760px) {
-  .agent-tab.with-controls:has(.meeting-panel:not([hidden])) {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "banner" "side" "head" "body" "foot";
-  }
-  .agent-tab.with-controls:has(.meeting-panel:not([hidden]) > .rec-banner[hidden]) {
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "side" "head" "body" "foot";
-  }
+  .meeting-panel .meeting-side { width: auto; margin-right: 0; margin-bottom: var(--space-5); }
 }

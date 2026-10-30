@@ -183,6 +183,59 @@ describe('agent tab', () => {
     expect(content(root).querySelector('.agent-tab-controls')).toBeNull();
   });
 
+  it('puts above and aside panels around the body, and a tab that fills neither has neither slot', async () => {
+    const { grillo, startAgent } = runtime();
+    const { panel } = fakeTerminalBody();
+    const part = (slot: 'above' | 'aside', label: string, priority: number): TabPanel => ({
+      kinds: ['grilling'],
+      slot,
+      priority,
+      mount: (el) => void (el.textContent = label),
+    });
+    const root = open(screenWith([panel, part('above', 'Question', 1), part('aside', 'Note', 1), part('aside', 'Questions', 2)]), grillo);
+    const grilling = await startAgent('grilling', 'Grilling · Sample ticket 3');
+    const generic = await startAgent('generic', 'Generic · Sample note');
+
+    shell?.navigate('agent-tab', { agentId: grilling.id });
+    const tab = content(root).querySelector('.agent-tab') as HTMLElement;
+    expect([...tab.children].map((slot) => slot.className)).toEqual(['agent-tab-above stack', 'agent-tab-body', 'agent-tab-aside stack']);
+    expect(tab.querySelector('.agent-tab-above')?.textContent).toBe('Question');
+    expect([...(tab.querySelector('.agent-tab-aside')?.children ?? [])].map((el) => el.textContent)).toEqual(['Questions', 'Note']);
+
+    shell?.navigate('agent-tab', { agentId: generic.id });
+    expect([...(content(root).querySelector('.agent-tab')?.children ?? [])].map((slot) => slot.className)).toEqual(['agent-tab-body']);
+  });
+
+  it("opens the agent's tab when the answer to its start outruns the agent list, as it can in the running app", () => {
+    const shownCount = vi.fn();
+    const body: TabPanel = { kinds: 'all', slot: 'body', priority: 0, mount: (el) => ((el.textContent = 'Sample body'), { shown: shownCount }) };
+    const listeners: Array<(list: readonly AgentInfo[]) => void> = [];
+    const context = {
+      agentTabHeader: () => undefined,
+      onAgentTabs(listener: (list: readonly AgentInfo[]) => void) {
+        listeners.push(listener);
+        return () => undefined;
+      },
+    } as unknown as ShellContext;
+    const tabs = createAgentTabs(context, registerTabPanels({}, [body]));
+    const el = document.createElement('div');
+    document.body.append(el);
+    const agent: AgentInfo = { id: 'a1', kind: 'grilling', title: 'Grilling · Live session', folder: '/projects/sample-1', waiting: false };
+
+    const close = tabs.show(el, 'a1');
+    expect(el.textContent).toBe('This agent is not running.');
+
+    listeners.forEach((listener) => listener([agent]));
+
+    expect(el.textContent).toBe('Sample body');
+    expect(el.querySelector('.agent-tab')).not.toBeNull();
+    expect(shownCount).toHaveBeenCalledTimes(1);
+
+    close();
+    expect(el.children).toHaveLength(0);
+    tabs.dispose();
+  });
+
   it('shows a higher-priority body panel in place of the terminal, as the chat view will', async () => {
     const { grillo, startAgent } = runtime();
     const { panel, views } = fakeTerminalBody();
