@@ -171,6 +171,24 @@ export function parseRawComment(value: unknown): RawComment {
 
 const parseComments = (value: unknown): RawComment[] => list(value, 'comments').map(parseRawComment);
 
+/** A comment of the repository-wide listing, with the number of the issue it is on. */
+export interface RepositoryComment extends RawComment {
+  issue: number;
+}
+
+const ISSUE_URL_NUMBER = /\/issues\/([1-9]\d*)$/;
+
+function parseRepositoryComments(value: unknown): RepositoryComment[] {
+  return list(value, 'comments').map((entry) => {
+    const issueUrl = object(entry, 'a comment').issue_url;
+    const number = typeof issueUrl === 'string' ? ISSUE_URL_NUMBER.exec(issueUrl)?.[1] : undefined;
+    if (number === undefined) {
+      throw new Error('expected every comment to name its issue');
+    }
+    return { ...parseRawComment(entry), issue: Number(number) };
+  });
+}
+
 function parseAssignmentEvents(value: unknown): AssignmentEvent[] {
   return list(value, 'timeline events').flatMap((entry): AssignmentEvent[] => {
     const event = object(entry, 'a timeline event').event;
@@ -299,6 +317,11 @@ export function createIssuesApi(gh: Gh) {
 
     comments(ref: RepositoryRef, number: number): Promise<RawComment[]> {
       return refusing(paged(`${issuePath(ref, number)}/comments`, parseComments), noIssue(ref, number));
+    },
+
+    /** Every comment on every issue of the repository, oldest first: one listing instead of one per issue. */
+    repositoryComments(ref: RepositoryRef): Promise<RepositoryComment[]> {
+      return refusing(paged(`${repoPath(ref)}/issues/comments`, parseRepositoryComments), `No repository ${projectIdOf(ref)}`);
     },
 
     createComment(ref: RepositoryRef, number: number, body: string): Promise<RawComment> {

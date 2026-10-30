@@ -6,6 +6,7 @@ import { readRecentProjects, recordRecentProject } from '../../recent-projects';
 import { StoreError, type NewMember, type Store, type StoreMethod } from '../../store';
 import type { Member, PrdStructure, PrdVersion, Project, ProjectId, RepositoryRef, Score } from '../../types';
 import type { GithubDeps } from '..';
+import { damageOf } from '../damage';
 import { createProjectFolders, type FolderReader, type SavePlan } from './folder';
 import { createGithubApi, type RepositoryInfo } from './github-api';
 import {
@@ -243,12 +244,28 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
     return parseSession(content ?? refuse('not-found', `No session ${String(sessionId)}`), sessionId, path);
   }
 
-  async function versionIn(files: FolderReader, number: number): Promise<PrdVersion> {
+  /** The version without its score: what a rerun needs, even when the score file is damaged. */
+  async function unscoredVersionIn(files: FolderReader, number: number): Promise<PrdVersion> {
     const path = GRILLO_FILES.version(number);
     const content = isVersionNumber(number) ? await files.read(path) : null;
-    const version = parsePrdVersion(content ?? refuse('not-found', `No PRD version ${String(number)}`), path);
+    return { ...parsePrdVersion(content ?? refuse('not-found', `No PRD version ${String(number)}`), path), number, score: null };
+  }
+
+  async function versionIn(files: FolderReader, number: number): Promise<PrdVersion> {
+    const version = await unscoredVersionIn(files, number);
     const score = await files.read(GRILLO_FILES.score(number));
-    return { ...version, number, score: score === null ? null : parseScore(score, GRILLO_FILES.score(number)) };
+    return { ...version, score: score === null ? null : parseScore(score, GRILLO_FILES.score(number)) };
+  }
+
+  /** A version for the list: a damaged version or score file is flagged with the reason, never fails the list. */
+  async function listedVersionIn(files: FolderReader, number: number): Promise<PrdVersion> {
+    try {
+      return await versionIn(files, number);
+    } catch (error) {
+      const damaged = damageOf(error);
+      const version = await unscoredVersionIn(files, number).catch(() => ({ number, date: '', body: '', appendix: '', score: null }));
+      return { ...version, damaged };
+    }
   }
 
   async function nextNumber(files: FolderReader, folder: string, prefix: string, suffix: string): Promise<number> {
@@ -274,13 +291,27 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
       await api.acceptInvitation(id);
     },
 
-    /** The projects this laptop knows: the recent projects, minus any whose repository is gone or closed to the member. */
+    /**
+     * The projects this laptop knows: the recent projects, minus any whose repository is gone or closed to the member.
+     * A project whose Grillo files or folder cannot be read is listed flagged as damaged, with the reason.
+     */
     async listProjects() {
       const projects: Project[] = [];
       for (const { project } of readRecentProjects(settings)) {
         try {
           const ref = repositoryOf(project);
-          projects.push(await readProject(ref, await api.repository(ref)));
+          const repository = await api.repository(ref);
+          projects.push(
+            await readProject(ref, repository).catch((error: unknown) => ({
+              id: projectIdOf(ref),
+              name: ref.name,
+              repository: ref,
+              structure: { sections: [] },
+              members: [],
+              archived: repository.archived,
+              damaged: damageOf(error),
+            })),
+          );
         } catch (error) {
           if (!(error instanceof StoreError) || !['not-found', 'forbidden', 'invalid'].includes(error.kind)) {
             throw error;
@@ -505,7 +536,7 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
     async listPrdVersions(id) {
       return read(id, async (files) => {
         const numbers = numbersIn(await files.list(GRILLO_FILES.prd), 'v', '.md');
-        return Promise.all(numbers.map((number) => versionIn(files, number)));
+        return Promise.all(numbers.map((number) => listedVersionIn(files, number)));
       });
     },
 
@@ -517,7 +548,7 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
         checkScore(score);
       }
       return save(id, async (files) => {
-        await versionIn(files, number);
+        await unscoredVersionIn(files, number);
         const content = score === null ? null : formatScore(score);
         return { changes: [{ path: GRILLO_FILES.score(number), content }], message: `grillo: score PRD version ${number}`, result: score };
       });

@@ -2,8 +2,9 @@ import type { FeatureContext } from '../../app/features';
 import type { Settings } from '../../app/settings';
 import type { MainIpc } from '../../ipc/bridge';
 import { createStore, storeKindFrom } from '../../store';
-import type { Store } from '../../store/store';
+import type { PullRequestNotice, Store } from '../../store/store';
 import {
+  PULL_REQUEST_CHANNEL,
   STORE_METHODS,
   StoreError,
   storeChannel,
@@ -38,6 +39,8 @@ export function registerStoreIpc(ipc: MainIpc, store: Store, settings: Settings)
 }
 
 const appStores = new WeakMap<Settings, Store>();
+/** Per settings file, where the app's store sends word of a save that became a pull request: the windows. */
+const pullRequestSinks = new WeakMap<Settings, (notice: PullRequestNotice) => void>();
 
 /**
  * The app's one store, which every feature reading the store shares: one per settings file, so one queue guards each
@@ -47,13 +50,14 @@ const appStores = new WeakMap<Settings, Store>();
 export function appStore(settings: Settings): Store {
   let store = appStores.get(settings);
   if (store === undefined) {
-    store = createStore(storeKindFrom(process.env), { settings });
+    store = createStore(storeKindFrom(process.env), { settings, onPullRequest: (notice) => pullRequestSinks.get(settings)?.(notice) });
     appStores.set(settings, store);
   }
   return store;
 }
 
-/** Puts the app's one store (`appStore`) on IPC. */
+/** Puts the app's one store (`appStore`) on IPC, and tells every window when a save became a pull request. */
 export function register({ ipc, settings }: FeatureContext): void {
+  pullRequestSinks.set(settings, (notice) => ipc.send(PULL_REQUEST_CHANNEL, notice));
   registerStoreIpc(ipc, appStore(settings), settings);
 }

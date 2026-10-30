@@ -25,6 +25,9 @@ export interface GithubIdentity {
   email: string | null;
 }
 
+/** How many open pull requests one check reads; Grillo's own waiting saves are far fewer. */
+const OPEN_PULL_REQUEST_LIMIT = 500;
+
 /** The topic Grillo puts on every repository it creates (docs/store-layout.md). */
 export const CREATED_BY_GRILLO_TOPIC = 'grillo-created';
 
@@ -132,6 +135,16 @@ function permissionOf(permissions: Record<string, unknown>): Permission {
     return 'admin';
   }
   return permissions.push === true || permissions.maintain === true ? 'write' : 'read';
+}
+
+function parsePullRequestUrls(value: unknown): string[] {
+  return list(value, 'pull requests').map((entry) => {
+    const url = object(entry, 'a pull request').url;
+    if (typeof url !== 'string' || url === '') {
+      throw new Error('expected every pull request to carry its address');
+    }
+    return url;
+  });
 }
 
 function parseRepository(value: unknown): RepositoryInfo {
@@ -295,6 +308,14 @@ export function createGithubApi(gh: Gh) {
         change.body,
       ]);
       return url.trim();
+    },
+
+    /** The addresses of the repository's open pull requests, to tell which of Grillo's saves still wait. */
+    openPullRequestUrls(ref: RepositoryRef): Promise<string[]> {
+      return gh.json(
+        ['pr', 'list', '--repo', projectIdOf(ref), '--state', 'open', '--json', 'url', '--limit', String(OPEN_PULL_REQUEST_LIMIT)],
+        parsePullRequestUrls,
+      );
     },
   };
 }

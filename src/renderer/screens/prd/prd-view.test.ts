@@ -481,4 +481,22 @@ describe('PRD view: Score', () => {
     expect(text(content().querySelector('article.prd-doc'))).toContain('Sample decision statement one.');
     expect(texts(versionRow(content(), 1).querySelectorAll('.badge'))).toEqual(['Latest']);
   });
+
+  it('flags a version whose score file the store found damaged, with the reason, and keeps Rerun within reach', async () => {
+    const { store, content, openPrdTab, starts } = await app();
+    await store.createPrdVersion(PROJECT, V1);
+    const [version] = await store.listPrdVersions(PROJECT);
+    const reason = '.grillo/prd/v1.score.json is not in the format Grillo writes: not JSON';
+    vi.spyOn(store, 'listPrdVersions').mockResolvedValue([{ ...version, damaged: reason }]);
+    await openPrdTab();
+
+    expect(texts(panel(content()).querySelectorAll('.badge'))).toEqual(['Damaged']);
+    expect(text(panel(content()).querySelector('.reason'))).toBe(`${reason}. Rerun writes a fresh score over it.`);
+    expect(texts(versionRow(content(), 1).querySelectorAll('.badge'))).toEqual(['Latest', 'Damaged']);
+    expect(text(content().querySelector('article.prd-doc'))).toContain('Sample decision statement one.');
+
+    await click(panel(content()), 'Rerun');
+
+    expect(starts.map((start) => start.firstMessage)).toEqual(['/grillo-score']);
+  });
 });

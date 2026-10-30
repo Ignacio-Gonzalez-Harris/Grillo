@@ -1,6 +1,7 @@
 import { StoreError, type CloseResult, type CommentInput, type Store, type StoreMethod, type TicketTags } from '../../store';
 import type { Answer, Decision, Discussion, Login, PickupComment, ProjectMap, RepositoryRef, Ticket, TicketId, TicketKind } from '../../types';
 import type { GithubDeps } from '..';
+import { damageOf } from '../damage';
 import { createGithubApi } from '../repo/github-api';
 import { isLogin, projectIdOf, repositoryOf, sameLogin, sourceNumberOf } from '../repo/names';
 import {
@@ -75,6 +76,7 @@ export const ISSUES_METHODS = [
   'updateDecision',
   'deleteDecision',
   'listPickupComments',
+  'listProjectPickupComments',
 ] as const satisfies readonly StoreMethod[];
 
 type IssuesStore = Pick<Store, (typeof ISSUES_METHODS)[number]>;
@@ -202,6 +204,12 @@ function kindOf(issue: IssueData): TicketKind | null {
 
 const isTicketIssue = (issue: IssueData): boolean => !issue.pullRequest && !issue.labels.includes(MAP_LABEL) && kindOf(issue) !== null;
 
+/** The kinds a ticket's labels name, without refusing a hand-edited issue that names several. */
+const kindsOf = (issue: IssueData): TicketKind[] => TICKET_KINDS.filter((kind) => issue.labels.includes(kindLabel(kind)));
+
+/** A ticket for a list: an issue with at least one kind label, even a damaged one. */
+const isListedTicketIssue = (issue: IssueData): boolean => !issue.pullRequest && !issue.labels.includes(MAP_LABEL) && kindsOf(issue).length > 0;
+
 function tagsOf(issue: IssueData): Pick<Ticket, 'domains' | 'noDomain'> {
   const domains = issue.labels.filter((label) => isDomainLabel(label) && label !== NO_DOMAIN_LABEL).map(domainOf);
   const noDomain = issue.labels.includes(NO_DOMAIN_LABEL);
@@ -242,6 +250,30 @@ function toTicket(ref: RepositoryRef, issue: IssueData, comments: IssueComment[]
         const code = questionCode(issue.number, k);
         return { code, text: text ?? '', answered: answered.has(code) };
       }),
+  };
+}
+
+/**
+ * A ticket whose issue or comments are not in the format Grillo writes, as a list shows it: what the issue itself
+ * says (title, state, assignee, its first kind label and its domain labels), flagged with why it cannot be read.
+ */
+function damagedTicket(ref: RepositoryRef, issue: IssueData, damaged: string): Ticket {
+  const domains = issue.labels.filter((label) => isDomainLabel(label) && label !== NO_DOMAIN_LABEL).map(domainOf);
+  return {
+    id: { project: projectIdOf(ref), number: issue.number },
+    title: issue.title,
+    question: '',
+    whyItMatters: '',
+    assumptions: [],
+    kind: kindsOf(issue)[0],
+    domains,
+    noDomain: domains.length === 0 && issue.labels.includes(NO_DOMAIN_LABEL),
+    blockers: [],
+    assignee: issue.assignees[0] ?? null,
+    state: issue.state,
+    duplicateOf: null,
+    questions: [],
+    damaged,
   };
 }
 
@@ -331,13 +363,33 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
         found.set(issue.number, issue);
       }
     }
-    return [...found.values()].filter(isTicketIssue).sort((a, b) => a.number - b.number);
+    return [...found.values()].filter(isListedTicketIssue).sort((a, b) => a.number - b.number);
   }
 
-  /** The map is done when no ticket is open and no fog is left; `closed` is the ticket just closed. */
+  /** A ticket for a list: one whose issue or comments are damaged is flagged, never fails the list. */
+  async function listedTicket(ref: RepositoryRef, issue: IssueData): Promise<Ticket> {
+    try {
+      return toTicket(ref, issue, await commentsOf(ref, issue));
+    } catch (error) {
+      return damagedTicket(ref, issue, damageOf(error));
+    }
+  }
+
+  /**
+   * The map is done when no ticket is open and no fog is left; `closed` is the ticket just closed. It is asked after
+   * the close, so a damaged map reads as "not done" instead of reporting a close that happened as failed.
+   */
   async function mapDone(ref: RepositoryRef, closed: number): Promise<CloseResult> {
     const open = (await listTicketIssues(ref, 'open')).filter((issue) => issue.number !== closed);
-    return { mapDone: open.length === 0 && mapOf(await mapIssue(ref)).fog.length === 0 };
+    if (open.length > 0) {
+      return { mapDone: false };
+    }
+    try {
+      return { mapDone: mapOf(await mapIssue(ref)).fog.length === 0 };
+    } catch (error) {
+      damageOf(error);
+      return { mapDone: false };
+    }
   }
 
   /** The blockers as tickets of the same project, each with its global id for the native relation. */
@@ -556,7 +608,7 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       const wanted = domains === undefined ? null : new Set(checkFilterDomains(domains));
       const me = await api.viewer();
       const issues = await listTicketIssues(ref, state ?? 'all');
-      const tickets = await Promise.all(issues.map(async (issue) => toTicket(ref, issue, await commentsOf(ref, issue))));
+      const tickets = await Promise.all(issues.map((issue) => listedTicket(ref, issue)));
       const mine = (ticket: Ticket): boolean => ticket.assignee !== null && sameLogin(ticket.assignee, me);
       return tickets
         .filter((ticket) => wanted === null || mine(ticket) || ticket.noDomain || ticket.domains.some((domain) => wanted.has(domain)))
@@ -795,6 +847,28 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       return comments
         .filter((entry): entry is PlainComment => entry.kind === 'plain' && !turned.has(entry.id))
         .map(({ id: commentId, author, when, text }): PickupComment => ({ id: commentId, ticket: ticket.id, author, when, text }));
+    },
+    async listProjectPickupComments(project) {
+      const ref = repositoryOf(project);
+      const open = new Set((await listTicketIssues(ref, 'open')).map((issue) => issue.number));
+      const comments = (await api.repositoryComments(ref)).filter((comment) => open.has(comment.issue));
+      const parsed = comments.flatMap((comment) => {
+        try {
+          return [{ issue: comment.issue, entry: parseComment(comment) }];
+        } catch (error) {
+          // A damaged marked comment is no plain comment waiting to be turned into an answer.
+          damageOf(error);
+          return [];
+        }
+      });
+      const turned = new Set(parsed.flatMap(({ issue, entry }) => (entry.kind === 'answer' && entry.from !== null ? [`${issue}:${entry.from}`] : [])));
+      return parsed
+        .filter(({ issue, entry }) => entry.kind === 'plain' && !turned.has(`${issue}:${entry.id}`))
+        .sort((a, b) => a.issue - b.issue)
+        .map(({ issue, entry }) => {
+          const { id: commentId, author, when, text } = entry as PlainComment;
+          return { id: commentId, ticket: { project: projectIdOf(ref), number: issue }, author, when, text };
+        });
     },
   };
 }

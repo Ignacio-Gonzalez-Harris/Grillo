@@ -16,6 +16,7 @@ import type { AgentId, AgentInfo } from '../../../shared/agents';
 import type { GrilloApi, Unsubscribe } from '../../../shared/ipc';
 import { AGENT_SCREEN } from '../../app/navigation';
 import type { ScreenParams } from '../../app/screens';
+import { asSentence } from '../../../shared/store';
 import { badge, button, dialog } from '../../theme/components';
 import {
   closeAsOutOfScope,
@@ -26,7 +27,20 @@ import {
   projectFrom,
   type CloseOutcome,
 } from '../map/map-data';
-import { choice, codeChip, domainTags, el, kindBadge, kindChoice, messageOf, note, textArea, textField, type Content } from '../map/view';
+import {
+  choice,
+  codeChip,
+  DAMAGED_TICKET_HINT,
+  domainTags,
+  el,
+  kindBadge,
+  kindChoice,
+  messageOf,
+  note,
+  textArea,
+  textField,
+  type Content,
+} from '../map/view';
 import { OWN_TIME_SCREEN } from '../own-time/agent-panel';
 import type { QuestionView } from '../own-time/ticket';
 import { startCommentPickup, startPrdWriter } from './agents';
@@ -138,8 +152,10 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
 
   async function loadDetail(ticket: Ticket | undefined): Promise<void> {
     const read = ++detailRead;
-    if (!ticket) {
+    // A damaged ticket's card shows why it cannot be read; its questions would only be refused the same way.
+    if (!ticket || ticket.damaged !== undefined) {
       detail = null;
+      detailError = null;
       return;
     }
     try {
@@ -314,7 +330,8 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
     const pick = el('button', 'pick', label);
     pick.type = 'button';
     pick.addEventListener('click', () => select(ticket));
-    const row = el('li', ticket.id.number === selected ? 'selected' : '', [pick, el('span', 'row', domainTags(ticket, declared))]);
+    const marks = ticket.damaged === undefined ? domainTags(ticket, declared) : [badge('Damaged', 'warn')];
+    const row = el('li', ticket.id.number === selected ? 'selected' : '', [pick, el('span', 'row', marks)]);
     if (ticket.id.number === selected) pick.setAttribute('aria-current', 'true');
     return row;
   }
@@ -532,7 +549,16 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
     return el('p', 'small muted', [`Recorded from GitHub comments by ${[...recorders].join(', ')}. Any member can undo it.`]);
   }
 
+  /** Prototype state `damaged-ticket`: the ticket the store could not read, with why, and nothing to act on. */
+  function damagedCard(ticket: Ticket, damaged: string): HTMLElement {
+    return el('div', 'card stack', [
+      el('div', 'row', [el('h3', 'm0', [ticket.title]), kindBadge(ticket.kind), badge('Damaged', 'warn')]),
+      note(`Grillo cannot read this ticket: ${asSentence(damaged)} ${DAMAGED_TICKET_HINT}`, 'warn'),
+    ]);
+  }
+
   function ticketCard(ticket: Ticket, view: TicketsView, declared: string[], project: ProjectId): HTMLElement {
+    if (ticket.damaged !== undefined) return damagedCard(ticket, ticket.damaged);
     const ready = detail !== null && detail.ticket.number === ticket.id.number ? detail : null;
     const questions = ready?.questions ?? null;
     const archived = view.project.archived;

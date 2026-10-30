@@ -648,6 +648,17 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       const picked = new Set(entry.answerSources.values());
       return clone(entry.comments.filter((candidate) => !picked.has(candidate.id)));
     },
+    async listProjectPickupComments(id) {
+      const open = [...project(id).tickets.values()]
+        .filter((entry) => entry.ticket.state === 'open')
+        .sort((a, b) => a.ticket.id.number - b.ticket.id.number);
+      return clone(
+        open.flatMap((entry) => {
+          const picked = new Set(entry.answerSources.values());
+          return entry.comments.filter((candidate) => !picked.has(candidate.id));
+        }),
+      );
+    },
 
     async createSession(id, { present }) {
       const record = writable(id);

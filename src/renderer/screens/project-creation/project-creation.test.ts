@@ -123,6 +123,25 @@ describe('project creation: your projects and invitations', () => {
     expect(navigate).toHaveBeenCalledWith('map', { project: 'example-org/sample-project-1' });
   });
 
+  it('flags a project the store could not read with the reason, and lists every other project as usual', async () => {
+    const { store, root, open } = app();
+    for (const name of ['sample-project-1', 'sample-project-3']) {
+      await store.createProject({ newRepository: { organisation: 'example-org', name } });
+      await store.openProjectFolder(`example-org/${name}`);
+    }
+    const reason = '.grillo/members.json is not in the format Grillo writes: not JSON';
+    const listed = await store.listProjects();
+    vi.spyOn(store, 'listProjects').mockResolvedValue(listed.map((project) => (project.name === 'sample-project-3' ? { ...project, damaged: reason } : project)));
+
+    await open();
+
+    const rows = [...cardTitled(root, 'Your projects').querySelectorAll('.rows li')];
+    expect(rows.map((row) => texts(row.querySelectorAll('.badge')))).toEqual([['Damaged'], []]);
+    expect(text(rows[0].querySelector('.reason'))).toBe(`${reason}. Fix the file on GitHub, then open the project again.`);
+    expect(rows[1].querySelector('.reason')).toBeNull();
+    expect(buttonNamed(rows[0], 'Open')?.disabled).toBe(false);
+  });
+
   it('accepts an invitation in one click, pre-fills role and domains from the last project joined, and saves them', async () => {
     const { store, settings, root, navigate, open } = app();
     // The invited repository's project, as its admin created it.

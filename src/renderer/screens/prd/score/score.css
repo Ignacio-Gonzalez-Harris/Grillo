@@ -6,6 +6,8 @@
 .prd-score .score-big { font-size: var(--font-size-xl); font-weight: var(--font-weight-strong); }
 .prd-score .mark { display: grid; gap: var(--space-1); min-width: var(--space-7); }
 .prd-score .progress { width: 100%; height: var(--size-dot); accent-color: var(--color-accent); }
+/* A damaged score file's reason (prototype state `damaged-score`). */
+.prd-score .reason { margin: 0; font-size: var(--font-size-s); color: var(--color-warning); }
 
 /* ---------- Criterion and section tables ---------- */
 .prd-score .table-wrap { overflow-x: auto; }

@@ -530,7 +530,7 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 2 · flows 4.2 (Starting a project) · 7 (Permissions)</dd>
       <dt>Controls</dt><dd>Your projects (recently opened) with Open; pending invitations with one-click Accept; New project; new repository with organisation picker, or connect existing; repository picker; PRD structure source (default of 13 sections), add, remove, rename, reorder sections; Save and regenerate for an existing project; invite by GitHub login; own role and domains; idea as text with attachments, or a pasted or uploaded transcript; Create project.</dd>
-      <dt>States</dt><dd>Your projects and invitations · New repository · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · After accepting an invite · Creating (loading) · Editing the structure of an existing project</dd>
+      <dt>States</dt><dd>Your projects and invitations · New repository · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · After accepting an invite · Creating (loading) · Editing the structure of an existing project · A damaged project in the list · Saved as a pull request (main is protected)</dd>
     </dl>
   </header>
   <div class="states">
@@ -542,6 +542,41 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
       <button class="btn sm" data-state="invitee">After accepting an invite</button>
       <button class="btn sm" data-state="creating">Creating</button>
       <button class="btn sm" data-state="structure">Editing the structure</button>
+      <button class="btn sm" data-state="damaged-project">A damaged project</button>
+      <button class="btn sm" data-state="save-notice">Saved as a pull request</button>
+    </div>
+
+    <div class="state" data-state="damaged-project">
+      <p class="state-caption">State: A damaged project in the list (one project's Grillo files cannot be read; every other project still shows)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Projects</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Your projects</h3><span class="spacer"></span><a class="btn primary" href="#screen-project-creation/new">New project</a></div>
+            <p class="small muted">Recently opened first.</p>
+            <ul class="rows">
+              <li><div class="grow"><span class="strong">Sample project 1</span><br><span class="small muted">example-org/sample-project-1 · opened 2026-10-22</span></div><a class="btn sm" href="#screen-map-and-tickets">Open</a></li>
+              <li><div class="grow"><span class="strong">sample-project-3</span> <span class="badge warn">Damaged</span><br><span class="small muted">example-org/sample-project-3 · opened 2026-10-20</span><br><span class="reason">.grillo/members.md is not in the format Grillo writes: line 2 has no login. Fix the file on GitHub, then open the project again.</span></div><a class="btn sm" href="#screen-map-and-tickets">Open</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="save-notice">
+      <p class="state-caption">State: Saved as a pull request (the repository's main branch is protected; the same notice shows above whichever screen the save was made on, until dismissed)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="note row" role="status"><span class="grow">Saved as pull request #3, "grillo: add member member-b". The main branch of example-org/sample-project-1 is protected, so the change reaches the project once someone merges that pull request.</span><a class="btn sm" href="#">Open on GitHub</a><button class="btn sm">Dismiss</button></div>
+          <div class="card stack">
+            <h3>Invite people</h3>
+            <ul class="rows">
+              <li><span class="row"><span class="strong">member-b</span><span class="muted">Ben</span></span><span class="row"><span class="badge warn">Invited</span><span class="small muted">sets their own role and domains</span></span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="state" data-state="start">
@@ -796,6 +831,26 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="update-downloading">Update pop-up, downloading</button>
       <button class="btn sm" data-state="update-ready">Update pop-up, ready to install</button>
       <button class="btn sm" data-state="update-popup-mac">Update pop-up, unsigned Mac</button>
+      <button class="btn sm" data-state="damaged-ticket">A damaged ticket</button>
+    </div>
+
+    <div class="state" data-state="damaged-ticket">
+      <p class="state-caption">State: A damaged ticket (someone edited its issue by hand; every other ticket still shows)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body">
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Tickets</h3></div>
+            <div class="table-wrap"><table>
+              <tr><th>Ticket</th><th>Kind</th><th>Domains</th><th>Assignee</th><th>Blocked by</th><th></th></tr>
+              <tr><td>Sample ticket 1</td><td><span class="badge">grilling</span></td><td><span class="tag d1">product</span></td><td>—</td><td>—</td><td><button class="btn sm">Edit</button></td></tr>
+              <tr><td>Sample ticket 2 <span class="badge warn">Damaged</span><br><span class="reason">Issue #2 carries 2 kind labels; a ticket has exactly one. Fix the issue on GitHub.</span></td><td><span class="badge">grilling</span></td><td>—</td><td>—</td><td>—</td><td></td></tr>
+              <tr><td>Sample ticket 3</td><td><span class="badge">grilling</span></td><td><span class="tag d2">developer</span></td><td>member-b <span class="badge warn">Locked · taken</span></td><td>—</td><td><button class="btn sm">Edit</button></td></tr>
+            </table></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="state" data-state="building">
@@ -1144,6 +1199,26 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="from-github">Answer from a GitHub comment</button>
       <button class="btn sm" data-state="empty">Empty list</button>
       <button class="btn sm" data-state="launch">Launch an agent (release 3)</button>
+      <button class="btn sm" data-state="damaged-ticket">A damaged ticket</button>
+    </div>
+
+    <div class="state" data-state="damaged-ticket">
+      <p class="state-caption">State: A damaged ticket selected (its issue was edited by hand; the list keeps every other ticket)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab active">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split">
+          <div class="card">
+            <input type="search" placeholder="Search tickets" aria-label="Search tickets">
+            <p class="list-head">Your domains</p>
+            <ul class="rows small"><li><span>Sample ticket 1</span><span class="tag d1">product</span></li><li class="selected"><span>Sample ticket 2</span><span class="badge warn">Damaged</span></li></ul>
+          </div>
+          <div class="card stack">
+            <div class="row"><h3 class="m0">Sample ticket 2</h3><span class="badge">grilling</span><span class="badge warn">Damaged</span></div>
+            <p class="note warn">Grillo cannot read this ticket: the "Questions" section of issue #2 is not in the format Grillo writes. Fix the issue on GitHub; the other tickets work as usual.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="state" data-state="unassigned">
@@ -1868,7 +1943,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 8 · flows 4.7 (Writing, tracing and grading the PRD)</dd>
       <dt>Controls</dt><dd>Version list numbered and dated, earlier versions kept, each with Open, Markdown and HTML downloads; Export: Download Markdown, Download HTML; Edit structure and regenerate (opens the structure editor on screen-project-creation); Regenerate; Talk to an agent about this PRD; source codes like [S4, Q12] linking to the audit appendix; [no source] marks and the unsourced list; audit appendix table. Release 3: the version's score (overall 0 to 10, one mark and comment per criterion and per section) with Rerun, which starts <code>/grillo-score</code> in an agent tab.</dd>
-      <dt>States</dt><dd>No version yet (empty) · Writing (loading) · Versions list · Score (release 3)</dd>
+      <dt>States</dt><dd>No version yet (empty) · Writing (loading) · Versions list · Score (release 3) · A damaged score file (Rerun stays)</dd>
     </dl>
   </header>
   <div class="states">
@@ -1877,6 +1952,35 @@ Sample transcript line 2: a made-up reply.</textarea>
       <button class="btn sm" data-state="writing">Writing</button>
       <button class="btn sm" data-state="versions">Versions list</button>
       <button class="btn sm" data-state="score">Score (release 3)</button>
+      <button class="btn sm" data-state="damaged-score">A damaged score file</button>
+    </div>
+
+    <div class="state" data-state="damaged-score">
+      <p class="state-caption">State: A damaged score file (the version still shows; Rerun writes a fresh score over it)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab active">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div>
+        <div class="window-body split rev">
+          <div class="stack">
+            <div class="row"><h3 class="m0">PRD · version 2</h3><span class="badge info">Latest</span><span class="muted small">2026-10-22</span></div>
+            <div class="card stack" role="region" aria-label="Score of version 2">
+              <div class="row"><h3 class="m0">Score</h3><span class="badge warn">Damaged</span><span class="spacer"></span><button class="btn">Rerun</button></div>
+              <p class="reason">.grillo/prd/v2.score.json is not in the format Grillo writes: it is not JSON. Rerun writes a fresh score over it.</p>
+            </div>
+            <article class="card doc">
+              <h3>Sample section 1</h3>
+              <p>Sample decision statement one, written from the answers. <span class="code-chip">[S4, Q12]</span></p>
+            </article>
+          </div>
+          <div class="card stack">
+            <h4>Versions</h4>
+            <ul class="rows small">
+              <li class="selected"><div class="grow full"><span class="strong">Version 2</span> <span class="badge info">Latest</span> <span class="badge warn">Damaged</span><br><span class="muted">2026-10-22</span></div><span class="row"><button class="btn sm">Open</button></span></li>
+              <li><div class="grow full"><span class="strong">Version 1</span> <span class="badge">Score 5.8</span><br><span class="muted">2026-10-21</span></div><span class="row"><button class="btn sm">Open</button></span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="state" data-state="no-version">

@@ -357,6 +357,21 @@ describe('the map screen: tagged and assigned, with sources', () => {
     expect(text(card(content(), 'Tickets')?.querySelector('p.small'))).toBe('Rerun the tagging round when members join.');
   });
 
+  it('flags a ticket the store could not read with the reason and no actions, and shows every other ticket as usual', async () => {
+    const { content, open, store, project } = await tagged();
+    const reason = 'Issue #3 carries 2 kind labels; a ticket has exactly one';
+    const listed = await store.listTickets(project);
+    vi.spyOn(store, 'listTickets').mockResolvedValue(listed.map((ticket) => (ticket.title === 'Sample ticket 2' ? { ...ticket, damaged: reason } : ticket)));
+    await open();
+
+    const damaged = ticketRows(content()).find((row) => text(row.cells[0]).startsWith('Sample ticket 2')) as HTMLTableRowElement;
+    expect(texts(damaged.cells[0].querySelectorAll('.badge'))).toEqual(['Damaged']);
+    expect(text(damaged.cells[0].querySelector('.reason'))).toBe(`${reason}. Fix the issue on GitHub; the other tickets work as usual.`);
+    expect(damaged.cells[5].querySelectorAll('button')).toHaveLength(0);
+    expect(ticketRows(content())).toHaveLength(4);
+    expect(texts(rowOf(content(), 'Sample ticket 1').cells[5].querySelectorAll('button'))).toEqual(['Edit', 'Merge', 'Close as out of scope']);
+  });
+
   it('puts the tickets of my domains first, and All keeps them in number order', async () => {
     const { content, open } = await tagged();
     await open();

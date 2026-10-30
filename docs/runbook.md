@@ -925,13 +925,40 @@ never opens a separate system window: the offer is the update card, drawn inside
 
 Grillo reads and writes its data through one store. Which one is picked when the app starts:
 
-1. GitHub (the default): `npm run dev` with `GRILLO_STORE` unset. Until the two GitHub backend stories land,
-   every store call answers "not implemented yet".
+1. GitHub (the default): `npm run dev` with `GRILLO_STORE` unset.
 2. Made-up data in memory: set `GRILLO_STORE=memory` in the shell, then `npm run dev`. Nothing reaches
    GitHub, and the data is gone when the app closes, except the recent-projects list in the settings file.
 
 With any other value of `GRILLO_STORE` the app opens no window, and the terminal names the two allowed
 values. How the data lives in GitHub is pinned in `docs/store-layout.md`.
+
+### Saves to a protected main
+
+When a project's repository protects its `main` branch, a save cannot go straight in, so it becomes a pull
+request (`docs/store-layout.md`, "Saves to a protected main"):
+
+- A note appears above whatever screen is open: "Saved as pull request #<n>, "<title>"…", with **Open on
+  GitHub** and **Dismiss**. Someone with the right to merge merges it on GitHub; until then only this app shows
+  the change.
+- While it waits, the app reads it as saved: the next source or PRD version takes the next number, and a
+  session or a version saved a moment ago can be updated or scored again. A change to the same record joins the
+  same pull request, so the note does not appear twice.
+- After a restart the app no longer knows about pull requests it opened before; merge them before saving more.
+
+### Damaged records
+
+A file in the Grillo folder or a ticket issue edited by hand so that Grillo cannot read it no longer hides the
+whole list it belongs to:
+
+- **Project list:** the project shows **Damaged** with the reason (also when its project folder cannot be
+  brought up to date with GitHub). Fix the file on GitHub, or the folder, then open the project again.
+- **Map and tickets screens:** the ticket shows **Damaged** with the reason, and offers no action. Fix the issue
+  on GitHub (one kind label, the sections as Grillo writes them, the comment header). Closing or merging another
+  ticket still reports success.
+- **PRD view:** a version whose score file cannot be read shows **Damaged** with the reason; **Rerun** writes a
+  fresh score over it.
+
+The tickets screen reads the waiting GitHub comments of every open ticket with one listing per project.
 
 ## Releases and download site
 

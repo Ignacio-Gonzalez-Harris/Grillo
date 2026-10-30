@@ -30,6 +30,8 @@ export interface FakeRepository {
   invitations: { id: number; invitee: string; permission: string }[];
   branches: Map<string, Map<string, string>>;
   pullRequests: { base: string; head: string; title: string }[];
+  /** The numbers of the pull requests merged or closed; every other one is open. */
+  settledPullRequests: Set<number>;
 }
 
 export interface FakeInvitation {
@@ -126,6 +128,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       invitations: [],
       branches: new Map(),
       pullRequests: [],
+      settledPullRequests: new Set(),
       ...options,
       files: new Map(Object.entries(options.files ?? { 'README.md': '# Readme\n' })),
     };
@@ -138,6 +141,17 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
     const repository = repositories.get(id)!;
     repository.files.set(path, content);
     repository.version++;
+  }
+
+  /** Someone merges (the branch's files become main) or closes a pull request on GitHub. */
+  function settlePullRequest(id: string, number: number, how: 'merge' | 'close'): void {
+    const repository = repositories.get(id)!;
+    const pull = repository.pullRequests[number - 1];
+    if (how === 'merge') {
+      repository.files = new Map(repository.branches.get(pull.head));
+      repository.version++;
+    }
+    repository.settledPullRequests.add(number);
   }
 
   function repositoryJson(repository: FakeRepository) {
@@ -247,6 +261,12 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       const pull = { base: args[args.indexOf('--base') + 1], head: args[args.indexOf('--head') + 1], title: args[args.indexOf('--title') + 1] };
       repository.pullRequests.push(pull);
       return ok(`https://github.com/${id}/pull/${repository.pullRequests.length}\n`);
+    }
+    if (group === 'pr' && action === 'list' && args.join(' ').endsWith('--state open --json url --limit 500')) {
+      const id = args[args.indexOf('--repo') + 1];
+      const repository = repositories.get(id)!;
+      const open = repository.pullRequests.map((_pull, index) => index + 1).filter((number) => !repository.settledPullRequests.has(number));
+      return json(open.map((number) => ({ url: `https://github.com/${id}/pull/${number}` })));
     }
     throw new Error(`The fake GitHub has no answer for 'gh ${args.join(' ')}'`);
   }
@@ -380,6 +400,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
     repositories,
     addRepository,
     pushFromElsewhere,
+    settlePullRequest,
     failNext(step: 'add' | 'commit', stderr: string) {
       failing = { step, stderr };
     },

@@ -3,7 +3,7 @@
  * settings (`settings:get`, `settings:set`). The renderer reaches the store through `createStoreClient`,
  * which gives it the same `Store` interface the main process has.
  */
-import type { Store } from '../main/store/store';
+import type { PullRequestNotice, Store } from '../main/store/store';
 import type { GrilloApi } from './ipc';
 
 /** Why a store call was refused. Every backend throws only this, so callers handle one error type. */
@@ -24,6 +24,12 @@ export class StoreError extends Error {
     this.name = 'StoreError';
     this.kind = kind;
   }
+}
+
+/** A damaged record's reason (`Damage`) ended as a sentence, so the screen's hint can follow it. */
+export function asSentence(reason: string): string {
+  const text = reason.trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
 }
 
 /** Every method of `Store`: the bridge registers one channel per name. */
@@ -76,6 +82,7 @@ export const STORE_METHODS = [
   'updateDecision',
   'deleteDecision',
   'listPickupComments',
+  'listProjectPickupComments',
   'createSession',
   'getSession',
   'listSessions',
@@ -99,6 +106,9 @@ const everyMethodListed: Record<Exclude<keyof Store, StoreMethod>, never> = {};
 void everyMethodListed;
 
 export type StoreChannel<M extends StoreMethod = StoreMethod> = `store:${M}`;
+
+/** The event a window hears when one of its saves became a pull request because main is protected. */
+export const PULL_REQUEST_CHANNEL = 'store:pull-request';
 
 export function storeChannel<M extends StoreMethod>(method: M): StoreChannel<M> {
   return `store:${method}`;
@@ -125,6 +135,9 @@ declare module './ipc' {
   interface InvokeChannels extends StoreInvokeChannels {
     'settings:get': { request: { key: string; defaultValue: SettingValue }; response: SettingValue };
     'settings:set': { request: { key: string; value: SettingValue }; response: void };
+  }
+  interface EventChannels {
+    'store:pull-request': PullRequestNotice;
   }
 }
 

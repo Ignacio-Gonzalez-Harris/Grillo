@@ -523,6 +523,18 @@ describe('in-memory store: answers, discussions and decisions', () => {
     expect(await store.listPickupComments(ticket)).toEqual([comment]);
   });
 
+  it('lists the waiting comments of every open ticket of the project in one call, in ticket order', async () => {
+    const { store, ticket } = await projectWithTicket();
+    const other = await store.createTicket(PROJECT, newTicket({ title: 'Pricing' }));
+    const closed = await store.createTicket(PROJECT, newTicket({ title: 'Hosting' }));
+    const later = store.addMemberComment(other.id, OTHER, 'Free for all');
+    const first = store.addMemberComment(ticket, OTHER, 'Use GitHub');
+    store.addMemberComment(closed.id, OTHER, 'On a closed ticket');
+    await store.closeTicket(closed.id);
+
+    expect(await store.listProjectPickupComments(PROJECT)).toEqual([first, later]);
+  });
+
   it.each([
     ['an answer', (store: Store, ticket: TicketId) =>
       store.createAnswer(ticket, { question: 'Q2.9', text: 'x', sources: [], via: null, fromComment: null })],
