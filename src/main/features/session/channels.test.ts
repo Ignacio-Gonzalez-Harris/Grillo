@@ -7,8 +7,9 @@ import { createMainIpc } from '../../ipc/bridge';
 import { createFakeIpc } from '../../ipc/fake-ipc';
 import { createMemoryStore } from '../../store/memory';
 import { createSliceBus } from '../audio/slices';
+import { createTranscriber } from '../transcription/transcriber';
 import { announcingTranscriber, registerSessionChannels } from './channels';
-import { createSessionHost, type SessionHost } from './session';
+import { createSessionHost, OUTLIER_AFTER_MS, type SessionHost } from './session';
 
 // Made-up project and logins only.
 const PROJECT = 'example-org/channel-demo';
@@ -103,5 +104,37 @@ describe('session channels', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(changes.map((s) => s?.transcript)).toEqual(['Words 7.']);
+  });
+
+  it("keeps the outlier clock working through the app's wiring: a slice the engine never answers drops only itself", async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const store = createMemoryStore({ now: () => new Date('2026-10-24T09:15:00.000Z') });
+    await store.createProject({ newRepository: { organisation: 'example-org', name: 'channel-demo' } });
+    const bus = createSliceBus();
+    // Wired as ipc.ts wires it: the one-at-a-time transcriber behind the announcing wrapper.
+    const engine = {
+      transcribe: (pcm: Int16Array) =>
+        new Promise<string>((resolve) => {
+          if (pcm[0] !== 1) setTimeout(() => resolve(`Words ${pcm[0]}.`), 1000);
+        }),
+    };
+    const host = createSessionHost({
+      store,
+      slices: bus,
+      transcriber: announcingTranscriber(createTranscriber(engine), () => undefined),
+      agents: { choice: 'terminal', list: () => [], write: () => undefined, send: async () => undefined, ready: async () => undefined },
+    });
+    await host.startSession(PROJECT);
+    await host.tickConsent(HOST);
+    await host.setRecording(true);
+
+    for (const index of [0, 1, 2, 3]) bus.publish({ source: 'microphone', index, pcm: Int16Array.of(index) });
+    await vi.advanceTimersByTimeAsync(OUTLIER_AFTER_MS + 3000);
+    const stopping = host.setRecording(false);
+    await vi.advanceTimersByTimeAsync(1000);
+    await stopping;
+
+    expect(host.state()?.slices).toEqual({ heard: 4, transcribed: 3, silent: 0, dropped: 1 });
+    expect(host.state()?.transcript).toBe('Words 0.\nWords 2.\nWords 3.');
   });
 });
