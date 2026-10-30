@@ -526,10 +526,14 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   said after it is recorded. Listen falls back to Type. Plug the microphone back in (or pick the other source), then
   turn Record on again; the session goes on in the same file.
 - **Transcription behind:** when more than two slices wait for the speech model (a busy laptop can take longer than
-  a slice lasts), a yellow line above the transcript strip says how many and about how many seconds of talk. The
-  words are delayed, not lost; the line goes once the model catches up.
+  a slice lasts), a yellow line above the transcript strip says how many and about how many seconds of talk. Their
+  words come late; a slice the model takes more than 15 seconds over is still left out (see the next point), and the
+  panel does not count those. The line goes once the model catches up.
 - **A slow slice:** each slice gets 15 seconds from the moment the speech model starts on it. Slices queued behind a
   slow one keep their full time, and a slice the model never answers is left out alone; the ones behind it go on.
+  The model works on one slice at a time and cannot stop one midway, so a slice left out keeps working in the
+  background on its own copy of the model while the next slices go to a fresh copy (loaded again, about 150 MB more
+  memory until the left-out slice finishes; for one that never finishes, until Grillo is closed).
 - **Agents not ready yet:** nothing (the session file, presence, mode, transcript) is typed into a grilling agent
   until Claude Code shows its prompt and has taken its first message, so a start-up question (such as "trust this
   folder?") is never answered by Grillo. Answer it in the agent's tab; the session catches up then.

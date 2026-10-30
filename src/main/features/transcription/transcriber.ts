@@ -1,6 +1,11 @@
 /** Turns 16 kHz mono 16-bit PCM into text. The real one is whisper.cpp; tests use a fake. */
 export interface SpeechEngine {
   transcribe(pcm16k: Int16Array): Promise<string>;
+  /**
+   * Gives up on the call in progress: it may run on, but the next call never waits behind it. An engine that runs
+   * calls side by side needs none.
+   */
+  abandonCurrent?(): void;
 }
 
 /** The one error a caller of the transcription feature handles. */
@@ -38,7 +43,10 @@ function runSlice(engine: SpeechEngine, pcm: Int16Array, { started, signal }: Sl
   const text = engine.transcribe(pcm);
   if (signal === undefined) return text;
   return new Promise<string>((resolve, reject) => {
-    const giveUp = () => reject(leftOut());
+    const giveUp = () => {
+      engine.abandonCurrent?.();
+      reject(leftOut());
+    };
     signal.addEventListener('abort', giveUp, { once: true });
     text.then(resolve, reject).finally(() => signal.removeEventListener('abort', giveUp));
   });
@@ -47,7 +55,8 @@ function runSlice(engine: SpeechEngine, pcm: Int16Array, { started, signal }: Sl
 /**
  * Queues slices and hands them to the engine one at a time, in arrival order. A slow outlier delays the
  * slices behind it but never lets them overtake it, so the text always comes out in the order it was spoken.
- * A slice its caller gives up on stops holding the queue.
+ * A slice its caller gives up on stops holding the queue: the engine abandons that call, so the next slice starts, and
+ * its clock with it, only once the engine is really free for it.
  */
 export function createTranscriber(engine: SpeechEngine): Transcriber {
   let queueTail: Promise<unknown> = Promise.resolve();

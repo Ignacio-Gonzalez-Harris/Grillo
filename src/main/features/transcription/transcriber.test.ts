@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createTranscriber, TranscriptionError, type SpeechEngine } from './transcriber';
 
 /** One made-up 16 kHz slice per label; the label rides in the first sample so the fake can tell slices apart. */
@@ -103,6 +103,25 @@ describe('transcriber queue', () => {
     pending.get(2)?.resolve('still listening');
 
     await expect(next).resolves.toBe('still listening');
+  });
+
+  it('tells the engine to abandon the running call when its caller gives up, and only then', async () => {
+    const { engine, pending, settle } = controllableEngine();
+    const abandonCurrent = vi.fn();
+    const transcriber = createTranscriber({ ...engine, abandonCurrent });
+    const giveUp = new AbortController();
+
+    const kept = transcriber.transcribe(slice(1), { signal: new AbortController().signal });
+    await settle();
+    pending.get(1)?.resolve('kept words');
+    await kept;
+    expect(abandonCurrent).not.toHaveBeenCalled();
+
+    const stuck = transcriber.transcribe(slice(2), { signal: giveUp.signal });
+    await settle();
+    giveUp.abort();
+    await expect(stuck).rejects.toThrow(TranscriptionError);
+    expect(abandonCurrent).toHaveBeenCalledTimes(1);
   });
 
   it('never hands the engine a slice its caller gave up on before it started', async () => {

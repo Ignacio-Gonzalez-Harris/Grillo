@@ -1614,7 +1614,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     </div>
 
     <div class="state" data-state="transcription-behind">
-      <p class="state-caption">State: Recording, transcription behind (more than two slices wait for the speech model; the words are delayed, not lost)</p>
+      <p class="state-caption">State: Recording, transcription behind (more than two slices wait for the speech model; their words come late, and a slice the model takes more than 15 seconds over is left out)</p>
       <div class="window glass">
         <div class="rec-banner"><span class="sdot"></span>Recording<span class="small">· audio and transcription stay on this laptop</span><span class="spacer"></span><span class="small">00:21:40</span></div>
         <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
@@ -1649,7 +1649,7 @@ Sample transcript line 2: a made-up reply.</textarea>
 
 <span class="t-prompt">❯</span> </pre>
             <div class="typebox"><input type="text" value="…sample live transcript words appear here while the channel is open" aria-label="Type to the agent"><button class="btn">Send</button></div>
-            <div class="note warn" role="status">Transcription is behind: 3 slices (about 15 seconds of talk) are waiting for the speech model. No words are lost; they appear here once transcribed.</div>
+            <div class="note warn" role="status">Transcription is behind: 3 slices (about 15 seconds of talk) are waiting for the speech model. They appear here once transcribed; a slice the model takes more than 15 seconds over is left out of the transcript.</div>
             <div class="transcript">
               <p><span class="muted">10:21:05</span> Sample transcript line: a made-up remark, transcribed late.</p>
             </div>

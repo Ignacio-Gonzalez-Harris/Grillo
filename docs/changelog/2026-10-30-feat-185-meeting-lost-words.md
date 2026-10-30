@@ -1,1 +1,1 @@
-A live meeting now tells the host when spoken words are lost or delayed (microphone unplugged, transcription behind), keeps healthy slices behind a slow one, and never types into an agent before it is ready.
+A live meeting now stops and says why when the microphone or call audio goes away, shows when transcription falls behind, keeps the healthy slices behind a slow one, and never types into an agent before it is ready.

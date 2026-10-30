@@ -83,7 +83,8 @@ function slicesWaiting(slices: SliceCounts): number {
 export function behindText(waiting: number): string {
   return (
     `Transcription is behind: ${waiting} slices (about ${waiting * SLICE_SECONDS} seconds of talk) are waiting for ` +
-    'the speech model. No words are lost; they appear here once transcribed.'
+    'the speech model. They appear here once transcribed; a slice the model takes more than 15 seconds over is ' +
+    'left out of the transcript.'
   );
 }
 
