@@ -273,8 +273,8 @@ member with the store's claim rule, through `gh`:
    grilling agent: write nothing on it and take the next ticket on the frontier (or stop, saying so in one line, when
    the member named this ticket). A `/grillo-meeting` agent has already held it in its session and skips this step.
 2. **Re-read its assignees**: `gh issue view <N> --json assignees`. Assigned to another login: it is theirs. Say who
-   holds it, write nothing on it, and take the next ticket on the frontier (or stop, when the member named this
-   ticket). Already assigned to the member (they took it or were sent it): it is yours, since you hold it on this
+   holds it, write nothing on it, let go of its hold, and take the next ticket on the frontier (or stop, when the
+   member named this ticket). Already assigned to the member (they took it or were sent it): it is yours, since you hold it on this
    laptop; carry on.
 3. **Assign yourself**: `gh issue edit <N> --add-assignee @me`.
 4. **Re-read the assignees.** If another login is also assigned, the earlier assignment wins, judged by each login's

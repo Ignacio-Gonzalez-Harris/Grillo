@@ -585,7 +585,8 @@ The screen that starts it arrives with the project creation story; until then a 
   the project folder's `.git` (never committed), with the tab's id in its `tab` file: several grilling agents on one
   laptop all act for your login, so a ticket assigned to you may be another agent's, and only the agent that made the
   folder takes it. The others take the next ticket on the frontier. The agent removes the folder when it closes,
-  merges or releases the ticket; Grillo removes it when the tab stops. If Grillo itself crashed while an agent held a
+  merges or releases the ticket, or finds it is another login's (the answer, research, prototype and task agents
+  too, at Done); Grillo removes it when the tab stops. If Grillo itself crashed while an agent held a
   ticket, that ticket stays held on this laptop: delete `.git/meeting-holds/` in the project folder while no agent runs
   there.
 - **The map-done rule:** after every ticket the agent closes or merges, it re-reads the map; with no open ticket and no

@@ -122,6 +122,8 @@ Re-read the ticket and every comment, fresh from GitHub, then:
 - **Questions still open** (own-time chat only): post no decision. Release the ticket,
   `gh issue edit <N> --remove-assignee @me`, and read the assignees back: it returns to the pool, unlocked, with its
   open questions visible to everyone. Name the open questions by code in one line.
+- **Either way**, then let go of its hold (`grillo-wayfinder`, "Holding a ticket on this laptop"), so another
+  grilling agent on this laptop may take it; a ticket you never claimed here has no hold of yours to let go of.
 
 After done, **an own-time agent stops**: report, and take no other ticket.
 

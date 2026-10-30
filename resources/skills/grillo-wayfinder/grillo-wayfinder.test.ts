@@ -325,4 +325,27 @@ describe('holding a ticket on this laptop, outside a live session', () => {
     expect(holdStep).toBeLessThan(claiming.indexOf('--add-assignee @me'));
     expect(/^7\. [\s\S]*/m.exec(working)?.[0]).toContain(link);
   });
+
+  it('lets go of the hold when a claimed ticket turns out to be another login\'s, as when its claim is lost', async () => {
+    const claiming = sectionOf(await read('SKILL.md'), 'Claiming a ticket');
+    const steps = claiming.split(/^(?=\d\. )/m).slice(1);
+    const [, othersStep] = steps;
+
+    expect(steps).toHaveLength(4);
+    expect(othersStep).toContain('Assigned to another login');
+    for (const step of [steps[1], steps[3]]) {
+      expect(step.replace(/\s+/g, ' ')).toContain('let go of its hold');
+    }
+  });
+
+  it('is let go of at done by every skill that claims through it, whether the ticket closes or is released', async () => {
+    const claimers = ['grillo-answer', 'grillo-research', 'grillo-prototype', 'grillo-task'];
+    for (const name of claimers) {
+      const skill = (await readFile(join(SKILLS_ROOT, name, 'SKILL.md'), 'utf8')).replace(/\r\n/g, '\n');
+      const done = sectionOf(skill, 'Done: finishing the ticket').replace(/\s+/g, ' ');
+
+      expect(skill.replace(/\s+/g, ' '), name).toContain('`grillo-wayfinder`, "Claiming a ticket"');
+      expect(done, name).toMatch(/\*\*Either way\*\*, then let go of its hold \(`grillo-wayfinder`, "Holding a ticket on this laptop"\)/);
+    }
+  });
 });
