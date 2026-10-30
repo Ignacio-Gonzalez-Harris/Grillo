@@ -568,7 +568,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     const parts: HTMLElement[] = [];
     const visible = Array.isArray(repositories) ? matchingRepositories(repositories, form.connectSearch) : [];
     if (!Array.isArray(repositories)) {
-      parts.push(note(`Grillo could not list your repositories: ${repositories.error} Type the repository in full as owner/repository instead.`, 'warn'));
+      parts.push(note(`Grillo could not list your repositories: ${asSentence(repositories.error)} Type the repository in full as owner/repository instead.`, 'warn'));
     } else if (visible.length === 0) {
       parts.push(el('p', 'small muted m0', [repositories.length === 0 ? 'Grillo found no repository of yours.' : 'No repository of yours matches this search.']));
     }

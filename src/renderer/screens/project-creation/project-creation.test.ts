@@ -507,7 +507,9 @@ describe('project creation: the repository list', () => {
     vi.spyOn(store, 'listRepositories').mockRejectedValue(new Error('gh is signed out'));
     await listed(context);
 
-    expect(text(cardTitled(root, '1 · Repository'))).toContain('Grillo could not list your repositories: gh is signed out');
+    expect(text(cardTitled(root, '1 · Repository').querySelector('.note.warn'))).toBe(
+      'Grillo could not list your repositories: gh is signed out. Type the repository in full as owner/repository instead.',
+    );
 
     type(root, 'input[aria-label="Search repositories"]', 'example-org/sample-repo-1');
     click(root, 'Check access');
