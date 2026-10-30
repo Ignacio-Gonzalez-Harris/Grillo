@@ -35,7 +35,7 @@ function isAgentInfo(value: unknown): value is AgentInfo {
 function asMounted(result: unknown): MountedPanel {
   if (typeof result !== 'object' || result === null) return {};
   const hooks: MountedPanel = {};
-  for (const hook of ['shown', 'setInput', 'dispose'] as const satisfies readonly PanelHook[]) {
+  for (const hook of ['shown', 'setInput', 'dispose', 'endNote'] as const satisfies readonly PanelHook[]) {
     const fn: unknown = (result as Record<string, unknown>)[hook];
     if (typeof fn === 'function') hooks[hook] = fn.bind(result);
   }
@@ -52,11 +52,14 @@ function safely<T>(agentId: AgentId, what: string, run: () => T): T | undefined 
   }
 }
 
-function notRunning(): HTMLElement {
-  const message = document.createElement('p');
-  message.className = 'muted';
-  message.textContent = 'This agent is not running.';
-  const panel = glassPanel([message]);
+function notRunning(notes: readonly string[] = []): HTMLElement {
+  const lines = ['This agent is not running.', ...notes].map((text) => {
+    const line = document.createElement('p');
+    line.className = 'muted';
+    line.textContent = text;
+    return line;
+  });
+  const panel = glassPanel(lines);
   panel.classList.add('agent-tab-gone');
   return panel;
 }
@@ -119,10 +122,13 @@ export function createAgentTabs(shell: ShellContext, panels: TabPanels): AgentTa
   }
 
   function close(agentId: AgentId, session: Session): void {
+    const notes = session.mounted
+      .map((panel) => safely(agentId, 'say why it ended', () => panel.endNote?.()))
+      .filter((note): note is string => typeof note === 'string' && note !== '');
     session.mounted.forEach((panel) => safely(agentId, 'close', () => panel.dispose?.()));
     session.headerSlots.forEach((slot) => slot.remove());
     // An agent that stops while its tab is open leaves the message, never an empty screen.
-    if (session.root.isConnected) session.root.replaceWith(notRunning());
+    if (session.root.isConnected) session.root.replaceWith(notRunning(notes));
     else session.root.remove();
     sessions.delete(agentId);
   }

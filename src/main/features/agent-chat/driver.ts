@@ -32,9 +32,21 @@ export const CHAT_FLAGS: readonly string[] = [
 /** Sent to Claude Code when the member says no to a tool or dismisses a question. */
 const DENIED_MESSAGE = 'The member said no.';
 
+/** How much of Claude Code's own error text (stderr) a failed end shows: its last lines, each cut to a length. */
+const ERROR_LINES_SHOWN = 10;
+const ERROR_LINE_LENGTH = 160;
+/** Terminal colour and cursor codes, which mean nothing in a chat. */
+const ESCAPE = String.fromCharCode(27);
+const TERMINAL_CODES = new RegExp(`${ESCAPE}\\[[0-9;?]*[A-Za-z]`, 'g');
+
+/** The chat messages after which the agent waits for the member, until it is at work again. */
+const WAITING_MESSAGES: ReadonlySet<ChatMessage['type']> = new Set(['result', 'question', 'permission']);
+
 /** The part of a child process the driver uses: stdout as text, stdin, and its end. */
 export interface ChatProcess {
   onStdout(listener: (chunk: string) => void): void;
+  /** Its own error text (stderr), as text. */
+  onStderr(listener: (chunk: string) => void): void;
   /** Null when the process could not start or was killed by a signal. */
   onExit(listener: (exitCode: number | null) => void): void;
   write(data: string): void;
@@ -78,8 +90,11 @@ export interface ChatDriver {
   allow(id: string): ChatActionResult;
   /** Refuses a `permission` message, or dismisses a `question`. */
   deny(id: string): ChatActionResult;
-  /** Ends the agent's Claude Code. Does nothing for an agent that is already gone. */
-  stop(id: ChatAgentId): void;
+  /**
+   * Ends the agent's Claude Code without reporting an exit; says whether it was running. Does nothing for an agent
+   * that is already gone.
+   */
+  stop(id: ChatAgentId): boolean;
   stopAll(): void;
 }
 
@@ -97,10 +112,25 @@ interface RunningChatAgent {
   seenRequestIds: Set<string>;
   /** Ids of the control requests Grillo sent and Claude Code has not answered yet. */
   awaitingResponses: Set<string>;
+  /** Whether the agent was last shown waiting for the member, so its next tool event says it works again. */
+  waiting: boolean;
+  /** The last lines of Claude Code's own error text, shown if it ends badly. */
+  errorLines: string[];
 }
 
 const refused = (reason: string): ChatActionResult => ({ ok: false, reason });
 const OK: ChatActionResult = { ok: true };
+
+/** The failed end of a chat agent, with the last lines of Claude Code's own error text. */
+function failedEnd(exitCode: number | null, errorLines: readonly string[]): string {
+  const ended =
+    exitCode === null
+      ? 'Claude Code could not start, or was ended from outside.'
+      : `Claude Code stopped with exit code ${exitCode}.`;
+  return errorLines.length === 0
+    ? `${ended} It printed no error text.`
+    : `${ended} The last lines of its error text:\n${errorLines.join('\n')}`;
+}
 
 function assertValidRequest(request: StartChatAgentRequest): void {
   const valid =
@@ -152,15 +182,41 @@ export function createClaudeChatDriver(deps: ChatDriverDeps): ChatDriver {
     }
   }
 
+  /** Hands one message on, keeping track of whether it leaves the agent waiting for the member. */
+  function say(agent: RunningChatAgent, message: ChatMessage): void {
+    if (WAITING_MESSAGES.has(message.type)) agent.waiting = true;
+    else if (message.type !== 'error') agent.waiting = false;
+    deps.events.message(agent.id, message);
+  }
+
   function writeUserMessage(agent: RunningChatAgent, text: string): void {
     writeLine(agent, { type: 'user', message: { role: 'user', content: text } });
-    deps.events.message(agent.id, { type: 'user', text });
+    say(agent, { type: 'user', text });
+  }
+
+  /** Answers the pending request `id` and says the agent works on. */
+  function settle(agent: RunningChatAgent, id: string, response: unknown): ChatActionResult {
+    pending.delete(id);
+    respond(agent, id, response);
+    say(agent, { type: 'answered', id });
+    return OK;
+  }
+
+  /** Drops a request Claude Code withdrew. One it already had answered, or withdrew before, needs nothing more. */
+  function cancel(agent: RunningChatAgent, requestId: string): void {
+    const request = pending.get(requestId);
+    if (request?.agentId === agent.id) {
+      pending.delete(requestId);
+      say(agent, { type: 'cancelled', id: requestId });
+    } else if (!agent.seenRequestIds.has(requestId)) {
+      say(agent, { type: 'error', message: `Claude Code withdrew request '${requestId}', which it never sent` });
+    }
   }
 
   /** Takes a control request once; a repeated id is an error and is not answered again. */
   function claimRequestId(agent: RunningChatAgent, requestId: string): boolean {
     if (agent.seenRequestIds.has(requestId) || pending.has(requestId)) {
-      deps.events.message(agent.id, { type: 'error', message: `Claude Code repeated request '${requestId}'` });
+      say(agent, { type: 'error', message: `Claude Code repeated request '${requestId}'` });
       return false;
     }
     agent.seenRequestIds.add(requestId);
@@ -168,26 +224,26 @@ export function createClaudeChatDriver(deps: ChatDriverDeps): ChatDriver {
   }
 
   function handle(agent: RunningChatAgent, event: StreamEvent): void {
-    const say = (message: ChatMessage): void => deps.events.message(agent.id, message);
+    const tell = (message: ChatMessage): void => say(agent, message);
     switch (event.kind) {
       case 'init':
-        say({ type: 'init', sessionId: event.sessionId, model: event.model, tools: event.tools });
+        tell({ type: 'init', sessionId: event.sessionId, model: event.model, tools: event.tools });
         return;
       case 'assistant':
-        say({ type: 'assistant', text: event.text });
+        tell({ type: 'assistant', text: event.text });
         return;
       case 'result':
-        say({ type: 'result', isError: event.isError, text: event.text });
+        tell({ type: 'result', isError: event.isError, text: event.text });
         return;
       case 'question':
         if (!claimRequestId(agent, event.requestId)) return;
         pending.set(event.requestId, { agentId: agent.id, kind: 'question', input: event.input, questions: event.questions });
-        say({ type: 'question', id: event.requestId, questions: event.questions });
+        tell({ type: 'question', id: event.requestId, questions: event.questions });
         return;
       case 'permission':
         if (!claimRequestId(agent, event.requestId)) return;
         pending.set(event.requestId, { agentId: agent.id, kind: 'permission', input: event.input, questions: [] });
-        say({
+        tell({
           type: 'permission',
           id: event.requestId,
           toolName: event.toolName,
@@ -201,17 +257,23 @@ export function createClaudeChatDriver(deps: ChatDriverDeps): ChatDriver {
           type: 'control_response',
           response: { subtype: 'error', request_id: event.requestId, error: event.message },
         });
-        say({ type: 'error', message: event.message });
+        tell({ type: 'error', message: event.message });
         return;
       case 'control-response':
         if (!agent.awaitingResponses.delete(event.requestId)) {
-          say({ type: 'error', message: `Claude Code answered request '${event.requestId}', which Grillo never sent` });
+          tell({ type: 'error', message: `Claude Code answered request '${event.requestId}', which Grillo never sent` });
         } else if (event.error !== undefined) {
-          say({ type: 'error', message: `Claude Code refused to open the chat: ${event.error}` });
+          tell({ type: 'error', message: `Claude Code refused to open the chat: ${event.error}` });
         }
         return;
+      case 'cancel':
+        cancel(agent, event.requestId);
+        return;
+      case 'activity':
+        if (agent.waiting) tell({ type: 'working' });
+        return;
       case 'error':
-        say({ type: 'error', message: event.message });
+        tell({ type: 'error', message: event.message });
         return;
       case 'ignored':
         return;
@@ -225,7 +287,14 @@ export function createClaudeChatDriver(deps: ChatDriverDeps): ChatDriver {
 
     const id = randomUUID();
     const process = deps.spawnProcess(claude, CHAT_FLAGS, { cwd: request.folder, env: { ...deps.env, [AGENT_ID_VARIABLE]: id } });
-    const agent: RunningChatAgent = { id, process, seenRequestIds: new Set(), awaitingResponses: new Set() };
+    const agent: RunningChatAgent = {
+      id,
+      process,
+      seenRequestIds: new Set(),
+      awaitingResponses: new Set(),
+      waiting: false,
+      errorLines: [],
+    };
     agents.set(id, agent);
 
     const lines = createLineSplitter();
@@ -236,9 +305,19 @@ export function createClaudeChatDriver(deps: ChatDriverDeps): ChatDriver {
     process.onStdout((chunk) => {
       if (agents.get(id) === agent) lines.push(chunk).forEach(read);
     });
+    const errorText = createLineSplitter();
+    const keepErrorLines = (lines: string[]): void => {
+      const readable = lines.map((line) => line.replace(TERMINAL_CODES, '').trim().slice(0, ERROR_LINE_LENGTH));
+      agent.errorLines = [...agent.errorLines, ...readable.filter((line) => line !== '')].slice(-ERROR_LINES_SHOWN);
+    };
+    process.onStderr((chunk) => {
+      if (agents.get(id) === agent) keepErrorLines(errorText.push(chunk));
+    });
     process.onExit((exitCode) => {
       if (agents.get(id) !== agent) return;
       lines.flush().forEach(read);
+      keepErrorLines(errorText.flush());
+      if (exitCode !== 0) say(agent, { type: 'failed', message: failedEnd(exitCode, agent.errorLines) });
       forget(agent);
       deps.events.exited(id, exitCode);
     });
@@ -264,11 +343,12 @@ export function createClaudeChatDriver(deps: ChatDriverDeps): ChatDriver {
     return { request, agent };
   }
 
-  function stop(id: ChatAgentId): void {
+  function stop(id: ChatAgentId): boolean {
     const agent = agents.get(id);
-    if (!agent) return;
+    if (!agent) return false;
     forget(agent);
     agent.process.stop();
+    return true;
   }
 
   return {
@@ -285,23 +365,17 @@ export function createClaudeChatDriver(deps: ChatDriverDeps): ChatDriver {
       if (typeof taken === 'string') return refused(taken);
       const answers = answersFor(taken.request.questions, option);
       if (typeof answers === 'string') return refused(answers);
-      pending.delete(id);
-      respond(taken.agent, id, { behavior: 'allow', updatedInput: { ...taken.request.input, answers } });
-      return OK;
+      return settle(taken.agent, id, { behavior: 'allow', updatedInput: { ...taken.request.input, answers } });
     },
     allow(id) {
       const taken = takePending(id, ['permission']);
       if (typeof taken === 'string') return refused(taken);
-      pending.delete(id);
-      respond(taken.agent, id, { behavior: 'allow', updatedInput: taken.request.input });
-      return OK;
+      return settle(taken.agent, id, { behavior: 'allow', updatedInput: taken.request.input });
     },
     deny(id) {
       const taken = takePending(id, ['permission', 'question']);
       if (typeof taken === 'string') return refused(taken);
-      pending.delete(id);
-      respond(taken.agent, id, { behavior: 'deny', message: DENIED_MESSAGE });
-      return OK;
+      return settle(taken.agent, id, { behavior: 'deny', message: DENIED_MESSAGE });
     },
     stop,
     stopAll() {

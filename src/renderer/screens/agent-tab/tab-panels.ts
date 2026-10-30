@@ -34,6 +34,8 @@ export interface MountedPanel {
   setInput?(text: string): void;
   /** Called when the agent stops running and its tab goes away. */
   dispose?(): void;
+  /** Called just before `dispose`: why the agent ended, if the panel knows, shown under "This agent is not running". */
+  endNote?(): string | undefined;
 }
 
 export interface TabPanel {

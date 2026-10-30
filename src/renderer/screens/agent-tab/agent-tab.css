@@ -12,6 +12,8 @@
 .agent-tab-body { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--space-3); min-height: 0; align-self: stretch; }
 .agent-tab-gone { padding: var(--space-5); }
 .agent-tab-gone p { margin: 0; }
+/* Why the agent ended (Claude Code's own error lines), kept line by line under "This agent is not running." */
+.agent-tab-gone p + p { margin-top: var(--space-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 .tab .tab-panel { display: inline-flex; align-items: center; }
 
 @media (max-width: 760px) {

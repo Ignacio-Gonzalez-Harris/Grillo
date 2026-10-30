@@ -21,6 +21,10 @@ export type StreamEvent =
   | { kind: 'refused-request'; requestId: string; message: string }
   /** Claude Code's answer to a control request Grillo sent. */
   | { kind: 'control-response'; requestId: string; error: string | undefined }
+  /** Claude Code withdrew a control request it sent. */
+  | { kind: 'cancel'; requestId: string }
+  /** The agent is at work with no words for the member: a tool call, a tool's result, thinking or a sub-agent. */
+  | { kind: 'activity' }
   | { kind: 'ignored' }
   | { kind: 'error'; message: string };
 
@@ -78,7 +82,7 @@ function parseAssistant(event: JsonObject): StreamEvent {
   }
   // A sub-agent's messages carry the tool call that started it; only the agent's own words become bubbles.
   if (isText(event.parent_tool_use_id) || textBlocks.length === 0) {
-    return { kind: 'ignored' };
+    return { kind: 'activity' };
   }
   return { kind: 'assistant', text: textBlocks.map((block) => block.text as string).join('\n') };
 }
@@ -145,6 +149,20 @@ function parseControlRequest(event: JsonObject): StreamEvent {
   };
 }
 
+/** A `user` event Claude Code prints is a tool's result coming back: work, never words for the member. */
+function parseUser(event: JsonObject): StreamEvent {
+  const content = isObject(event.message) ? event.message.content : undefined;
+  const toolResult = Array.isArray(content) && content.some((block) => isObject(block) && block.type === 'tool_result');
+  return toolResult ? { kind: 'activity' } : { kind: 'ignored' };
+}
+
+function parseCancelRequest(event: JsonObject): StreamEvent {
+  const { request_id: requestId } = event;
+  return isText(requestId)
+    ? { kind: 'cancel', requestId }
+    : error('Claude Code withdrew a request without an id, so its buttons cannot be found');
+}
+
 function parseControlResponse(event: JsonObject): StreamEvent {
   const { response } = event;
   if (!isObject(response) || !isText(response.request_id)) {
@@ -180,6 +198,10 @@ export function parseEventLine(line: string): StreamEvent {
       return parseControlRequest(event);
     case 'control_response':
       return parseControlResponse(event);
+    case 'control_cancel_request':
+      return parseCancelRequest(event);
+    case 'user':
+      return parseUser(event);
     default:
       return { kind: 'ignored' };
   }

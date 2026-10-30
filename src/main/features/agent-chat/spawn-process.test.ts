@@ -3,10 +3,11 @@ import { PassThrough } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import { createSpawnChatProcess, type SpawnChild } from './spawn-process';
 
-/** A stand-in for a Node child process: piped stdin and stdout, and the `exit` and `close` events. */
+/** A stand-in for a Node child process: piped stdin, stdout and stderr, and the `exit` and `close` events. */
 class FakeChild extends EventEmitter {
   readonly stdin = new PassThrough();
   readonly stdout = new PassThrough();
+  readonly stderr = new PassThrough();
   killed = false;
 
   kill(): boolean {
@@ -24,6 +25,7 @@ function setup(platform: NodeJS.Platform = 'linux') {
   });
   const seen: string[] = [];
   process.onStdout((chunk) => seen.push(`out:${chunk}`));
+  process.onStderr((chunk) => seen.push(`err:${chunk}`));
   process.onExit((exitCode) => seen.push(`exit:${exitCode}`));
   return { child, process, seen };
 }
@@ -43,13 +45,23 @@ describe('spawning the claude process', () => {
     expect(seen).toEqual(['out:{"type":"result"}\n', 'exit:0']);
   });
 
-  it('reports a process that could not start as an end with no exit code', () => {
+  it('reports a process that could not start as an end with no exit code, its reason as error text', () => {
     const { child, seen } = setup();
 
     child.emit('error', new Error('spawn claude ENOENT'));
     child.emit('close', -2, null);
 
-    expect(seen).toEqual(['exit:null']);
+    expect(seen).toEqual(['err:spawn claude ENOENT\n', 'exit:null']);
+  });
+
+  it('pipes its error text, as text, and reports it before the end', async () => {
+    const { child, seen } = setup();
+
+    child.stderr.end(Buffer.from('Error: made-up failure é\n', 'utf8'));
+    await settle();
+    child.emit('close', 1, null);
+
+    expect(seen).toEqual(['err:Error: made-up failure é\n', 'exit:1']);
   });
 
   it('runs a Windows .cmd shim through the shell with its path quoted, and an executable directly', () => {

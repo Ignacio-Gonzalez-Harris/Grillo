@@ -273,7 +273,9 @@ Each agent shows in its own tab: click the agent's name on the tab bar.
   changes. Grillo writes no `CLAUDE.md`; your own user-level `CLAUDE.md` still applies.
 - **Several agents run at once**; stopping one leaves the others running. Closing Grillo stops them all.
 - **The waiting dot:** a chat agent counts as waiting for you once its turn ends or it asks a question or a
-  permission, and stops waiting when it starts a turn, says something or is sent a message. A terminal agent counts
+  permission, and stops waiting when it starts a turn, says something or is sent a message. Answering, allowing or
+  denying takes the dot off at once (unless another question or permission still waits), and so does Claude Code
+  withdrawing the question; a tool that runs, or the agent thinking, after its turn ended counts as work too. A terminal agent counts
   as waiting once it has printed nothing for 3 seconds after printing something, and stops waiting as soon as it
   prints again.
 
@@ -317,6 +319,13 @@ label is in English.
   stay greyed out and your pick stays highlighted.
 - **Permission prompts** ("Asks permission") show the tool and what it would run, with **Allow** and **Deny**. A
   question or prompt Claude Code repeats is shown, and answered, once.
+- **Withdrawn questions:** when Claude Code withdraws a question or permission prompt before you answer it, its
+  buttons disappear and "The agent withdrew this question." (or "this request.") shows in their place. A
+  "Something else" answer you had started for it is dropped: the next Send is a plain message.
+- **When Claude Code fails:** if the agent's Claude Code ends with an error (it could not start, or stopped with
+  an exit code other than 0), the chat shows a red note with the exit code and the last 10 lines of Claude Code's
+  own error text (for example a flag it does not know). The tab then closes, and the same note stays under "This
+  agent is not running." while you are on that tab.
 - **The message box:** Enter or Send writes one chat message to the agent. A message that cannot be sent, an answer
   that is refused, an error the agent reports, a turn that ends in error, or a message Grillo cannot read shows as a
   red note in the chat; the agent carries on.
@@ -341,8 +350,8 @@ label is in English.
 ### Agent chat protocol (release 2)
 
 The chat view's engine, and what every agent tab runs on under the chat runtime. Its `agent-chat:*` channels take a
-tab's id, since the tab and its chat agent share it; stop a tab with `agents:stop`, which also takes it off the tab
-bar. While a chat agent's Open channel holds transcript words, main sends them on `session:held` (`''` once sent);
+tab's id, since the tab and its chat agent share it; stop a tab with `agents:stop` or `agent-chat:stop`, and either
+takes it off the tab bar (`agent-chat:stop` reports the end on `agent-chat:exited` with no exit code). While a chat agent's Open channel holds transcript words, main sends them on `session:held` (`''` once sent);
 `session:sendBox` sends the message box with the held words it showed, so they are never sent twice;
 `session:editBox` keeps a grilling agent's box as the member edits it, so a meeting control sends what the box shows
 (`session:held` then carries `sent: true` and the view empties the box); `session:releaseHeld` forgets the box when
@@ -354,8 +363,12 @@ an answer took it.
   apply. Grillo's skills are copied in first, as for every agent, so the folder must be a git clone.
 - **What comes back** on `agent-chat:message`: `init` (each turn), `assistant` (text bubbles), `user` (every
   message Grillo wrote in, first message and relays included), `question` (clickable options), `permission` (a
-  tool waiting for Allow or Deny), `result` (turn end) and `error` (a line it could not read; the agent carries
-  on). Every raw line also goes out on `agent-chat:raw`, for the "show terminal" switch.
+  tool waiting for Allow or Deny), `result` (turn end), `answered` (an answer, allow or deny went to Claude Code:
+  the agent works on), `cancelled` (Claude Code withdrew that question or permission, matched by its request id),
+  `working` (a tool event or thinking after the agent waited), `failed` (Claude Code ended with an error: the exit
+  code and the last lines of its stderr) and `error` (a line it could not read; the agent carries on). A withdrawal
+  for a request Claude Code never sent, or one with no id, is an `error`; one for a request already answered is
+  ignored. Every raw line also goes out on `agent-chat:raw`, for the "show terminal" switch.
 - **Answering:** `agent-chat:answer` with the question's id and the chosen label (or free text; with several
   questions, question text to answer), `agent-chat:allow` and `agent-chat:deny` with the permission's id. Deny also
   dismisses a question. Each id is answered once; a second answer, an unknown id or an empty answer comes back as

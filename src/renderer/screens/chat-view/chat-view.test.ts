@@ -142,6 +142,10 @@ async function app(choice: AgentRuntimeChoice = 'chat') {
     box,
     sendButton,
     buttonNamed,
+    /** The agent's tab on the tab bar, while it is there. */
+    tab: (id: string) => root.querySelector<HTMLElement>(`nav [data-agent-id="${id}"]`),
+    /** Whether the agent's tab shows its "waiting for you" dot. */
+    waitingDot: (id: string) => !(root.querySelector<HTMLElement>(`nav [data-agent-id="${id}"] .dot`) as HTMLElement).hidden,
     /** The Use it line under the box, while it shows. */
     hint: () => {
       const hint = hintOf(chat());
@@ -344,6 +348,100 @@ describe('chat view: the body of every chat agent tab (prototype screen-chat-vie
     });
     expect(view.buttonNamed('Allow').disabled).toBe(true);
     expect(view.buttonNamed('Deny').disabled).toBe(true);
+  });
+
+  it('shows the agent working, not waiting for you, once the member answers, until it next waits', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('generic', 'Sample customer email');
+
+    process.emit(recorded.questionRequest);
+    await flush();
+    expect(view.waitingDot(id)).toBe(true);
+    view.buttonNamed('Blue').click();
+    await flush();
+    expect(view.waitingDot(id)).toBe(false);
+
+    process.emit(recorded.toolResult, recorded.permissionRequest);
+    await flush();
+    expect(view.waitingDot(id)).toBe(true);
+    view.buttonNamed('Deny').click();
+    await flush();
+    expect(view.waitingDot(id)).toBe(false);
+
+    process.emit(recorded.result('Sample turn end'));
+    await flush();
+    expect(view.waitingDot(id)).toBe(true);
+  });
+
+  it.each([
+    ['question', recorded.questionRequest, QUESTION_REQUEST_ID, ['Red', 'Blue', 'Something else']],
+    ['permission', recorded.permissionRequest, PERMISSION_REQUEST_ID, ['Allow', 'Deny']],
+  ])('takes away the buttons of a %s Claude Code withdraws, and says so', async (_kind, line, requestId, buttons) => {
+    const view = await app();
+    const { id, process } = await view.startAgent('generic', 'Sample customer email');
+    process.emit(line);
+    await flush();
+    const labels = () => [...view.chat().querySelectorAll('.msgs button')].map((button) => button.textContent ?? '');
+    expect(buttons.every((name) => labels().some((label) => label.startsWith(name)))).toBe(true);
+
+    process.emit(recorded.cancelRequest(requestId));
+    await flush();
+
+    expect(labels()).toEqual([]);
+    expect(view.chat().querySelector('.msgs')?.textContent).toContain('The agent withdrew this');
+    expect(view.waitingDot(id)).toBe(false);
+  });
+
+  it('puts a withdrawn "Something else" answer back to a plain message', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('generic', 'Sample customer email');
+    process.emit(recorded.questionRequest);
+    view.buttonNamed('Something else').click();
+    process.emit(recorded.cancelRequest(QUESTION_REQUEST_ID));
+    await flush();
+
+    view.box().value = 'A made-up plain message';
+    view.sendButton().click();
+    await flush();
+
+    expect(view.box().placeholder).toBe('Write to the agent…');
+    expect(view.writtenAfterStart(process).at(-1)).toEqual({
+      type: 'user',
+      message: { role: 'user', content: 'A made-up plain message' },
+    });
+    expect(view.tab(id)).not.toBeNull();
+  });
+
+  it('removes the tab of a chat agent stopped through the agent chat channel', async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('generic', 'Sample customer email');
+
+    await view.grillo.invoke('agent-chat:stop', { id });
+    await flush();
+
+    expect(process.stopped).toBe(true);
+    expect(view.tab(id)).toBeNull();
+    expect(view.content().textContent).toBe('This agent is not running.');
+  });
+
+  it("shows the last lines of Claude Code's own error text when it fails to start", async () => {
+    const view = await app();
+    const { id, process } = await view.startAgent('generic', 'Sample customer email');
+    const inChat: string[] = [];
+    view.grillo.on('agent-chat:message', ({ message }) => {
+      if (message.type === 'failed') inChat.push(message.message);
+    });
+
+    process.printError("Error: made-up option '--sample' is not known\nSee claude --help.\n");
+    process.exit(1);
+    await flush();
+
+    expect(inChat).toEqual([expect.stringContaining("Error: made-up option '--sample' is not known\nSee claude --help.")]);
+    expect(view.tab(id)).toBeNull();
+    const shown = view.content().textContent ?? '';
+    expect(shown).toContain('This agent is not running.');
+    expect(shown).toContain('exit code 1');
+    expect(shown).toContain("Error: made-up option '--sample' is not known\nSee claude --help.");
   });
 
   it('shows the raw event stream, read-only, under the chat while "Show terminal" is on', async () => {

@@ -5,6 +5,7 @@ export class FakeChatProcess implements ChatProcess {
   readonly written: string[] = [];
   stopped = false;
   private readonly stdoutListeners: Array<(chunk: string) => void> = [];
+  private readonly stderrListeners: Array<(chunk: string) => void> = [];
   private readonly exitListeners: Array<(exitCode: number | null) => void> = [];
 
   constructor(
@@ -15,6 +16,10 @@ export class FakeChatProcess implements ChatProcess {
 
   onStdout(listener: (chunk: string) => void): void {
     this.stdoutListeners.push(listener);
+  }
+
+  onStderr(listener: (chunk: string) => void): void {
+    this.stderrListeners.push(listener);
   }
 
   onExit(listener: (exitCode: number | null) => void): void {
@@ -48,6 +53,13 @@ export class FakeChatProcess implements ChatProcess {
   /** Claude Code prints whole event lines. */
   emit(...lines: string[]): void {
     this.print(lines.map((line) => `${line}\n`).join(''));
+  }
+
+  /** Claude Code prints a raw chunk of its error text (stderr). */
+  printError(chunk: string): void {
+    for (const listener of this.stderrListeners) {
+      listener(chunk);
+    }
   }
 
   exit(exitCode: number | null): void {
