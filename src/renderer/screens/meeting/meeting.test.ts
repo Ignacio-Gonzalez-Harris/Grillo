@@ -480,6 +480,25 @@ describe('meeting screen: its states', () => {
     expect(panel().querySelector('.note.err')).toBeNull();
   });
 
+  it('Recording stopped by itself while the transcript cannot be saved: the panel says both', async () => {
+    const { store, bus, capture, panel, modelReady, startMeeting } = await app();
+    await startMeeting();
+    await modelReady();
+    await flip(checkNamed(cardNamed(panel(), 'Consent'), 'Everyone here agreed'), true);
+    await flip(recordSwitch(panel()), true);
+    vi.spyOn(store, 'updateSession').mockRejectedValue(new Error('made-up store outage'));
+    bus.publish({ source: 'microphone', index: 0, pcm: Int16Array.of(5) });
+    await settle();
+
+    capture.end(MICROPHONE_ENDED);
+    await settle();
+
+    expect(recordSwitch(panel()).checked).toBe(false);
+    expect(text(panel().querySelector('.note.err'))).toBe(
+      `${MICROPHONE_ENDED} The transcript could not be written to the session file; try again`,
+    );
+  });
+
   it('Transcription behind: with more than two slices waiting the panel says so, and the note goes once they are in', async () => {
     const { bus, transcription, panel, modelReady, startMeeting } = await app();
     await startMeeting();

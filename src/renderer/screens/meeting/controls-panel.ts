@@ -470,7 +470,10 @@ export function meetingPanel({ agents, capture, now = () => new Date() }: Meetin
             microphone.capturing = false;
             microphone.since = null;
             for (const handler of [...microphone.ended]) handler(why);
-            session.setRecording(false).catch(() => undefined);
+            // A last transcript write that fails is said too, as when Record is turned off by hand.
+            session.setRecording(false).catch((error: unknown) => {
+              for (const handler of [...microphone.ended]) handler(`${why} ${messageOf(error)}`);
+            });
           });
         }
         return microphone.audio;
