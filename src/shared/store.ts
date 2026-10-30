@@ -26,6 +26,12 @@ export class StoreError extends Error {
   }
 }
 
+/** A damaged record's reason (`Damage`) ended as a sentence, so the screen's hint can follow it. */
+export function asSentence(reason: string): string {
+  const text = reason.trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
 /** Every method of `Store`: the bridge registers one channel per name. */
 export const STORE_METHODS = [
   'currentMember',

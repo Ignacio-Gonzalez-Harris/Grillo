@@ -491,7 +491,7 @@ describe('PRD view: Score', () => {
     await openPrdTab();
 
     expect(texts(panel(content()).querySelectorAll('.badge'))).toEqual(['Damaged']);
-    expect(text(panel(content()).querySelector('.reason'))).toBe(`${reason} Rerun writes a fresh score over it.`);
+    expect(text(panel(content()).querySelector('.reason'))).toBe(`${reason}. Rerun writes a fresh score over it.`);
     expect(texts(versionRow(content(), 1).querySelectorAll('.badge'))).toEqual(['Latest', 'Damaged']);
     expect(text(content().querySelector('article.prd-doc'))).toContain('Sample decision statement one.');
 

@@ -137,7 +137,7 @@ describe('project creation: your projects and invitations', () => {
 
     const rows = [...cardTitled(root, 'Your projects').querySelectorAll('.rows li')];
     expect(rows.map((row) => texts(row.querySelectorAll('.badge')))).toEqual([['Damaged'], []]);
-    expect(text(rows[0].querySelector('.reason'))).toBe(`${reason} Fix the file on GitHub, then open the project again.`);
+    expect(text(rows[0].querySelector('.reason'))).toBe(`${reason}. Fix the file on GitHub, then open the project again.`);
     expect(rows[1].querySelector('.reason')).toBeNull();
     expect(buttonNamed(rows[0], 'Open')?.disabled).toBe(false);
   });

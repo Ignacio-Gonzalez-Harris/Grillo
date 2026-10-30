@@ -11,7 +11,7 @@ import './score.css';
 import type { Score, ScoreItem } from '../../../../main/store/types';
 import { agentTitle, type AgentId, type AgentInfo } from '../../../../shared/agents';
 import type { GrilloApi } from '../../../../shared/ipc';
-import { StoreError } from '../../../../shared/store';
+import { asSentence, StoreError } from '../../../../shared/store';
 import { badge, button, type BadgeTone } from '../../../theme/components';
 import { el, messageOf, note } from '../../own-time/view';
 
@@ -132,7 +132,7 @@ export function scoreCard(options: ScoreCardOptions): HTMLElement {
   }
 
   const body: HTMLElement[] = [];
-  if (options.damaged !== undefined) body.push(el('p', 'reason', [`${options.damaged}${options.canRerun ? ` ${DAMAGED_RERUN_TEXT}` : ''}`]));
+  if (options.damaged !== undefined) body.push(el('p', 'reason', [`${asSentence(options.damaged)}${options.canRerun ? ` ${DAMAGED_RERUN_TEXT}` : ''}`]));
   else if (error !== null) body.push(note(error, 'err'));
   else if (score === null) body.push(el('p', 'small muted', [NOT_SCORED_TEXT]));
   else {

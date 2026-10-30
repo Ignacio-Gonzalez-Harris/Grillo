@@ -16,6 +16,7 @@ import type { AgentId, AgentInfo } from '../../../shared/agents';
 import type { GrilloApi, Unsubscribe } from '../../../shared/ipc';
 import { AGENT_SCREEN } from '../../app/navigation';
 import type { ScreenParams } from '../../app/screens';
+import { asSentence } from '../../../shared/store';
 import { badge, button, dialog } from '../../theme/components';
 import {
   closeAsOutOfScope,
@@ -552,7 +553,7 @@ export function mountTickets(container: HTMLElement, params: ScreenParams, deps:
   function damagedCard(ticket: Ticket, damaged: string): HTMLElement {
     return el('div', 'card stack', [
       el('div', 'row', [el('h3', 'm0', [ticket.title]), kindBadge(ticket.kind), badge('Damaged', 'warn')]),
-      note(`Grillo cannot read this ticket: ${damaged} ${DAMAGED_TICKET_HINT}`, 'warn'),
+      note(`Grillo cannot read this ticket: ${asSentence(damaged)} ${DAMAGED_TICKET_HINT}`, 'warn'),
     ]);
   }
 

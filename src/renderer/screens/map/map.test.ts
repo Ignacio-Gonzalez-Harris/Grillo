@@ -366,7 +366,7 @@ describe('the map screen: tagged and assigned, with sources', () => {
 
     const damaged = ticketRows(content()).find((row) => text(row.cells[0]).startsWith('Sample ticket 2')) as HTMLTableRowElement;
     expect(texts(damaged.cells[0].querySelectorAll('.badge'))).toEqual(['Damaged']);
-    expect(text(damaged.cells[0].querySelector('.reason'))).toBe(`${reason} Fix the issue on GitHub; the other tickets work as usual.`);
+    expect(text(damaged.cells[0].querySelector('.reason'))).toBe(`${reason}. Fix the issue on GitHub; the other tickets work as usual.`);
     expect(damaged.cells[5].querySelectorAll('button')).toHaveLength(0);
     expect(ticketRows(content())).toHaveLength(4);
     expect(texts(rowOf(content(), 'Sample ticket 1').cells[5].querySelectorAll('button'))).toEqual(['Edit', 'Merge', 'Close as out of scope']);

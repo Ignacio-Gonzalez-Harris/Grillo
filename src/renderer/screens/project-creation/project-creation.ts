@@ -12,6 +12,7 @@ import { agentTitle } from '../../../shared/agents';
 import type { GrilloApi } from '../../../shared/ipc';
 import { AGENT_SCREEN } from '../../app/navigation';
 import type { ScreenParams } from '../../app/screens';
+import { asSentence } from '../../../shared/store';
 import { badge, button } from '../../theme/components';
 import { REGENERATE_COMMAND, startCreation, type Creation } from './create';
 import {
@@ -250,7 +251,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
                 ...(recent.damaged === null ? [] : [' ', badge('Damaged', 'warn')]),
                 el('br', ''),
                 el('span', 'small muted', [`${recent.id} · opened ${date(recent.lastOpened)}`]),
-                ...(recent.damaged === null ? [] : [el('br', ''), el('span', 'reason', [`${recent.damaged} ${DAMAGED_PROJECT_HINT}`])]),
+                ...(recent.damaged === null ? [] : [el('br', ''), el('span', 'reason', [`${asSentence(recent.damaged)} ${DAMAGED_PROJECT_HINT}`])]),
               ]),
               button('Open', { small: true, disabled: busy, onClick: () => void openProject(recent.id) }),
             ]),

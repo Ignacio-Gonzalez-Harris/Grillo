@@ -272,7 +272,7 @@ describe('the tickets screen: the own list', () => {
     expect(texts(row?.querySelectorAll('.badge') ?? [])).toEqual(['Damaged']);
     expect(heading(content())).toEqual(['Sample ticket 4', 'grilling', 'Damaged']);
     expect(text(detailCard(content()).querySelector('.note.warn'))).toBe(
-      `Grillo cannot read this ticket: ${reason} Fix the issue on GitHub; the other tickets work as usual.`,
+      `Grillo cannot read this ticket: ${reason}. Fix the issue on GitHub; the other tickets work as usual.`,
     );
     expect(detailCard(content()).querySelectorAll('button')).toHaveLength(0);
     expect(detailReads).not.toHaveBeenCalled();
