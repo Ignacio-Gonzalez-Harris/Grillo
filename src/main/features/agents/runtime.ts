@@ -11,11 +11,15 @@ import {
 /** How long an agent must stay silent after output before its tab shows the waiting dot (issue 64 decision). */
 export const WAITING_AFTER_MS = 3000;
 /**
- * After typing the first message, Enter is pressed only once the terminal has been quiet this long. Claude Code
- * echoes a typed message slowly, more slowly the longer it is, and an Enter that arrives before the echo has
- * finished is swallowed: the message stays in the input box unsent.
+ * After typing the first message, Enter is pressed only once its echo has appeared and the terminal has then been
+ * quiet this long. Claude Code echoes a typed message slowly, more slowly the longer it is, and an Enter that
+ * arrives before the echo has finished is swallowed: the message stays in the input box unsent. Right after the
+ * folder-trust question Claude Code can stay busy, and silent, for seconds before it echoes anything (issue 177),
+ * so quiet alone never means the echo is done.
  */
 export const ENTER_AFTER_QUIET_MS = 500;
+/** How long to wait for the typed first message to show before pressing Enter anyway, so it is never left unsent. */
+export const ECHO_WAIT_MS = 10_000;
 /** The terminal's size until the terminal view sends its own. */
 export const INITIAL_COLS = 120;
 export const INITIAL_ROWS = 30;
@@ -96,6 +100,10 @@ interface RunningAgent {
   firstMessage: string;
   /** The latest output, kept only until the prompt has appeared. */
   promptScan: string | undefined;
+  /** The latest output since the first message was typed, kept only until its echo has appeared. */
+  echoScan: string | undefined;
+  /** Set while waiting for the echo: presses Enter anyway once ECHO_WAIT_MS have passed without it. */
+  echoTimer: ReturnType<typeof setTimeout> | undefined;
   waitingTimer: ReturnType<typeof setTimeout> | undefined;
   /** Set from typing the first message until its Enter is pressed. */
   enterTimer: ReturnType<typeof setTimeout> | undefined;
@@ -105,8 +113,13 @@ interface RunningAgent {
 const ESCAPE_SEQUENCE = /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[()][0-9A-Za-z]|[@-_])/g;
 const WHITESPACE = /\s+/g;
 
+/** The text as Claude Code's screen shows it, with escape codes and spaces removed, so line wrapping never matters. */
+function visibleText(output: string): string {
+  return output.replace(ESCAPE_SEQUENCE, '').replace(WHITESPACE, '');
+}
+
 function showsPrompt(output: string): boolean {
-  return output.replace(ESCAPE_SEQUENCE, '').replace(WHITESPACE, '').includes(PROMPT_SIGNATURE);
+  return visibleText(output).includes(PROMPT_SIGNATURE);
 }
 
 function isNonEmptyText(value: unknown): value is string {
@@ -157,6 +170,7 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
 
   function forget(agent: RunningAgent): void {
     clearTimeout(agent.waitingTimer);
+    clearTimeout(agent.echoTimer);
     clearTimeout(agent.enterTimer);
     agents.delete(agent.info.id);
   }
@@ -169,9 +183,32 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
     }, ENTER_AFTER_QUIET_MS);
   }
 
+  function stopWaitingForEcho(agent: RunningAgent): void {
+    clearTimeout(agent.echoTimer);
+    agent.echoTimer = undefined;
+    agent.echoScan = undefined;
+    pressEnterOnceQuiet(agent);
+  }
+
+  function waitForEcho(agent: RunningAgent): void {
+    agent.echoScan = '';
+    agent.echoTimer = setTimeout(() => stopWaitingForEcho(agent), ECHO_WAIT_MS);
+  }
+
+  function watchForEcho(agent: RunningAgent, data: string): void {
+    agent.echoScan = (agent.echoScan + data).slice(-PROMPT_SCAN_CHARS);
+    if (visibleText(agent.echoScan).includes(visibleText(agent.firstMessage))) {
+      stopWaitingForEcho(agent);
+    }
+  }
+
   function typeFirstMessageOnPrompt(agent: RunningAgent, data: string): void {
     if (agent.enterTimer !== undefined) {
       pressEnterOnceQuiet(agent);
+      return;
+    }
+    if (agent.echoScan !== undefined) {
+      watchForEcho(agent, data);
       return;
     }
     if (agent.promptScan === undefined) {
@@ -186,7 +223,7 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
       return;
     }
     agent.pty.write(agent.firstMessage);
-    pressEnterOnceQuiet(agent);
+    waitForEcho(agent);
   }
 
   function restartWaitingTimer(agent: RunningAgent): void {
@@ -218,6 +255,8 @@ export function createAgentRuntime(deps: AgentRuntimeDeps): AgentRuntime {
       pty,
       firstMessage: request.firstMessage,
       promptScan: '',
+      echoScan: undefined,
+      echoTimer: undefined,
       waitingTimer: undefined,
       enterTimer: undefined,
     };

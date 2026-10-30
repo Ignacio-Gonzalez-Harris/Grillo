@@ -50,6 +50,12 @@ const LINE_BREAK = '\n';
 /** What Claude Code shows once it is ready for input; the runtime types the first message then. */
 const PROMPT = '──────\r\n❯ ';
 
+/** Claude Code shows its prompt, then the meeting command the runtime types into it; only then is Enter pressed. */
+function showPromptAndTakeCommand(pty: FakePty): void {
+  pty.print(PROMPT);
+  pty.print(MEETING_COMMAND);
+}
+
 /** Stands in for the microphone: records what was asked, and the test hands slices to main itself. */
 class FakeCapture implements AudioCapture {
   readonly calls: string[] = [];
@@ -185,7 +191,7 @@ async function app() {
       await settle();
       shell?.navigate('agent-tab', { agentId: id });
       await settle();
-      ptys.at(-1)?.print(PROMPT);
+      showPromptAndTakeCommand(ptys.at(-1) as FakePty);
       await vi.advanceTimersByTimeAsync(WAITING_AFTER_MS + ENTER_AFTER_QUIET_MS);
       await settle();
       return { id, pty: ptys.at(-1) as FakePty };
@@ -463,7 +469,7 @@ describe('meeting screen: another grilling agent', () => {
 
     await click(buttonNamed(cardNamed(panel(), 'Grilling agents'), OPEN_ANOTHER));
     const second = ptys.at(-1) as FakePty;
-    second.print(PROMPT);
+    showPromptAndTakeCommand(second);
     await vi.advanceTimersByTimeAsync(WAITING_AFTER_MS + ENTER_AFTER_QUIET_MS);
     await settle();
 
@@ -492,7 +498,7 @@ describe('meeting screen: another grilling agent', () => {
     await click(buttonNamed(panel(), 'Listen'));
     await click(buttonNamed(cardNamed(panel(), 'Grilling agents'), OPEN_ANOTHER));
     const second = ptys.at(-1) as FakePty;
-    second.print(PROMPT);
+    showPromptAndTakeCommand(second);
     await vi.advanceTimersByTimeAsync(WAITING_AFTER_MS + ENTER_AFTER_QUIET_MS);
     await settle();
     const channelOf = (id: string) =>
@@ -523,7 +529,7 @@ describe('meeting screen: another grilling agent', () => {
   /** Opens another grilling agent from the panel on show and lets its Claude Code take the command and go quiet. */
   async function openAnother(ptys: FakePty[], scope: HTMLElement): Promise<void> {
     await click(buttonNamed(cardNamed(scope, 'Grilling agents'), OPEN_ANOTHER));
-    (ptys.at(-1) as FakePty).print(PROMPT);
+    showPromptAndTakeCommand(ptys.at(-1) as FakePty);
     await vi.advanceTimersByTimeAsync(WAITING_AFTER_MS + ENTER_AFTER_QUIET_MS);
     await settle();
   }
