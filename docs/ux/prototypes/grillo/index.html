@@ -530,7 +530,7 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 2 · flows 4.2 (Starting a project) · 7 (Permissions)</dd>
       <dt>Controls</dt><dd>Your projects (recently opened) with Open; pending invitations with one-click Accept; New project; new repository with organisation picker, or connect existing; repository picker; PRD structure source (default of 13 sections), add, remove, rename, reorder sections; Save and regenerate for an existing project; invite by GitHub login; own role and domains; idea as text with attachments, or a pasted or uploaded transcript; Create project.</dd>
-      <dt>States</dt><dd>Your projects and invitations · New repository · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · Connect: no repository matches the search · Connect: no repository found · Connect: the list cannot be read (error) · After accepting an invite · Creating (loading) · Creating: the grilling agent refused (error) · A refused project that never opened, in the list · Editing the structure of an existing project · A damaged project in the list · Saved as a pull request (main is protected)</dd>
+      <dt>States</dt><dd>Your projects and invitations · New repository · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · Connect: the repository list · Connect: read access only · Connect: checking access (loading) · Connect: access not known (error) · Connect: nothing picked (error) · Connect: no repository matches the search · Connect: no repository found · Connect: the list cannot be read (error) · After accepting an invite · Creating (loading) · Creating: the grilling agent refused (error) · A refused project that never opened, in the list · Editing the structure of an existing project · A damaged project in the list · Saved as a pull request (main is protected)</dd>
     </dl>
   </header>
   <div class="states">
@@ -544,11 +544,128 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
       <button class="btn sm" data-state="structure">Editing the structure</button>
       <button class="btn sm" data-state="damaged-project">A damaged project</button>
       <button class="btn sm" data-state="save-notice">Saved as a pull request</button>
+      <button class="btn sm" data-state="connect-list">Connect: the repository list</button>
+      <button class="btn sm" data-state="connect-read-only">Connect: read access only</button>
+      <button class="btn sm" data-state="connect-checking">Connect: checking access</button>
+      <button class="btn sm" data-state="connect-access-unknown">Connect: access not known</button>
+      <button class="btn sm" data-state="connect-nothing-picked">Connect: nothing picked</button>
       <button class="btn sm" data-state="connect-no-match">Connect: no repository matches</button>
       <button class="btn sm" data-state="connect-no-repositories">Connect: no repository found</button>
       <button class="btn sm" data-state="connect-list-unreadable">Connect: the list cannot be read</button>
       <button class="btn sm" data-state="agent-refused">Creating: the grilling agent refused</button>
       <button class="btn sm" data-state="agent-refused-listed">A refused project that never opened</button>
+    </div>
+
+    <div class="state" data-state="connect-list">
+      <p class="state-caption">State: Connect, the repository list (every repository the member can reach, each with its access, with Check access beside the search; nothing picked yet)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-5</label><span class="badge err">Read access only</span></li>
+            </ul>
+            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-read-only">
+      <p class="state-caption">State: Connect, read access only (the picked row is not highlighted and says why it cannot be connected)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li><label class="check"><input type="radio" name="repo-read"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+              <li><label class="check"><input type="radio" name="repo-read" checked> example-org/sample-repo-5</label><span class="badge err">Read access only</span><p class="small muted m0 full">Connecting needs write access. Ask one of its admins for it, or pick another repository.</p></li>
+            </ul>
+            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
+          </div>
+          <div class="card stack">
+            <h3>3 · Members</h3>
+            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
+            <p class="reason m0">Inviting needs admin rights on example-org/sample-repo-5, and you have read access. Ask one of its admins to add people.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-checking">
+      <p class="state-caption">State: Connect, checking access (loading; Check access pressed, every control greyed until GitHub answers. A repository typed in full that the list does not hold shows here under the list, its name in bold with no radio button, as in "Connect: the list cannot be read")</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false" disabled>Create a new repository</button><button aria-pressed="true" disabled>Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories" disabled></div><button class="btn" disabled>Check access</button></div>
+            <ul class="rows">
+              <li><label class="check"><input type="radio" name="repo-checking" checked disabled> example-org/sample-repo-1</label><span class="badge">Checking…</span></li>
+              <li><label class="check"><input type="radio" name="repo-checking" disabled> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+            </ul>
+            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
+          </div>
+          <div class="card stack">
+            <h3>3 · Members</h3>
+            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
+            <p class="reason m0">Inviting needs admin rights on example-org/sample-repo-1, and Grillo has not confirmed your access yet (press Check access). Ask one of its admins to add people.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-access-unknown">
+      <p class="state-caption">State: Connect, access not known (error; Check access got no answer it could read, and the row gives the reason)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li><div class="grow"><label class="check"><input type="radio" name="repo-unknown" checked> example-org/sample-repo-1</label><p class="small muted m0">Grillo could not read your access from the store.</p></div><span class="badge warn">Access not known</span></li>
+              <li><label class="check"><input type="radio" name="repo-unknown"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+            </ul>
+            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
+          </div>
+          <div class="card stack">
+            <h3>3 · Members</h3>
+            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
+            <p class="reason m0">Inviting needs admin rights on example-org/sample-repo-1, and Grillo has not confirmed your access yet (press Check access). Ask one of its admins to add people.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-nothing-picked">
+      <p class="state-caption">State: Connect, nothing picked (error; Check access or Connect and start pressed with no repository picked or typed in full; the note shows above the form's buttons)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li><label class="check"><input type="radio" name="repo-none"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+            </ul>
+            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
+          </div>
+          <p class="note small err" role="alert">Pick the repository to connect from the list, or type it in full as owner/repository.</p>
+          <div class="row"><span class="spacer"></span><button class="btn">Cancel</button><button class="btn primary">Connect and start</button></div>
+        </div>
+      </div>
     </div>
 
     <div class="state" data-state="connect-no-match">
