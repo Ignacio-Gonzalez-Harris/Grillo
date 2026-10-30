@@ -14,6 +14,7 @@ import { agentTitle, type AgentId } from '../../../shared/agents';
 import type { GrilloApi } from '../../../shared/ipc';
 import { StoreError } from '../../../shared/store';
 import { saveLastMembership, type Membership } from './membership';
+import { forgetUnstartedAgent, rememberUnstartedAgent, type UnstartedAgent } from './unstarted';
 
 export const WAYFINDER_COMMAND = '/grillo-wayfinder';
 /** Regenerates the PRD in the current structure (resources/skills/README.md, Commands). */
@@ -79,6 +80,10 @@ export interface Creation {
   agent(): AgentId | null;
 }
 
+type CreationWork = { label: string; run: () => Promise<StepOutcome> };
+
+const AGENT_STEP_LABEL = 'Grilling agent started; it is building the map and tickets';
+
 /** Where the idea came from, as its source's `where:` line. */
 export const IDEA_WHERE: Record<Idea['kind'], string> = {
   'pasted-text': 'the idea, given when the project was created',
@@ -107,6 +112,25 @@ function messageOf(error: unknown): string {
   return error instanceof Error && error.message !== '' ? error.message : String(error);
 }
 
+/**
+ * Starts the grilling agent in the project folder. A refusal is kept in the settings file, wherever the member is by
+ * then, so the start can be tried again later; not being able to keep it never hides the refusal itself.
+ */
+async function startGrillingAgent(deps: CreationDeps, request: Pick<UnstartedAgent, 'project' | 'firstMessage' | 'title'>): Promise<AgentId> {
+  const { store, grillo } = deps;
+  const { project, firstMessage, title } = request;
+  try {
+    const folder = textOf(await store.openProjectFolder(project), `the folder of ${project}`);
+    const agent = await grillo.invoke('agents:start', { kind: 'grilling', folder, firstMessage, title });
+    await forgetUnstartedAgent(grillo, project).catch(() => undefined);
+    return agent;
+  } catch (error) {
+    const at = (deps.now ?? (() => new Date()))().toISOString();
+    await rememberUnstartedAgent(grillo, { ...request, error: messageOf(error), at }).catch(() => undefined);
+    throw error;
+  }
+}
+
 export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation {
   const { store, grillo } = deps;
   const now = deps.now ?? (() => new Date());
@@ -120,7 +144,7 @@ export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation
   const inProject = (): ProjectId => project ?? unreadable('the new project');
   const who = (): string => (me === null ? '' : (me.name ?? me.login));
 
-  const work: Array<{ label: string; run: () => Promise<StepOutcome> }> = [
+  const work: CreationWork[] = [
     {
       label: repositoryLabel(draft.repository),
       async run() {
@@ -196,13 +220,11 @@ export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation
     });
   }
   work.push({
-    label: 'Grilling agent started; it is building the map and tickets',
+    label: AGENT_STEP_LABEL,
     async run() {
       const id = inProject();
-      const folder = textOf(await store.openProjectFolder(id), `the folder of ${id}`);
-      agentId = await grillo.invoke('agents:start', {
-        kind: 'grilling',
-        folder,
+      agentId = await startGrillingAgent(deps, {
+        project: id,
         firstMessage: wayfinderMessage(ideaCodes[0] ?? unreadable('the idea\'s source code')),
         title: agentTitle('grilling', draft.projectName.trim() === '' ? id : draft.projectName.trim()),
       });
@@ -210,6 +232,25 @@ export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation
   });
 
   const steps: CreationStep[] = work.map(({ label }) => ({ label, state: 'waiting', error: null, warning: null }));
+  return runnerOf(work, steps, () => project, () => agentId);
+}
+
+/** The Creating state of a project whose grilling agent was refused earlier: that one step, failed, to run again. */
+export function resumeCreation(deps: CreationDeps, unstarted: UnstartedAgent): Creation {
+  const { project, firstMessage, title, error } = unstarted;
+  let agentId: AgentId | null = null;
+  const work: CreationWork[] = [
+    {
+      label: AGENT_STEP_LABEL,
+      async run() {
+        agentId = await startGrillingAgent(deps, { project, firstMessage, title });
+      },
+    },
+  ];
+  return runnerOf(work, [{ label: AGENT_STEP_LABEL, state: 'failed', error, warning: null }], () => project, () => agentId);
+}
+
+function runnerOf(work: CreationWork[], steps: CreationStep[], project: () => ProjectId | null, agent: () => AgentId | null): Creation {
   let running = false;
 
   return {
@@ -243,7 +284,7 @@ export function startCreation(deps: CreationDeps, draft: ProjectDraft): Creation
         running = false;
       }
     },
-    project: () => project,
-    agent: () => agentId,
+    project,
+    agent,
   };
 }

@@ -37,6 +37,12 @@ export interface RepositoryRef {
 /** The repository permission GitHub gives the signed-in member. */
 export type Permission = 'admin' | 'write' | 'read';
 
+/** A repository the signed-in member can reach, with their access to it: one row of the connect flow's list. */
+export interface RepositoryAccess {
+  repository: RepositoryRef;
+  permission: Permission;
+}
+
 export interface PrdSection {
   name: string;
   /** One line saying what the section holds. */

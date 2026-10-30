@@ -5,7 +5,7 @@
  */
 import { GhError, type Gh } from '../../gh';
 import { StoreError } from '../../store';
-import type { Invitation, Login, Organisation, Permission, RepositoryRef } from '../../types';
+import type { Invitation, Login, Organisation, Permission, RepositoryAccess, RepositoryRef } from '../../types';
 import { isLogin, projectIdOf, sameLogin } from './names';
 
 /** What one repository read tells the backend. */
@@ -42,7 +42,8 @@ export const GRILLO_LABELS: readonly { name: string; description: string }[] = [
 ];
 
 /** One page is enough: nobody belongs to a hundred organisations or holds a hundred open invitations. */
-const PAGE = 'per_page=100';
+const PAGE_SIZE = 100;
+const PAGE = `per_page=${PAGE_SIZE}`;
 const HTTP_STATUS = /\(HTTP (\d{3})\)/;
 const REPOSITORY_MISSING = /Could not resolve to a Repository/i;
 const ALREADY_EXISTS = /already exists/i;
@@ -176,6 +177,21 @@ function parseOrganisations(value: unknown): Organisation[] {
   return list(value, 'organisations').map((entry) => ({ login: login(object(entry, 'an organisation').login, 'the organisation'), name: null }));
 }
 
+/** One page of the member's repositories, the archived ones still in it: only a short page is the last page. */
+function parseRepositoryPage(value: unknown): (RepositoryAccess & { archived: boolean })[] {
+  return list(value, 'repositories').map((entry) => {
+    const repository = object(entry, 'a repository');
+    if (typeof repository.archived !== 'boolean') {
+      throw new Error('expected archived');
+    }
+    return {
+      repository: repositoryRef(repository),
+      permission: permissionOf(object(repository.permissions, 'the permissions')),
+      archived: repository.archived,
+    };
+  });
+}
+
 function parseInvitations(value: unknown): Invitation[] {
   return list(value, 'invitations').map((entry) => {
     const invitation = object(entry, 'an invitation');
@@ -233,6 +249,18 @@ export function createGithubApi(gh: Gh) {
 
     organisations(): Promise<Organisation[]> {
       return gh.json(['api', `user/orgs?${PAGE}`], parseOrganisations);
+    },
+
+    /** Page by page, unlike the lists above: a member of a large organisation reaches hundreds of repositories. */
+    async repositories(): Promise<RepositoryAccess[]> {
+      const found: RepositoryAccess[] = [];
+      for (let page = 1; ; page += 1) {
+        const entries = await gh.json(['api', `user/repos?${PAGE}&page=${page}`], parseRepositoryPage);
+        for (const { repository, permission, archived } of entries) {
+          if (!archived) found.push({ repository, permission });
+        }
+        if (entries.length < PAGE_SIZE) return found;
+      }
     },
 
     invitations(): Promise<Invitation[]> {

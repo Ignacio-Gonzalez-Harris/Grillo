@@ -7,21 +7,32 @@
 import './project-creation.css';
 import type { Store } from '../../../main/store/store';
 import { DEFAULT_PRD_STRUCTURE } from '../../../main/store/defaults';
-import type { Invitation, Organisation, PrdStructure, Project, ProjectId, RecentProject } from '../../../main/store/types';
+import type {
+  Invitation,
+  Organisation,
+  Permission,
+  PrdStructure,
+  Project,
+  ProjectId,
+  RecentProject,
+  RepositoryAccess,
+} from '../../../main/store/types';
 import { agentTitle } from '../../../shared/agents';
 import type { GrilloApi } from '../../../shared/ipc';
 import { AGENT_SCREEN } from '../../app/navigation';
 import type { ScreenParams } from '../../app/screens';
 import { asSentence } from '../../../shared/store';
 import { badge, button } from '../../theme/components';
-import { REGENERATE_COMMAND, startCreation, type Creation } from './create';
+import { REGENERATE_COMMAND, resumeCreation, startCreation, type Creation } from './create';
 import {
   DEFAULT_STRUCTURE_CHOICE,
+  NO_REPOSITORY_PICKED,
   attachmentsFrom,
   canInvite,
   draftOf,
   formProblem,
   inviteProblem,
+  matchingRepositories,
   newProjectForm,
   repositoryToConnect,
   suggestedRepositoryName,
@@ -37,6 +48,7 @@ import {
   setSectionNote,
   structureProblem,
 } from './structure';
+import { forgetUnstartedAgent, readUnstartedAgents, type UnstartedAgent } from './unstarted';
 import { el, field, filePicker, messageOf, note, segmented, tag, textInput, type Content } from './view';
 
 /** The project tabs this screen opens (src/renderer/app/navigation.ts, PROJECT_TABS), with `{ project }`. */
@@ -54,12 +66,15 @@ const PROJECT_ID = /^[^/\s]+\/[^/\s]+$/;
 const TEXT_FILES = '.txt,.md,.markdown,.csv,.json,.vtt,.srt';
 const TRANSCRIPT_FILES = '.txt,.md,.vtt,.srt';
 const DAMAGED_PROJECT_HINT = 'Fix the file on GitHub, then open the project again.';
+const SEARCH_LABEL = 'Search repositories';
+const SEARCH_SELECTOR = `input[aria-label="${SEARCH_LABEL}"]`;
 
 interface RecentRow {
   id: ProjectId;
   name: string;
   archived: boolean;
-  lastOpened: string;
+  /** When the member last had it: `opened <date>`, or `created <date>` for one whose folder never opened. */
+  when: string;
   /** Why the project's Grillo files or folder cannot be read (prototype state `damaged-project`); null when fine. */
   damaged: string | null;
 }
@@ -88,6 +103,12 @@ type View =
   | { name: 'invitee'; joined: Joined }
   | { name: 'creating'; creation: Creation }
   | { name: 'structure'; project: ProjectId; structure: PrdStructure };
+
+const ACCESS_BADGES: Record<Permission, () => HTMLElement> = {
+  admin: () => badge('Admin access', 'ok'),
+  write: () => badge('Write access', 'warn'),
+  read: () => badge('Read access only', 'err'),
+};
 
 const date = (iso: string): string => iso.slice(0, 10);
 const isText = (value: unknown): value is string => typeof value === 'string';
@@ -125,6 +146,16 @@ function isProject(value: unknown): value is Project {
   );
 }
 
+function isRepositoryAccess(value: unknown): value is RepositoryAccess {
+  const entry = value as Partial<Record<keyof RepositoryAccess, unknown>> | null;
+  const repository = entry?.repository as { owner?: unknown; name?: unknown } | null | undefined;
+  return (
+    isText(repository?.owner) &&
+    isText(repository.name) &&
+    (entry?.permission === 'admin' || entry?.permission === 'write' || entry?.permission === 'read')
+  );
+}
+
 function isOrganisation(value: unknown): value is Organisation {
   return isText((value as { login?: unknown } | null)?.login);
 }
@@ -140,6 +171,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
   let view: View = { name: 'loading', text: 'Loading your projects…' };
   let form: ProjectForm = newProjectForm([], null);
   let organisations: Organisation[] = [];
+  let repositories: RepositoryAccess[] | { error: string } = [];
   let earlierProjects: Project[] = [];
   let myLogin: string | null = null;
   let inviteDraft = '';
@@ -174,10 +206,11 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
 
   async function loadStart(): Promise<void> {
     show({ name: 'loading', text: 'Loading your projects…' });
-    const [recents, projects, invitations] = await Promise.allSettled([
+    const [recents, projects, invitations, unstartedAgents] = await Promise.allSettled([
       store.listRecentProjects(),
       store.listProjects(),
       store.listPendingInvitations(),
+      readUnstartedAgents(grillo),
     ]);
     const known = new Map(
       (projects.status === 'fulfilled' && Array.isArray(projects.value) ? projects.value.filter(isProject) : []).map(
@@ -185,25 +218,49 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
       ),
     );
     const recentList = listOrError(recents, isRecent);
+    const rowOf = (project: ProjectId, when: string): RecentRow => ({
+      id: project,
+      name: known.get(project)?.name ?? project.slice(project.indexOf('/') + 1),
+      archived: known.get(project)?.archived ?? false,
+      when,
+      damaged: known.get(project)?.damaged ?? null,
+    });
+    // A refused start can come before the project was ever opened: it still needs a row to start again from.
+    const neverOpened = (list: readonly RecentProject[]): RecentRow[] =>
+      (unstartedAgents.status === 'fulfilled' ? unstartedAgents.value : [])
+        .filter(({ project }) => PROJECT_ID.test(project) && !list.some((recent) => recent.project === project))
+        .map(({ project, at }) => rowOf(project, `created ${date(at)}`));
     show({
       name: 'start',
       data: {
         recents: Array.isArray(recentList)
-          ? recentList.map(({ project, lastOpened }) => ({
-              id: project,
-              name: known.get(project)?.name ?? project.slice(project.indexOf('/') + 1),
-              archived: known.get(project)?.archived ?? false,
-              lastOpened,
-              damaged: known.get(project)?.damaged ?? null,
-            }))
+          ? [...neverOpened(recentList), ...recentList.map(({ project, lastOpened }) => rowOf(project, `opened ${date(lastOpened)}`))]
           : recentList,
         invitations: listOrError(invitations, isInvitation),
       },
     });
   }
 
+  /** The refused start to try again for this project; none once the project has a map, however it came by one. */
+  async function unstartedAgentOf(project: ProjectId): Promise<UnstartedAgent | null> {
+    const unstarted = (await readUnstartedAgents(grillo)).find((entry) => entry.project === project);
+    if (!unstarted) return null;
+    const hasMap = await store.getMap(project).then(
+      () => true,
+      () => false,
+    );
+    if (!hasMap) return unstarted;
+    await forgetUnstartedAgent(grillo, project);
+    return null;
+  }
+
   function openProject(project: ProjectId): Promise<void> {
     return act(async () => {
+      const unstarted = await unstartedAgentOf(project);
+      if (unstarted) {
+        show({ name: 'creating', creation: resumeCreation({ store, grillo, now: deps.now }, unstarted) });
+        return;
+      }
       await store.openProjectFolder(project);
       if (!disposed) navigate(MAP_SCREEN, { project });
     });
@@ -250,7 +307,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
                 ...(recent.archived ? [' ', badge('Archived')] : []),
                 ...(recent.damaged === null ? [] : [' ', badge('Damaged', 'warn')]),
                 el('br', ''),
-                el('span', 'small muted', [`${recent.id} · opened ${date(recent.lastOpened)}`]),
+                el('span', 'small muted', [`${recent.id} · ${recent.when}`]),
                 ...(recent.damaged === null ? [] : [el('br', ''), el('span', 'reason', [`${asSentence(recent.damaged)} ${DAMAGED_PROJECT_HINT}`])]),
               ]),
               button('Open', { small: true, disabled: busy, onClick: () => void openProject(recent.id) }),
@@ -293,13 +350,15 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
 
   async function openForm(): Promise<void> {
     show({ name: 'loading', text: 'Loading your organisations…' });
-    const [orgs, projects, last, identity] = await Promise.allSettled([
+    const [orgs, repositoryList, projects, last, identity] = await Promise.allSettled([
       store.listOrganisations(),
+      store.listRepositories(),
       store.listProjects(),
       readLastMembership(grillo),
       grillo.invoke('tools:identity', undefined),
     ]);
     organisations = orgs.status === 'fulfilled' && Array.isArray(orgs.value) ? orgs.value.filter(isOrganisation) : [];
+    repositories = listOrError(repositoryList, isRepositoryAccess);
     earlierProjects = [];
     if (projects.status === 'fulfilled' && Array.isArray(projects.value)) {
       for (const project of projects.value.filter(isProject).filter(({ damaged }) => damaged === undefined)) {
@@ -327,7 +386,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
   function checkAccess(): Promise<void> {
     const repository = repositoryToConnect(form.connectTo);
     if (repository === null) {
-      form.access = { state: 'unknown', message: 'Name the repository as owner/repository.' };
+      actionError = NO_REPOSITORY_PICKED;
       draw();
       return Promise.resolve();
     }
@@ -345,6 +404,29 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
         form.access = { state: 'unknown', message: messageOf(error) };
       }
     });
+  }
+
+  /** Makes this repository the one to connect; the list already says the access to any repository it holds. */
+  function chooseRepository(id: string): void {
+    const listed = (Array.isArray(repositories) ? repositories : []).find(({ repository }) => idOf(repository).toLowerCase() === id.toLowerCase());
+    form.connectTo = listed ? idOf(listed.repository) : id;
+    form.access = listed ? { state: 'known', permission: listed.permission } : { state: 'unchecked' };
+  }
+
+  /** A full `owner/repo` typed is chosen; other typing only narrows the list, and drops a choice that was only typed. */
+  function searchRepositories(value: string): void {
+    form.connectSearch = value;
+    const typed = repositoryToConnect(value);
+    if (typed !== null) chooseRepository(idOf(typed));
+    else if (!(Array.isArray(repositories) && repositories.some(({ repository }) => idOf(repository) === form.connectTo))) {
+      form.connectTo = '';
+      form.access = { state: 'unchecked' };
+    }
+    const caret = root.querySelector<HTMLInputElement>(SEARCH_SELECTOR)?.selectionStart ?? null;
+    draw();
+    const again = root.querySelector<HTMLInputElement>(SEARCH_SELECTOR);
+    again?.focus();
+    again?.setSelectionRange(caret, caret);
   }
 
   /** True when the repository already holds a Grillo project: one project per repository (PRD section 4.2). */
@@ -461,27 +543,18 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
       return card;
     }
 
-    const repository = textInput({
-      value: form.connectTo,
+    const search = textInput({
+      value: form.connectSearch,
       type: 'search',
-      label: 'Repository to connect',
-      placeholder: 'owner/repository, for example example-org/sample-repo-1',
+      label: SEARCH_LABEL,
+      placeholder: 'Search your repositories',
       disabled: busy,
-      onInput: (value) => {
-        form.connectTo = value;
-        if (form.access.state !== 'unchecked') {
-          form.access = { state: 'unchecked' };
-          draw();
-          const again = root.querySelector<HTMLInputElement>('input[aria-label="Repository to connect"]');
-          again?.focus();
-        }
-      },
+      onInput: searchRepositories,
     });
     card.append(
-      el('div', 'row', [el('div', 'fill', [repository]), button('Check access', { disabled: busy, onClick: () => void checkAccess() })]),
+      el('div', 'row', [el('div', 'fill', [search]), button('Check access', { disabled: busy, onClick: () => void checkAccess() })]),
+      ...repositoryList(),
     );
-    const access = accessRow();
-    if (access) card.append(el('ul', 'rows', [access]));
     card.append(
       el('p', 'note small', [
         "Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.",
@@ -490,19 +563,48 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     return card;
   }
 
-  function accessRow(): HTMLLIElement | null {
-    const repository = repositoryToConnect(form.connectTo);
+  /** The prototype's list of the member's repositories, then the chosen one on its own when the list does not show it. */
+  function repositoryList(): HTMLElement[] {
+    const parts: HTMLElement[] = [];
+    const visible = Array.isArray(repositories) ? matchingRepositories(repositories, form.connectSearch) : [];
+    if (!Array.isArray(repositories)) {
+      parts.push(note(`Grillo could not list your repositories: ${repositories.error} Type the repository in full as owner/repository instead.`, 'warn'));
+    } else if (visible.length === 0) {
+      parts.push(el('p', 'small muted m0', [repositories.length === 0 ? 'Grillo found no repository of yours.' : 'No repository of yours matches this search.']));
+    }
+    const rows = visible.map(({ repository, permission }) => {
+      const id = idOf(repository);
+      const radio = el('input', '');
+      radio.type = 'radio';
+      radio.name = 'repo-connect';
+      radio.checked = id === form.connectTo;
+      radio.disabled = busy;
+      radio.addEventListener('change', () => {
+        chooseRepository(id);
+        draw();
+      });
+      const label = el('label', 'check', [radio, id]);
+      return (radio.checked ? accessRow(label) : null) ?? el('li', '', [label, ACCESS_BADGES[permission]()]);
+    });
+    if (!visible.some(({ repository }) => idOf(repository) === form.connectTo)) {
+      const repository = repositoryToConnect(form.connectTo);
+      const chosen = repository && accessRow(el('span', 'strong', [idOf(repository)]));
+      if (chosen) rows.push(chosen);
+    }
+    if (rows.length > 0) parts.push(el('ul', 'rows', rows));
+    return parts;
+  }
+
+  function accessRow(name: HTMLElement): HTMLLIElement | null {
     const { access } = form;
-    if (repository === null || access.state === 'unchecked') return null;
-    const name = el('span', 'strong', [idOf(repository)]);
+    if (access.state === 'unchecked') return null;
     switch (access.state) {
       case 'checking':
         return el('li', '', [name, badge('Checking…')]);
       case 'unknown':
         return el('li', '', [el('div', 'grow', [name, el('p', 'small muted m0', [access.message])]), badge('Access not known', 'warn')]);
       case 'known': {
-        const badges = { admin: badge('Admin access', 'ok'), write: badge('Write access', 'warn'), read: badge('Read access only', 'err') };
-        const row = el('li', access.permission === 'read' ? '' : 'selected', [name, badges[access.permission]]);
+        const row = el('li', access.permission === 'read' ? '' : 'selected', [name, ACCESS_BADGES[access.permission]()]);
         if (access.permission === 'read') {
           row.append(el('p', 'small muted m0 full', ['Connecting needs write access. Ask one of its admins for it, or pick another repository.']));
         }
@@ -889,7 +991,9 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     if (failed) {
       parts.push(note(failed.error ?? 'This step failed.', 'err'));
       const actions: HTMLElement[] = [el('span', 'spacer')];
-      if (creation.project() === null) actions.push(button('Back to the form', { disabled: busy, onClick: () => show({ name: 'form' }) }));
+      const created = creation.project();
+      if (created === null) actions.push(button('Back to the form', { disabled: busy, onClick: () => show({ name: 'form' }) }));
+      else actions.push(button('Open the map', { disabled: busy, onClick: () => navigate(MAP_SCREEN, { project: created }) }));
       actions.push(
         button('Try again', {
           variant: 'primary',

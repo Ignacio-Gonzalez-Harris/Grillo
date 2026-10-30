@@ -38,6 +38,7 @@
 .project-creation .rows .grow { flex: 1; min-width: 0; }
 .project-creation .rows > li.selected { background: var(--color-accent-soft); border-radius: var(--radius-s); padding-left: var(--space-2); padding-right: var(--space-2); }
 .project-creation .rows.card { padding: 0 var(--space-4); }
+.project-creation .check { display: inline-flex; gap: var(--space-2); align-items: center; }
 .project-creation .rows.structure > li { align-items: center; }
 .project-creation .sdot { display: inline-block; width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-disabled); flex: none; }
 .project-creation .sdot.ok { background: var(--color-success); }
