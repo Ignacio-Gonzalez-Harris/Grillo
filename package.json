@@ -6,7 +6,7 @@
   "description": "Grillo desktop app",
   "main": "./out/main/index.js",
   "engines": {
-    "node": "24.4.1"
+    "node": "24.22.2"
   },
   "scripts": {
     "build": "electron-vite build",
