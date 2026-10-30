@@ -6,6 +6,13 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 const SKILL_FOLDER_PREFIX = 'grillo-';
 /** Where Claude Code looks for a project's skills, relative to the project folder. */
 const PROJECT_SKILLS_PATH = '.claude/skills';
+/** Grillo's own tests and their test data stay in Grillo: a test runner in the member's project would pick them up. */
+const TEST_FILE_SUFFIX = '.test.ts';
+const TEST_DATA_FOLDER = 'fixtures/';
+
+function isShipped(file: string): boolean {
+  return !file.endsWith(TEST_FILE_SUFFIX) && !file.startsWith(TEST_DATA_FOLDER);
+}
 
 export interface ShipSkillsOptions {
   /** The app's own skills: `resources/skills/` in the repository, beside the app once installed. */
@@ -81,7 +88,7 @@ async function addMissingLines(path: string, lines: string[]): Promise<void> {
 
 /**
  * Copies every `grillo-*` skill folder into `<folder>/.claude/skills/`, on every launch so updates reach the
- * project. A file the project's repository tracks is never overwritten: it is skipped with a warning. The shipped
+ * project, leaving out Grillo's own test files and test data. A file the project's repository tracks is never overwritten: it is skipped with a warning. The shipped
  * folders are listed in the clone's `.git/info/exclude`, so they never show up as changes. No CLAUDE.md is written.
  */
 export async function shipSkills({ sourceDir, folder, warn }: ShipSkillsOptions): Promise<void> {
@@ -97,7 +104,7 @@ export async function shipSkills({ sourceDir, folder, warn }: ShipSkillsOptions)
   );
 
   for (const name of names) {
-    for (const file of await filesUnder(join(sourceDir, name))) {
+    for (const file of (await filesUnder(join(sourceDir, name))).filter(isShipped)) {
       const target = `${PROJECT_SKILLS_PATH}/${name}/${file}`;
       if (tracked.has(target)) {
         warn(`Grillo did not ship ${target}: the project's repository tracks its own copy, which is left as it is.`);

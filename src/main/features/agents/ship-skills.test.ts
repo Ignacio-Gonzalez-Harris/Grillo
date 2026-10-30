@@ -65,6 +65,17 @@ describe('shipSkills', () => {
     expect(existsSync(join(project, '.claude', 'CLAUDE.md'))).toBe(false);
   });
 
+  it("leaves Grillo's own test files and test data out of the project", async () => {
+    writeFile(join(skills, 'grillo-wayfinder', 'grillo-wayfinder.test.ts'), 'import { catalogue } from "../catalogue";');
+    writeFile(join(skills, 'grillo-wayfinder', 'fixtures', 'before', 'issues.json'), '[]');
+
+    await shipSkills({ sourceDir: skills, folder: project, warn: () => undefined });
+
+    expect(read('.claude/skills/grillo-wayfinder/SKILL.md')).toBe('wayfinder v2');
+    expect(existsSync(join(project, '.claude', 'skills', 'grillo-wayfinder', 'grillo-wayfinder.test.ts'))).toBe(false);
+    expect(existsSync(join(project, '.claude', 'skills', 'grillo-wayfinder', 'fixtures'))).toBe(false);
+  });
+
   it('keeps the shipped skills out of git through .git/info/exclude, once per skill however often it runs', async () => {
     const warn = () => undefined;
 

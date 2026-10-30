@@ -47,6 +47,15 @@ permissions, the do-not-build list, the demo as the acceptance bar, the build de
 - The pull request body carries the **evidence table** — what you did, what you expected, what you saw. There are no browser
   tests, so a green suite alone is *not* evidence that a screen works.
 - **Never merge on red or pending.** "No checks reported" is red. Poll for the check run first: GitHub can take four minutes.
+- **While the GitHub account has no Actions minutes (since 2026-10-28), this project counts as having no CI.** Both CI
+  jobs fail within seconds on billing, before any step runs; that is not a check result. The merge gate is then the
+  "no CI exists" path of `.claude/skills/dev-next/references/merge-and-ci.md`: the full gate (section 5) run on the
+  merged branch in the worktree, and a red local run is still red. Nothing is tested on Mac meanwhile, so say so in
+  every pull request's evidence table. A CI job that ran its steps and failed is red as ever. Delete this rule when
+  the minutes return.
+- **A story that changes a screen starts the app once** (`npm run dev`, on its `GRILLO_DEV_PORT`) and tries every
+  control it changed before the first review: the test browser ignores some style rules, so a hidden or misplaced
+  control can pass the suite. Record what was tried in the evidence table.
 - Branch protection is unavailable on this plan, so nothing enforces these but you. That is the deal.
 
 ## 5 · Build and test commands
@@ -70,6 +79,16 @@ section 6.3), and nothing central runs (PRD section 8, Hosting).
 
 **The gate, before any pull request opens:** `npm run build && npm run lint && npm run typecheck && npm test` — the
 same chain CI runs.
+
+**Only one full run at a time on this machine.** Several sessions run here at once, and parallel full suites fail on
+time limits. Wrap every full gate or `npm test` in the machine-wide lock, moving into the worktree *inside* the
+command, and print the folder and commit first so a run in the wrong checkout is visible:
+`bash /c/wt/with-gate-lock.sh <agent name> bash -c 'cd /c/wt/<issue>-<slug> && pwd && git rev-parse HEAD && <gate>'`.
+Check that vitest's `RUN` line names the worktree. One test file needs no lock.
+
+**Tests never touch real GitHub.** No test, check or probe creates, edits or deletes anything on github.com: prove
+store code with the made-up GitHub the store's own tests use (`src/main/store/github/repo/fake-github.ts`), or with
+real `git` against a local bare repository behind a fake `gh`.
 
 - **Stack and layout.** Language: TypeScript on Electron; renderer, preload and main process bundled by
   electron-vite (one config and one `dev` command for all three, where plain Vite needs a separate Electron launcher).
