@@ -1,0 +1,36 @@
+{
+  "run_id": "grillo-20261030-052839-01b7",
+  "issue": 180,
+  "title": "App window: drop the system frame so Grillo's own frame is the window",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-10-30T05:28:39Z",
+  "finished_at": "2026-10-30T05:40:49Z",
+  "outcome": "merged",
+  "pr": 181,
+  "summary": "The app showed the Windows frame with Grillo's own glass frame drawn inside it. The system title bar is gone: Grillo's title bar is the drag area, the system buttons sit inside it (snap layouts kept), and the glass panel fills the window.",
+  "agents": [
+    {
+      "name": "dev-180",
+      "model": "opus",
+      "tokens_total": 134548
+    },
+    {
+      "name": "review-180-r1",
+      "model": "opus",
+      "tokens_total": 105202
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 418,
+    "review_seconds": 206,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 0
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

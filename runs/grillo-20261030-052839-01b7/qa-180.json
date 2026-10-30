@@ -1,0 +1,44 @@
+{
+  "run_id": "grillo-20261030-052839-01b7",
+  "issue": 180,
+  "title": "App window: drop the system frame so Grillo's own frame is the window",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 181,
+  "merged_at": "2026-10-30T05:40:49Z",
+  "merge_commit": "e3713ce3b12ccebad50bc15a395618859da64c84",
+  "seam": "src/main/app/ and src/renderer/app/shell.*",
+  "story": "Grillo used to show the Windows frame and title bar with Grillo's own glass frame drawn inside it, like a window inside a window. Now Grillo's glass panel is the window: you move it by dragging Grillo's title bar, and the normal minimise, maximise and close buttons sit inside that bar. Snap layouts, double-click to maximise and edge resizing work as before.",
+  "checks": [
+    {
+      "key": "app-window/one-frame",
+      "criterion": "The glass panel is the whole window, with no system title bar and no gap around it.",
+      "steps": "Start the app on Windows: npm run build, set GRILLO_STORE=memory, then npx electron .",
+      "expected": "One frame only: Grillo's title bar (logo, 'Grillo', 'Setup check') is the top of the window, minimise, maximise and close at its right end, no gap or inner rounded panel at the edges."
+    },
+    {
+      "key": "app-window/drag-and-double-click",
+      "criterion": "Dragging the title bar moves the window; double-clicking it maximises and restores.",
+      "steps": "Start the app on Windows: npm run build, set GRILLO_STORE=memory, then npx electron . Drag the empty part of the title bar. Double-click it, then double-click again.",
+      "expected": "The window follows the mouse; the first double-click maximises, the second restores."
+    },
+    {
+      "key": "app-window/buttons-and-snap",
+      "criterion": "The three system buttons work and hovering over maximise shows the snap layouts.",
+      "steps": "Start the app on Windows: npm run build, set GRILLO_STORE=memory, then npx electron . Hover over maximise. Click minimise, restore from the taskbar, click maximise twice, click close.",
+      "expected": "The snap-layout flyout on hover; each button does its job; close quits the app."
+    },
+    {
+      "key": "app-window/edge-resize",
+      "criterion": "The window resizes from its edges.",
+      "steps": "Start the app on Windows: npm run build, set GRILLO_STORE=memory, then npx electron . Drag the left, right and bottom edges and the bottom-right corner.",
+      "expected": "The window resizes from each one."
+    },
+    {
+      "key": "app-window/mac-buttons",
+      "criterion": "On Mac the native buttons stay and do not cover the logo.",
+      "steps": "On a Mac: npm run build, then npx electron .",
+      "expected": "Red, yellow and green buttons at the top left inside Grillo's title bar, with the logo to their right."
+    }
+  ],
+  "no_qa_reason": null
+}
