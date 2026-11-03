@@ -33,6 +33,8 @@ interface AppOptions {
   failAgentStarts?: number;
   /** The GitHub identity cannot be read (gh signed out), so the screen does not know who "you" are. */
   noIdentity?: boolean;
+  /** What a refused agent start says; the default is a plain reason, with none of Electron's wrapping. */
+  agentRefusal?: string;
 }
 
 /** The screen as it runs: the in-memory store and the settings behind the real store IPC, agents recorded. */
@@ -47,7 +49,7 @@ function app(options: AppOptions = {}) {
   ipc.handle('agents:start', (request) => {
     if (failures > 0) {
       failures -= 1;
-      throw new Error('Claude Code is not installed on this laptop');
+      throw new Error(options.agentRefusal ?? 'Claude Code is not installed on this laptop');
     }
     starts.push(request);
     return `agent-${starts.length}`;
@@ -105,6 +107,45 @@ const cardTitled = (root: HTMLElement, title: string) =>
   [...root.querySelectorAll<HTMLElement>('.card')].find((card) => text(card.querySelector('h3')).startsWith(title)) as HTMLElement;
 const sectionNames = (root: ParentNode) =>
   [...root.querySelectorAll<HTMLInputElement>('input[aria-label="Section name"]')].map((input) => input.value);
+
+type Page = 'Where' | 'Structure' | 'People' | 'Idea' | 'Review';
+const PAGES: readonly Page[] = ['Where', 'Structure', 'People', 'Idea', 'Review'];
+/** The page of the guided steps on screen: the step the stepper marks, or the review page, or null off the steps. */
+const pageNow = (root: HTMLElement): Page | null => {
+  if (root.querySelector('.review') !== null) return 'Review';
+  return (text(root.querySelector('.stepper [aria-current="step"]')) as Page) || null;
+};
+/** The one card of the step on screen, which holds that step's fields. */
+const stepCard = (root: HTMLElement) => root.querySelector('.card') as HTMLElement;
+/** Presses Next until the page shows; a Next that stays put is a failure of the test that asked for this walk. */
+function walkTo(root: HTMLElement, page: Page): void {
+  while (pageNow(root) !== page) {
+    const before = pageNow(root);
+    if (before === null || PAGES.indexOf(before) > PAGES.indexOf(page)) throw new Error(`Cannot walk from ${before} to ${page}`);
+    click(root, 'Next');
+    if (pageNow(root) === before) throw new Error(`Next stayed on ${before}: ${text(root.querySelector('.note.err'))}`);
+  }
+}
+const onWhere = (root: HTMLElement) => pageNow(root) === 'Where';
+const value = (root: ParentNode, selector: string) => root.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector)?.value;
+const PROJECT_NAME = 'input[aria-label="Project name"]';
+const REPOSITORY_NAME = 'input[aria-label="Repository name"]';
+const THE_IDEA = 'textarea[aria-label="The idea"]';
+const SEARCH = 'input[aria-label="Search repositories"]';
+const INVITE_LOGIN = 'input[aria-label="GitHub login to invite"]';
+/** From Where on New project: names the repository, gives the idea and stops on the review page. */
+function fillNewProject(root: HTMLElement, name = 'sample-project-1'): void {
+  type(root, REPOSITORY_NAME, name);
+  walkTo(root, 'Idea');
+  type(root, THE_IDEA, IDEA);
+  walkTo(root, 'Review');
+}
+/** From Where on Connect existing, with a repository chosen: gives the idea and stops on the review page. */
+function fillConnection(root: HTMLElement): void {
+  walkTo(root, 'Idea');
+  type(root, THE_IDEA, IDEA);
+  walkTo(root, 'Review');
+}
 
 describe('project creation: your projects and invitations', () => {
   it('lists recent projects, last opened first, and pending invitations; Open opens the project on the map', async () => {
@@ -184,24 +225,28 @@ describe('project creation: a new repository', () => {
     const { store, settings, starts, root, navigate, open } = app();
     await open();
     click(root, 'New project');
-    await until(() => cardTitled(root, '1 · Repository') !== undefined, 'the form');
+    await until(() => onWhere(root), 'the form');
     vi.useFakeTimers({ toFake: ['Date'], now: NOW });
 
     type(root, 'input[aria-label="Project name"]', 'Sample project 1');
     expect(root.querySelector<HTMLInputElement>('input[aria-label="Repository name"]')?.value).toBe('sample-project-1');
-    const structure = cardTitled(root, '2 · PRD structure');
+    walkTo(root, 'Structure');
+    const structure = stepCard(root);
     expect(sectionNames(structure)).toEqual(DEFAULT_PRD_STRUCTURE.sections.map((section) => section.name));
     click(structure, 'Add section');
     const names = root.querySelectorAll<HTMLInputElement>('input[aria-label="Section name"]');
     type(names[names.length - 1].parentElement as HTMLElement, 'input[aria-label="Section name"]', 'Sample added section');
     root.querySelectorAll<HTMLButtonElement>('button[aria-label="Move down"]')[0].click();
-    click(cardTitled(root, '2 · PRD structure').querySelectorAll('.rows > li')[12], 'Remove');
+    click(stepCard(root).querySelectorAll('.rows > li')[12], 'Remove');
+    walkTo(root, 'People');
     type(root, 'input[aria-label="GitHub login to invite"]', 'ben-example');
     click(root, 'Invite');
-    type(cardTitled(root, '3 · Members'), '.field input', 'Sample role A');
+    type(stepCard(root), '.field input', 'Sample role A');
     type(root, 'input[aria-label="Add a domain"]', 'product');
     click(root, 'Add domain');
+    walkTo(root, 'Idea');
     type(root, 'textarea[aria-label="The idea"]', IDEA);
+    walkTo(root, 'Review');
 
     click(root, 'Create project');
     await until(() => starts.length === 1, 'the grilling agent to start');
@@ -249,14 +294,17 @@ describe('project creation: a new repository', () => {
     settings.set(LAST_MEMBERSHIP_KEY, { project: 'example-org/sample-project-0', role: 'Sample role A', domains: ['product'] });
     await open();
     click(root, 'New project');
-    await until(() => cardTitled(root, '3 · Members') !== undefined, 'the form');
+    await until(() => onWhere(root), 'the form');
+    type(root, REPOSITORY_NAME, 'sample-project-1');
+    walkTo(root, 'People');
 
-    const members = cardTitled(root, '3 · Members');
+    const members = stepCard(root);
     expect(members.querySelector<HTMLInputElement>('.field input')?.value).toBe('Sample role A');
     expect(texts(members.querySelectorAll('.tag'))).toEqual(['product×']);
     expect(text(members)).toContain('Pre-filled from the last project you joined, example-org/sample-project-0.');
 
-    const from = cardTitled(root, '2 · PRD structure').querySelector('select') as HTMLSelectElement;
+    click(root, 'Back');
+    const from = stepCard(root).querySelector('select') as HTMLSelectElement;
     expect(texts(from.options)).toEqual(['Grillo default', 'sample-project-0 (an earlier project of yours)']);
     from.value = 'example-org/sample-project-0';
     from.dispatchEvent(new Event('change'));
@@ -264,12 +312,19 @@ describe('project creation: a new repository', () => {
   });
 
   it.each([
-    ['no idea', (root: HTMLElement) => type(root, 'input[aria-label="Repository name"]', 'sample-project-1'), 'Give the idea'],
+    [
+      'no idea',
+      (root: HTMLElement) => {
+        type(root, 'input[aria-label="Repository name"]', 'sample-project-1');
+        walkTo(root, 'Idea');
+      },
+      'Give the idea',
+    ],
     [
       'two sections with one name',
       (root: HTMLElement) => {
         type(root, 'input[aria-label="Repository name"]', 'sample-project-1');
-        type(root, 'textarea[aria-label="The idea"]', IDEA);
+        walkTo(root, 'Structure');
         type(root.querySelectorAll('.rows.structure > li')[1], 'input[aria-label="Section name"]', 'Problem');
       },
       'Two sections are both called "Problem"',
@@ -278,10 +333,10 @@ describe('project creation: a new repository', () => {
     const { store, starts, root, open } = app();
     await open();
     click(root, 'New project');
-    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form');
+    await until(() => onWhere(root), 'the form');
 
     fill(root);
-    click(root, 'Create project');
+    click(root, 'Next');
     await flush();
 
     expect(text(root.querySelector('.note.err'))).toContain(message);
@@ -293,9 +348,8 @@ describe('project creation: a new repository', () => {
     const { store, starts, root, open } = app({ failAgentStarts: 1 });
     await open();
     click(root, 'New project');
-    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form');
-    type(root, 'input[aria-label="Repository name"]', 'sample-project-1');
-    type(root, 'textarea[aria-label="The idea"]', IDEA);
+    await until(() => onWhere(root), 'the form');
+    fillNewProject(root);
 
     click(root, 'Create project');
     await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step');
@@ -310,14 +364,17 @@ describe('project creation: a new repository', () => {
     const { store, starts, root, open } = app({ noIdentity: true });
     await open();
     click(root, 'New project');
-    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form');
+    await until(() => onWhere(root), 'the form');
     type(root, 'input[aria-label="Repository name"]', 'sample-project-1');
+    walkTo(root, 'People');
     // Your own login: with no identity the form cannot catch it, and the store refuses it as a member already.
     for (const login of ['ada-example', 'ben-example']) {
       type(root, 'input[aria-label="GitHub login to invite"]', login);
       click(root, 'Invite');
     }
+    walkTo(root, 'Idea');
     type(root, 'textarea[aria-label="The idea"]', IDEA);
+    walkTo(root, 'Review');
 
     click(root, 'Create project');
     await until(() => starts.length === 1, 'the grilling agent to start');
@@ -338,9 +395,8 @@ describe('project creation: a new repository', () => {
 describe('project creation: connecting an existing repository', () => {
   async function connectForm(context: ReturnType<typeof app>, repository: string) {
     await context.open();
-    click(context.root, 'New project');
-    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
-    click(context.root, 'Connect an existing one');
+    click(context.root, 'Connect existing');
+    await until(() => onWhere(context.root), 'the form');
     type(context.root, 'input[aria-label="Search repositories"]', repository);
   }
 
@@ -351,14 +407,18 @@ describe('project creation: connecting an existing repository', () => {
 
     click(root, 'Check access');
     await until(() => root.querySelector('.badge.warn') !== null, 'the access check');
-    const members = cardTitled(root, '3 · Members');
+    walkTo(root, 'Structure');
+    expect(text(stepCard(root))).toContain('Grillo default · 13 sections');
+    walkTo(root, 'People');
+    const members = stepCard(root);
     expect(members.querySelector<HTMLInputElement>('input[aria-label="GitHub login to invite"]')?.disabled).toBe(true);
     expect(buttonNamed(members, 'Invite')?.disabled).toBe(true);
     expect(text(members.querySelector('.reason'))).toContain('Inviting needs admin rights on example-org/team-code');
-    expect(text(cardTitled(root, '2 · PRD structure'))).toContain('Grillo default · 13 sections');
 
+    walkTo(root, 'Idea');
     click(root, 'Paste or upload a transcript');
     type(root, 'textarea[aria-label="Transcript"]', 'Sample transcript line 1: a made-up kick-off remark.');
+    walkTo(root, 'Review');
     click(root, 'Connect and start');
     await until(() => starts.length === 1, 'the grilling agent to start');
 
@@ -376,7 +436,7 @@ describe('project creation: connecting an existing repository', () => {
     const { store, starts, root, navigate } = context;
     await store.createProject({ connectRepository: { owner: 'example-org', name: 'team-code' } });
     await connectForm(context, 'example-org/team-code');
-    type(root, 'textarea[aria-label="The idea"]', IDEA);
+    fillConnection(root);
 
     click(root, 'Connect and start');
     await until(() => buttonNamed(root, 'Open it') !== undefined, 'the repository problem');
@@ -399,7 +459,7 @@ describe('project creation: connecting an existing repository', () => {
     });
     const { root } = context;
     await connectForm(context, 'example-org/sample-repo-4');
-    type(root, 'textarea[aria-label="The idea"]', IDEA);
+    fillConnection(root);
 
     click(root, 'Connect and start');
     await until(() => root.querySelector('.badge.err') !== null, 'the repository problem');
@@ -407,7 +467,8 @@ describe('project creation: connecting an existing repository', () => {
     expect(text(root.querySelector('.badge.err'))).toBe('Cannot connect');
     expect(text(root.querySelector('.rows p'))).toContain('Issues are turned off in example-org/sample-repo-4');
     click(root, 'Check again');
-    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form again');
+    await until(() => onWhere(root) && buttonNamed(root, 'Next')?.disabled === false, 'the form again');
+    walkTo(root, 'Idea');
     expect(root.querySelector<HTMLTextAreaElement>('textarea[aria-label="The idea"]')?.value).toBe(IDEA);
   });
 });
@@ -420,14 +481,14 @@ describe('project creation: the repository list', () => {
       { repository: { owner: 'example-org', name: 'other-repo' }, permission: 'read', issuesEnabled: true },
     ],
   };
-  const repositoryRows = (root: HTMLElement) => [...cardTitled(root, '1 · Repository').querySelectorAll('.rows > li')];
+  const repositoryRows = (root: HTMLElement) => [...stepCard(root).querySelectorAll('.rows > li')];
   const radio = (root: HTMLElement, label: string) =>
     repositoryRows(root).find((row) => text(row.querySelector('label')) === label)?.querySelector<HTMLInputElement>('input[type="radio"]');
 
   async function listed(context: ReturnType<typeof app>) {
     await context.open();
     click(context.root, 'New project');
-    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
+    await until(() => onWhere(context.root), 'the form');
     click(context.root, 'Connect an existing one');
   }
 
@@ -449,7 +510,7 @@ describe('project creation: the repository list', () => {
 
     type(root, 'input[aria-label="Search repositories"]', 'no-such-thing');
     expect(repositoryRows(root)).toEqual([]);
-    expect(text(cardTitled(root, '1 · Repository'))).toContain('No repository of yours matches this search.');
+    expect(text(stepCard(root))).toContain('No repository of yours matches this search.');
   });
 
   it('picking a repository selects it with no Check access: an admin may invite, and connecting uses that repository', async () => {
@@ -462,9 +523,10 @@ describe('project creation: the repository list', () => {
     expect(radio(root, 'example-org/sample-repo-2')?.checked).toBe(true);
     expect(radio(root, 'example-org/sample-repo-1')?.checked).toBe(false);
     expect(repositoryRows(root)[2].classList.contains('selected')).toBe(true);
+    walkTo(root, 'People');
     expect(root.querySelector<HTMLInputElement>('input[aria-label="GitHub login to invite"]')?.disabled).toBe(false);
 
-    type(root, 'textarea[aria-label="The idea"]', IDEA);
+    fillConnection(root);
     click(root, 'Connect and start');
     await until(() => starts.length === 1, 'the grilling agent to start');
     expect((await store.getProject('example-org/sample-repo-2')).id).toBe('example-org/sample-repo-2');
@@ -487,7 +549,8 @@ describe('project creation: the repository list', () => {
     await until(() => text(repositoryRows(root)[1].querySelector('.badge')) === 'Access not known', 'the check to end');
     expect(text(repositoryRows(root)[1].querySelector('p'))).toBe('GitHub did not answer');
     expect(radio(root, 'example-org/sample-repo-1')?.checked).toBe(true);
-    expect(text(cardTitled(root, '3 · Members').querySelector('.reason'))).toContain('Grillo has not confirmed your access yet');
+    walkTo(root, 'People');
+    expect(text(stepCard(root).querySelector('.reason'))).toContain('Grillo has not confirmed your access yet');
   });
 
   it.each([
@@ -515,8 +578,9 @@ describe('project creation: the repository list', () => {
     expect(text(repositoryRows(root)[0])).toContain('Connecting needs write access.');
 
     type(root, 'input[aria-label="Search repositories"]', 'sample');
-    expect(text(cardTitled(root, '3 · Members'))).toContain('Inviting needs admin rights on example-org/other-repo');
     expect(repositoryRows(root).map((row) => text(row.querySelector('.strong')))).toContain('example-org/other-repo');
+    walkTo(root, 'People');
+    expect(text(stepCard(root))).toContain('Inviting needs admin rights on example-org/other-repo');
   });
 
   it('checks a repository typed in full that the list does not hold, and drops it when the typing no longer names one', async () => {
@@ -532,7 +596,7 @@ describe('project creation: the repository list', () => {
 
     type(root, 'input[aria-label="Search repositories"]', 'example-org/');
     expect(repositoryRows(root).map((row) => text(row.querySelector('.strong')))).not.toContain('example-org/not-listed');
-    click(root, 'Connect and start');
+    click(root, 'Next');
     await flush();
     expect(text(root.querySelector('.note.err'))).toContain('Pick the repository to connect');
   });
@@ -543,7 +607,7 @@ describe('project creation: the repository list', () => {
     vi.spyOn(store, 'listRepositories').mockRejectedValue(new Error('gh is signed out'));
     await listed(context);
 
-    expect(text(cardTitled(root, '1 · Repository').querySelector('.note.warn'))).toBe(
+    expect(text(stepCard(root).querySelector('.note.warn'))).toBe(
       'Grillo could not list your repositories: gh is signed out. Type the repository in full as owner/repository instead.',
     );
 
@@ -578,7 +642,7 @@ describe('project creation: the demo path in the in-memory store', () => {
     const { root } = context;
     await context.open();
     click(root, 'New project');
-    await until(() => cardTitled(root, '1 · Repository') !== undefined, 'the form');
+    await until(() => onWhere(root), 'the form');
     click(root, 'Connect an existing one');
 
     type(root, 'input[aria-label="Search repositories"]', 'example-org/team-code');
@@ -612,9 +676,11 @@ describe('project creation: starting the grilling agent again', () => {
     const { root } = context;
     await context.open();
     click(root, 'New project');
-    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form');
+    await until(() => onWhere(root), 'the form');
     type(root, 'input[aria-label="Project name"]', 'Sample project 1');
+    walkTo(root, 'Idea');
     type(root, 'textarea[aria-label="The idea"]', IDEA);
+    walkTo(root, 'Review');
     click(root, 'Create project');
     await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step');
   }
@@ -663,9 +729,8 @@ describe('project creation: starting the grilling agent again', () => {
     const { root, settings } = context;
     await context.open();
     click(root, 'New project');
-    await until(() => cardTitled(root, '4 · The idea') !== undefined, 'the form');
-    type(root, 'input[aria-label="Repository name"]', 'sample-project-1');
-    type(root, 'textarea[aria-label="The idea"]', IDEA);
+    await until(() => onWhere(root), 'the form');
+    fillNewProject(root);
 
     click(root, 'Create project');
     root.replaceChildren();
@@ -796,8 +861,8 @@ describe('project creation: the owner of a new repository', () => {
     const context = app(options);
     await context.open();
     click(context.root, 'New project');
-    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
-    const card = () => cardTitled(context.root, '1 · Repository');
+    await until(() => onWhere(context.root), 'the form');
+    const card = () => stepCard(context.root);
     const owner = () => card().querySelector('select') as HTMLSelectElement;
     const pick = (login: string) => {
       owner().value = login;
@@ -805,9 +870,14 @@ describe('project creation: the owner of a new repository', () => {
     };
     const fill = () => {
       type(context.root, 'input[aria-label="Project name"]', 'Sample project 1');
-      type(context.root, 'textarea[aria-label="The idea"]', IDEA);
     };
-    return { ...context, card, owner, pick, fill };
+    /** From Where, once the owner is settled: gives the idea and stops on the review page. */
+    const finish = () => {
+      walkTo(context.root, 'Idea');
+      type(context.root, 'textarea[aria-label="The idea"]', IDEA);
+      walkTo(context.root, 'Review');
+    };
+    return { ...context, card, owner, pick, fill, finish };
   }
 
   const visibility = (card: HTMLElement) => card.querySelector('[aria-label="Visibility"]');
@@ -824,7 +894,7 @@ describe('project creation: the owner of a new repository', () => {
   });
 
   it('preselects the own account with no organisation, Private by default, and finishes the form', async () => {
-    const { store, starts, root, card, owner, fill } = await formOf({ seed: NO_ORGANISATION });
+    const { store, starts, root, card, owner, fill, finish } = await formOf({ seed: NO_ORGANISATION });
 
     expect(owner().value).toBe('ada-example');
     expect(owner().disabled).toBe(false);
@@ -832,6 +902,7 @@ describe('project creation: the owner of a new repository', () => {
     expect(text(card())).toContain('A private repository under your own GitHub account. Only you can invite people, close and reopen the project');
     expect(text(card())).not.toContain('Every member becomes a repository admin.');
     fill();
+    finish();
 
     click(root, 'Create project');
     await until(() => starts.length === 1, 'the grilling agent to start');
@@ -841,7 +912,7 @@ describe('project creation: the owner of a new repository', () => {
   });
 
   it('shows the warning only on Public, says public on the Creating row and creates it public', async () => {
-    const { store, starts, root, card, pick, fill } = await formOf();
+    const { store, starts, root, card, pick, fill, finish } = await formOf();
     const created = vi.spyOn(store, 'createProject');
     pick('ada-example');
     fill();
@@ -855,6 +926,7 @@ describe('project creation: the owner of a new repository', () => {
     click(visibility(card()) as HTMLElement, 'Private');
     expect(card().querySelector('.note.warn')).toBeNull();
     click(visibility(card()) as HTMLElement, 'Public');
+    finish();
 
     click(root, 'Create project');
     await until(() => starts.length === 1, 'the grilling agent to start');
@@ -864,7 +936,7 @@ describe('project creation: the owner of a new repository', () => {
   });
 
   it('takes the choice away and goes back to Private on moving to an organisation', async () => {
-    const { store, starts, root, card, pick, fill } = await formOf();
+    const { store, starts, root, card, pick, fill, finish } = await formOf();
     const created = vi.spyOn(store, 'createProject');
     pick('ada-example');
     click(visibility(card()) as HTMLElement, 'Public');
@@ -876,6 +948,7 @@ describe('project creation: the owner of a new repository', () => {
     pick('ada-example');
     expect(texts(card().querySelectorAll('[aria-label="Visibility"] button[aria-pressed="true"]'))).toEqual(['Private']);
     pick('example-org');
+    finish();
 
     click(root, 'Create project');
     await until(() => starts.length === 1, 'the grilling agent to start');
@@ -886,10 +959,16 @@ describe('project creation: the owner of a new repository', () => {
   it('keeps what was typed when the owner changes', async () => {
     const { root, pick, fill } = await formOf();
     fill();
+    walkTo(root, 'Idea');
+    type(root, THE_IDEA, IDEA);
+    click(root, 'Back');
+    click(root, 'Back');
+    click(root, 'Back');
 
     pick('ada-example');
 
     expect(root.querySelector<HTMLInputElement>('input[aria-label="Project name"]')?.value).toBe('Sample project 1');
+    walkTo(root, 'Idea');
     expect(root.querySelector<HTMLTextAreaElement>('textarea[aria-label="The idea"]')?.value).toBe(IDEA);
   });
 
@@ -898,16 +977,15 @@ describe('project creation: the owner of a new repository', () => {
     vi.spyOn(context.store, 'signedInLogin').mockRejectedValue(new Error('gh is signed out'));
     await context.open();
     click(context.root, 'New project');
-    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
+    await until(() => onWhere(context.root), 'the form');
 
-    const card = cardTitled(context.root, '1 · Repository');
+    const card = stepCard(context.root);
     expect((card.querySelector('select') as HTMLSelectElement).disabled).toBe(true);
     expect(context.root.textContent).toContain('Grillo could not read your GitHub account: gh is signed out');
     expect(text(card)).toContain('Grillo cannot create a repository without an owner. Connect an existing one instead.');
     type(context.root, 'input[aria-label="Repository name"]', 'sample-project-1');
-    type(context.root, 'textarea[aria-label="The idea"]', IDEA);
 
-    click(context.root, 'Create project');
+    click(context.root, 'Next');
 
     expect(context.root.textContent).toContain('Pick the owner of the new repository.');
     expect(await context.store.listProjects()).toEqual([]);
@@ -918,10 +996,421 @@ describe('project creation: the owner of a new repository', () => {
     vi.spyOn(context.store, 'signedInLogin').mockRejectedValue(new Error('gh is signed out'));
     await context.open();
     click(context.root, 'New project');
-    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
+    await until(() => onWhere(context.root), 'the form');
 
-    const select = cardTitled(context.root, '1 · Repository').querySelector('select') as HTMLSelectElement;
+    const select = stepCard(context.root).querySelector('select') as HTMLSelectElement;
     expect(texts(select.options)).toEqual(['example-org']);
     expect(select.value).toBe('example-org');
+  });
+});
+
+describe('project creation: the guided steps', () => {
+  const WAYS_IN = [
+    ['New project', 'Create project'],
+    ['Connect existing', 'Connect and start'],
+  ] as const;
+
+  /** Opens the screen and takes a way in; on Connect existing a repository is chosen, so Where can be left. */
+  async function wayIn(way: (typeof WAYS_IN)[number][0], options: AppOptions = {}) {
+    const context = app(options);
+    await context.open();
+    click(context.root, way);
+    await until(() => onWhere(context.root), 'the first step');
+    if (way === 'New project') type(context.root, PROJECT_NAME, 'Sample project 1');
+    else type(context.root, SEARCH, 'example-org/team-docs');
+    return context;
+  }
+
+  it('shows New project and Connect existing on the start page, with or without projects, each opening its own Where', async () => {
+    const { root, open } = app();
+    await open();
+
+    click(root, 'Connect existing');
+    await until(() => onWhere(root), 'the first step');
+    expect(root.querySelector(SEARCH)).not.toBeNull();
+    expect(root.querySelector(PROJECT_NAME)).toBeNull();
+
+    click(root, 'Cancel');
+    await until(() => buttonNamed(root, 'New project') !== undefined, 'the start page');
+    click(root, 'New project');
+    await until(() => onWhere(root), 'the first step');
+    expect(root.querySelector(PROJECT_NAME)).not.toBeNull();
+    expect(root.querySelector(SEARCH)).toBeNull();
+  });
+
+  it('says why when a list on the start page cannot be read, and both ways in still work', async () => {
+    const { store, root, open } = app();
+    vi.spyOn(store, 'listRecentProjects').mockRejectedValue(new Error('gh is signed out'));
+    vi.spyOn(store, 'listPendingInvitations').mockRejectedValue(new Error('gh is signed out'));
+    await open();
+
+    expect(text(cardTitled(root, 'Your projects').querySelector('.note.err'))).toBe('gh is signed out');
+    expect(text(cardTitled(root, 'Pending invitations').querySelector('.note.err'))).toBe('gh is signed out');
+    click(root, 'Connect existing');
+    await until(() => onWhere(root), 'the first step');
+  });
+
+  it('says Grillo found no repository when the member can reach none, and why when the organisations cannot be read', async () => {
+    const { store, root, open } = app({ seed: { repositories: [] } });
+    vi.spyOn(store, 'listOrganisations').mockRejectedValue(new Error('gh is signed out'));
+    await open();
+    click(root, 'Connect existing');
+    await until(() => onWhere(root), 'the first step');
+
+    expect(text(stepCard(root))).toContain('Grillo found no repository of yours.');
+    expect(text(root.querySelector('.note.err'))).toBe('Grillo could not list your organisations: gh is signed out');
+  });
+
+  it.each([
+    {
+      refused: 'organisations',
+      why: 'Grillo could not list your organisations: gh is signed out',
+      refuse: (store: ReturnType<typeof app>['store']) => vi.spyOn(store, 'listOrganisations').mockRejectedValue(new Error('gh is signed out')),
+    },
+    {
+      refused: 'own account',
+      why: 'Grillo could not read your GitHub account: gh is signed out',
+      refuse: (store: ReturnType<typeof app>['store']) => vi.spyOn(store, 'signedInLogin').mockRejectedValue(new Error('gh is signed out')),
+    },
+  ])('keeps saying why the $refused could not be read each time Where is drawn, and on no other step', async ({ why, refuse }) => {
+    const { store, root, open } = app();
+    refuse(store);
+    vi.spyOn(store, 'listRepositories').mockRejectedValue(new Error('gh is signed out'));
+    await open();
+    click(root, 'New project');
+    await until(() => onWhere(root), 'the first step');
+    expect(root.textContent).toContain(why);
+    type(root, PROJECT_NAME, 'Sample project 1');
+
+    click(root, 'Next');
+    expect(root.textContent).not.toContain(why);
+
+    click(root, 'Back');
+    expect(root.textContent).toContain(why);
+
+    click(root, 'Connect an existing one');
+    expect(root.textContent).toContain(why);
+    expect(text(stepCard(root))).toContain('Grillo could not list your repositories: gh is signed out');
+  });
+
+  it.each(WAYS_IN)('%s walks Where, Structure, People and Idea in that order, says which step it is, then reviews', async (way) => {
+    const { root } = await wayIn(way);
+    const seen: Array<[string, string, string]> = [];
+    for (const page of ['Where', 'Structure', 'People', 'Idea'] as const) {
+      walkTo(root, page);
+      if (page === 'Idea') type(root, THE_IDEA, IDEA);
+      seen.push([page, text(root.querySelector('.step-progress p')), texts(root.querySelectorAll('.stepper li')).join(' ')]);
+    }
+
+    expect(seen).toEqual(
+      ['Where', 'Structure', 'People', 'Idea'].map((page, index) => [page, `Step ${index + 1} of 4`, 'Where Structure People Idea']),
+    );
+    walkTo(root, 'Review');
+    expect(root.querySelector('.stepper [aria-current="step"]')).toBeNull();
+    expect(root.querySelectorAll('.stepper li.done')).toHaveLength(4);
+  });
+
+  it('stops Next on Where with the reason beside the name, for that step only, and takes the reason away when it is fixed', async () => {
+    const { root, open } = app();
+    await open();
+    click(root, 'New project');
+    await until(() => onWhere(root), 'the first step');
+
+    click(root, 'Next');
+
+    expect(pageNow(root)).toBe('Where');
+    const reason = root.querySelector('.note.err') as HTMLElement;
+    expect(text(reason)).toContain('Give the repository a name');
+    expect(reason.parentElement?.querySelector(REPOSITORY_NAME)).not.toBeNull();
+
+    type(root, REPOSITORY_NAME, 'sample-project-1');
+    expect(root.querySelector('.note.err')).toBeNull();
+
+    // An empty idea is the Idea step's problem: nothing before that step stops on it.
+    walkTo(root, 'Idea');
+    click(root, 'Next');
+    expect(pageNow(root)).toBe('Idea');
+    const noIdea = root.querySelector('.note.err') as HTMLElement;
+    expect(text(noIdea)).toContain('Give the idea');
+    expect(noIdea.parentElement?.querySelector(THE_IDEA)).not.toBeNull();
+    type(root, THE_IDEA, IDEA);
+    expect(root.querySelector('.note.err')).toBeNull();
+  });
+
+  it('puts a structure problem on the row that causes it, under the list when there is no row, and unfolds a folded structure', async () => {
+    const { root } = await wayIn('Connect existing');
+    walkTo(root, 'Structure');
+    click(root, 'Edit');
+    type(root.querySelectorAll('.rows.structure > li')[1], 'input[aria-label="Section name"]', 'Problem');
+    click(root, 'Back');
+    click(root, 'Create a new repository');
+    click(root, 'Connect an existing one');
+    walkTo(root, 'Structure');
+
+    expect(sectionNames(root)).toEqual([]);
+    click(root, 'Next');
+
+    expect(pageNow(root)).toBe('Structure');
+    const row = root.querySelectorAll('.rows.structure > li')[1];
+    expect(text(row.querySelector('.note.err'))).toContain('Two sections are both called "Problem"');
+
+    for (let left = sectionNames(root).length; left > 0; left -= 1) {
+      click(root.querySelector('.rows.structure > li') as HTMLElement, 'Remove');
+    }
+    click(root, 'Next');
+    expect(text(root.querySelector('.note.err'))).toBe('The PRD structure needs at least one section.');
+    expect(root.querySelector('.note.err')?.parentElement?.textContent).toContain('Add section');
+  });
+
+  it('keeps everything typed on Back, in every step', async () => {
+    const { root } = await wayIn('New project');
+    const domain = 'input[aria-label="Add a domain"]';
+    type(root, REPOSITORY_NAME, 'my-own-name');
+    walkTo(root, 'Structure');
+    type(root.querySelectorAll('.rows.structure > li')[0], 'input[aria-label="Section note"]', 'Sample changed note');
+    walkTo(root, 'People');
+    type(root, INVITE_LOGIN, 'ben-example');
+    click(root, 'Invite');
+    type(root, INVITE_LOGIN, 'half-typed');
+    type(stepCard(root), '.field input', 'Sample role A');
+    type(root, domain, 'half-a-domain');
+    walkTo(root, 'Idea');
+    type(root, THE_IDEA, IDEA);
+    walkTo(root, 'Review');
+
+    click(root, 'Back');
+    expect(pageNow(root)).toBe('Idea');
+    expect(value(root, THE_IDEA)).toBe(IDEA);
+    click(root, 'Back');
+    expect(pageNow(root)).toBe('People');
+    expect(value(root, INVITE_LOGIN)).toBe('half-typed');
+    expect(text(stepCard(root))).toContain('ben-example');
+    expect(value(stepCard(root), '.field input')).toBe('Sample role A');
+    expect(value(root, domain)).toBe('half-a-domain');
+    click(root, 'Back');
+    expect(pageNow(root)).toBe('Structure');
+    expect(value(root.querySelectorAll('.rows.structure > li')[0], 'input[aria-label="Section note"]')).toBe('Sample changed note');
+    click(root, 'Back');
+    expect(pageNow(root)).toBe('Where');
+    expect(value(root, PROJECT_NAME)).toBe('Sample project 1');
+    expect(value(root, REPOSITORY_NAME)).toBe('my-own-name');
+    expect(buttonNamed(root, 'Back')).toBeUndefined();
+  });
+
+  it('brings a new page to the top with its heading focused, and a stopped step to its reason', async () => {
+    const { root } = await wayIn('New project');
+    const toTop = vi.fn();
+    (document.scrollingElement as Element).scrollTo = toTop;
+    const toReason = vi.fn();
+    const scrollIntoView = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
+    Element.prototype.scrollIntoView = toReason;
+    try {
+      walkTo(root, 'Structure');
+      expect(toTop).toHaveBeenCalledWith(0, 0);
+      expect(document.activeElement).toBe(root.querySelector('.page-head h3'));
+
+      type(root.querySelectorAll('.rows.structure > li')[1], 'input[aria-label="Section name"]', ' ');
+      click(root, 'Next');
+      expect(toReason.mock.contexts[0]).toBe(root.querySelector('[data-reason]'));
+    } finally {
+      if (scrollIntoView) Object.defineProperty(Element.prototype, 'scrollIntoView', scrollIntoView);
+    }
+  });
+
+  it('shows only the reason of a refused agent, not the wrapping Electron adds, after creating, on coming back and in the editor', async () => {
+    const reason = 'Claude Code is not installed on this laptop';
+    const context = app({ failAgentStarts: 3, agentRefusal: `Error invoking remote method 'agents:start': Error: ${reason}` });
+    const { root } = context;
+    await context.open();
+    click(root, 'New project');
+    await until(() => onWhere(root), 'the first step');
+    fillNewProject(root);
+    click(root, 'Create project');
+    await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step');
+    expect(text(root.querySelector('.note.err'))).toBe(reason);
+
+    root.replaceChildren();
+    await context.open();
+    click(cardTitled(root, 'Your projects'), 'Open');
+    await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step again');
+    expect(text(root.querySelector('.note.err'))).toBe(reason);
+
+    root.replaceChildren();
+    await context.open({ project: 'example-org/sample-project-1' });
+    click(root, 'Save and regenerate');
+    await until(() => root.querySelector('.note.err') !== null, 'the refusal');
+    expect(text(root.querySelector('.note.err'))).toBe(reason);
+  });
+
+  it('keeps what was typed for each way in when the switch on Where changes it', async () => {
+    const { root } = await wayIn('New project');
+    click(root, 'Connect an existing one');
+    type(root, SEARCH, 'example-org/team-docs');
+    click(root, 'Create a new repository');
+    expect(value(root, PROJECT_NAME)).toBe('Sample project 1');
+    click(root, 'Connect an existing one');
+    expect(value(root, SEARCH)).toBe('example-org/team-docs');
+  });
+
+  const answersOf = (root: HTMLElement, page: string) =>
+    [...root.querySelectorAll<HTMLElement>('.review > li')].find((row) => text(row.querySelector('.strong')) === page) as HTMLElement;
+
+  it('lists the answers of every step on the review page, and Change goes back to that step and returns with the edit', async () => {
+    const { root: page } = await wayIn('New project');
+    walkTo(page, 'People');
+    type(page, INVITE_LOGIN, 'ben-example');
+    click(page, 'Invite');
+    type(stepCard(page), '.field input', 'Sample role A');
+    type(page, 'input[aria-label="Add a domain"]', 'product');
+    click(page, 'Add domain');
+    walkTo(page, 'Idea');
+    type(page, THE_IDEA, IDEA);
+    walkTo(page, 'Review');
+
+    expect(text(answersOf(page, 'Where'))).toContain('Sample project 1');
+    expect(text(answersOf(page, 'Where'))).toContain('example-org/sample-project-1');
+    expect(text(answersOf(page, 'Where'))).toContain('Private');
+    expect(text(answersOf(page, 'Structure'))).toContain('Grillo default · 13 sections');
+    expect(text(answersOf(page, 'Structure'))).toContain('Users and roles');
+    expect(text(answersOf(page, 'People'))).toContain('Sample role A');
+    expect(text(answersOf(page, 'People'))).toContain('product');
+    expect(text(answersOf(page, 'People'))).toContain('ben-example');
+    expect(text(answersOf(page, 'Idea'))).toContain(IDEA);
+
+    click(answersOf(page, 'Where'), 'Change');
+    expect(pageNow(page)).toBe('Where');
+    type(page, PROJECT_NAME, 'Sample project 2');
+    click(page, 'Back to review');
+    expect(pageNow(page)).toBe('Review');
+    expect(text(answersOf(page, 'Where'))).toContain('Sample project 2');
+
+    for (const step of ['Structure', 'People', 'Idea'] as const) {
+      click(answersOf(page, step), 'Change');
+      expect(pageNow(page)).toBe(step);
+      click(page, 'Back to review');
+    }
+  });
+
+  it('shows Back to review only once the review was seen, and goes to the step with a problem instead of the review', async () => {
+    const { root } = await wayIn('New project');
+    expect(buttonNamed(root, 'Back to review')).toBeUndefined();
+    walkTo(root, 'Idea');
+    expect(buttonNamed(root, 'Back to review')).toBeUndefined();
+    type(root, THE_IDEA, IDEA);
+    walkTo(root, 'Review');
+
+    click(answersOf(root, 'Idea'), 'Change');
+    type(root, THE_IDEA, '  ');
+    click(root, 'Back');
+    click(root, 'Back to review');
+
+    expect(pageNow(root)).toBe('Idea');
+    expect(text(root.querySelector('.note.err'))).toContain('Give the idea');
+  });
+
+  it('repeats the Public warning on the review page, and says when a login or a domain was typed but never added', async () => {
+    const { root } = await wayIn('New project');
+    const owner = stepCard(root).querySelector('select') as HTMLSelectElement;
+    owner.value = 'ada-example';
+    owner.dispatchEvent(new Event('change'));
+    click(root.querySelector('[aria-label="Visibility"]') as HTMLElement, 'Public');
+    walkTo(root, 'People');
+    type(root, INVITE_LOGIN, 'ben-example');
+    type(root, 'input[aria-label="Add a domain"]', 'platform');
+    walkTo(root, 'Idea');
+    type(root, THE_IDEA, IDEA);
+    walkTo(root, 'Review');
+
+    expect(text(answersOf(root, 'Where'))).toContain('Public means anyone on the internet can read this project');
+    expect(texts(answersOf(root, 'People').querySelectorAll('.reason'))).toEqual([
+      'You typed ben-example but did not press Invite, so ben-example will not be invited.',
+      'You typed platform but did not press Add domain, so it will not be saved.',
+    ]);
+  });
+
+  it('on the review of a connection names the access, says why nobody is invited, and warns of read access', async () => {
+    const { root } = await wayIn('Connect existing');
+    type(root, SEARCH, 'example-org/company-handbook');
+    walkTo(root, 'Idea');
+    type(root, THE_IDEA, IDEA);
+    walkTo(root, 'Review');
+
+    expect(text(answersOf(root, 'Where'))).toContain('example-org/company-handbook');
+    expect(text(answersOf(root, 'Where').querySelector('.badge'))).toBe('Read access only');
+    expect(text(answersOf(root, 'Where').querySelector('.reason'))).toContain('Connecting needs write access.');
+    expect(text(answersOf(root, 'People'))).toContain('inviting needs admin rights');
+    expect(buttonNamed(root, 'Connect and start')).toBeDefined();
+    expect(buttonNamed(root, 'Create project')).toBeUndefined();
+  });
+
+  it.each(WAYS_IN)('%s reaches creation from the review page and calls the store as before', async (way, action) => {
+    const context = await wayIn(way);
+    const { store, starts, root } = context;
+    const created = vi.spyOn(store, 'createProject');
+    fillConnection(root);
+
+    click(root, action);
+    await until(() => starts.length === 1, 'the grilling agent to start');
+
+    expect(created.mock.calls).toHaveLength(1);
+    expect(created.mock.calls[0][0]).toMatchObject(
+      way === 'New project'
+        ? { newRepository: { organisation: 'example-org', name: 'sample-project-1' } }
+        : { connectRepository: { owner: 'example-org', name: 'team-docs' } },
+    );
+  });
+
+  it('offers Where when GitHub refuses the new repository, keeps the answers, and creates once the name is changed', async () => {
+    const { store, starts, root, open } = app();
+    await open();
+    click(root, 'New project');
+    await until(() => onWhere(root), 'the first step');
+    fillNewProject(root, 'team-code');
+
+    click(root, 'Create project');
+    await until(() => buttonNamed(root, 'Back to Where') !== undefined, 'the refusal');
+    expect(text(root.querySelector('.note.err'))).toContain('team-code');
+    expect(buttonNamed(root, 'Try again')).toBeDefined();
+
+    click(root, 'Back to Where');
+    expect(pageNow(root)).toBe('Where');
+    expect(value(root, REPOSITORY_NAME)).toBe('team-code');
+    type(root, REPOSITORY_NAME, 'sample-project-1');
+    click(root, 'Back to review');
+    expect(text(answersOf(root, 'Idea'))).toContain(IDEA);
+    click(root, 'Create project');
+    await until(() => starts.length === 1, 'the grilling agent to start');
+
+    expect((await store.getProject('example-org/sample-project-1')).id).toBe('example-org/sample-project-1');
+  });
+
+  it.each([
+    ['already holds a Grillo project', 'Open it'],
+    ['has issues turned off', 'Check again'],
+  ])('offers Pick another repository, with every answer kept, when the repository %s', async (problem, action) => {
+    const seed: MemoryStoreOptions['seed'] = {
+      repositories: [
+        { repository: { owner: 'example-org', name: 'sample-repo-3' }, permission: 'write', issuesEnabled: true },
+        { repository: { owner: 'example-org', name: 'sample-repo-4' }, permission: 'admin', issuesEnabled: false },
+      ],
+    };
+    const context = app({ seed });
+    const { store, root } = context;
+    await store.createProject({ connectRepository: { owner: 'example-org', name: 'sample-repo-3' } });
+    await context.open();
+    click(root, 'Connect existing');
+    await until(() => onWhere(root), 'the first step');
+    type(root, SEARCH, problem === 'has issues turned off' ? 'example-org/sample-repo-4' : 'example-org/sample-repo-3');
+    fillConnection(root);
+
+    click(root, 'Connect and start');
+    await until(() => buttonNamed(root, action) !== undefined, 'the repository problem');
+    expect(pageNow(root)).toBe('Where');
+
+    click(root, 'Pick another repository');
+    expect(pageNow(root)).toBe('Where');
+    expect(root.querySelector(SEARCH)).not.toBeNull();
+    walkTo(root, 'Idea');
+    expect(value(root, THE_IDEA)).toBe(IDEA);
   });
 });

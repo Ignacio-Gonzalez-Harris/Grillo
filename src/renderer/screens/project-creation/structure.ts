@@ -49,6 +49,15 @@ export function structureProblem(structure: PrdStructure): string | null {
   return null;
 }
 
+/** The row `structureProblem` speaks of; null when nothing is wrong or no one row is to blame (there is no section). */
+export function structureProblemRow(structure: PrdStructure): number | null {
+  const names = structure.sections.map((section) => section.name.trim());
+  const blank = names.indexOf('');
+  if (blank !== -1) return blank;
+  const twice = names.findIndex((name, index) => names.indexOf(name) !== index);
+  return twice === -1 ? null : twice;
+}
+
 const isText = (value: unknown): value is string => typeof value === 'string';
 
 /** A structure as the store sent it, checked before it is drawn; anything else is one `backend` StoreError. */

@@ -1,6 +1,6 @@
 /**
- * The new-project form (prototype states New repository and Connect existing): what the member has filled in, what
- * still stops the project from being created, and the draft the creation steps run from.
+ * The new-project form behind the guided steps (prototype `screen-project-creation`, Where to Idea): what the member
+ * has filled in, what each step still needs, and the draft the creation steps run from.
  */
 import { DEFAULT_PRD_STRUCTURE } from '../../../main/store/defaults';
 import type { Login, Permission, PrdStructure, ProjectId, RepositoryAccess, RepositoryRef, RepositoryVisibility } from '../../../main/store/types';
@@ -10,6 +10,11 @@ import { structureProblem } from './structure';
 
 export type RepositoryMode = 'new' | 'connect';
 export type IdeaFormat = 'text' | 'transcript';
+
+/** The four guided steps, the same for both ways in; only Where differs. */
+export type FormStep = 'where' | 'structure' | 'people' | 'idea';
+export const FORM_STEPS: readonly FormStep[] = ['where', 'structure', 'people', 'idea'];
+export const STEP_NAMES: Record<FormStep, string> = { where: 'Where', structure: 'Structure', people: 'People', idea: 'Idea' };
 
 /** What Grillo knows of the member's access to the repository to connect. */
 export type Access =
@@ -126,27 +131,39 @@ export function canInvite(form: ProjectForm): boolean {
   return form.mode === 'new' || (form.access.state === 'known' && form.access.permission === 'admin');
 }
 
-function ideaOf(form: ProjectForm): string {
+export function ideaOf(form: ProjectForm): string {
   return form.ideaFormat === 'text' ? form.ideaText : form.transcript;
 }
 
-/** The first thing that stops the project from being created, said for the member; null when nothing does. */
-export function formProblem(form: ProjectForm): string | null {
-  if (form.mode === 'new') {
-    if (form.organisation === '') return 'Pick the owner of the new repository.';
-    if (!REPOSITORY_NAME.test(form.repositoryName.trim())) {
-      return 'Give the repository a name: letters, digits, ".", "-" and "_" only.';
-    }
-  } else if (repositoryToConnect(form.connectTo) === null) {
-    return NO_REPOSITORY_PICKED;
+function whereProblem(form: ProjectForm): string | null {
+  if (form.mode === 'connect') return repositoryToConnect(form.connectTo) === null ? NO_REPOSITORY_PICKED : null;
+  if (form.organisation === '') return 'Pick the owner of the new repository.';
+  if (!REPOSITORY_NAME.test(form.repositoryName.trim())) {
+    return 'Give the repository a name: letters, digits, ".", "-" and "_" only.';
   }
-  const structure = structureProblem(form.structure);
-  if (structure !== null) return structure;
-  if (ideaOf(form).trim() === '') return 'Give the idea: write it, or paste or upload a transcript.';
   return null;
 }
 
-/** What the creation steps run from; call only once `formProblem` is null. */
+/** What stops the member from leaving this step with Next, said for the member; null when nothing does. */
+export function stepProblem(form: ProjectForm, step: FormStep): string | null {
+  switch (step) {
+    case 'where':
+      return whereProblem(form);
+    case 'structure':
+      return structureProblem(form.structure);
+    case 'people':
+      return null;
+    case 'idea':
+      return ideaOf(form).trim() === '' ? 'Give the idea: write it, or paste or upload a transcript.' : null;
+  }
+}
+
+/** The earliest step that still has a problem; null when the project can be created. */
+export function firstStepWithProblem(form: ProjectForm): FormStep | null {
+  return FORM_STEPS.find((step) => stepProblem(form, step) !== null) ?? null;
+}
+
+/** What the creation steps run from; call only once `firstStepWithProblem` is null. */
 export function draftOf(form: ProjectForm): ProjectDraft {
   const repository: RepositoryChoice =
     form.mode === 'new'

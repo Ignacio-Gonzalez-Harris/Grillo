@@ -10,6 +10,7 @@ import {
   renameSection,
   setSectionNote,
   structureProblem,
+  structureProblemRow,
 } from './structure';
 
 // Made-up section names only.
@@ -56,6 +57,15 @@ describe('the PRD structure editor', () => {
     ],
   ])('refuses %s, as the store would', (_case, structure, message) => {
     expect(structureProblem(structure)).toContain(message);
+  });
+
+  it.each([
+    ['no problem', THREE, null],
+    ['no section, which has no row to name', { sections: [] }, null],
+    ['the first blank name', { sections: [{ name: 'A', note: '' }, { name: ' ', note: '' }, { name: '', note: '' }] }, 1],
+    ['the second of two same names', { sections: [{ name: 'A', note: '' }, { name: 'B', note: '' }, { name: ' A ', note: '' }] }, 2],
+  ])('names the row of %s', (_case, structure, row) => {
+    expect(structureProblemRow(structure)).toBe(row);
   });
 });
 

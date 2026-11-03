@@ -353,6 +353,23 @@ ol.steps li { margin-bottom: var(--space-1); }
 .overlay > .card { width: 100%; max-width: calc(var(--size-side-column) + var(--size-side-column)); box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow); }
 body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
 
+/* ---------- Guided steps (screen-project-creation) ---------- */
+.page-head { display: grid; gap: var(--space-1); }
+.page-head h3 { margin: 0; font-size: var(--font-size-xl); }
+.page-head p { margin: 0; color: var(--color-text-muted); }
+.step-progress { display: grid; gap: var(--space-1); }
+.stepper { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); }
+.stepper li { padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--color-disabled-fill); color: var(--color-text-muted); }
+.stepper li.done { background: var(--color-success-soft); color: var(--color-success); }
+.stepper li[aria-current="step"] { background: var(--color-accent); color: var(--color-text-on-accent); }
+.page-actions { justify-content: flex-end; }
+.way-ins { border-top: var(--border-width) solid var(--color-divider); padding-top: var(--space-3); }
+.way-in { display: grid; gap: var(--space-1); justify-items: start; }
+.answers { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-1) var(--space-3); margin: 0; font-size: var(--font-size-s); }
+.answers dt { color: var(--color-text-muted); }
+.answers dd { margin: 0; overflow-wrap: anywhere; }
+.rows.card.review { padding: 0 var(--space-4); }
+
 /* ---------- Score (PRD view, release 3) ---------- */
 .score-big { font-size: var(--font-size-xl); font-weight: var(--font-weight-strong); }
 .mark { display: grid; gap: var(--space-1); min-width: var(--space-7); }
@@ -749,248 +766,135 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
 <section id="screen-project-creation" class="screen">
   <header class="screen-head glass">
     <h2>Project creation and invites, with the PRD structure</h2>
-    <p class="purpose">The member creates a project in a new or an existing repository, shapes its PRD structure, invites people, sets their own role and domains, and gives the idea.</p>
+    <p class="purpose">The member opens a project or accepts an invitation, or walks four guided steps (Where, Structure, People, Idea) and a review to create a project in a new or an existing repository.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 2 · flows 4.2 (Starting a project) · 7 (Permissions)</dd>
-      <dt>Controls</dt><dd>Your projects (recently opened) with Open; pending invitations with one-click Accept; New project; new repository with an Owner picker (your organisations and your own account) and, for your own account only, Private or Public, or connect existing; repository picker; PRD structure source (default of 13 sections), add, remove, rename, reorder sections; Save and regenerate for an existing project; invite by GitHub login; own role and domains; idea as text with attachments, or a pasted or uploaded transcript; Create project.</dd>
-      <dt>States</dt><dd>Your projects and invitations · New repository · New repository: your own account · New repository: your own account, Public (warning) · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · Connect: the repository list · Connect: read access only · Connect: checking access (loading) · Connect: access not known (error) · Connect: nothing picked (error) · Connect: no repository matches the search · Connect: no repository found · Connect: the list cannot be read (error) · After accepting an invite · Creating (loading) · Creating: a public repository (loading) · Creating: the grilling agent refused (error) · A refused project that never opened, in the list · Editing the structure of an existing project · A damaged project in the list · Saved as a pull request (main is protected)</dd>
+      <dt>Controls</dt><dd>Your projects (recently opened) with Open; pending invitations with one-click Accept; New project and Connect existing, the two ways in. Every step: which step of four, Back, Next, Cancel, and Back to review once the review has been seen. Where: new repository with an Owner picker (your organisations and your own account) and, for your own account only, Private or Public, or the repository list with search and Check access; a switch between the two. Structure: PRD structure source (default of 13 sections), add, remove, rename, reorder sections. People: invite by GitHub login; own role and domains. Idea: text with attachments, or a pasted or uploaded transcript. Review: each step's answers with Change; Create project or Connect and start. Save and regenerate for an existing project.</dd>
+      <dt>States</dt><dd>Your projects and invitations · Your projects: nothing yet · Your projects: a list cannot be read · A damaged project · A refused project that never opened · Where: a new repository · Where: your own account · Where: your own account, Public · Where: no owner can be read · Where: Next stopped · Where: the repository list · Where: connect, write access · Where: read access only · Where: checking access · Where: access not known · Where: nothing picked · Where: no repository matches · Where: no repository found · Where: the list cannot be read · Structure · Structure: folded · Structure: Next stopped · People · People: a login refused · People: inviting greyed · People: access not confirmed · Idea: written text · Idea: a transcript · Idea: Next stopped · Review: a new repository · Review: Public · Review: connecting · Review: a login never added · Connect: repository problems · Creating · Creating: a public repository · Creating: the repository refused · Creating: the grilling agent refused · Creating: finished · After accepting an invite · Editing the structure · Editing the structure: cannot be opened · Saved as a pull request</dd>
     </dl>
   </header>
   <div class="states">
     <div class="state-tabs"><span class="label">States:</span>
       <button class="btn sm" data-state="start">Your projects and invitations</button>
-      <button class="btn sm" data-state="new">New repository</button>
-      <button class="btn sm" data-state="new-own-account">New repository: your own account</button>
-      <button class="btn sm" data-state="new-own-public">New repository: your own account, Public</button>
-      <button class="btn sm" data-state="connect">Connect existing, write access only</button>
+      <button class="btn sm" data-state="start-empty">Your projects: nothing yet</button>
+      <button class="btn sm" data-state="start-unreadable">Your projects: a list cannot be read</button>
+      <button class="btn sm" data-state="damaged-project">A damaged project</button>
+      <button class="btn sm" data-state="agent-refused-listed">A refused project that never opened</button>
+      <button class="btn sm" data-state="new">Where: a new repository</button>
+      <button class="btn sm" data-state="new-own-account">Where: your own account</button>
+      <button class="btn sm" data-state="new-own-public">Where: your own account, Public</button>
+      <button class="btn sm" data-state="new-no-owner">Where: no owner can be read</button>
+      <button class="btn sm" data-state="where-blocked">Where: Next stopped</button>
+      <button class="btn sm" data-state="connect-list">Where: the repository list</button>
+      <button class="btn sm" data-state="connect">Where: connect, write access</button>
+      <button class="btn sm" data-state="connect-read-only">Where: read access only</button>
+      <button class="btn sm" data-state="connect-checking">Where: checking access</button>
+      <button class="btn sm" data-state="connect-access-unknown">Where: access not known</button>
+      <button class="btn sm" data-state="connect-nothing-picked">Where: nothing picked</button>
+      <button class="btn sm" data-state="connect-no-match">Where: no repository matches</button>
+      <button class="btn sm" data-state="connect-no-repositories">Where: no repository found</button>
+      <button class="btn sm" data-state="connect-list-unreadable">Where: the list cannot be read</button>
+      <button class="btn sm" data-state="structure-step">Structure</button>
+      <button class="btn sm" data-state="structure-folded">Structure: folded</button>
+      <button class="btn sm" data-state="structure-blocked">Structure: Next stopped</button>
+      <button class="btn sm" data-state="people">People</button>
+      <button class="btn sm" data-state="people-invite-refused">People: a login refused</button>
+      <button class="btn sm" data-state="people-greyed">People: inviting greyed</button>
+      <button class="btn sm" data-state="people-not-confirmed">People: access not confirmed</button>
+      <button class="btn sm" data-state="idea">Idea: written text</button>
+      <button class="btn sm" data-state="idea-transcript">Idea: a transcript</button>
+      <button class="btn sm" data-state="idea-blocked">Idea: Next stopped</button>
+      <button class="btn sm" data-state="review">Review: a new repository</button>
+      <button class="btn sm" data-state="review-public">Review: Public</button>
+      <button class="btn sm" data-state="review-connect">Review: connecting</button>
+      <button class="btn sm" data-state="review-not-invited">Review: a login never added</button>
       <button class="btn sm" data-state="connect-problems">Connect: repository problems</button>
-      <button class="btn sm" data-state="invitee">After accepting an invite</button>
       <button class="btn sm" data-state="creating">Creating</button>
       <button class="btn sm" data-state="creating-public">Creating: a public repository</button>
-      <button class="btn sm" data-state="structure">Editing the structure</button>
-      <button class="btn sm" data-state="damaged-project">A damaged project</button>
-      <button class="btn sm" data-state="save-notice">Saved as a pull request</button>
-      <button class="btn sm" data-state="connect-list">Connect: the repository list</button>
-      <button class="btn sm" data-state="connect-read-only">Connect: read access only</button>
-      <button class="btn sm" data-state="connect-checking">Connect: checking access</button>
-      <button class="btn sm" data-state="connect-access-unknown">Connect: access not known</button>
-      <button class="btn sm" data-state="connect-nothing-picked">Connect: nothing picked</button>
-      <button class="btn sm" data-state="connect-no-match">Connect: no repository matches</button>
-      <button class="btn sm" data-state="connect-no-repositories">Connect: no repository found</button>
-      <button class="btn sm" data-state="connect-list-unreadable">Connect: the list cannot be read</button>
+      <button class="btn sm" data-state="creating-failed">Creating: the repository refused</button>
       <button class="btn sm" data-state="agent-refused">Creating: the grilling agent refused</button>
-      <button class="btn sm" data-state="agent-refused-listed">A refused project that never opened</button>
+      <button class="btn sm" data-state="creating-done">Creating: finished</button>
+      <button class="btn sm" data-state="invitee">After accepting an invite</button>
+      <button class="btn sm" data-state="structure">Editing the structure</button>
+      <button class="btn sm" data-state="structure-unreadable">Editing the structure: cannot be opened</button>
+      <button class="btn sm" data-state="save-notice">Saved as a pull request</button>
     </div>
 
-    <div class="state" data-state="connect-list">
-      <p class="state-caption">State: Connect, the repository list (every repository the member can reach, each with its access, with Check access beside the search; nothing picked yet)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
-            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
-            <ul class="rows">
-              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
-              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
-              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-5</label><span class="badge err">Read access only</span></li>
-            </ul>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="connect-read-only">
-      <p class="state-caption">State: Connect, read access only (the picked row is not highlighted and says why it cannot be connected)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
-            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
-            <ul class="rows">
-              <li><label class="check"><input type="radio" name="repo-read"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
-              <li><label class="check"><input type="radio" name="repo-read" checked> example-org/sample-repo-5</label><span class="badge err">Read access only</span><p class="small muted m0 full">Connecting needs write access. Ask one of its admins for it, or pick another repository.</p></li>
-            </ul>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
-          </div>
-          <div class="card stack">
-            <h3>3 · Members</h3>
-            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
-            <p class="reason m0">Inviting needs admin rights on example-org/sample-repo-5, and you have read access. Ask one of its admins to add people.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="connect-checking">
-      <p class="state-caption">State: Connect, checking access (loading; Check access pressed, every control greyed until GitHub answers. A repository typed in full that the list does not hold shows here under the list, its name in bold with no radio button, as in "Connect: the list cannot be read")</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false" disabled>Create a new repository</button><button aria-pressed="true" disabled>Connect an existing one</button></div>
-            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories" disabled></div><button class="btn" disabled>Check access</button></div>
-            <ul class="rows">
-              <li><label class="check"><input type="radio" name="repo-checking" checked disabled> example-org/sample-repo-1</label><span class="badge">Checking…</span></li>
-              <li><label class="check"><input type="radio" name="repo-checking" disabled> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
-            </ul>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
-          </div>
-          <div class="card stack">
-            <h3>3 · Members</h3>
-            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
-            <p class="reason m0">Inviting needs admin rights on example-org/sample-repo-1, and Grillo has not confirmed your access yet (press Check access). Ask one of its admins to add people.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="connect-access-unknown">
-      <p class="state-caption">State: Connect, access not known (error; Check access got no answer it could read, and the row gives the reason)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
-            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
-            <ul class="rows">
-              <li><div class="grow"><label class="check"><input type="radio" name="repo-unknown" checked> example-org/sample-repo-1</label><p class="small muted m0">Grillo could not read your access from the store.</p></div><span class="badge warn">Access not known</span></li>
-              <li><label class="check"><input type="radio" name="repo-unknown"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
-            </ul>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
-          </div>
-          <div class="card stack">
-            <h3>3 · Members</h3>
-            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
-            <p class="reason m0">Inviting needs admin rights on example-org/sample-repo-1, and Grillo has not confirmed your access yet (press Check access). Ask one of its admins to add people.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="connect-nothing-picked">
-      <p class="state-caption">State: Connect, nothing picked (error; Check access or Connect and start pressed with no repository picked or typed in full; the note shows above the form's buttons)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
-            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
-            <ul class="rows">
-              <li><label class="check"><input type="radio" name="repo-none"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
-            </ul>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
-          </div>
-          <p class="note small err" role="alert">Pick the repository to connect from the list, or type it in full as owner/repository.</p>
-          <div class="row"><span class="spacer"></span><button class="btn">Cancel</button><button class="btn primary">Connect and start</button></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="connect-no-match">
-      <p class="state-caption">State: Connect, no repository matches the search (the member's repositories were read; a repository already picked stays picked and shows under this line)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
-            <div class="row"><div class="fill"><input type="search" value="no-such" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
-            <p class="small muted m0">No repository of yours matches this search.</p>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="connect-no-repositories">
-      <p class="state-caption">State: Connect, no repository found (GitHub answered, and the member can reach none)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
-            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
-            <p class="small muted m0">Grillo found no repository of yours.</p>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="connect-list-unreadable">
-      <p class="state-caption">State: Connect, the list cannot be read (error; a repository typed in full and checked still shows its access, and can be connected)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
-            <div class="row"><div class="fill"><input type="search" value="example-org/sample-repo-1" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
-            <p class="note small warn">Grillo could not list your repositories: the GitHub command-line tool is signed out. Type the repository in full as owner/repository instead.</p>
-            <ul class="rows">
-              <li class="selected"><span class="strong">example-org/sample-repo-1</span><span class="badge warn">Write access</span></li>
-            </ul>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="agent-refused">
-      <p class="state-caption">State: Creating, the grilling agent refused (error; opened with Open on the project in Your projects, also after leaving this screen or closing Grillo, so only the agent's step is left. Right after creating, the steps already done show above it. Open goes to the map again once the agent has started or the project has a map)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <ul class="rows card">
-            <li><span class="row"><span class="sdot err"></span>Grilling agent started; it is building the map and tickets</span><span class="badge err">Failed</span></li>
-          </ul>
-          <p class="note small err" role="alert">Claude Code is not installed on this laptop</p>
-          <div class="row"><span class="spacer"></span><a class="btn" href="#screen-map-and-tickets/building">Open the map</a><a class="btn primary" href="#screen-project-creation/creating">Try again</a></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="agent-refused-listed">
-      <p class="state-caption">State: A refused project that never opened, in the list (its folder could not be opened, so the date is when it was created; Open shows the refused start)</p>
+    <div class="state" data-state="start">
+      <p class="state-caption">State: Your projects and invitations (what Grillo shows after the setup check), with New project and Connect existing as the two ways in</p>
       <div class="window glass">
         <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Projects</span><span class="spacer"></span><span>member-a</span></div>
 
         <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
         <div class="window-body">
           <div class="card stack">
-            <div class="row"><h3 class="m0">Your projects</h3><span class="spacer"></span><a class="btn primary" href="#screen-project-creation/new">New project</a></div>
-            <p class="small muted">Recently opened first.</p>
+            <h3 class="m0">Your projects</h3>
+            <p class="small muted m0">Recently opened first.</p>
             <ul class="rows">
-              <li><div class="grow"><span class="strong">sample-project-2</span><br><span class="small muted">example-org/sample-project-2 · created 2026-10-23</span></div><a class="btn sm" href="#screen-project-creation/agent-refused">Open</a></li>
               <li><div class="grow"><span class="strong">Sample project 1</span><br><span class="small muted">example-org/sample-project-1 · opened 2026-10-22</span></div><a class="btn sm" href="#screen-map-and-tickets">Open</a></li>
+              <li><div class="grow"><span class="strong">Sample project 0</span> <span class="badge">Archived</span><br><span class="small muted">example-org/sample-project-0 · opened 2026-10-02</span></div><a class="btn sm" href="#screen-map-and-tickets/archived">Open</a></li>
             </ul>
+            <div class="way-ins grid-2">
+              <div class="way-in"><a class="btn primary" href="#screen-project-creation/new">New project</a><p class="small muted m0">Grillo makes a new repository (a shared folder on GitHub) for it.</p></div>
+              <div class="way-in"><a class="btn" href="#screen-project-creation/connect-list">Connect existing</a><p class="small muted m0">Use a repository you already have on GitHub.</p></div>
+            </div>
+          </div>
+          <div class="card stack">
+            <h3>Pending invitations</h3>
+            <ul class="rows">
+              <li><div class="grow"><span class="strong">Sample project 2</span><br><span class="small muted">example-org/sample-project-2 · invited by member-b on 2026-10-21</span></div><a class="btn sm primary" href="#screen-project-creation/invitee">Accept</a></li>
+            </ul>
+            <p class="small muted m0">Accepting takes the GitHub repository invite in one click; you then set your role and domains.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="start-empty">
+      <p class="state-caption">State: Your projects, nothing yet (no project and no invitation on this laptop)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Projects</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3 class="m0">Your projects</h3>
+            <p class="small muted m0">Recently opened first.</p>
+            <p class="muted m0">No project opened on this laptop yet. Create one, or accept an invitation.</p>
+            <div class="way-ins grid-2">
+              <div class="way-in"><a class="btn primary" href="#screen-project-creation/new">New project</a><p class="small muted m0">Grillo makes a new repository (a shared folder on GitHub) for it.</p></div>
+              <div class="way-in"><a class="btn" href="#screen-project-creation/connect-list">Connect existing</a><p class="small muted m0">Use a repository you already have on GitHub.</p></div>
+            </div>
+          </div>
+          <div class="card stack">
+            <h3>Pending invitations</h3>
+            <p class="muted m0">No pending invitations.</p>
+            <p class="small muted m0">Accepting takes the GitHub repository invite in one click; you then set your role and domains.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="start-unreadable">
+      <p class="state-caption">State: Your projects, a list cannot be read (error; each card says why, and the ways in still work)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Projects</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3 class="m0">Your projects</h3>
+            <p class="small muted m0">Recently opened first.</p>
+            <p class="note small err" role="alert">The GitHub command-line tool is signed out.</p>
+            <div class="way-ins grid-2">
+              <div class="way-in"><a class="btn primary" href="#screen-project-creation/new">New project</a><p class="small muted m0">Grillo makes a new repository (a shared folder on GitHub) for it.</p></div>
+              <div class="way-in"><a class="btn" href="#screen-project-creation/connect-list">Connect existing</a><p class="small muted m0">Use a repository you already have on GitHub.</p></div>
+            </div>
+          </div>
+          <div class="card stack">
+            <h3>Pending invitations</h3>
+            <p class="note small err" role="alert">The GitHub command-line tool is signed out.</p>
+            <p class="small muted m0">Accepting takes the GitHub repository invite in one click; you then set your role and domains.</p>
           </div>
         </div>
       </div>
@@ -1004,85 +908,378 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
         <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
         <div class="window-body">
           <div class="card stack">
-            <div class="row"><h3 class="m0">Your projects</h3><span class="spacer"></span><a class="btn primary" href="#screen-project-creation/new">New project</a></div>
-            <p class="small muted">Recently opened first.</p>
+            <h3 class="m0">Your projects</h3>
+            <p class="small muted m0">Recently opened first.</p>
             <ul class="rows">
               <li><div class="grow"><span class="strong">Sample project 1</span><br><span class="small muted">example-org/sample-project-1 · opened 2026-10-22</span></div><a class="btn sm" href="#screen-map-and-tickets">Open</a></li>
               <li><div class="grow"><span class="strong">sample-project-3</span> <span class="badge warn">Damaged</span><br><span class="small muted">example-org/sample-project-3 · opened 2026-10-20</span><br><span class="reason">.grillo/members.md is not in the format Grillo writes: line 2 has no login. Fix the file on GitHub, then open the project again.</span></div><a class="btn sm" href="#screen-map-and-tickets">Open</a></li>
             </ul>
+            <div class="way-ins grid-2">
+              <div class="way-in"><a class="btn primary" href="#screen-project-creation/new">New project</a><p class="small muted m0">Grillo makes a new repository (a shared folder on GitHub) for it.</p></div>
+              <div class="way-in"><a class="btn" href="#screen-project-creation/connect-list">Connect existing</a><p class="small muted m0">Use a repository you already have on GitHub.</p></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="state" data-state="save-notice">
-      <p class="state-caption">State: Saved as a pull request (the repository's main branch is protected; the same notice shows above whichever screen the save was made on, until dismissed)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <div class="note row" role="status"><span class="grow">Saved as pull request #3, "grillo: add member member-b". The main branch of example-org/sample-project-1 is protected, so the change reaches the project once someone merges that pull request.</span><a class="btn sm" href="#">Open on GitHub</a><button class="btn sm">Dismiss</button></div>
-          <div class="card stack">
-            <h3>Invite people</h3>
-            <ul class="rows">
-              <li><span class="row"><span class="strong">member-b</span><span class="muted">Ben</span></span><span class="row"><span class="badge warn">Invited</span><span class="small muted">sets their own role and domains</span></span></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="start">
-      <p class="state-caption">State: Your projects and invitations (what Grillo shows after the setup check)</p>
+    <div class="state" data-state="agent-refused-listed">
+      <p class="state-caption">State: A refused project that never opened, in the list (its folder could not be opened, so the date is when it was created; Open shows the refused start)</p>
       <div class="window glass">
         <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Projects</span><span class="spacer"></span><span>member-a</span></div>
 
         <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
         <div class="window-body">
           <div class="card stack">
-            <div class="row"><h3 class="m0">Your projects</h3><span class="spacer"></span><a class="btn primary" href="#screen-project-creation/new">New project</a></div>
-            <p class="small muted">Recently opened first.</p>
+            <h3 class="m0">Your projects</h3>
+            <p class="small muted m0">Recently opened first.</p>
             <ul class="rows">
+              <li><div class="grow"><span class="strong">sample-project-2</span><br><span class="small muted">example-org/sample-project-2 · created 2026-10-23</span></div><a class="btn sm" href="#screen-project-creation/agent-refused">Open</a></li>
               <li><div class="grow"><span class="strong">Sample project 1</span><br><span class="small muted">example-org/sample-project-1 · opened 2026-10-22</span></div><a class="btn sm" href="#screen-map-and-tickets">Open</a></li>
-              <li><div class="grow"><span class="strong">Sample project 0</span> <span class="badge">Archived</span><br><span class="small muted">example-org/sample-project-0 · opened 2026-10-02</span></div><a class="btn sm" href="#screen-map-and-tickets/archived">Open</a></li>
             </ul>
-          </div>
-          <div class="card stack">
-            <h3>Pending invitations</h3>
-            <ul class="rows">
-              <li><div class="grow"><span class="strong">Sample project 2</span><br><span class="small muted">example-org/sample-project-2 · invited by member-b on 2026-10-21</span></div><a class="btn sm primary" href="#screen-project-creation/invitee">Accept</a></li>
-            </ul>
-            <p class="small muted">Accepting takes the GitHub repository invite in one click; you then set your role and domains.</p>
+            <div class="way-ins grid-2">
+              <div class="way-in"><a class="btn primary" href="#screen-project-creation/new">New project</a><p class="small muted m0">Grillo makes a new repository (a shared folder on GitHub) for it.</p></div>
+              <div class="way-in"><a class="btn" href="#screen-project-creation/connect-list">Connect existing</a><p class="small muted m0">Use a repository you already have on GitHub.</p></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <div class="state" data-state="new">
-      <p class="state-caption">State: New repository</p>
+      <p class="state-caption">State: Step 1 of 4, Where: a new repository (New project; the switch above the fields changes to the other way in and keeps what was typed)</p>
       <div class="window glass">
         <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
 
         <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
         <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Where should this project live?</h3><p>Every Grillo project lives in its own GitHub repository (a shared folder on GitHub). Name your project and choose who owns it.</p></div>
           <div class="card stack">
-            <h3>1 · Repository</h3>
             <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
             <div class="grid-2">
               <label class="field">Project name<input type="text" value="Sample project 1"></label>
               <label class="field">Owner<select><option>example-org</option><option>example-org-2</option><option>member-a (your account)</option></select></label>
               <label class="field">Repository name<input type="text" value="sample-project-1"></label>
             </div>
-            <p class="small muted">A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.</p>
+            <p class="small muted m0">A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.</p>
           </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-step">Next</a></div>
+        </div>
+      </div>
+    </div>
 
+    <div class="state" data-state="new-own-account">
+      <p class="state-caption">State: Step 1 of 4, Where: your own account (the only choice when you belong to no organisation; Private by default)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Where should this project live?</h3><p>Every Grillo project lives in its own GitHub repository (a shared folder on GitHub). Name your project and choose who owns it.</p></div>
           <div class="card stack">
-            <h3>2 · PRD structure</h3>
-            <label class="field">Start from
-              <select><option>Grillo default</option><option>Sample project 0 (an earlier project of yours)</option></select>
-            </label>
-            <p class="small muted">With no choice made, the default applies. Edit it now or at any time later.</p>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
+            <div class="grid-2">
+              <label class="field">Project name<input type="text" value="Sample project 1"></label>
+              <label class="field">Owner<select><option>member-a (your account)</option></select></label>
+              <label class="field">Repository name<input type="text" value="sample-project-1"></label>
+              <div class="field">Visibility<div class="seg" role="group" aria-label="Visibility"><button aria-pressed="true">Private</button><button aria-pressed="false">Public</button></div></div>
+            </div>
+            <p class="small muted m0">A private repository under your own GitHub account. Only you can invite people, close and reopen the project; the people you invite get write access.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-step">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="new-own-public">
+      <p class="state-caption">State: Step 1 of 4, Where: your own account, Public (warning; it also shows on the review page)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Where should this project live?</h3><p>Every Grillo project lives in its own GitHub repository (a shared folder on GitHub). Name your project and choose who owns it.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
+            <div class="grid-2">
+              <label class="field">Project name<input type="text" value="Sample project 1"></label>
+              <label class="field">Owner<select><option>example-org</option><option selected>member-a (your account)</option></select></label>
+              <label class="field">Repository name<input type="text" value="sample-project-1"></label>
+              <div class="field">Visibility<div class="seg" role="group" aria-label="Visibility"><button aria-pressed="false">Private</button><button aria-pressed="true">Public</button></div></div>
+            </div>
+            <p class="small muted m0">A public repository under your own GitHub account. Only you can invite people, close and reopen the project; the people you invite get write access.</p>
+            <p class="note small warn">Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-step">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="new-no-owner">
+      <p class="state-caption">State: Step 1 of 4, Where: no owner can be read (warning and error; the owner list is greyed, the note on top says why, and Connect an existing one still works)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Where should this project live?</h3><p>Every Grillo project lives in its own GitHub repository (a shared folder on GitHub). Name your project and choose who owns it.</p></div>
+          <p class="note small err" role="alert">Grillo could not read your GitHub account: the GitHub command-line tool is signed out.</p>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
+            <div class="grid-2">
+              <label class="field">Project name<input type="text" value="Sample project 1"></label>
+              <div class="stack"><label class="field">Owner<select disabled></select></label><p class="note small err" role="alert">Pick the owner of the new repository.</p></div>
+              <label class="field">Repository name<input type="text" value="sample-project-1"></label>
+            </div>
+            <p class="small muted m0">A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.</p>
+            <p class="note small warn">Grillo cannot create a repository without an owner. Connect an existing one instead.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/new-no-owner">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="where-blocked">
+      <p class="state-caption">State: Step 1 of 4, Where: Next stopped (error; the reason shows beside the field that caused it and goes as soon as the field changes)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Where should this project live?</h3><p>Every Grillo project lives in its own GitHub repository (a shared folder on GitHub). Name your project and choose who owns it.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
+            <div class="grid-2">
+              <label class="field">Project name<input type="text"></label>
+              <label class="field">Owner<select><option>example-org</option><option>example-org-2</option><option>member-a (your account)</option></select></label>
+              <div class="stack"><label class="field">Repository name<input type="text"></label><p class="note small err" role="alert">Give the repository a name: letters, digits, ".", "-" and "_" only.</p></div>
+            </div>
+            <p class="small muted m0">A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/where-blocked">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-list">
+      <p class="state-caption">State: Step 1 of 4, Where: the repository list (Connect existing; every repository the member can reach, each with its access, with Check access beside the search; nothing picked yet)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+              <li><label class="check"><input type="radio" name="repo-list"> example-org/sample-repo-5</label><span class="badge err">Read access only</span></li>
+            </ul>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/connect-nothing-picked">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect">
+      <p class="state-caption">State: Step 1 of 4, Where: connect, write access (the picked row is highlighted; admin-only actions are greyed on the People step)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li class="selected"><label class="check"><input type="radio" name="repo-connect" checked> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+              <li><label class="check"><input type="radio" name="repo-connect"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+            </ul>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-folded">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-read-only">
+      <p class="state-caption">State: Step 1 of 4, Where: read access only (the picked row is not highlighted and says why it cannot be connected)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li><label class="check"><input type="radio" name="repo-read"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+              <li><label class="check"><input type="radio" name="repo-read" checked> example-org/sample-repo-5</label><span class="badge err">Read access only</span><p class="small muted m0 full">Connecting needs write access. Ask one of its admins for it, or pick another repository.</p></li>
+            </ul>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-folded">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-checking">
+      <p class="state-caption">State: Step 1 of 4, Where: checking access (loading; Check access pressed, every control greyed until GitHub answers. A repository typed in full that the list does not hold shows here under the list, its name in bold with no radio button, as in "the list cannot be read")</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false" disabled>Create a new repository</button><button aria-pressed="true" disabled>Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories" disabled></div><button class="btn" disabled>Check access</button></div>
+            <ul class="rows">
+              <li><label class="check"><input type="radio" name="repo-checking" checked disabled> example-org/sample-repo-1</label><span class="badge">Checking…</span></li>
+              <li><label class="check"><input type="radio" name="repo-checking" disabled> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+            </ul>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><button class="btn" disabled>Cancel</button><button class="btn primary" disabled>Next</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-access-unknown">
+      <p class="state-caption">State: Step 1 of 4, Where: access not known (error; Check access got no answer it could read, and the row gives the reason. Next still works, and People then greys inviting)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li><div class="grow"><label class="check"><input type="radio" name="repo-unknown" checked> example-org/sample-repo-1</label><p class="small muted m0">Grillo could not read your access from the store.</p></div><span class="badge warn">Access not known</span></li>
+              <li><label class="check"><input type="radio" name="repo-unknown"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+            </ul>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-folded">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-nothing-picked">
+      <p class="state-caption">State: Step 1 of 4, Where: nothing picked (error; Next or Check access pressed with no repository picked or typed in full; the reason shows beside the search, and goes as soon as one is picked)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <p class="note small err" role="alert">Pick the repository to connect from the list, or type it in full as owner/repository.</p>
+            <ul class="rows">
+              <li><label class="check"><input type="radio" name="repo-none"> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+            </ul>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/connect-nothing-picked">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-no-match">
+      <p class="state-caption">State: Step 1 of 4, Where: no repository matches the search (the member's repositories were read; a repository already picked stays picked and shows under this line)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" value="no-such" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <p class="small muted m0">No repository of yours matches this search.</p>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/connect-nothing-picked">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-no-repositories">
+      <p class="state-caption">State: Step 1 of 4, Where: no repository found (GitHub answered, and the member can reach none)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <p class="small muted m0">Grillo found no repository of yours.</p>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/connect-nothing-picked">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-list-unreadable">
+      <p class="state-caption">State: Step 1 of 4, Where: the list cannot be read (error; a repository typed in full and checked still shows its access, and can be connected)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" value="example-org/sample-repo-1" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <p class="note small warn">Grillo could not list your repositories: the GitHub command-line tool is signed out. Type the repository in full as owner/repository instead.</p>
+            <ul class="rows">
+              <li class="selected"><span class="strong">example-org/sample-repo-1</span><span class="badge warn">Write access</span></li>
+            </ul>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-folded">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="structure-step">
+      <p class="state-caption">State: Step 2 of 4, Structure (the sections of the PRD, ready to edit; New project opens here unfolded)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 2 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li aria-current="step">Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>How should the PRD be organised?</h3><p>The PRD (product requirements document) is the document Grillo writes for this project. These are its sections. The default suits most projects, so you can press Next and change it later.</p></div>
+          <div class="card stack">
+            <label class="field">Start from<select><option>Grillo default</option><option>Sample project 0 (an earlier project of yours)</option></select></label>
+            <p class="small muted m0">With no choice made, the default applies. Edit it now or at any time later.</p>
             <ul class="rows">
               <li><span class="row"><button class="btn sm" aria-label="Move up" disabled>↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Problem" aria-label="Section name"><input type="text" value="What goes wrong today, and the outcomes wanted" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
               <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Users and roles" aria-label="Section name"><input type="text" value="Who uses the product, and what each person may do" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
@@ -1100,105 +1297,444 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
             </ul>
             <div class="row"><button class="btn sm">Add section</button></div>
           </div>
-
-          <div class="card stack">
-            <h3>3 · Members</h3>
-            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login, for example member-b" aria-label="GitHub login to invite"></div><button class="btn">Invite</button></div>
-            <p class="small muted">An invite is a GitHub repository access invite.</p>
-            <ul class="rows">
-              <li>
-                <div class="grow stack">
-                  <div class="row"><span class="strong">member-a</span><span class="muted">Ana</span><span class="badge info">You</span></div>
-                  <div class="grid-2">
-                    <label class="field">Your role (free text)<input type="text" value="Sample role A"></label>
-                    <label class="field">Your domains<span class="row"><span class="tag d1">product ×</span><button class="btn sm">Add domain</button></span></label>
-                  </div>
-                  <p class="small muted">Pre-filled from the last project you joined, Sample project 0.</p>
-                </div>
-              </li>
-              <li><span class="row"><span class="strong">member-b</span><span class="muted">Ben</span></span><span class="row"><span class="badge warn">Invited</span><span class="small muted">sets their own role and domains</span></span></li>
-              <li><span class="row"><span class="strong">member-c</span><span class="muted">Carla</span></span><span class="row"><span class="badge warn">Invited</span><span class="small muted">sets their own role and domains</span></span></li>
-            </ul>
-          </div>
-
-          <div class="card stack">
-            <h3>4 · The idea</h3>
-            <div class="seg" role="group" aria-label="Idea format"><button aria-pressed="true">Write or paste text</button><button aria-pressed="false">Paste or upload a transcript</button></div>
-            <textarea aria-label="The idea">Sample idea: a short description of the product, written in the member's own words.</textarea>
-            <div class="row"><button class="btn sm">Attach documents</button><span class="tag none">sample-notes-1.txt ×</span></div>
-            <p class="small muted">The destination is always a PRD. Grillo then opens a grilling agent that builds the map, the tickets and their questions.</p>
-          </div>
-
-          <div class="row"><span class="spacer"></span><button class="btn">Cancel</button><button class="btn primary">Create project</button></div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/new">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/people">Next</a></div>
         </div>
       </div>
     </div>
 
-    <div class="state" data-state="connect">
-      <p class="state-caption">State: Connect existing, write access only (admin-only actions greyed out with the reason)</p>
+    <div class="state" data-state="structure-folded">
+      <p class="state-caption">State: Step 2 of 4, Structure: folded (Connect existing starts folded on the default; Edit opens it, and it opens by itself if a section needs fixing)</p>
       <div class="window glass">
         <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
 
         <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
         <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 2 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li aria-current="step">Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>How should the PRD be organised?</h3><p>The PRD (product requirements document) is the document Grillo writes for this project. These are its sections. The default suits most projects, so you can press Next and change it later.</p></div>
           <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
-            <input type="search" placeholder="Search your repositories" aria-label="Search repositories">
+            <div class="row"><span>Grillo default · 13 sections</span><span class="spacer"></span><a class="btn sm" href="#screen-project-creation/structure-step">Edit</a></div>
+          </div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/connect">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/people-greyed">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="structure-blocked">
+      <p class="state-caption">State: Step 2 of 4, Structure: Next stopped (error; the reason shows on the row that caused it. A structure with no section at all shows it under the list)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 2 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li aria-current="step">Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>How should the PRD be organised?</h3><p>The PRD (product requirements document) is the document Grillo writes for this project. These are its sections. The default suits most projects, so you can press Next and change it later.</p></div>
+          <div class="card stack">
+            <label class="field">Start from<select><option>Grillo default</option><option>Sample project 0 (an earlier project of yours)</option></select></label>
+            <p class="small muted m0">With no choice made, the default applies. Edit it now or at any time later.</p>
             <ul class="rows">
-              <li class="selected"><label class="check"><input type="radio" name="repo-connect" checked> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
-              <li><label class="check"><input type="radio" name="repo-connect"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up" disabled>↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Problem" aria-label="Section name"><input type="text" value="What goes wrong today, and the outcomes wanted" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Problem" aria-label="Section name"><input type="text" value="Who uses the product, and what each person may do" aria-label="Section note"></div><button class="btn sm">Remove</button><p class="note small err full" role="alert">Two sections are both called "Problem": give each section its own name.</p></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Vocabulary" aria-label="Section name"><input type="text" value="One name per thing, used in every screen and document" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Flows" aria-label="Section name"><input type="text" value="What people do, step by step" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Screens" aria-label="Section name"><input type="text" value="Every screen, and what it holds" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Data model" aria-label="Section name"><input type="text" value="The records kept, and where each one lives" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Permissions" aria-label="Section name"><input type="text" value="Who may see and change what" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Build decisions" aria-label="Section name"><input type="text" value="The technical choices, and why" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Design system" aria-label="Section name"><input type="text" value="The look every screen follows" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Do-not-build list" aria-label="Section name"><input type="text" value="What must never be built" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Acceptance demo" aria-label="Section name"><input type="text" value="The walkthrough that proves the release works" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Release order" aria-label="Section name"><input type="text" value="What ships in which release" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
+              <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down" disabled>↓</button></span><div class="grow grid-2"><input type="text" value="Assumptions" aria-label="Section name"><input type="text" value="What is still unverified" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
             </ul>
-            <p class="note small">Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.</p>
+            <div class="row"><button class="btn sm">Add section</button></div>
           </div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/new">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/people">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="people">
+      <p class="state-caption">State: Step 3 of 4, People (invite by GitHub login; your own role and domains, pre-filled from the last project you joined; invites go out when the project is created)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 3 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li aria-current="step">People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Who is working on this with you?</h3><p>Invite the people who should take part. Your role and domains (the subjects you know about) tell Grillo which questions to send you.</p></div>
           <div class="card stack">
-            <h3>2 · PRD structure</h3>
-            <div class="row"><span>Grillo default · 13 sections</span><span class="spacer"></span><button class="btn sm">Edit</button></div>
+            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login, for example member-b" aria-label="GitHub login to invite"></div><button class="btn">Invite</button></div>
+            <p class="small muted m0">An invite is a GitHub repository access invite.</p>
+            <ul class="rows">
+              <li>
+                <div class="grow stack">
+                  <div class="row"><span class="strong">member-a</span><span class="badge info">You</span></div>
+                  <div class="grid-2">
+                    <label class="field">Your role (free text)<input type="text" value="Sample role A"></label>
+                    <div class="field">Your domains<span class="row"><span class="tag d1">product ×</span><span class="fill"><input type="text" placeholder="A domain, for example product" aria-label="Add a domain"></span><button class="btn sm">Add domain</button></span></div>
+                  </div>
+                  <p class="small muted m0">Pre-filled from the last project you joined, Sample project 0.</p>
+                </div>
+              </li>
+              <li><span class="row"><span class="strong">member-b</span></span><span class="row"><span class="badge warn">Invited on create</span><span class="small muted">sets their own role and domains</span><button class="btn sm">Remove</button></span></li>
+            </ul>
           </div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/structure-step">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/idea">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="people-invite-refused">
+      <p class="state-caption">State: Step 3 of 4, People: a login that cannot go on the list (warning beside the invite field; it never stops Next)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 3 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li aria-current="step">People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Who is working on this with you?</h3><p>Invite the people who should take part. Your role and domains (the subjects you know about) tell Grillo which questions to send you.</p></div>
           <div class="card stack">
-            <h3>3 · Members</h3>
+            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login, for example member-b" aria-label="GitHub login to invite"></div><button class="btn">Invite</button></div>
+            <p class="small muted m0">An invite is a GitHub repository access invite.</p>
+            <p class="note small warn">That is you: you are a member already.</p>
+            <ul class="rows">
+              <li>
+                <div class="grow stack">
+                  <div class="row"><span class="strong">member-a</span><span class="badge info">You</span></div>
+                  <div class="grid-2">
+                    <label class="field">Your role (free text)<input type="text" value="Sample role A"></label>
+                    <div class="field">Your domains<span class="row"><span class="tag d1">product ×</span><span class="fill"><input type="text" placeholder="A domain, for example product" aria-label="Add a domain"></span><button class="btn sm">Add domain</button></span></div>
+                  </div>
+                  <p class="small muted m0">Pre-filled from the last project you joined, Sample project 0.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/structure-step">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/idea">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="people-greyed">
+      <p class="state-caption">State: Step 3 of 4, People: connect, write access only (admin-only actions greyed out with the reason)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 3 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li aria-current="step">People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Who is working on this with you?</h3><p>Invite the people who should take part. Your role and domains (the subjects you know about) tell Grillo which questions to send you.</p></div>
+          <div class="card stack">
             <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
-            <p class="reason">Inviting needs admin rights on example-org/sample-repo-1, and you have write access. Ask one of its admins to add people.</p>
+            <p class="reason m0">Inviting needs admin rights on example-org/sample-repo-1, and you have write access. Ask one of its admins to add people.</p>
             <ul class="rows">
-              <li><span class="row"><span class="strong">member-a</span><span class="badge info">You</span></span><span class="row"><span class="small">Sample role A</span><span class="tag d1">product</span></span></li>
-              <li><span class="row"><span class="strong">member-b</span><span class="muted">already a collaborator</span></span><span class="small muted">sets their own role and domains</span></li>
+              <li>
+                <div class="grow stack">
+                  <div class="row"><span class="strong">member-a</span><span class="badge info">You</span></div>
+                  <div class="grid-2">
+                    <label class="field">Your role (free text)<input type="text" value="Sample role A"></label>
+                    <div class="field">Your domains<span class="row"><span class="tag d1">product ×</span><span class="fill"><input type="text" placeholder="A domain, for example product" aria-label="Add a domain"></span><button class="btn sm">Add domain</button></span></div>
+                  </div>
+                  <p class="small muted m0">Pre-filled from the last project you joined, Sample project 0.</p>
+                </div>
+              </li>
             </ul>
           </div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/structure-folded">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/idea">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="people-not-confirmed">
+      <p class="state-caption">State: Step 3 of 4, People: connect, access not confirmed (greyed with the reason; Back returns to Where, where Check access is)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 3 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li aria-current="step">People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Who is working on this with you?</h3><p>Invite the people who should take part. Your role and domains (the subjects you know about) tell Grillo which questions to send you.</p></div>
           <div class="card stack">
-            <h3>4 · The idea</h3>
+            <div class="row"><div class="fill"><input type="text" placeholder="GitHub login" aria-label="GitHub login to invite" disabled></div><button class="btn" disabled>Invite</button></div>
+            <p class="reason m0">Inviting needs admin rights on example-org/sample-repo-1, and Grillo has not confirmed your access yet (press Check access on the Where step). Ask one of its admins to add people.</p>
+            <ul class="rows">
+              <li>
+                <div class="grow stack">
+                  <div class="row"><span class="strong">member-a</span><span class="badge info">You</span></div>
+                  <div class="grid-2">
+                    <label class="field">Your role (free text)<input type="text" value="Sample role A"></label>
+                    <div class="field">Your domains<span class="row"><span class="tag d1">product ×</span><span class="fill"><input type="text" placeholder="A domain, for example product" aria-label="Add a domain"></span><button class="btn sm">Add domain</button></span></div>
+                  </div>
+                  <p class="small muted m0">Pre-filled from the last project you joined, Sample project 0.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/structure-folded">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/idea">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="idea">
+      <p class="state-caption">State: Step 4 of 4, Idea: written text, with documents attached</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 4 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li class="done">People</li><li aria-current="step">Idea</li></ol></div>
+          <div class="page-head"><h3>What is the idea?</h3><p>Describe what you want to build in your own words, or hand over the transcript of a conversation about it. Grillo asks for the rest later.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Idea format"><button aria-pressed="true">Write or paste text</button><button aria-pressed="false">Paste or upload a transcript</button></div>
+            <textarea aria-label="The idea" placeholder="The product idea in your own words: what it is for, who uses it, what goes wrong today.">Sample idea: a short description of the product, written in the member's own words.</textarea>
+            <div class="row"><button class="btn sm">Attach documents</button><span class="tag none">sample-notes-1.txt ×</span></div>
+            <p class="small muted m0">Grillo always works towards a PRD (the product document). It then opens a grilling agent (an AI assistant that asks the questions) that builds the map (your project's overview), the tickets (pieces of work) and their questions.</p>
+          </div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/people">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/review">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="idea-transcript">
+      <p class="state-caption">State: Step 4 of 4, Idea: a transcript, pasted or uploaded</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 4 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li class="done">People</li><li aria-current="step">Idea</li></ol></div>
+          <div class="page-head"><h3>What is the idea?</h3><p>Describe what you want to build in your own words, or hand over the transcript of a conversation about it. Grillo asks for the rest later.</p></div>
+          <div class="card stack">
             <div class="seg" role="group" aria-label="Idea format"><button aria-pressed="false">Write or paste text</button><button aria-pressed="true">Paste or upload a transcript</button></div>
-            <textarea aria-label="Transcript">Sample transcript line 1: a made-up kick-off remark.
+            <textarea aria-label="Transcript" placeholder="Paste the transcript of a recorded conversation, or upload its file.">Sample transcript line 1: a made-up kick-off remark.
 Sample transcript line 2: a made-up reply.</textarea>
             <div class="row"><button class="btn sm">Upload transcript file</button></div>
+            <p class="small muted m0">Grillo always works towards a PRD (the product document). It then opens a grilling agent (an AI assistant that asks the questions) that builds the map (your project's overview), the tickets (pieces of work) and their questions.</p>
           </div>
-          <div class="row"><span class="spacer"></span><button class="btn">Cancel</button><button class="btn primary">Connect and start</button></div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/people">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/review-connect">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="idea-blocked">
+      <p class="state-caption">State: Step 4 of 4, Idea: Next stopped (error; the reason shows under the text box and goes as soon as something is typed)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 4 of 4</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li class="done">People</li><li aria-current="step">Idea</li></ol></div>
+          <div class="page-head"><h3>What is the idea?</h3><p>Describe what you want to build in your own words, or hand over the transcript of a conversation about it. Grillo asks for the rest later.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Idea format"><button aria-pressed="true">Write or paste text</button><button aria-pressed="false">Paste or upload a transcript</button></div>
+            <textarea aria-label="The idea" placeholder="The product idea in your own words: what it is for, who uses it, what goes wrong today."></textarea>
+            <p class="note small err" role="alert">Give the idea: write it, or paste or upload a transcript.</p>
+            <div class="row"><button class="btn sm">Attach documents</button></div>
+            <p class="small muted m0">Grillo always works towards a PRD (the product document). It then opens a grilling agent (an AI assistant that asks the questions) that builds the map (your project's overview), the tickets (pieces of work) and their questions.</p>
+          </div>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/people">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/review">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="review">
+      <p class="state-caption">State: Review, a new repository (every answer with a way back to change it; the Public warning shows again here on a public project; after Change, Back to review returns here without walking the later steps)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Last check before Grillo starts</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li class="done">People</li><li class="done">Idea</li></ol></div>
+          <div class="page-head"><h3>Does this look right?</h3><p>Nothing has been created yet. Check your answers, then press Create project.</p></div>
+          <ul class="rows card review">
+            <li><div class="grow stack"><span class="strong">Where</span><dl class="answers"><dt>Project name</dt><dd>Sample project 1</dd><dt>Owner</dt><dd>example-org</dd><dt>Repository</dt><dd>example-org/sample-project-1</dd><dt>Visibility</dt><dd>Private</dd></dl></div><a class="btn sm" href="#screen-project-creation/new" aria-label="Change Where">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Structure</span><dl class="answers"><dt>Starts from</dt><dd>Grillo default · 13 sections</dd><dt>Sections</dt><dd>Problem, Users and roles, Vocabulary, Flows, Screens, Data model, Permissions, Build decisions, Design system, Do-not-build list, Acceptance demo, Release order, Assumptions</dd></dl></div><a class="btn sm" href="#screen-project-creation/structure-step" aria-label="Change Structure">Change</a></li>
+            <li><div class="grow stack"><span class="strong">People</span><dl class="answers"><dt>You</dt><dd>member-a</dd><dt>Your role</dt><dd>Sample role A</dd><dt>Your domains</dt><dd>product</dd><dt>Invited</dt><dd>member-b</dd></dl></div><a class="btn sm" href="#screen-project-creation/people" aria-label="Change People">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Idea</span><dl class="answers"><dt>Written text</dt><dd>Sample idea: a short description of the product, written in the member's own words.</dd><dt>Documents</dt><dd>sample-notes-1.txt</dd></dl></div><a class="btn sm" href="#screen-project-creation/idea" aria-label="Change Idea">Change</a></li>
+          </ul>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/idea">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating">Create project</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="review-public">
+      <p class="state-caption">State: Review, your own account, Public (warning)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Last check before Grillo starts</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li class="done">People</li><li class="done">Idea</li></ol></div>
+          <div class="page-head"><h3>Does this look right?</h3><p>Nothing has been created yet. Check your answers, then press Create project.</p></div>
+          <ul class="rows card review">
+            <li><div class="grow stack"><span class="strong">Where</span><dl class="answers"><dt>Project name</dt><dd>Sample project 1</dd><dt>Owner</dt><dd>member-a (your account)</dd><dt>Repository</dt><dd>member-a/sample-project-1</dd><dt>Visibility</dt><dd>Public</dd></dl><p class="note small warn">Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.</p></div><a class="btn sm" href="#screen-project-creation/new-own-public" aria-label="Change Where">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Structure</span><dl class="answers"><dt>Starts from</dt><dd>Grillo default · 13 sections</dd><dt>Sections</dt><dd>Problem, Users and roles, Vocabulary, Flows, Screens, Data model, Permissions, Build decisions, Design system, Do-not-build list, Acceptance demo, Release order, Assumptions</dd></dl></div><a class="btn sm" href="#screen-project-creation/structure-step" aria-label="Change Structure">Change</a></li>
+            <li><div class="grow stack"><span class="strong">People</span><dl class="answers"><dt>You</dt><dd>member-a</dd><dt>Your role</dt><dd>Sample role A</dd><dt>Your domains</dt><dd>product</dd><dt>Invited</dt><dd>Nobody yet</dd></dl></div><a class="btn sm" href="#screen-project-creation/people" aria-label="Change People">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Idea</span><dl class="answers"><dt>Written text</dt><dd>Sample idea: a short description of the product, written in the member's own words.</dd><dt>Documents</dt><dd>sample-notes-1.txt</dd></dl></div><a class="btn sm" href="#screen-project-creation/idea" aria-label="Change Idea">Change</a></li>
+          </ul>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/idea">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating-public">Create project</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="review-connect">
+      <p class="state-caption">State: Review, connecting an existing repository, write access only (inviting says why it is greyed; the main button says Connect and start)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Last check before Grillo starts</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li class="done">People</li><li class="done">Idea</li></ol></div>
+          <div class="page-head"><h3>Does this look right?</h3><p>Nothing has been created yet. Check your answers, then press Connect and start.</p></div>
+          <ul class="rows card review">
+            <li><div class="grow stack"><span class="strong">Where</span><dl class="answers"><dt>Repository</dt><dd>example-org/sample-repo-1</dd><dt>Your access</dt><dd><span class="badge warn">Write access</span></dd></dl></div><a class="btn sm" href="#screen-project-creation/connect" aria-label="Change Where">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Structure</span><dl class="answers"><dt>Starts from</dt><dd>Grillo default · 13 sections</dd><dt>Sections</dt><dd>Problem, Users and roles, Vocabulary, Flows, Screens, Data model, Permissions, Build decisions, Design system, Do-not-build list, Acceptance demo, Release order, Assumptions</dd></dl></div><a class="btn sm" href="#screen-project-creation/structure-folded" aria-label="Change Structure">Change</a></li>
+            <li><div class="grow stack"><span class="strong">People</span><dl class="answers"><dt>You</dt><dd>member-a</dd><dt>Your role</dt><dd>Sample role A</dd><dt>Your domains</dt><dd>product</dd><dt>Invited</dt><dd>Nobody: inviting needs admin rights</dd></dl></div><a class="btn sm" href="#screen-project-creation/people-greyed" aria-label="Change People">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Idea</span><dl class="answers"><dt>Transcript</dt><dd>Sample transcript line 1: a made-up kick-off remark.</dd></dl></div><a class="btn sm" href="#screen-project-creation/idea-transcript" aria-label="Change Idea">Change</a></li>
+          </ul>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/idea-transcript">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating">Connect and start</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="review-not-invited">
+      <p class="state-caption">State: Review, a login typed and never added (warning; nothing stops the project, and Change on People goes back to add it)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Last check before Grillo starts</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li class="done">People</li><li class="done">Idea</li></ol></div>
+          <div class="page-head"><h3>Does this look right?</h3><p>Nothing has been created yet. Check your answers, then press Create project.</p></div>
+          <ul class="rows card review">
+            <li><div class="grow stack"><span class="strong">Where</span><dl class="answers"><dt>Project name</dt><dd>Sample project 1</dd><dt>Owner</dt><dd>example-org</dd><dt>Repository</dt><dd>example-org/sample-project-1</dd><dt>Visibility</dt><dd>Private</dd></dl></div><a class="btn sm" href="#screen-project-creation/new" aria-label="Change Where">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Structure</span><dl class="answers"><dt>Starts from</dt><dd>Grillo default · 13 sections</dd><dt>Sections</dt><dd>Problem, Users and roles, Vocabulary, Flows, Screens, Data model, Permissions, Build decisions, Design system, Do-not-build list, Acceptance demo, Release order, Assumptions</dd></dl></div><a class="btn sm" href="#screen-project-creation/structure-step" aria-label="Change Structure">Change</a></li>
+            <li><div class="grow stack"><span class="strong">People</span><dl class="answers"><dt>You</dt><dd>member-a</dd><dt>Your role</dt><dd>Sample role A</dd><dt>Your domains</dt><dd>product</dd><dt>Invited</dt><dd>Nobody yet</dd></dl><p class="reason m0">You typed member-b but did not press Invite, so member-b will not be invited.</p></div><a class="btn sm" href="#screen-project-creation/people" aria-label="Change People">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Idea</span><dl class="answers"><dt>Written text</dt><dd>Sample idea: a short description of the product, written in the member's own words.</dd><dt>Documents</dt><dd>sample-notes-1.txt</dd></dl></div><a class="btn sm" href="#screen-project-creation/idea" aria-label="Change Idea">Change</a></li>
+          </ul>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/idea">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating">Create project</a></div>
         </div>
       </div>
     </div>
 
     <div class="state" data-state="connect-problems">
-      <p class="state-caption">State: Connect, repository problems (error)</p>
+      <p class="state-caption">State: Connect: repository problems (error; pressing Connect and start found one of these. Each offers what to do next, and Pick another repository goes back to the Where step with every answer kept)</p>
       <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span></div>
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
 
         <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
         <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>This repository can't be used as it is</h3><p>Your other answers are safe. Sort this out, or pick another repository.</p></div>
           <div class="card stack">
-            <h3>1 · Repository</h3>
             <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
             <ul class="rows">
               <li>
                 <div class="grow"><div class="row"><span class="strong">example-org/sample-repo-3</span><span class="badge info">Already holds a Grillo project</span></div>
-                <p class="small muted">One Grillo project per repository. Open the one it holds instead.</p></div>
+                <p class="small muted m0">One Grillo project per repository. Open the one it holds instead.</p></div>
                 <button class="btn sm primary">Open it</button>
               </li>
               <li>
-                <div class="grow"><div class="row"><span class="strong">example-org/sample-repo-4</span><span class="badge err">Issues are turned off</span></div>
-                <p class="small muted">Grillo keeps its map and tickets as GitHub issues. Turn on Issues in this repository's GitHub settings, then check again.</p></div>
-                <button class="btn sm">Check again</button>
+                <div class="grow"><div class="row"><span class="strong">example-org/sample-repo-4</span><span class="badge err">Cannot connect</span></div>
+                <p class="small muted m0">Issues are turned off in example-org/sample-repo-4. Grillo keeps its map and tickets as GitHub issues. Turn on Issues in this repository's GitHub settings, then check again.</p></div>
+                <a class="btn sm" href="#screen-project-creation/connect">Check again</a>
               </li>
             </ul>
           </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn" href="#screen-project-creation/connect-list">Pick another repository</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="creating">
+      <p class="state-caption">State: Creating (loading)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="page-head"><h3>Setting up your project</h3><p>Grillo is working through these steps, one at a time.</p></div>
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot ok"></span>Private repository example-org/sample-project-1 created, with Grillo's labels and folder</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot ok"></span>Your role and domains saved</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot warn"></span>Invites sent to member-b and member-c</span><span class="badge warn">Working…</span></li>
+            <li><span class="row"><span class="sdot "></span>The idea saved as source S1</span><span class="badge ">Waiting</span></li>
+            <li><span class="row"><span class="sdot "></span>Grilling agent started; it is building the map and tickets</span><span class="badge ">Waiting</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="creating-public">
+      <p class="state-caption">State: Creating: a public repository (loading)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="page-head"><h3>Setting up your project</h3><p>Grillo is working through these steps, one at a time.</p></div>
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot ok"></span>Public repository member-a/sample-project-1 created, with Grillo's labels and folder</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot warn"></span>Grilling agent started; it is building the map and tickets</span><span class="badge warn">Working…</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="creating-failed">
+      <p class="state-caption">State: Creating, the repository could not be created (error; nothing exists yet, so Back to Where changes the answers that caused it, and Try again repeats the step as it is)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="page-head"><h3>Something stopped the set-up</h3><p>The steps marked Done are safe and will not run twice. The reason is below.</p></div>
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot err"></span>Private repository example-org/sample-project-1 created, with Grillo's labels and folder</span><span class="badge err">Failed</span></li>
+            <li><span class="row"><span class="sdot "></span>Your role and domains saved</span><span class="badge ">Waiting</span></li>
+            <li><span class="row"><span class="sdot "></span>The idea saved as source S1</span><span class="badge ">Waiting</span></li>
+            <li><span class="row"><span class="sdot "></span>Grilling agent started; it is building the map and tickets</span><span class="badge ">Waiting</span></li>
+          </ul>
+          <p class="note small err" role="alert">A repository named example-org/sample-project-1 already exists</p>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/new">Back to Where</a><a class="btn primary" href="#screen-project-creation/creating">Try again</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="agent-refused">
+      <p class="state-caption">State: Creating, the grilling agent refused (error; opened with Open on the project in Your projects, also after leaving this screen or closing Grillo, so only the agent's step is left. Right after creating, the steps already done show above it. Open goes to the map again once the agent has started or the project has a map)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="page-head"><h3>Something stopped the set-up</h3><p>The steps marked Done are safe and will not run twice. The reason is below.</p></div>
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot err"></span>Grilling agent started; it is building the map and tickets</span><span class="badge err">Failed</span></li>
+          </ul>
+          <p class="note small err" role="alert">Claude Code is not installed on this laptop</p>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-map-and-tickets/building">Open the map</a><a class="btn primary" href="#screen-project-creation/creating">Try again</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="creating-done">
+      <p class="state-caption">State: Creating, finished (a refused invite shows as Partly done with who and why, and never stops the run; the two ways on are the map and the grilling agent)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="page-head"><h3>Your project is on its way</h3><p>Grillo has done its part. The grilling agent (an AI assistant that asks the questions) is building the map (your project's overview) and the tickets now.</p></div>
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot ok"></span>Private repository example-org/sample-project-1 created, with Grillo's labels and folder</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot ok"></span>Your role and domains saved</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot warn"></span>Invites sent to member-b</span><span class="badge warn">Partly done</span><p class="small muted m0 full">Not invited (invite them later from the project): member-c: member-c is already a member of example-org/sample-project-1.</p></li>
+            <li><span class="row"><span class="sdot ok"></span>The idea saved as source S1</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot warn"></span>Grilling agent started; it is building the map and tickets</span><span class="badge warn">Working…</span></li>
+          </ul>
+          <p class="note small">Tickets (pieces of work and their questions) appear on the map (your project's overview) as Grillo creates them, and you can edit them at once.</p>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-map-and-tickets/building">Open the map</a><button class="btn primary">Open the grilling agent</button></div>
         </div>
       </div>
     </div>
@@ -1210,92 +1746,15 @@ Sample transcript line 2: a made-up reply.</textarea>
 
         <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
         <div class="window-body">
+          <div class="page-head"><div class="row"><h3>You joined Sample project 2</h3><span class="badge ok">Invite accepted</span></div><p>Invited by member-b · repository example-org/sample-project-2. Tell Grillo your role and domains (the subjects you know about), so the right questions reach you.</p></div>
           <div class="card stack">
-            <div class="row"><h3 class="m0">You joined Sample project 2</h3><span class="badge ok">Invite accepted</span></div>
-            <p class="small muted">Invited by member-b · repository example-org/sample-project-2.</p>
             <div class="grid-2">
               <label class="field">Your role (free text)<input type="text" value="Sample role A"></label>
-              <label class="field">Your domains<span class="row"><span class="tag d1">product ×</span><button class="btn sm">Add domain</button></span></label>
+              <div class="field">Your domains<span class="row"><span class="tag d1">product ×</span><span class="fill"><input type="text" placeholder="A domain, for example product" aria-label="Add a domain"></span><button class="btn sm">Add domain</button></span></div>
             </div>
-            <p class="small muted">Pre-filled from the last project you joined, Sample project 1.</p>
-            <div class="row"><span class="spacer"></span><a class="btn primary" href="#screen-map-and-tickets">Save and open the project</a></div>
+            <p class="small muted m0">Pre-filled from the last project you joined, Sample project 1.</p>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="new-own-account">
-      <p class="state-caption">State: New repository: your own account (the only choice when you belong to no organisation; Private by default)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
-            <div class="grid-2">
-              <label class="field">Project name<input type="text" value="Sample project 1"></label>
-              <label class="field">Owner<select><option>member-a (your account)</option></select></label>
-              <label class="field">Repository name<input type="text" value="sample-project-1"></label>
-              <div class="field">Visibility<div class="seg" role="group" aria-label="Visibility"><button aria-pressed="true">Private</button><button aria-pressed="false">Public</button></div></div>
-            </div>
-            <p class="small muted">A private repository under your own GitHub account. Only you can invite people, close and reopen the project; the people you invite get write access.</p>
-          </div>
-          <p class="small muted">The PRD structure, members and idea cards follow, as in the New repository state.</p>
-          <div class="row"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating">Create project</a></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="new-own-public">
-      <p class="state-caption">State: New repository: your own account, Public (warning)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3>1 · Repository</h3>
-            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
-            <div class="grid-2">
-              <label class="field">Project name<input type="text" value="Sample project 1"></label>
-              <label class="field">Owner<select><option>example-org</option><option selected>member-a (your account)</option></select></label>
-              <label class="field">Repository name<input type="text" value="sample-project-1"></label>
-              <div class="field">Visibility<div class="seg" role="group" aria-label="Visibility"><button aria-pressed="false">Private</button><button aria-pressed="true">Public</button></div></div>
-            </div>
-            <p class="small muted">A public repository under your own GitHub account. Only you can invite people, close and reopen the project; the people you invite get write access.</p>
-            <p class="note small warn">Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.</p>
-          </div>
-          <p class="small muted">The PRD structure, members and idea cards follow, as in the New repository state.</p>
-          <div class="row"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating-public">Create project</a></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="creating-public">
-      <p class="state-caption">State: Creating: a public repository (loading)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span></div>
-        <div class="window-body">
-          <ul class="rows card">
-            <li><span class="row"><span class="sdot ok"></span>Public repository member-a/sample-project-1 created</span><span class="badge ok">Done</span></li>
-            <li><span class="row"><span class="sdot warn"></span>Grilling agent started; it is building the map and tickets</span><span class="badge warn">Working…</span></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="state" data-state="creating">
-      <p class="state-caption">State: Creating (loading)</p>
-      <div class="window glass">
-        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span></div>
-
-        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
-        <div class="window-body">
-          <ul class="rows card">
-            <li><span class="row"><span class="sdot ok"></span>Private repository example-org/sample-project-1 created</span><span class="badge ok">Done</span></li>
-            <li><span class="row"><span class="sdot ok"></span>Grillo labels and the Grillo folder added</span><span class="badge ok">Done</span></li>
-            <li><span class="row"><span class="sdot ok"></span>Invites sent to member-b and member-c</span><span class="badge ok">Done</span></li>
-            <li><span class="row"><span class="sdot warn"></span>Grilling agent started; it is building the map and tickets</span><span class="badge warn">Working…</span></li>
-          </ul>
-          <p class="note small">Tickets appear on the map as the engine creates them, and you can edit them at once.</p>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn primary" href="#screen-map-and-tickets">Save and open the project</a></div>
         </div>
       </div>
     </div>
@@ -1307,9 +1766,8 @@ Sample transcript line 2: a made-up reply.</textarea>
 
         <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
         <div class="window-body">
+          <div class="page-head"><h3>Change the PRD structure</h3><p>Any member can change the structure at any time. A new section may need more answers first: Grillo adds tickets (pieces of work and their questions) or notes what is still unclear, and writes the PRD again once every section can be written.</p></div>
           <div class="card stack">
-            <h3>PRD structure</h3>
-            <p class="small muted">Any member can change the structure at any time. A new section makes the engine add tickets or fog first, so the PRD is regenerated once every section can be written.</p>
             <ul class="rows">
               <li><span class="row"><button class="btn sm" aria-label="Move up" disabled>↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Problem" aria-label="Section name"><input type="text" value="What goes wrong today, and the outcomes wanted" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
               <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Users and roles" aria-label="Section name"><input type="text" value="Who uses the product, and what each person may do" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
@@ -1326,7 +1784,39 @@ Sample transcript line 2: a made-up reply.</textarea>
               <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down">↓</button></span><div class="grow grid-2"><input type="text" value="Assumptions" aria-label="Section name"><input type="text" value="What is still unverified" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
               <li><span class="row"><button class="btn sm" aria-label="Move up">↑</button><button class="btn sm" aria-label="Move down" disabled>↓</button></span><div class="grow grid-2"><input type="text" value="Sample added section" aria-label="Section name"><input type="text" value="One-line note for the section this member added" aria-label="Section note"></div><button class="btn sm">Remove</button></li>
             </ul>
-            <div class="row"><button class="btn sm">Add section</button><span class="spacer"></span><a class="btn" href="#screen-prd-view/versions">Cancel</a><a class="btn primary" href="#screen-prd-view/writing">Save and regenerate</a></div>
+            <div class="row"><button class="btn sm">Add section</button></div>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-prd-view/versions">Cancel</a><a class="btn primary" href="#screen-prd-view/writing">Save and regenerate</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="structure-unreadable">
+      <p class="state-caption">State: Editing the structure: it cannot be opened (error; a bad project address or a store that refuses shows here)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="page-head"><h3>This structure can't be opened</h3><p>Grillo could not read it. Try again from the PRD view.</p></div>
+          <p class="note small err" role="alert">Grillo could not read the structure of example-org/sample-project-1 from the store.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="save-notice">
+      <p class="state-caption">State: Saved as a pull request (the repository's main branch is protected; the same notice shows above whichever screen the save was made on, until dismissed)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="note row" role="status"><span class="grow">Saved as pull request #3, "grillo: add member member-b". The main branch of example-org/sample-project-1 is protected, so the change reaches the project once someone merges that pull request.</span><a class="btn sm" href="#">Open on GitHub</a><button class="btn sm">Dismiss</button></div>
+          <div class="card stack">
+            <h3>Invite people</h3>
+            <ul class="rows">
+              <li><span class="row"><span class="strong">member-b</span><span class="muted">Ben</span></span><span class="row"><span class="badge warn">Invited</span><span class="small muted">sets their own role and domains</span></span></li>
+            </ul>
           </div>
         </div>
       </div>
