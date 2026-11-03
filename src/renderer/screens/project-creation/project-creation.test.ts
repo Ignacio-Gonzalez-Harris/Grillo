@@ -1061,6 +1061,38 @@ describe('project creation: the guided steps', () => {
     expect(text(root.querySelector('.note.err'))).toBe('Grillo could not list your organisations: gh is signed out');
   });
 
+  it.each([
+    {
+      refused: 'organisations',
+      why: 'Grillo could not list your organisations: gh is signed out',
+      refuse: (store: ReturnType<typeof app>['store']) => vi.spyOn(store, 'listOrganisations').mockRejectedValue(new Error('gh is signed out')),
+    },
+    {
+      refused: 'own account',
+      why: 'Grillo could not read your GitHub account: gh is signed out',
+      refuse: (store: ReturnType<typeof app>['store']) => vi.spyOn(store, 'signedInLogin').mockRejectedValue(new Error('gh is signed out')),
+    },
+  ])('keeps saying why the $refused could not be read each time Where is drawn, and on no other step', async ({ why, refuse }) => {
+    const { store, root, open } = app();
+    refuse(store);
+    vi.spyOn(store, 'listRepositories').mockRejectedValue(new Error('gh is signed out'));
+    await open();
+    click(root, 'New project');
+    await until(() => onWhere(root), 'the first step');
+    expect(root.textContent).toContain(why);
+    type(root, PROJECT_NAME, 'Sample project 1');
+
+    click(root, 'Next');
+    expect(root.textContent).not.toContain(why);
+
+    click(root, 'Back');
+    expect(root.textContent).toContain(why);
+
+    click(root, 'Connect an existing one');
+    expect(root.textContent).toContain(why);
+    expect(text(stepCard(root))).toContain('Grillo could not list your repositories: gh is signed out');
+  });
+
   it.each(WAYS_IN)('%s walks Where, Structure, People and Idea in that order, says which step it is, then reviews', async (way) => {
     const { root } = await wayIn(way);
     const seen: Array<[string, string, string]> = [];

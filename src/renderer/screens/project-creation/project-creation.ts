@@ -148,6 +148,8 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
   /** Once the review has been seen, every step offers a way straight back to it. */
   let reviewSeen = false;
   let organisations: Organisation[] = [];
+  /** Why the Owner list may be short. It lasts until the form is opened again, so Where says it each time it is drawn. */
+  let ownersProblem: string | null = null;
   let repositories: RepositoryAccess[] | { error: string } = [];
   let earlierProjects: Project[] = [];
   let myLogin: string | null = null;
@@ -317,10 +319,10 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     drafts.invite = '';
     drafts.inviteError = null;
     drafts.domain = '';
+    ownersProblem = null;
+    if (orgs.status === 'rejected') ownersProblem = `Grillo could not list your organisations: ${messageOf(orgs.reason)}`;
+    else if (own.status === 'rejected') ownersProblem = `Grillo could not read your GitHub account: ${messageOf(own.reason)}`;
     show({ name: 'form' });
-    if (orgs.status === 'rejected') actionError = `Grillo could not list your organisations: ${messageOf(orgs.reason)}`;
-    else if (own.status === 'rejected') actionError = `Grillo could not read your GitHub account: ${messageOf(own.reason)}`;
-    draw();
     if (!disposed) revealPage();
   }
 
@@ -461,6 +463,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     return [
       stepProgress(step),
       head,
+      ...(step === 'where' && ownersProblem !== null ? [note(ownersProblem, 'err')] : []),
       ...errorNote(),
       card,
       pageActions(
