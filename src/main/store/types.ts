@@ -34,6 +34,9 @@ export interface RepositoryRef {
   name: string;
 }
 
+/** Who can read a new repository: a public one exposes everything in it to anyone (PRD section 4.2 item 1). */
+export type RepositoryVisibility = 'private' | 'public';
+
 /** The repository permission GitHub gives the signed-in member. */
 export type Permission = 'admin' | 'write' | 'read';
 

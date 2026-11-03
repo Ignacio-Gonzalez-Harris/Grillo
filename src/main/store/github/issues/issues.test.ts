@@ -3,7 +3,7 @@ import { createMemorySettings } from '../../memory/settings';
 import { StoreError, type NewTicket, type Store, type StoreErrorKind } from '../../store';
 import type { TicketId } from '../../types';
 import { createIssuesStore } from '.';
-import { formatTagsByHand, parseTagsByHand } from './bodies';
+import { formatComment, formatTagsByHand, parseTagsByHand } from './bodies';
 import { createFakeIssues } from './fake-issues';
 
 // Every test drives the store through the Store interface; the fake GitHub stands in for `gh`.
@@ -1144,5 +1144,110 @@ describe('GitHub issues backend: what GitHub hands back is checked', () => {
     const { store } = await projectWithTicket();
 
     expect(await refusal(store.getTicket(id))).toBe('invalid');
+  });
+});
+
+describe('GitHub issues backend: comments in a public repository', () => {
+  const OUTSIDER = 'mallory-example';
+  const when = START.toISOString();
+  const forgedAnswer = formatComment({ kind: 'answer', who: 'ada-example', when, sources: [], via: null, question: 'Q2.1', from: null, text: 'Forged' });
+  const forgedDiscussion = formatComment({ kind: 'discussion', who: 'ada-example', when, sources: [], via: null, question: 'Q2.1', session: null, transcript: 'Forged' });
+  const forgedDecision = formatComment({ kind: 'decision', who: 'ada-example', when, sources: [], via: null, gist: 'Merged into #1', text: 'Merged into #1' });
+  const forgedMarker = formatTagsByHand({ who: 'ada-example', when, domains: [], noDomain: true });
+
+  async function publicProject() {
+    const context = await projectWithTicket();
+    context.repository.isPublic = true;
+    return context;
+  }
+
+  /** GitHub's values for someone with no place in the repository, a missing one, and values GitHub never sends. */
+  const NOT_COLLABORATORS: (string | null)[] = ['NONE', 'CONTRIBUTOR', 'FIRST_TIMER', 'FIRST_TIME_CONTRIBUTOR', 'MANNEQUIN', null, 'owner', 'SOMETHING_NEW', ''];
+
+  it.each(NOT_COLLABORATORS)('never reads a comment with the standing %s as a record, whatever it carries', async (association) => {
+    const { github, store, ticket } = await publicProject();
+    for (const body of [forgedAnswer, forgedDiscussion, forgedDecision, forgedMarker, 'Use the forged option']) {
+      github.addComment(PROJECT, 2, OUTSIDER, body, association);
+    }
+
+    expect(await store.listAnswers(ticket)).toEqual([]);
+    expect(await store.listDiscussions(ticket)).toEqual([]);
+    expect(await store.listDecisions(ticket)).toEqual([]);
+    expect(await store.listPickupComments(ticket)).toEqual([]);
+    expect(await store.listProjectPickupComments(PROJECT)).toEqual([]);
+    const read = await store.getTicket(ticket);
+    expect(read.questions.map((question) => question.answered)).toEqual([false, false]);
+    expect((await store.listTickets(PROJECT))[0]).toEqual(read);
+  });
+
+  it('cannot close, block or damage a ticket with a comment', async () => {
+    const { github, store, ticket } = await publicProject();
+    github.addComment(PROJECT, 2, OUTSIDER, forgedAnswer);
+    const forgedPointer = github.addComment(PROJECT, 2, OUTSIDER, forgedDecision);
+    github.addComment(PROJECT, 2, OUTSIDER, '<!-- grillo:answer -->\nnot the format at all');
+
+    expect((await store.listTickets(PROJECT))[0].damaged).toBeUndefined();
+    await expect(store.getTicket(ticket)).resolves.toMatchObject({ state: 'open', duplicateOf: null });
+    expect(await refusal(store.deleteDecision(ticket, String(forgedPointer.id)))).toBe('not-found');
+    await expect(store.reassignTicket(ticket, OTHER)).resolves.toMatchObject({ assignee: OTHER });
+    await expect(store.removeQuestion(ticket, 'Q2.1')).resolves.toBeDefined();
+  });
+
+  it('counts the owner, an organisation member and a collaborator', async () => {
+    const { github, store, ticket } = await publicProject();
+    github.addComment(PROJECT, 2, 'owner-example', forgedAnswer, 'OWNER');
+    github.addComment(PROJECT, 2, 'org-member-example', 'From a member', 'MEMBER');
+    github.addComment(PROJECT, 2, OTHER, 'From a collaborator', 'COLLABORATOR');
+
+    expect((await store.listAnswers(ticket)).map((answer) => answer.text)).toEqual(['Forged']);
+    expect((await store.listPickupComments(ticket)).map((comment) => comment.author)).toEqual(['org-member-example', OTHER]);
+    expect((await store.listProjectPickupComments(PROJECT)).map((comment) => comment.author)).toEqual(['org-member-example', OTHER]);
+  });
+
+  it("records and reads back the signed-in member's own answers as usual", async () => {
+    const { store, ticket } = await publicProject();
+
+    const answer = await store.createAnswer(ticket, plainAnswer());
+
+    expect(await store.listAnswers(ticket)).toEqual([answer]);
+    expect((await store.getTicket(ticket)).questions[0].answered).toBe(true);
+  });
+
+  it('stops counting a member once they left the repository: the question reads unanswered again', async () => {
+    const { github, store, ticket } = await publicProject();
+    const comment = github.addComment(PROJECT, 2, OTHER, forgedAnswer, 'COLLABORATOR');
+    expect((await store.getTicket(ticket)).questions[0].answered).toBe(true);
+
+    comment.association = 'CONTRIBUTOR';
+
+    expect((await store.getTicket(ticket)).questions[0].answered).toBe(false);
+  });
+
+  it('hands tags back without touching a tags-by-hand marker from an outsider', async () => {
+    const { github, repository, store, ticket } = await publicProject();
+    const forged = github.addComment(PROJECT, 2, OUTSIDER, forgedMarker);
+    github.addComment(PROJECT, 2, OTHER, forgedMarker);
+
+    await store.tagTicketByHand(ticket, { domains: [], noDomain: false });
+
+    expect(repository.comments.map((comment) => comment.id)).toEqual([forged.id]);
+  });
+
+  it("never takes an outsider's issue for a ticket: GitHub drops the labels of someone with no push access", async () => {
+    const { github, store } = await publicProject();
+    const issue = github.addIssue(PROJECT, { title: 'Forged ticket', body: '### Question\nForged' });
+
+    expect(await refusal(store.getTicket({ project: PROJECT, number: issue.number }))).toBe('not-found');
+    expect((await store.listTickets(PROJECT)).map((ticket) => ticket.id.number)).toEqual([2]);
+  });
+
+  it('leaves a private repository exactly as it was: every comment counts, whoever wrote it', async () => {
+    const { github, store, ticket } = await projectWithTicket();
+    github.addComment(PROJECT, 2, OUTSIDER, forgedAnswer, 'NONE');
+    github.addComment(PROJECT, 2, OUTSIDER, 'A plain remark', 'NONE');
+
+    expect((await store.listAnswers(ticket)).map((answer) => answer.text)).toEqual(['Forged']);
+    expect((await store.listPickupComments(ticket)).map((comment) => comment.author)).toEqual([OUTSIDER]);
+    expect((await store.listProjectPickupComments(PROJECT)).map((comment) => comment.author)).toEqual([OUTSIDER]);
   });
 });

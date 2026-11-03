@@ -19,6 +19,7 @@ export interface FakeRepository {
   defaultBranch: string;
   permission: 'admin' | 'write' | 'read';
   topics: string[];
+  visibility: 'private' | 'public';
   /** The default branch's files. */
   files: Map<string, string>;
   /** Goes up on every push to the default branch. */
@@ -27,7 +28,8 @@ export interface FakeRepository {
   protected: boolean;
   labels: Map<string, string>;
   collaborators: Map<string, string>;
-  invitations: { id: number; invitee: string; permission: string }[];
+  /** `permission` is left out of an invite to a personal repository, where GitHub takes none. */
+  invitations: { id: number; invitee: string; permission: string | undefined }[];
   branches: Map<string, Map<string, string>>;
   pullRequests: { base: string; head: string; title: string }[];
   /** The numbers of the pull requests merged or closed; every other one is open. */
@@ -121,6 +123,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       defaultBranch: 'main',
       permission: 'admin',
       topics: [],
+      visibility: 'private',
       version: 1,
       protected: false,
       labels: new Map(),
@@ -154,9 +157,14 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
     repository.settledPullRequests.add(number);
   }
 
-  function repositoryJson(repository: FakeRepository) {
+  function repositoryJson(id: string, repository: FakeRepository) {
     const { permission } = repository;
+    const [owner, name] = id.split('/');
     return {
+      name,
+      owner: { login: owner, type: organisations.includes(owner) ? 'Organization' : 'User' },
+      private: repository.visibility !== 'public',
+      visibility: repository.visibility,
       archived: repository.archived,
       has_issues: repository.hasIssues,
       default_branch: repository.defaultBranch,
@@ -180,10 +188,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
     if (route === 'GET user/orgs?per_page=100') return json(organisations.map((login) => ({ login })));
     if ((match = /^GET user\/repos\?per_page=(\d+)&page=(\d+)$/.exec(route))) {
       const [size, page] = [Number(match[1]), Number(match[2])];
-      const all = [...repositories.entries()].map(([id, repository]) => {
-        const [owner, name] = id.split('/');
-        return { name, owner: { login: owner }, ...repositoryJson(repository) };
-      });
+      const all = [...repositories.entries()].map(([id, repository]) => repositoryJson(id, repository));
       return json(all.slice((page - 1) * size, page * size));
     }
     if (route === 'GET user/repository_invitations?per_page=100') {
@@ -208,7 +213,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
       const [, verb, id, rest] = match;
       const repository = repositories.get(id);
       if (!repository) return notFound();
-      if (rest === '' && verb === 'GET') return json(repositoryJson(repository));
+      if (rest === '' && verb === 'GET') return json(repositoryJson(id, repository));
       if (rest === '' && verb === 'PATCH') {
         repository.archived = field('-F') === 'true';
         return ok();
@@ -218,7 +223,7 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
         if (verb === 'PUT') {
           const invitee = account(login);
           if (!invitee) return notFound();
-          repository.invitations.push({ id: repository.invitations.length + 100, invitee: invitee.login, permission: field('-f')! });
+          repository.invitations.push({ id: repository.invitations.length + 100, invitee: invitee.login, permission: field('-f') });
           return ok();
         }
         return repository.collaborators.delete(login) ? ok() : notFound();
@@ -239,10 +244,12 @@ export function createFakeGithub(me: FakeUser = { login: 'ada-example', name: 'A
     if (group === 'api') return api(args.slice(1));
     if (group === 'repo' && action === 'create') {
       if (repositories.has(target)) return failed('GraphQL: Name already exists on this account (createRepository)');
-      if (!organisations.includes(target.split('/')[0]) && target.split('/')[0] !== me.login) {
+      if (!organisations.includes(target.split('/')[0]) && account(target.split('/')[0])?.login !== me.login) {
         return failed('GraphQL: Could not resolve to a Repository owner (HTTP 404)');
       }
-      addRepository(target);
+      const chosen = (['private', 'public'] as const).filter((choice) => args.includes(`--${choice}`));
+      if (chosen.length !== 1) return failed('--public, --private, or --internal required when not running interactively');
+      addRepository(target, { visibility: chosen[0] });
       return ok(`https://github.com/${target}\n`);
     }
     if (group === 'repo' && action === 'edit') {

@@ -5,7 +5,7 @@
  */
 import { GhError, type Gh } from '../../gh';
 import { StoreError } from '../../store';
-import type { Invitation, Login, Organisation, Permission, RepositoryAccess, RepositoryRef } from '../../types';
+import type { Invitation, Login, Organisation, Permission, RepositoryAccess, RepositoryRef, RepositoryVisibility } from '../../types';
 import { isLogin, projectIdOf, sameLogin } from './names';
 
 /** What one repository read tells the backend. */
@@ -15,8 +15,12 @@ export interface RepositoryInfo {
   /** The branch the Grillo folder lives on: the repository's default ("main"). */
   defaultBranch: string;
   permission: Permission;
-  /** True for a repository Grillo created: every member invited to it becomes an admin (PRD section 7). */
+  /** True for a repository Grillo created: in an organisation, every member invited to it becomes an admin (PRD section 7). */
   createdByGrillo: boolean;
+  /** False only when GitHub says it is private: anyone can comment on a public repository, so the doubt counts as public. */
+  isPublic: boolean;
+  /** True when a user owns it, not an organisation: it has only an owner and collaborators, and invites take no permission. */
+  personal: boolean;
 }
 
 export interface GithubIdentity {
@@ -49,6 +53,8 @@ const REPOSITORY_MISSING = /Could not resolve to a Repository/i;
 const ALREADY_EXISTS = /already exists/i;
 const NOT_FOUND = 404;
 const FORBIDDEN = 403;
+/** GitHub's `owner.type` of a repository a person owns. */
+const USER_ACCOUNT = 'User';
 const UNPROCESSABLE = 422;
 
 type Refusals = Partial<Record<'notFound' | 'forbidden' | 'invalid' | 'conflict', string>>;
@@ -160,6 +166,8 @@ function parseRepository(value: unknown): RepositoryInfo {
     defaultBranch: branch,
     permission: permissionOf(object(repository.permissions, 'the permissions')),
     createdByGrillo: list(topics, 'topics').includes(CREATED_BY_GRILLO_TOPIC),
+    isPublic: repository.private !== true,
+    personal: isObject(repository.owner) && repository.owner.type === USER_ACCOUNT,
   };
 }
 
@@ -279,13 +287,13 @@ export function createGithubApi(gh: Gh) {
       });
     },
 
-    /** A new private repository with a first commit on its default branch, marked as created by Grillo. */
-    async createRepository(ref: RepositoryRef): Promise<void> {
+    /** A new repository with a first commit on its default branch, marked as created by Grillo. */
+    async createRepository(ref: RepositoryRef, visibility: RepositoryVisibility): Promise<void> {
       const id = projectIdOf(ref);
-      await refusing(gh.text(['repo', 'create', id, '--private', '--add-readme']), {
+      await refusing(gh.text(['repo', 'create', id, visibility === 'public' ? '--public' : '--private', '--add-readme']), {
         conflict: `Repository ${id} already exists`,
-        notFound: `No organisation ${ref.owner}, or you cannot create repositories in it`,
-        forbidden: `You may not create repositories in ${ref.owner}`,
+        notFound: `No account or organisation ${ref.owner}, or you cannot create repositories under it`,
+        forbidden: `You may not create repositories under ${ref.owner}`,
       });
       await gh.text(['repo', 'edit', id, '--add-topic', CREATED_BY_GRILLO_TOPIC]);
     },
@@ -297,9 +305,13 @@ export function createGithubApi(gh: Gh) {
       }
     },
 
-    /** A repository collaborator invitation; GitHub adds an existing collaborator's new permission directly. */
-    async invite(ref: RepositoryRef, member: Login, permission: 'admin' | 'push'): Promise<void> {
-      await refusing(gh.text(['api', '--method', 'PUT', `${repoPath(ref)}/collaborators/${member}`, '-f', `permission=${permission}`]), {
+    /**
+     * A repository collaborator invitation; GitHub adds an existing collaborator's new permission directly. `permission`
+     * is null for a personal repository: GitHub's `permission` is "only valid on organization-owned repositories".
+     */
+    async invite(ref: RepositoryRef, member: Login, permission: 'admin' | 'push' | null): Promise<void> {
+      const fields = permission === null ? [] : ['-f', `permission=${permission}`];
+      await refusing(gh.text(['api', '--method', 'PUT', `${repoPath(ref)}/collaborators/${member}`, ...fields]), {
         notFound: `No GitHub account ${member}`,
         forbidden: `GitHub refused to invite ${member} to ${projectIdOf(ref)}`,
         invalid: `GitHub refused to invite ${member}`,

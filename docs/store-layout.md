@@ -22,13 +22,21 @@ others. The records themselves are PRD section 6.1; the interface over them is `
 
 ## One project, one repository
 
-A project is one GitHub repository, named `<owner>/<repo>`: a new private one Grillo creates in the
-organisation, or an existing one the member connects. One Grillo project per repository. Closing a project
-archives its repository; unarchiving reopens it.
+A project is one GitHub repository, named `<owner>/<repo>`: a new one Grillo creates, or an existing one the
+member connects. One Grillo project per repository. Closing a project archives its repository; unarchiving
+reopens it.
 
-A repository Grillo creates carries the repository topic `grillo-created`. Members invited to it become
-repository admins (PRD section 7); members invited to a connected repository get write access. The Grillo
-folder lives on the repository's default branch, called `main` in this document.
+A new repository's owner is one of the member's organisations, always private, or their own account, private
+unless `visibility` says public. The store itself refuses public for any owner but the signed-in account (compared
+without regard to case), so an organisation's repository stays private whatever a caller sends. In the store's
+`newRepository`, `organisation` names the owner of either kind. A public repository exposes everything below to
+anyone.
+
+A repository Grillo creates carries the repository topic `grillo-created`. Members invited to one in an
+organisation become repository admins (PRD section 7); members invited to a connected repository in an organisation
+get write access. **A personal repository** (GitHub's `owner.type` is `User`), created or connected, has only an
+owner and collaborators: an invite sends no `permission` value, a collaborator reads as write access, and only the
+owner can invite, close and reopen. The Grillo folder lives on the repository's default branch, called `main` in this document.
 
 ## Header lines
 
@@ -237,6 +245,22 @@ Sign in with GitHub only.
 
 A comment with no marker is a plain member comment: one written in GitHub's web or phone app. It waits to be
 turned into an answer until an answer comment names its id in `from:`; deleting that answer puts it back.
+
+### Comments in a public repository
+
+Anyone can comment on a public repository, and nothing stops them writing a marker line and any `who:`. So in a
+repository GitHub does not call private (`private: true`; a missing value counts as public), a comment counts only
+when its `author_association` is exactly `OWNER`, `MEMBER` or `COLLABORATOR`. Any other value, or none, means the comment
+does not exist for the store: no answer, discussion, decision, tags-by-hand marker or plain comment, and it cannot damage a
+ticket. The value is read afresh every time, so **once GitHub stops calling someone a collaborator after they leave,
+their comments stop counting** (GitHub's documentation does not say when the value changes, and this was not tried
+against real GitHub): their answers read as unanswered again and their decisions as gone, though the map's settled
+lines stay until a member changes them. In a public organisation repository `MEMBER` means any member of that
+organisation. A private repository reads every comment, as always.
+
+An agent reads comments through `gh`, not the store, so there this is an instruction (every `SKILL.md`, "Ground rules",
+and `record-answer.md`), never enforced. An outsider's issue is no ticket: GitHub drops the labels of someone with
+no push access, and Grillo reads only labelled issues.
 
 ## Tags set by hand
 

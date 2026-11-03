@@ -118,14 +118,23 @@ The project screens arrive with their own stories. What already works underneath
 - **The project folder** is `~/Grillo/<owner>/<repo>`: cloned with `gh repo clone` the first time, brought up to
   date with `git pull --ff-only` after that. Every agent runs there. If it holds changes that are not on GitHub,
   opening the project stops and lists them; Grillo never resets or deletes them. Save or discard them yourself.
-- **A new project** is a new private repository in the organisation you pick, tagged with the topic
-  `grillo-created`, with Grillo's labels and a `.grillo/` folder (`members.json`, `structure.json`) on main.
+- **A new project** is a new repository under the owner you pick, tagged with the topic `grillo-created`, with
+  Grillo's labels and a `.grillo/` folder (`members.json`, `structure.json`) on main. In an organisation it is always
+  private. Under your own GitHub account it is private unless you choose public.
 - **Connecting an existing repository** needs write access and issues turned on. A repository that already
   holds a Grillo project opens that project. An empty repository (no commits yet) works too: Grillo's first
   save makes its first commit. With write access only, inviting, removing people, closing and reopening are
   refused with the reason: GitHub keeps those for repository admins.
-- **Invitations** are GitHub repository invitations: an admin in a repository Grillo created, write access in
-  a connected one. Pending invitations to you are listed and accepted inside Grillo.
+- **Invitations** are GitHub repository invitations: an admin in a repository Grillo created in an organisation,
+  write access in a connected one. A repository under a personal account has only its owner and collaborators, so
+  only the owner can invite, close and reopen; a collaborator sees those greyed out with the reason. Pending
+  invitations to you are listed and accepted inside Grillo.
+- **A public project exposes its data:** anyone can read its transcripts, answers and PRD. Anyone can also comment on
+  it, so Grillo counts only comments from the repository's owner, an organisation member or a collaborator. Others are
+  never answers, discussions, decisions or comments waiting to be picked up. Agents read comments through `gh`, so
+  there this is an instruction they follow and name in their report, not something the code enforces. Once GitHub
+  stops calling someone who left a public project a collaborator, their comments stop counting and the questions they
+  answered read as open again.
 - **Saves** go through the project folder: commit, then push to main. If someone pushed first, Grillo pulls and
   saves again, renumbering a new source or PRD version to the next free number. If main is protected, Grillo
   pushes a `grillo/save-<time>` branch and opens a pull request instead; main changes once someone merges it.
@@ -142,7 +151,9 @@ Open) and **Pending invitations** (each with Accept).
   pre-filled from the last project you joined. "Save and open the project" saves them and opens the map.
 - **New project** opens the form, in four cards:
   1. **Repository.** "Create a new repository": a project name (it suggests the repository name), the
-     organisation (the GitHub organisations your sign-in belongs to) and the repository name. "Connect an existing
+     owner (the GitHub organisations your sign-in belongs to and your own account; an organisation first, your own
+     account when you have none) and the repository name. For your own account, Private (the default) or Public; choosing
+     Public warns that transcripts, answers and the PRD are visible to anyone. "Connect an existing
      one": your repositories are listed with your access to each. Search narrows the list; pick one. Read access only
      says it cannot be connected. "Check access" asks GitHub again, and also checks a repository typed in full as
      `owner/repository` that the list does not hold. With write access only, inviting is greyed out with the reason;
@@ -1021,7 +1032,7 @@ Grillo reads and writes its data through one store. Which one is picked when the
    GitHub, and the data is gone when the app closes, except the recent-projects list in the settings file. It
    starts with one organisation, three repositories to connect (`example-org/team-code` with write access,
    `example-org/team-docs` with admin, `example-org/company-handbook` read only) and one invitation
-   (`example-org/kickoff-notes`). Its project folders do not exist on disk, so starting a grilling agent is always
+   (`example-org/kickoff-notes`), signed in as `ada-example`, the account a project can also go under. Its project folders do not exist on disk, so starting a grilling agent is always
    refused here.
 
 With any other value of `GRILLO_STORE` the app opens no window, and the terminal names the two allowed
