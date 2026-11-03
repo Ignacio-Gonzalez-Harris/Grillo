@@ -6,7 +6,7 @@
   Grillo (PRD section 10 item 1).
 
   data-repository: the repository the installers are published to (electron-builder.yml, publish).
-  data-installers: `unsigned` in the pilot (the warning note and warning steps show); the signing story sets `signed`.
+  data-installers: `unsigned` in the pilot (the "Run anyway" and "Open Anyway" steps show); the signing story sets `signed`.
   latest-release.js puts the visitor's own system's download button first and fills the release details in.
 -->
 <html lang="en" data-repository="Ignacio-Gonzalez-Harris/Grillo" data-installers="unsigned">
@@ -259,10 +259,8 @@ ol.steps li { margin-bottom: var(--space-1); }
   box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow);
 }
 
-/* Install: what you need first, the unsigned warning, then the steps per system. */
+/* Install: what you need first, then the steps per system. */
 .dl-install { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
-.dl-warning { grid-column: 1 / -1; display: flex; gap: var(--space-3); align-items: flex-start; margin: 0; color: var(--color-text); border: var(--border-width) solid var(--color-glass-border); }
-.dl-warning .dl-icon { color: var(--color-warning); }
 .dl-card { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); }
 .dl-card-head { display: flex; align-items: center; gap: var(--space-3); }
 .dl-card .steps { margin: 0; font-size: var(--font-size-m); }
@@ -273,6 +271,7 @@ ol.steps li { margin-bottom: var(--space-1); }
 .dl-need .dl-icon { color: var(--color-accent); }
 
 .dl-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); color: var(--color-text-muted); }
+.dl-byline { font-size: var(--font-size-s); color: var(--color-text-muted); }
 .dl-footer .logo { width: var(--size-logo); height: var(--size-logo); }
 
 /* ---------- Phone width (breakpoint-narrow in tokens.css, measured on the page itself) ---------- */
@@ -374,7 +373,6 @@ html[data-installers="signed"] .unsigned-only, html:not([data-installers="signed
   <section class="dl-section" aria-labelledby="dl-install">
     <div class="dl-section-head"><p class="dl-eyebrow">Install</p><h2 id="dl-install">Get Grillo running</h2><p class="unsigned-only">Three things first, then a few clicks on Windows or Mac.</p><p class="signed-only">Signed for Windows and Mac: no warning to click through.</p></div>
     <div class="dl-install">
-      <div class="note warn dl-warning unsigned-only" data-warning="unsigned" role="note"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5"/><path d="M12 18h.01"/></svg><p class="m0">These pilot installers are not signed yet, so Windows and Mac each show one warning the first time. This is expected; the steps below say what to click.</p></div>
       <div class="dl-card glass">
         <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span><h3>What you need first</h3></div>
         <ul class="dl-need">
@@ -394,7 +392,7 @@ html[data-installers="signed"] .unsigned-only, html:not([data-installers="signed
     </div>
   </section>
 
-  <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="spacer"></span><a href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases">All releases on GitHub</a></footer>
+  <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="dl-byline">By Ignacio Gonzalez</span><span class="spacer"></span><a href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases">All releases on GitHub</a></footer>
 </main>
 <script type="module" src="latest-release.js"></script>
 </body>

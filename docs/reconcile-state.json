@@ -1,6 +1,6 @@
 {
-  "reconciled_at": "2d8d7fd09e60f4c304741071283dc3194db11f6c",
-  "last_reconcile": "2026-10-29",
+  "reconciled_at": "5c78861200d0394517c4e6c5ba24c23b9e5867dc",
+  "last_reconcile": "2026-11-03",
   "accepted": [
     { "lens": "2", "issue": "82", "section": "docs/PRDs/PRD.md 4.4 item 5", "reason": "Turning GitHub comments into answers by a Pick up button is fine: the PRD says the agent may do it.", "on": "2026-10-24" },
     { "lens": "2", "issue": "57", "section": "none", "reason": "The closed demo-materials story cites section 7 for the made-up-data rule (it is in section 11); closed, nothing to build.", "on": "2026-10-24" },
@@ -9,6 +9,9 @@
     { "lens": "4", "issue": "62", "section": "docs/PRDs/PRD.md 8", "reason": "ADR story closed as superseded: the decision is recorded in the PRD as [I2], no ADR file needed.", "on": "2026-10-24" },
     { "lens": "1", "issue": "none", "section": "docs/PRDs/PRD.md 2 (undo any action)", "reason": "Undo of a close is GitHub's own reopen; section 7 names GitHub's history the undo trail. Undo of a recorded answer is now on the ticket screen and backend stories.", "on": "2026-10-24" },
     { "lens": "2", "issue": "121", "section": "docs/PRDs/PRD.md 4.5 item 9", "reason": "A second grilling agent on one laptop is kept off a held ticket by a lock on that laptop; the PRD naming assignment as the protection is enough, the lock is documented in the store layout.", "on": "2026-10-29" },
-    { "lens": "2", "issue": "96", "section": "docs/PRDs/PRD.md 4.6 item 7", "reason": "One support agent per laptop, and the relay confirmation shown in the support chat instead of a note on the target tab, are fine design choices.", "on": "2026-10-29" }
+    { "lens": "2", "issue": "96", "section": "docs/PRDs/PRD.md 4.6 item 7", "reason": "One support agent per laptop, and the relay confirmation shown in the support chat instead of a note on the target tab, are fine design choices.", "on": "2026-10-29" },
+    { "lens": "2", "issue": "184", "section": "docs/PRDs/PRD.md 5 Screens, 6.3", "reason": "The Damaged badge on lists when one stored record is broken is fine without a PRD line.", "on": "2026-11-03" },
+    { "lens": "2", "issue": "190", "section": "docs/PRDs/PRD.md 4.2 item 6", "reason": "Trying a refused grilling agent again from Your projects, and Open the map on the failed Creating view, are fine without a PRD line.", "on": "2026-11-03" },
+    { "lens": "2", "issue": "189", "section": "docs/PRDs/PRD.md 4.7 item 1", "reason": "A fog removal outside the map-done rule starts no PRD writer; accepted by the owner on 2026-10-30.", "on": "2026-11-03" }
   ]
 }

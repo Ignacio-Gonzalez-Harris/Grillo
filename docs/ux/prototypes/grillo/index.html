@@ -520,10 +520,8 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
   box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow);
 }
 
-/* Install: what you need first, the unsigned warning, then the steps per system. */
+/* Install: what you need first, then the steps per system. */
 .dl-install { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
-.dl-warning { grid-column: 1 / -1; display: flex; gap: var(--space-3); align-items: flex-start; margin: 0; color: var(--color-text); border: var(--border-width) solid var(--color-glass-border); }
-.dl-warning .dl-icon { color: var(--color-warning); }
 .dl-card { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); }
 .dl-card-head { display: flex; align-items: center; gap: var(--space-3); }
 .dl-card .steps { margin: 0; font-size: var(--font-size-m); }
@@ -534,6 +532,7 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .dl-need .dl-icon { color: var(--color-accent); }
 
 .dl-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); color: var(--color-text-muted); }
+.dl-byline { font-size: var(--font-size-s); color: var(--color-text-muted); }
 .dl-footer .logo { width: var(--size-logo); height: var(--size-logo); }
 
 /* ---------- Phone width (breakpoint-narrow in tokens.css, measured on the page itself) ---------- */
@@ -2535,8 +2534,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">A visitor reads what Grillo is, downloads the latest installer for Windows or Mac, and follows the install and first-use steps. A public web page, not a version of Grillo.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>8 (Distribution, Signing) · 10 item 1 (the page is not a Grillo web app) · 4.1 step 1 · 9 (liquid glass theme)</dd>
-      <dt>Controls</dt><dd>Hero: the logo, the product name, a one-line pitch and the two download buttons, the largest controls on the page (Download for Windows, Download for Mac, each naming its installer file; the visitor's own system comes first and is filled, the other stays beside it), the latest release line (version and date) and All releases on GitHub; an illustrative glass mock of the app window (built from tokens, no screenshot). What Grillo is, as glass feature cards. How it works, a numbered flow of the how-to-use steps. Install: what you need first, the unsigned-installer warning note, the install steps per system. Behind the glass, a softly drifting glow made of token colours; it stands still when the visitor's system asks for reduced motion.</dd>
-      <dt>States</dt><dd>Pilot release (unsigned installers, warning note shown) · Signed release (company-wide, no warning)</dd>
+      <dt>Controls</dt><dd>Hero: the logo, the product name, a one-line pitch and the two download buttons, the largest controls on the page (Download for Windows, Download for Mac, each naming its installer file; the visitor's own system comes first and is filled, the other stays beside it), the latest release line (version and date) and All releases on GitHub; an illustrative glass mock of the app window (built from tokens, no screenshot). What Grillo is, as glass feature cards. How it works, a numbered flow of the how-to-use steps. Install: what you need first, the install steps per system. Behind the glass, a softly drifting glow made of token colours; it stands still when the visitor's system asks for reduced motion.</dd>
+      <dt>States</dt><dd>Pilot release (unsigned installers, "Run anyway" and "Open Anyway" steps shown) · Signed release (company-wide, no warning steps)</dd>
     </dl>
   </header>
   <div class="states">
@@ -2546,7 +2545,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     </div>
 
     <div class="state" data-state="pilot">
-      <p class="state-caption">State: Pilot release, unsigned installers (warning note shown), as a Windows visitor sees it: Download for Windows comes first and is filled; a Mac visitor sees Download for Mac there instead</p>
+      <p class="state-caption">State: Pilot release, unsigned installers ("Run anyway" and "Open Anyway" steps shown), as a Windows visitor sees it: Download for Windows comes first and is filled; a Mac visitor sees Download for Mac there instead</p>
       <div class="window glass">
         <div class="titlebar"><span class="badge">Browser</span><span>example-owner.github.io/grillo</span></div>
         <div class="dl-page">
@@ -2608,7 +2607,6 @@ Sample transcript line 2: a made-up reply.</textarea>
           <section class="dl-section" aria-labelledby="dl-install-pilot">
             <div class="dl-section-head"><p class="dl-eyebrow">Install</p><h2 id="dl-install-pilot">Get Grillo running</h2><p>Three things first, then a few clicks on Windows or Mac.</p></div>
             <div class="dl-install">
-            <div class="note warn dl-warning" data-warning="unsigned" role="note"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5"/><path d="M12 18h.01"/></svg><p class="m0">These pilot installers are not signed yet, so Windows and Mac each show one warning the first time. This is expected; the steps below say what to click.</p></div>
               <div class="dl-card glass">
                 <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span><h3>What you need first</h3></div>
                 <ul class="dl-need">
@@ -2628,13 +2626,13 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
           </section>
 
-          <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="spacer"></span><a href="#screen-download-site">All releases on GitHub</a></footer>
+          <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="dl-byline">By Ignacio Gonzalez</span><span class="spacer"></span><a href="#screen-download-site">All releases on GitHub</a></footer>
         </div>
       </div>
     </div>
 
     <div class="state" data-state="signed">
-      <p class="state-caption">State: Signed release (company-wide; no warning note), as a Mac visitor sees it: Download for Mac comes first and is filled</p>
+      <p class="state-caption">State: Signed release (company-wide; no warning steps), as a Mac visitor sees it: Download for Mac comes first and is filled</p>
       <div class="window glass">
         <div class="titlebar"><span class="badge">Browser</span><span>example-owner.github.io/grillo</span></div>
         <div class="dl-page">
@@ -2715,7 +2713,7 @@ Sample transcript line 2: a made-up reply.</textarea>
             </div>
           </section>
 
-          <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="spacer"></span><a href="#screen-download-site">All releases on GitHub</a></footer>
+          <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="dl-byline">By Ignacio Gonzalez</span><span class="spacer"></span><a href="#screen-download-site">All releases on GitHub</a></footer>
         </div>
       </div>
     </div>

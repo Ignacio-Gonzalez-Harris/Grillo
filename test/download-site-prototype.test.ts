@@ -74,11 +74,11 @@ describe('the download-site prototype screen', () => {
     for (const step of steps) expect(step.querySelector('svg')).not.toBeNull();
   });
 
-  it('shows the unsigned-installer warning and its install steps in the pilot state only', () => {
+  it('shows no warning note, and the unsigned install steps in the pilot state only', () => {
     const pilot = screenState('pilot');
     const signed = screenState('signed');
 
-    expect(pilot.querySelector('[data-warning="unsigned"]')).not.toBeNull();
+    expect(pilot.querySelector('[data-warning="unsigned"]')).toBeNull();
     expect(pilot.querySelectorAll('.unsigned-only').length).toBeGreaterThan(0);
     expect(signed.querySelector('[data-warning="unsigned"]')).toBeNull();
     expect(signed.querySelectorAll('.unsigned-only')).toHaveLength(0);
