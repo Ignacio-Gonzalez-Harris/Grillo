@@ -6,7 +6,7 @@
   Grillo (PRD section 10 item 1).
 
   data-repository: the repository the installers are published to (electron-builder.yml, publish).
-  data-installers: `unsigned` in the pilot (the warning note and warning steps show); the signing story sets `signed`.
+  data-installers: `unsigned` in the pilot (the "Run anyway" and "Open Anyway" steps show); the signing story sets `signed`.
   latest-release.js puts the visitor's own system's download button first and fills the release details in.
 -->
 <html lang="en" data-repository="Ignacio-Gonzalez-Harris/Grillo" data-installers="unsigned">
@@ -259,7 +259,7 @@ ol.steps li { margin-bottom: var(--space-1); }
   box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow);
 }
 
-/* Install: what you need first, the unsigned warning, then the steps per system. */
+/* Install: what you need first, then the steps per system. */
 .dl-install { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
 .dl-card { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); }
 .dl-card-head { display: flex; align-items: center; gap: var(--space-3); }

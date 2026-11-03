@@ -5,7 +5,7 @@
  * release yet) both buttons keep their static link to the releases page, so the page always works.
  *
  * The repository comes from the page's `data-repository` attribute and the signing state from `data-installers`
- * (`unsigned` in the pilot, `signed` once the signing story lands); the stylesheet shows or hides the warning parts.
+ * (`unsigned` in the pilot, `signed` once the signing story lands); the stylesheet shows or hides the warning steps.
  */
 
 /** The one error a malformed answer from GitHub becomes; the page catches it and keeps its static links. */

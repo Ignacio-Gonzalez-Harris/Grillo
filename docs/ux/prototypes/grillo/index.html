@@ -520,7 +520,7 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
   box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow);
 }
 
-/* Install: what you need first, the unsigned warning, then the steps per system. */
+/* Install: what you need first, then the steps per system. */
 .dl-install { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
 .dl-card { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); }
 .dl-card-head { display: flex; align-items: center; gap: var(--space-3); }
@@ -2534,8 +2534,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <p class="purpose">A visitor reads what Grillo is, downloads the latest installer for Windows or Mac, and follows the install and first-use steps. A public web page, not a version of Grillo.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>8 (Distribution, Signing) · 10 item 1 (the page is not a Grillo web app) · 4.1 step 1 · 9 (liquid glass theme)</dd>
-      <dt>Controls</dt><dd>Hero: the logo, the product name, a one-line pitch and the two download buttons, the largest controls on the page (Download for Windows, Download for Mac, each naming its installer file; the visitor's own system comes first and is filled, the other stays beside it), the latest release line (version and date) and All releases on GitHub; an illustrative glass mock of the app window (built from tokens, no screenshot). What Grillo is, as glass feature cards. How it works, a numbered flow of the how-to-use steps. Install: what you need first, the unsigned-installer warning note, the install steps per system. Behind the glass, a softly drifting glow made of token colours; it stands still when the visitor's system asks for reduced motion.</dd>
-      <dt>States</dt><dd>Pilot release (unsigned installers, warning note shown) · Signed release (company-wide, no warning)</dd>
+      <dt>Controls</dt><dd>Hero: the logo, the product name, a one-line pitch and the two download buttons, the largest controls on the page (Download for Windows, Download for Mac, each naming its installer file; the visitor's own system comes first and is filled, the other stays beside it), the latest release line (version and date) and All releases on GitHub; an illustrative glass mock of the app window (built from tokens, no screenshot). What Grillo is, as glass feature cards. How it works, a numbered flow of the how-to-use steps. Install: what you need first, the install steps per system. Behind the glass, a softly drifting glow made of token colours; it stands still when the visitor's system asks for reduced motion.</dd>
+      <dt>States</dt><dd>Pilot release (unsigned installers, "Run anyway" and "Open Anyway" steps shown) · Signed release (company-wide, no warning steps)</dd>
     </dl>
   </header>
   <div class="states">
@@ -2545,7 +2545,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     </div>
 
     <div class="state" data-state="pilot">
-      <p class="state-caption">State: Pilot release, unsigned installers (warning note shown), as a Windows visitor sees it: Download for Windows comes first and is filled; a Mac visitor sees Download for Mac there instead</p>
+      <p class="state-caption">State: Pilot release, unsigned installers ("Run anyway" and "Open Anyway" steps shown), as a Windows visitor sees it: Download for Windows comes first and is filled; a Mac visitor sees Download for Mac there instead</p>
       <div class="window glass">
         <div class="titlebar"><span class="badge">Browser</span><span>example-owner.github.io/grillo</span></div>
         <div class="dl-page">
@@ -2632,7 +2632,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     </div>
 
     <div class="state" data-state="signed">
-      <p class="state-caption">State: Signed release (company-wide; no warning note), as a Mac visitor sees it: Download for Mac comes first and is filled</p>
+      <p class="state-caption">State: Signed release (company-wide; no warning steps), as a Mac visitor sees it: Download for Mac comes first and is filled</p>
       <div class="window glass">
         <div class="titlebar"><span class="badge">Browser</span><span>example-owner.github.io/grillo</span></div>
         <div class="dl-page">

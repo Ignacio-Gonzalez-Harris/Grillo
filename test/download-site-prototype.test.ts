@@ -74,7 +74,7 @@ describe('the download-site prototype screen', () => {
     for (const step of steps) expect(step.querySelector('svg')).not.toBeNull();
   });
 
-  it('shows the unsigned-installer warning and its install steps in the pilot state only', () => {
+  it('shows no warning note, and the unsigned install steps in the pilot state only', () => {
     const pilot = screenState('pilot');
     const signed = screenState('signed');
 

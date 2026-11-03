@@ -175,7 +175,7 @@ describe('reading the latest release from GitHub', () => {
 });
 
 describe('the download page', () => {
-  it('before a release is read, sends both download buttons to the releases page and shows the unsigned warning', () => {
+  it('before a release is read, sends both download buttons to the releases page and shows the unsigned install steps', () => {
     const page = loadPage();
 
     expect(page.document.documentElement.getAttribute('data-repository')).toBe(REPOSITORY);
@@ -245,7 +245,7 @@ describe('the download page', () => {
     expect(page.document.querySelector('[data-warning="unsigned"]')).toBeNull();
   });
 
-  it('for a signed release, hides the warning note and the warning steps and says the installers are signed', () => {
+  it('for a signed release, hides the warning steps and says the installers are signed', () => {
     const page = loadPage('signed');
 
     showRelease(documentOf(page), readLatestRelease(sampleRelease(), REPOSITORY));
