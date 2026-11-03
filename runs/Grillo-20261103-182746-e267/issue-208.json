@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261103-182746-e267",
+  "issue": 208,
+  "title": "Download site: build the redesigned liquid-glass landing page on GitHub Pages",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-03T19:00:30Z",
+  "finished_at": "2026-11-03T19:20:30Z",
+  "outcome": "merged",
+  "pr": 210,
+  "summary": "The live download site on GitHub Pages now implements the redesigned prototype screen: own-system download button first (Windows, Mac, unknown), logo served as a file and published by the Pages workflow, reduced motion respected, phone width clean, release fallback kept; 17 new tests.",
+  "agents": [
+    {
+      "name": "dev-208",
+      "model": "opus",
+      "tokens_total": 197102
+    },
+    {
+      "name": "review-208",
+      "model": "opus",
+      "tokens_total": 134841
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 894,
+    "review_seconds": 279,
+    "ci_seconds": 382
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

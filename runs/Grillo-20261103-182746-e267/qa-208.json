@@ -1,0 +1,50 @@
+{
+  "run_id": "Grillo-20261103-182746-e267",
+  "issue": 208,
+  "title": "Download site: build the redesigned liquid-glass landing page on GitHub Pages",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 210,
+  "merged_at": "2026-11-03T19:19:34Z",
+  "merge_commit": "ad4a26aabb5253b74fffcb441be8ab6e5bbfacf6",
+  "seam": "site/",
+  "story": "I open Grillo's download page and it looks like a polished app landing page, with frosted glass panels over a softly moving green glow. The button for my own computer is the big filled one at the top, so I click it and get the installer. Further down I see what Grillo does, the five steps from idea to PRD, and exactly what to click if Windows warns me the first time. It replaces the plain text page that was live before.",
+  "checks": [
+    {
+      "key": "site/landing-desktop",
+      "criterion": "The page matches the redesigned prototype screen at desktop width",
+      "steps": "Serve site/ with any local static server and open it in a 1440 px wide browser.",
+      "expected": "Top to bottom: hero with 'Pilot release' badge, logo and 'Grillo', pitch, two large download buttons, release line with 'All releases on GitHub', glass window illustration with a floating question card; three feature cards; five numbered steps joined by a dashed line; install section with warning note, 'What you need first', Windows and Mac steps; footer."
+    },
+    {
+      "key": "site/landing-phone",
+      "criterion": "At phone width the page is one column with no sideways scrolling",
+      "steps": "Open the served page at 390 px wide.",
+      "expected": "Every section stacked in one column, steps listed vertically with a dashed line, both buttons full width, no horizontal scrollbar."
+    },
+    {
+      "key": "site/own-system-first",
+      "criterion": "The visitor's own system's download button comes first and is filled",
+      "steps": "Open the served page on Windows, then on a Mac, then on Linux.",
+      "expected": "Windows: 'Download for Windows' first and filled, Mac outlined. Mac: 'Download for Mac' first and filled. Linux: both filled, Windows first."
+    },
+    {
+      "key": "site/reduced-motion",
+      "criterion": "With reduced motion asked for, nothing moves",
+      "steps": "Turn on the operating system's reduce-motion setting, then open the served page.",
+      "expected": "The coloured glow behind the panels stays still; with the setting off it drifts slowly."
+    },
+    {
+      "key": "site/release-fallback",
+      "criterion": "The latest-release buttons and their fallback still work",
+      "steps": "Open the served page while no release exists and click each download button; repeat once a release exists.",
+      "expected": "No release: the release line says 'The latest release and its installers are on GitHub.' and each button opens the GitHub releases page. With a release: buttons download the .exe or .dmg directly and the badge reads 'Pilot release · version X'."
+    },
+    {
+      "key": "site/signed-state",
+      "criterion": "The signed release shows no warning",
+      "steps": "Set data-installers=\"signed\" on the page's html element and open the served page.",
+      "expected": "A green 'Signed for Windows and Mac' badge, no warning note, no 'Run anyway' or 'Open Anyway' steps, and the install subtitle 'Signed for Windows and Mac: no warning to click through.'"
+    }
+  ],
+  "no_qa_reason": null
+}
