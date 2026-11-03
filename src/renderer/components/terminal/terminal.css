@@ -12,4 +12,4 @@
 .agent-terminal .xterm-viewport, .agent-terminal .xterm-scrollable-element { background-color: transparent !important; }
 .agent-terminal .xterm-viewport { scrollbar-width: none; }
 .typebox { display: flex; gap: var(--space-2); align-items: center; }
-.typebox input { flex: 1; min-width: 0; font: inherit; font-family: var(--font-family-mono); color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); }
+.typebox input { flex: 1; min-width: 0; font-family: var(--font-family-mono); }

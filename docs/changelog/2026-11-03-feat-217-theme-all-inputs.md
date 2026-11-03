@@ -1,0 +1,1 @@
+Every form control in the app now takes its liquid glass look from one shared rule: radio buttons and plain checkboxes no longer show the system look on any screen, and an open dropdown list's fill and text use token colours, so the controls match wherever they appear.

@@ -33,7 +33,7 @@
 .chat-view .terminal .t-prompt { color: var(--color-terminal-prompt); }
 .chat-view .terminal .t-ok { color: var(--color-terminal-success); }
 .chat-view .msgbox { display: flex; gap: var(--space-2); align-items: center; }
-.chat-view .msgbox input { flex: 1; min-width: 0; font: inherit; color: var(--color-text); background: var(--color-input-fill); border: var(--border-width) solid var(--color-input-border); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); min-height: var(--size-control-height); }
+.chat-view .msgbox input { flex: 1; min-width: 0; }
 .chat-view > p { margin: 0; }
 
 @media (max-width: 760px) {
