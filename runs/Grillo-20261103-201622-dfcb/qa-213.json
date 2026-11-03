@@ -4,7 +4,7 @@
   "title": "Publish a new version automatically after a merge that changes the app",
   "login": "Ignacio-Gonzalez-Harris",
   "pr": 214,
-  "merged_at": "2026-11-03T22:00:00Z",
+  "merged_at": "2026-11-03T21:11:52Z",
   "merge_commit": "09e5cd66256d74a3a85eda08ed8ad18941f9a8d6",
   "seam": ".github/workflows/ and scripts/release/",
   "story": "Before this story a new version only appeared when a person published a release by hand. Now a merge that changes the app publishes the next version automatically once the checks pass on main, and docs-only merges publish nothing. It changes only the release pipeline, with nothing a user can drive inside the app.",
