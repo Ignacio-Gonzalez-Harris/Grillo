@@ -39,7 +39,7 @@ jobs:
       - name: collect the site
         run: |
           mkdir -p _site
-          cp site/index.html site/tokens.css site/latest-release.js _site/
+          cp site/index.html site/tokens.css site/latest-release.js site/grillo-logo.png _site/
 
       - uses: actions/configure-pages@v5
 

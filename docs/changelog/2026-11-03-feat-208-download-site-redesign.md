@@ -1,0 +1,1 @@
+The live download site now is the redesigned liquid glass landing page, with the visitor's own system's download button first and filled, so visitors meet a striking page and the right installer straight away.

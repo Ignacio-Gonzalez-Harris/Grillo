@@ -91,6 +91,17 @@ describe('Pages workflow', () => {
     expect(pages.permissions).toMatchObject({ pages: 'write', 'id-token': 'write' });
   });
 
+  it('publishes the page and every file it loads from beside itself, the logo included', () => {
+    const page = readFileSync(join(__dirname, '..', 'site', 'index.html'), 'utf8');
+    const references = [...page.matchAll(/\s(?:src|href)="([^"]+)"/g)].map((match) => match[1]);
+    const localFiles = references.filter((reference) => !/^(?:[a-z]+:|#|\/\/)/i.test(reference));
+    const steps = allSteps(pages);
+    const collect = steps[stepRunning(steps, 'site/')]?.run ?? '';
+
+    expect(localFiles).toContain('grillo-logo.png');
+    for (const file of ['index.html', ...localFiles]) expect(collect).toContain(`site/${file}`);
+  });
+
   it('skips the deploy until Pages is switched on with the PAGES_ENABLED repository variable', () => {
     for (const job of Object.values(pages.jobs)) {
       expect(job.if).toBe("${{ vars.PAGES_ENABLED == 'true' }}");
