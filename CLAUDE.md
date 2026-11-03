@@ -47,12 +47,6 @@ permissions, the do-not-build list, the demo as the acceptance bar, the build de
 - The pull request body carries the **evidence table** — what you did, what you expected, what you saw. There are no browser
   tests, so a green suite alone is *not* evidence that a screen works.
 - **Never merge on red or pending.** "No checks reported" is red. Poll for the check run first: GitHub can take four minutes.
-- **While the GitHub account has no Actions minutes (since 2026-10-28), this project counts as having no CI.** Both CI
-  jobs fail within seconds on billing, before any step runs; that is not a check result. The merge gate is then the
-  "no CI exists" path of `.claude/skills/dev-next/references/merge-and-ci.md`: the full gate (section 5) run on the
-  merged branch in the worktree, and a red local run is still red. Nothing is tested on Mac meanwhile, so say so in
-  every pull request's evidence table. A CI job that ran its steps and failed is red as ever. Delete this rule when
-  the minutes return.
 - **A story that changes a screen starts the app once** (`npm run dev`, on its `GRILLO_DEV_PORT`) and tries every
   control it changed before the first review: the test browser ignores some style rules, so a hidden or misplaced
   control can pass the suite. Record what was tried in the evidence table.
@@ -72,7 +66,7 @@ Mac.** Every agent uses exactly these commands. The scaffold has landed (issue #
 | Typecheck | `npm run typecheck` (`tsc --noEmit`) |
 | Lint | `npm run lint` (`eslint .`) |
 | Dev server | `npm run dev` (`electron-vite dev`, on the port `GRILLO_DEV_PORT` names) |
-| Installers | `npm run dist` (`electron-builder`) — only when a version is published, never in the gate |
+| Installers | `npm run dist` (`electron-builder`) — only for a version being published (automatically after a merge that changes the app, PRD section 8, CI), never in the gate |
 
 No database, no migrations, no seed: the store is GitHub Issues through `gh` behind one swappable interface (PRD
 section 6.3), and nothing central runs (PRD section 8, Hosting).
@@ -97,8 +91,8 @@ real `git` against a local bare repository behind a fake `gh`.
   match Electron's ABI). Tests: Vitest; test files sit beside the code they test as `*.test.ts`. Application code
   path: `src/` (`src/main/`, `src/preload/`, `src/renderer/`). Skip-count baseline: **0**.
 - **CI** is GitHub Actions (`.github/workflows/ci.yml`) on GitHub-hosted **Windows and Mac** runners: every pull
-  request runs the gate chain above on both; installers are built only when a version is published (PRD section 8,
-  CI). Each runner also runs orion's install check before the gate.
+  request runs the gate chain above on both; installers are built only for a version being published, which happens
+  automatically after a merge to `main` that changes the app (PRD section 8, CI). Each runner also runs orion's install check before the gate.
 - Kill a server **by process id, never by image or process name** — you will kill a teammate's.
 - **Never commit a secret.**
 

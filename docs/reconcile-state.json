@@ -1,5 +1,5 @@
 {
-  "reconciled_at": "5c78861200d0394517c4e6c5ba24c23b9e5867dc",
+  "reconciled_at": "09e5cd66256d74a3a85eda08ed8ad18941f9a8d6",
   "last_reconcile": "2026-11-03",
   "accepted": [
     { "lens": "2", "issue": "82", "section": "docs/PRDs/PRD.md 4.4 item 5", "reason": "Turning GitHub comments into answers by a Pick up button is fine: the PRD says the agent may do it.", "on": "2026-10-24" },
@@ -12,6 +12,8 @@
     { "lens": "2", "issue": "96", "section": "docs/PRDs/PRD.md 4.6 item 7", "reason": "One support agent per laptop, and the relay confirmation shown in the support chat instead of a note on the target tab, are fine design choices.", "on": "2026-10-29" },
     { "lens": "2", "issue": "184", "section": "docs/PRDs/PRD.md 5 Screens, 6.3", "reason": "The Damaged badge on lists when one stored record is broken is fine without a PRD line.", "on": "2026-11-03" },
     { "lens": "2", "issue": "190", "section": "docs/PRDs/PRD.md 4.2 item 6", "reason": "Trying a refused grilling agent again from Your projects, and Open the map on the failed Creating view, are fine without a PRD line.", "on": "2026-11-03" },
-    { "lens": "2", "issue": "189", "section": "docs/PRDs/PRD.md 4.7 item 1", "reason": "A fog removal outside the map-done rule starts no PRD writer; accepted by the owner on 2026-10-30.", "on": "2026-11-03" }
+    { "lens": "2", "issue": "189", "section": "docs/PRDs/PRD.md 4.7 item 1", "reason": "A fog removal outside the map-done rule starts no PRD writer; accepted by the owner on 2026-10-30.", "on": "2026-11-03" },
+    { "lens": "2", "issue": "213", "section": "docs/PRDs/PRD.md 8 CI", "reason": "The exact list of app files, the failed-build rule and the release notes rule live in the run-book and the ticket, not the PRD.", "on": "2026-11-03" },
+    { "lens": "2", "issue": "213", "section": "docs/PRDs/PRD.md 11 and 12", "reason": "No pilot or demo check holds back an automatic release; the owner chose automatic releases knowingly.", "on": "2026-11-03" }
   ]
 }

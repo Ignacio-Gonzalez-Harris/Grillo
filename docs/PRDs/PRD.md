@@ -258,7 +258,7 @@ GitHub is the single truth; each member's Grillo reads it on demand. No live syn
 | CI | GitHub Actions on GitHub-hosted **Windows and Mac** runners: every pull request runs build, lint and tests on both; installers are built only for a version being published. A version is published automatically after a merge to `main` that changes the app, once CI on `main` is green: the latest release's last number plus one, or a higher major or minor set in `package.json`; merges that change only docs, agent rules, the download site or the workflows publish nothing (owner's decision, 2026-11-03) `[T39]`. |
 | Hosting | Nothing central: no Grillo server or database `[T10, T43]`. |
 
-Risks carried from the decisions: code written as an employee may belong to the company, to check before the repository goes public `[T42]`; company IT may block unsigned apps on some laptops (signing not planned, owner's decision, 2026-11-03); an unsigned Mac update may need "Open Anyway" and the audio permission again `[T39]`; `node-pty` must match Electron's native ABI `[T36]`; live delivery uses more of each member's Claude usage than one chunk at "use it" `[T22]`.
+Risks carried from the decisions: code written as an employee may belong to the company: the check ran on 2026-11-03 and most commits carry the owner's work email; the owner went ahead and made the repository public, and no written employer clearance is recorded `[T42]`; company IT may block unsigned apps on some laptops (signing not planned, owner's decision, 2026-11-03); an unsigned Mac update may need "Open Anyway" and the audio permission again `[T39]`; `node-pty` must match Electron's native ABI `[T36]`; live delivery uses more of each member's Claude usage than one chunk at "use it" `[T22]`.
 
 ---
 
