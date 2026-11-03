@@ -1,5 +1,5 @@
 import type { AgentId, AgentInfo } from '../../shared/agents';
-import { APP_TABS, GENERIC_AGENT_SCREEN, PROJECT_TABS, type FixedTab } from './navigation';
+import { GENERIC_AGENT_SCREEN, PROJECT_TAB, PROJECT_TABS, SETUP_TAB, type FixedTab } from './navigation';
 
 /** Which tab the member is on: a fixed tab's screen, an agent's tab, or "+". */
 export type ActiveTab = { screenId: string } | { agentId: AgentId };
@@ -37,8 +37,9 @@ function markActive(el: HTMLElement, active: boolean): void {
 }
 
 /**
- * The project tab bar of the prototype: Setup and Project, then Map, Tickets and PRD, then one tab per running agent
- * (its name, the waiting dot and an empty header slot), then "+". Agent tabs are kept across updates, so whatever a
+ * The project tab bar of the prototype: Project, then Map, Tickets and PRD, then one tab per running agent (its name,
+ * the waiting dot and an empty header slot), then "+", all in a strip that scrolls; then Setup at the far right, outside
+ * the strip, so it stays in reach however many agent tabs are open. Agent tabs are kept across updates, so whatever a
  * later story mounts in a tab's header stays there while the agent runs. The support agent's tab comes first (prototype
  * screen-support-agent-tab). A tab is moved only when it is out of place, as moving one takes keyboard focus off it.
  */
@@ -68,7 +69,10 @@ export function createTabBar(handlers: TabBarHandlers): TabBar {
   add.setAttribute('aria-label', 'Open a generic agent');
   add.addEventListener('click', () => handlers.openGenericAgent());
 
-  el.append(...APP_TABS.map(fixedTab), separator(), ...PROJECT_TABS.map(fixedTab), separator(), agentStrip, add);
+  const strip = document.createElement('div');
+  strip.className = 'tab-strip';
+  strip.append(fixedTab(PROJECT_TAB), separator(), ...PROJECT_TABS.map(fixedTab), separator(), agentStrip, add);
+  el.append(strip, separator(), fixedTab(SETUP_TAB));
 
   const agentTabs = new Map<AgentId, AgentTab>();
   let active: ActiveTab | undefined;

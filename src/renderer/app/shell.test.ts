@@ -72,10 +72,11 @@ afterEach(() => {
 });
 
 describe('app shell', () => {
-  it('shows the fixed navigation in the prototype order and opens Setup first', () => {
+  it('shows the fixed navigation in the prototype order and opens Setup first', async () => {
     const root = start(registry(), fakeGrillo().grillo);
+    await flush();
 
-    expect(tabLabels(root)).toEqual(['Setup', 'Project', 'Map', 'Tickets', 'PRD', '+']);
+    expect(tabLabels(root)).toEqual(['Project', 'Map', 'Tickets', 'PRD', '+', 'Setup']);
     expect(root.querySelector('.window')?.classList.contains('glass')).toBe(true);
     expect(activeTab(root)).toBe('Setup');
     expect(titlebarContext(root)).toBe('Setup');
@@ -91,14 +92,15 @@ describe('app shell', () => {
     expect(logo?.nextElementSibling?.textContent).toBe('Grillo');
   });
 
-  it('opens the registered screen of a fixed tab and closes the screen it leaves', () => {
+  it('opens the registered screen of a fixed tab and closes the screen it leaves', async () => {
     const setup = screen('setup-check', 'Setup check');
     const cleanup = vi.fn();
     setup.mount.mockReturnValue(cleanup);
     const map = screen('map', 'The map');
     const root = start(registry(setup, map), fakeGrillo().grillo);
+    await flush();
 
-    (root.querySelector('nav') as HTMLElement).querySelectorAll<HTMLElement>('.tab')[2].click();
+    (root.querySelector('nav') as HTMLElement).querySelectorAll<HTMLElement>('.tab')[1].click();
 
     expect(cleanup).toHaveBeenCalledTimes(1);
     expect(map.mount).toHaveBeenCalledTimes(1);
@@ -125,7 +127,7 @@ describe('app shell', () => {
     const root = start(registry(), grillo);
     await flush();
 
-    expect(tabLabels(root)).toEqual(['Setup', 'Project', 'Map', 'Tickets', 'PRD', 'Grilling · Map', 'Task · Sample ticket 3', '+']);
+    expect(tabLabels(root)).toEqual(['Project', 'Map', 'Tickets', 'PRD', 'Grilling · Map', 'Task · Sample ticket 3', '+', 'Setup']);
     expect(agentTab(root, 'a1')?.querySelector('.dot')?.hasAttribute('hidden')).toBe(false);
     expect(agentTab(root, 'a2')?.querySelector('.dot')?.hasAttribute('hidden')).toBe(true);
     const header = shell?.agentTabHeader('a1');
@@ -134,7 +136,7 @@ describe('app shell', () => {
 
     emit('agents:list-changed', [agent('a3', 'Generic · Sample note'), agent('a1', 'Grilling · Sample ticket 4', false)]);
 
-    expect(tabLabels(root)).toEqual(['Setup', 'Project', 'Map', 'Tickets', 'PRD', 'Generic · Sample note', 'Grilling · Sample ticket 4', '+']);
+    expect(tabLabels(root)).toEqual(['Project', 'Map', 'Tickets', 'PRD', 'Generic · Sample note', 'Grilling · Sample ticket 4', '+', 'Setup']);
     expect(agentTab(root, 'a2')).toBeNull();
     expect(shell?.agentTabHeader('a2')).toBeUndefined();
     expect(shell?.agentTabHeader('a1')).toBe(header);

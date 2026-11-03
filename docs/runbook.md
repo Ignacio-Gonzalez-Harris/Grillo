@@ -7,8 +7,10 @@ How to use each part of Grillo, one section per feature. Each feature's story ed
 Every screen sits in one window: the title bar ("Grillo", where you are and the project you are in), the tab bar,
 and the screen below it.
 
-- **The tab bar**, left to right: Setup and Project; then Map, Tickets and PRD; then one tab per running agent;
-  then "+". Grillo opens on Setup. A screen whose own story has not landed yet says "<name> is not built yet."
+- **The tab bar**, left to right: Project; then Map, Tickets and PRD; then one tab per running agent; then "+"; and
+  Setup at the far right. With many agent tabs the tabs scroll sideways, but Setup stays where it is, always in reach.
+  A screen whose own story has not landed yet says "<name> is not built yet."
+- **Which screen Grillo opens on** is explained under Setup, Where Grillo opens, below.
 - **The current project** is the one you opened last in this window: opening a project (from the Project tab, a
   link such as Open the map, or a meeting agent's tab) makes it current. The title bar names it (`<owner>/<repo>`),
   and Map, Tickets, PRD and "+" open on it, so with two projects open you never see one project's map, tickets or
@@ -46,8 +48,20 @@ and the screen below it.
 
 ## Setup
 
-Grillo opens on the setup check. It checks the two tools every member needs and reads who the member is on GitHub.
-It holds no credentials: it only asks each tool about its own sign-in.
+The first time, Grillo opens on the setup check. It checks the two tools every member needs and reads who the member
+is on GitHub. It holds no credentials: it only asks each tool about its own sign-in.
+
+### Where Grillo opens
+
+- **First launch:** the setup check. Pressing Continue with everything green stores `setupFinished` in the app data
+  folder's `settings.json`. A setting that cannot be read, or holds anything but `true`, counts as a first launch, and
+  so does the first start of a member who used Grillo before this setting existed.
+- **Every later start** runs the same checks while the screen says "Checking your setup…". Everything passing opens
+  Project. Anything failing opens the setup check, which shows what is wrong; that includes a check that itself fails.
+  The setting stays stored, so the next passing start opens Project again.
+- **A tab you press while the check runs** stays open: the check's answer does not move you.
+- **To see the setup check again**, press Setup at the far right of the tab bar. It behaves as on a first launch.
+- **To start over as a first launch**, close Grillo and delete `setupFinished` from `settings.json`.
 
 ### The setup check screen
 
@@ -59,7 +73,8 @@ It holds no credentials: it only asks each tool about its own sign-in.
 - **Your GitHub account** shows your login, name and email once gh is signed in. No email means gh may not read it
   yet: the row shows `gh auth refresh -h github.com -s user:email`; run it once in a terminal, approve it in your
   browser, then press "Check again" and Grillo reads your email again. Sign-in itself stays `gh auth login --web`.
-- **Continue** opens the Project screen. It unlocks when every row is green; a missing email does not lock it.
+- **Continue** opens the Project screen and remembers that setup is finished (see Where Grillo opens). It unlocks when
+  every row is green; a missing email does not lock it.
 - **The update card** appears below the rows once the first check has finished. It always holds the two update
   settings: the app updates switch ("Install automatically on the next restart") and speech model updates
   (Automatic, Ask or Never). Both are saved at once in the app data folder's `settings.json`, by the updates and
@@ -993,6 +1008,9 @@ never opens a separate system window: the offer is the update card, drawn inside
 - **Once per version.** The pop-up opens once for each new version found since Grillo started. A version first
   offered while the setup screen was open does not pop up again on the other screens. The pop-up stays open while the
   update downloads (with its percent) and once it is ready ("Restart and install").
+- **Found before the window was ready.** Grillo may find a version before its window is listening. So once the first
+  screen is open, the window also asks for the current offer: a member who starts on Project still gets the pop-up, and
+  a member who lands on the setup check sees it on the card.
 
 - **Download and install** downloads the new version, then closes Grillo, installs it and opens it again.
 - **Later** hides that version until Grillo starts again, and closes the pop-up; a newer version is still offered.

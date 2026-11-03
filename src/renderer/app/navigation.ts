@@ -8,11 +8,20 @@ export interface FixedTab {
   label: string;
 }
 
-/** Outside a project: the setup check and the project screen. */
-export const APP_TABS: readonly FixedTab[] = [
-  { screenId: 'setup-check', label: 'Setup' },
-  { screenId: 'project-creation', label: 'Project' },
-];
+/** The setup check, which shows the update offer itself (PRD section 4.1 item 4). */
+export const SETUP_CHECK_SCREEN = 'setup-check';
+
+/** The project screen, where a start with setup done opens and where the setup check's Continue goes. */
+export const PROJECT_SCREEN = 'project-creation';
+
+/** The first tab on the left of the tab bar. */
+export const PROJECT_TAB: FixedTab = { screenId: PROJECT_SCREEN, label: 'Project' };
+
+/** The last tab on the right of the tab bar, in reach however many agent tabs are open. */
+export const SETUP_TAB: FixedTab = { screenId: SETUP_CHECK_SCREEN, label: 'Setup' };
+
+/** Outside a project: the project screen and the setup check. */
+export const APP_TABS: readonly FixedTab[] = [PROJECT_TAB, SETUP_TAB];
 
 /** Inside a project, as the prototype's tab bar shows them, before the agent tabs. */
 export const PROJECT_TABS: readonly FixedTab[] = [
@@ -24,10 +33,7 @@ export const PROJECT_TABS: readonly FixedTab[] = [
 /** A project as screens are opened with it: `{ project: '<owner>/<repo>' }`. */
 export const PROJECT_ID = /^[^/\s]+\/[^/\s]+$/;
 
-/** The setup check, which shows the update offer itself (PRD section 4.1 item 4). */
-export const SETUP_CHECK_SCREEN = 'setup-check';
-
-/** The screen the shell opens first. */
+/** The screen the shell opens first on a first launch, and on any start whose checks do not all pass. */
 export const START_SCREEN = SETUP_CHECK_SCREEN;
 
 /** The screen an agent's tab opens, with `{ agentId }`. */

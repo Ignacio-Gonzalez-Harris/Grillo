@@ -3,16 +3,17 @@
  * `gh` installed and signed in, who the member is on GitHub, what to do about anything missing, and the update card.
  */
 import './setup-check.css';
-import type { IdentityResult } from '../../../shared/tools';
 import { button } from '../../theme/components';
+import { PROJECT_SCREEN } from '../../app/navigation';
 import type { ShellContext } from '../../app/screens';
-import { readIdentity, readToolsReport } from './answers';
 import { el } from './dom';
 import { anyToolMissing, isAllGreen, offersCheckAgain, renderRequirements, type CheckView } from './requirements';
+import { runSetupCheck } from './run-check';
+import { storeSetupFinished } from './setup-finished';
 import { createUpdateCard, type UpdateCard } from './update-card';
 
 /** Where Continue goes once every row is green. */
-export const NEXT_SCREEN = 'project-creation';
+export const NEXT_SCREEN = PROJECT_SCREEN;
 
 const TOOLS_MISSING_NOTE =
   'Grillo needs two tools on this laptop before it can start. Follow the steps below, then press Check again.';
@@ -29,6 +30,11 @@ export function mountSetupCheck(container: HTMLElement, shell: ShellContext): ()
   let cardShown = false;
   const card: UpdateCard = createUpdateCard(grillo);
 
+  function finishSetup(): void {
+    void storeSetupFinished(grillo);
+    shell.navigate(NEXT_SCREEN);
+  }
+
   function actionRow(): HTMLElement {
     const green = isAllGreen(view);
     const parts: HTMLElement[] = [];
@@ -38,7 +44,7 @@ export function mountSetupCheck(container: HTMLElement, shell: ShellContext): ()
     if (!green && view.phase !== 'checking') {
       parts.push(el('span', 'reason', ['Continue unlocks when every row is green.']));
     }
-    parts.push(button('Continue', { variant: 'primary', disabled: !green, onClick: () => shell.navigate(NEXT_SCREEN) }));
+    parts.push(button('Continue', { variant: 'primary', disabled: !green, onClick: finishSetup }));
     return el('div', 'row', parts);
   }
 
@@ -52,28 +58,10 @@ export function mountSetupCheck(container: HTMLElement, shell: ShellContext): ()
     root.replaceChildren(...parts);
   }
 
-  async function readAccount(ghReady: boolean): Promise<IdentityResult | null> {
-    if (!ghReady) return null;
-    try {
-      return readIdentity(await grillo.invoke('tools:identity', undefined));
-    } catch (error) {
-      console.warn('Grillo could not read the GitHub identity.', error);
-      return { ok: false, reason: 'failed' };
-    }
-  }
-
   async function check(force: boolean): Promise<void> {
     view = { phase: 'checking' };
     render();
-    let next: CheckView;
-    try {
-      const report = readToolsReport(await grillo.invoke('tools:check', { force }));
-      const identity = await readAccount(report.gh.installed && report.gh.signedIn);
-      next = { phase: 'done', report, identity };
-    } catch (error) {
-      console.warn('Grillo could not check the tools.', error);
-      next = { phase: 'failed' };
-    }
+    const next = await runSetupCheck(grillo, force);
     if (disposed) return;
     view = next;
     cardShown = true;

@@ -86,6 +86,7 @@ Not app words: cluster, team, business unit, expert, administrator `[T5, T29]`.
 2. Grillo checks that Claude Code and `gh` are installed and signed in. If not, it guides the install and the one-time sign-in, or at minimum says what must be set up `[T8, T21]`.
 3. The member signs in with their GitHub account; Grillo shows their GitHub login, name and email `[T31]`.
 4. Grillo checks for a newer version at start and while open, and offers to download it; an auto-update setting installs it on the next restart instead (Windows only: unsigned, Mac members install updates by hand, section 8) `[T39, T42]`.
+5. The first launch opens Setup. Once the member has pressed Continue with everything green, every later start runs the same checks behind a calm "checking" state and opens Project if all pass, or Setup if anything fails; the Setup tab sits at the far right of the tab bar and can be opened at any time (owner's decision, 2026-11-03).
 
 ### 4.2 Starting a project
 
