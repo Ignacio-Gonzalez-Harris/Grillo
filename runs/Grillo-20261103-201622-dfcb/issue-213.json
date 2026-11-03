@@ -1,0 +1,35 @@
+{
+  "run_id": "Grillo-20261103-201622-dfcb",
+  "issue": 213,
+  "title": "Publish a new version automatically after a merge that changes the app",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-03T20:16:22Z",
+  "finished_at": "2026-11-03T21:12:33Z",
+  "outcome": "merged",
+  "pr": 214,
+  "summary": "After a merge to main that changes the app and passes CI, a workflow works out the next version, builds both installers on a draft release and publishes it only if both builds pass; merges that touch only docs, agent rules or the site publish nothing.",
+  "agents": [
+    { "name": "dev-213", "model": "opus", "tokens_total": 180657 },
+    { "name": "review-213-r1", "model": "opus", "tokens_total": 151339 },
+    { "name": "review-213-r2", "model": "opus", "tokens_total": 175463 },
+    { "name": "review-213-r3", "model": "opus", "tokens_total": 151846 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 990, "review_seconds": 2200, "ci_seconds": 900 },
+  "rounds": { "review": 3, "ci": 3 },
+  "friction": [
+    "The CLAUDE.md rule that the account has no Actions minutes is out of date since the repository went public: the dev agent read it and reported that automatic releases could not run, and the claim reached the pull request body and cost a review finding"
+  ],
+  "lessons_learned": [
+    "A workflow step on a Windows runner with no shell set runs under PowerShell, so a failing command can end the step green: set bash with pipefail for the whole workflow",
+    "git diff --name-only hides a file moved out of a watched folder and quotes non-ASCII names: use --no-renames -z when the answer decides something"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": ".github/workflows/",
+      "what": "The draft, build and publish path of the automatic release has never run on GitHub; a mistake there first shows on the first app merge, as a red run with nothing offered to users",
+      "why": "It can only run from main, after merge",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
