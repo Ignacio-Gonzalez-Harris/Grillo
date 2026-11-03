@@ -15,7 +15,7 @@ export interface RepositoryInfo {
   /** The branch the Grillo folder lives on: the repository's default ("main"). */
   defaultBranch: string;
   permission: Permission;
-  /** True for a repository Grillo created: every member invited to it becomes an admin (PRD section 7). */
+  /** True for a repository Grillo created: in an organisation, every member invited to it becomes an admin (PRD section 7). */
   createdByGrillo: boolean;
   /** False only when GitHub says it is private: anyone can comment on a public repository, so the doubt counts as public. */
   isPublic: boolean;
