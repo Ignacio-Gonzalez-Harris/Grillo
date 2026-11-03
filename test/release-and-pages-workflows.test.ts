@@ -11,6 +11,7 @@ interface Step {
   if?: string;
   uses?: string;
   run?: string;
+  shell?: string;
   with?: Record<string, unknown>;
   env?: Record<string, unknown>;
 }
@@ -32,6 +33,7 @@ interface Workflow {
   on: Record<string, unknown>;
   permissions?: Record<string, string>;
   concurrency?: { group: string; 'cancel-in-progress': boolean };
+  defaults?: { run?: { shell?: string } };
   jobs: Record<string, Job>;
 }
 
@@ -110,16 +112,29 @@ describe('auto-release workflow', () => {
   const { decide, draft, installers, publish } = autoRelease.jobs;
   const discard = autoRelease.jobs['discard-draft'];
 
+  const canRelease = [
+    "github.event.workflow_run.conclusion == 'success'",
+    "github.event.workflow_run.event == 'push'",
+    "github.event.workflow_run.head_branch == 'main'",
+  ];
+
   it('runs only after CI succeeded on a push to main, one run at a time and never cancelled half-way', () => {
     expect(autoRelease.on).toEqual({ workflow_run: { workflows: ['ci'], types: ['completed'], branches: ['main'] } });
-    for (const condition of [
-      "github.event.workflow_run.conclusion == 'success'",
-      "github.event.workflow_run.event == 'push'",
-      "github.event.workflow_run.head_branch == 'main'",
-    ]) {
-      expect(decide.if).toContain(condition);
-    }
-    expect(autoRelease.concurrency).toEqual({ group: 'auto-release', 'cancel-in-progress': false });
+    for (const condition of canRelease) expect(decide.if).toContain(condition);
+    expect(autoRelease.concurrency?.['cancel-in-progress']).toBe(false);
+  });
+
+  it('queues only runs that can release: any other run gets a group of its own and never replaces a waiting one', () => {
+    const group = autoRelease.concurrency?.group ?? '';
+
+    expect(group).toMatch(/^\$\{\{ .* \}\}$/s);
+    for (const condition of canRelease) expect(group).toContain(condition);
+    expect(group).toContain("&& 'auto-release' || format('auto-release-skipped-{0}', github.run_id)");
+  });
+
+  it('runs every step under an explicit bash, so a failing command in a pipe fails the step', () => {
+    expect(autoRelease.defaults).toEqual({ run: { shell: 'bash' } });
+    for (const step of allSteps(autoRelease)) expect(step.shell).toBeUndefined();
   });
 
   it('lets the release script decide on the commit CI passed, and drafts only when it says release', () => {

@@ -23,14 +23,26 @@ on:
     types: [completed]
     branches: [main]
 
-# One run at a time, never cancelled half-way: two runs must not draft the same version. A run still waiting is
-# replaced by a newer one, which is fine: the newer commit holds the waiting one's changes too.
+# One release run at a time, never cancelled half-way: two runs must not draft the same version. A release run still
+# waiting is replaced by a newer one, which is fine: the newer commit holds the waiting one's changes too. Only a run
+# that can release joins the group (the same three conditions as `decide`); any other run gets a group of its own, so
+# a failed CI run or a pull request's never replaces a waiting release.
 concurrency:
-  group: auto-release
+  group: >-
+    ${{ github.event.workflow_run.conclusion == 'success' &&
+    github.event.workflow_run.event == 'push' &&
+    github.event.workflow_run.head_branch == 'main' &&
+    'auto-release' || format('auto-release-skipped-{0}', github.run_id) }}
   cancel-in-progress: false
 
 permissions:
   contents: read
+
+# An explicit bash runs every step with `-eo pipefail`: without it a failing command piped into another (the release
+# script into `tee`) would end the step green, and a broken run would look like "no app change".
+defaults:
+  run:
+    shell: bash
 
 jobs:
   decide:

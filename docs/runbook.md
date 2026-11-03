@@ -1060,14 +1060,18 @@ that changes the app; the download site is published from `main`.
     request. Changing `package.json` counts as an app change, so the merge publishes `0.2.0` itself, and later
     merges count on from it (`0.2.1`).
   - **Stopping automatic releases:** under Actions, open the `auto-release` workflow and choose "Disable workflow";
-    "Enable workflow" turns it back on. The manual paths below keep working while it is off.
+    "Enable workflow" turns it back on. Use the paths by hand below only while it is off.
   - **Checking what it would do without releasing:** `node scripts/release/next-release.mts <commit>` (with `gh`
     signed in) prints the version it would publish or why it would not; it only reads, so it is safe to run.
-- **Publishing a version by hand** still works. Set `version` in `package.json` on `main`, then publish a GitHub
-  release whose tag is that version with a leading `v` (for example `v1.0.0`). The `release` workflow then runs the
-  full gate and `npm run dist` on a Windows and a Mac runner, and attaches the installers, `latest.yml`,
-  `latest-mac.yml` and their blockmaps to the release (installed apps read those to offer the update). A tag that
-  does not match the version fails the run before anything is built. The pilot installers are unsigned.
+- **Publishing a version by hand** is only for while the `auto-release` workflow is disabled: with it on, the pull
+  request that sets the version is an app change and publishes it by itself, and a release made by hand collides
+  with it. `package.json` on `main` lags behind the released versions (it stays at the version a person last set),
+  so first look up the latest release on the Releases page and pick a higher version. Set that `version` in
+  `package.json` in a pull request and merge it, then publish a GitHub release whose tag is that version with a
+  leading `v` (for example `v1.0.0`). The `release` workflow then runs the full gate and `npm run dist` on a
+  Windows and a Mac runner, and attaches the installers, `latest.yml`, `latest-mac.yml` and their blockmaps
+  to the release (installed apps read those to offer the update). A tag that does not match the version fails the
+  run before anything is built. The pilot installers are unsigned.
 - **What the installers hold.**
   - **Windows:** one x64 installer (`Grillo Setup <version>.exe`, about 114 MB at version 0.1.0).
   - **Mac:** one universal app (Apple silicon and Intel in one file), so every Mac downloads the same
@@ -1079,8 +1083,10 @@ that changes the app; the download site is published from `main`.
   `.zip`, into `dist/`). Nothing is compiled from source: node-pty and the speech engine ship ready-made binaries
   that Electron loads as they are, so no Visual Studio or Xcode setup is needed. Use the Node version in `.nvmrc`
   (24.22.2, a long-term-support release).
-- **Trying it first on a draft release** (nothing is offered to installed apps until it is published):
-  1. Create a draft release with the tag `v<version from package.json>`; do not publish it.
+- **Trying it first on a draft release** (also only while `auto-release` is disabled; nothing is offered to
+  installed apps until it is published):
+  1. Set a version higher than the latest release in `package.json` on `main`, as above, then create a draft
+     release with the tag `v<that version>`; do not publish it.
   2. Under Actions, run the `release` workflow by hand from `main`, giving that tag.
   3. Check that both runs pass and that the draft now lists the `.exe`, `.dmg`, `.zip`, both `latest*.yml` files
      and the blockmaps; then publish the draft or delete it.
