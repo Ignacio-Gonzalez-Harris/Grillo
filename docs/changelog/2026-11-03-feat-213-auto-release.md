@@ -1,0 +1,1 @@
+A version of Grillo is now published automatically after a merge to main that changes the app, once CI is green, so installed apps are offered every app change without anyone cutting a release by hand.

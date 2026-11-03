@@ -1,0 +1,139 @@
+# Publishes a new version after a merge to main that changes the app, once CI on that commit is green (issue 213; PRD
+# section 8, CI and Distribution). Merges that change only docs, agent rules, the download site, the UX prototype or
+# the workflows publish nothing.
+#
+# 1. decide: scripts/release/next-release.mts compares the commit CI passed with the latest published release's tag.
+#    Only src/, resources/, build/, package.json, package-lock.json, electron-builder.yml, electron.vite.config.mts
+#    and .nvmrc count as the app. The version is the latest release's last number plus one, or package.json's when a
+#    person raised its major or minor.
+# 2. draft: a draft release with that tag, aimed at the commit CI passed, notes generated from the merged pull requests.
+# 3. installers: release.yml, called with the tag and version, builds and uploads both installers and the update files.
+#    It writes the version into package.json on its runners only: no workflow ever commits or pushes to main.
+# 4. publish: the draft goes public only when both the Windows and the Mac build are green. A release published with
+#    this workflow's own token starts no other workflow, so release.yml does not run a second time.
+# 5. discard-draft: any failure deletes the draft, so nobody is offered a half-built version, and the run stays red;
+#    the next app change tries the same number again.
+#
+# To stop automatic releases, disable this workflow under Actions (docs/runbook.md).
+name: auto-release
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+# One run at a time, never cancelled half-way: two runs must not draft the same version. A run still waiting is
+# replaced by a newer one, which is fine: the newer commit holds the waiting one's changes too.
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    name: decide
+    # Only a green CI run on a push to main; a pull request's CI run never releases.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.next.outputs.release }}
+      version: ${{ steps.next.outputs.version }}
+      tag: ${{ steps.next.outputs.tag }}
+    steps:
+      # The whole history and its tags, so the script can compare the commit with the latest release's tag.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - name: next version
+        id: next
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: node scripts/release/next-release.mts "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  draft:
+    name: draft
+    needs: decide
+    if: needs.decide.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # A draft left by a run that was stopped before it could clean up would hold the same tag; it goes first.
+      - name: draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.decide.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.decide.outputs.version }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft 2>/dev/null)" = "true" ]; then
+            gh release delete "$RELEASE_TAG" --yes
+          fi
+          gh release create "$RELEASE_TAG" --draft --target "$HEAD_SHA" --title "Grillo $RELEASE_VERSION" \
+            --generate-notes
+
+  installers:
+    name: installers
+    needs: [decide, draft]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.decide.outputs.tag }}
+      version: ${{ needs.decide.outputs.version }}
+      ref: ${{ github.event.workflow_run.head_sha }}
+
+  publish:
+    name: publish
+    needs: [decide, installers]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: publish the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.decide.outputs.tag }}
+        run: gh release edit "$RELEASE_TAG" --draft=false --latest
+
+  discard-draft:
+    name: discard draft
+    needs: [decide, draft, installers, publish]
+    # Runs after a failed or cancelled build or publish, never after a skipped run (no app change).
+    if: >-
+      always() &&
+      needs.draft.result == 'success' &&
+      (needs.installers.result != 'success' || needs.publish.result != 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Only a release that is still a draft is deleted: a published one is never taken back.
+      - name: delete the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.decide.outputs.tag }}
+        run: |
+          if [ "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = "true" ]; then
+            gh release delete "$RELEASE_TAG" --yes
+            echo "::error::The build of $RELEASE_TAG failed; its draft release was deleted and nothing was published."
+          fi
+          exit 1

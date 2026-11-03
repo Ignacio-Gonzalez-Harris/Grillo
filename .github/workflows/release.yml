@@ -6,6 +6,11 @@
 #
 # `workflow_dispatch` lets a developer try the workflow on a draft release before publishing it: create the draft with
 # its tag, then run this workflow by hand from the branch to build, giving that tag (steps in docs/runbook.md).
+#
+# `workflow_call` is how the auto-release workflow builds a version it has just drafted after a merge to main (issue
+# 213). A release that workflow publishes with its own token starts no other workflow, so it calls this one before
+# publishing, with the draft's tag, the version, and the commit CI passed. The version is written into package.json
+# on the runner only, before the tag check; nothing is committed.
 name: release
 
 on:
@@ -15,6 +20,20 @@ on:
     inputs:
       tag:
         description: Tag of the (draft) release to attach the installers to, for example v1.0.0
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag of the draft release to attach the installers to, for example v0.1.1
+        required: true
+        type: string
+      version:
+        description: Version to build, written into package.json on the runner only, for example 0.1.1
+        required: true
+        type: string
+      ref:
+        description: Commit to build (the one CI passed on main)
         required: true
         type: string
 
@@ -34,14 +53,25 @@ jobs:
     steps:
       # The write token must not sit in .git/config while dependency scripts run (npm ci, npm test, npm run dist);
       # no step needs git credentials, and the upload step brings its own GH_TOKEN.
+      # An empty ref (a published release, a run by hand) checks out what the event points at, as before.
       - uses: actions/checkout@v5
         with:
+          ref: ${{ inputs.ref }}
           persist-credentials: false
 
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
+
+      # Only when called by the auto-release workflow, which keeps package.json on main at the version a person set.
+      # `--allow-same-version` because the version picked can be package.json's own (a raised major or minor).
+      - name: set the version
+        if: inputs.version != ''
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
 
       # The installers and the update files take their version from package.json, so a tag naming another version
       # would publish files the update check cannot match to the release.
