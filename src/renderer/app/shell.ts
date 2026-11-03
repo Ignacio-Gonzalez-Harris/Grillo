@@ -10,12 +10,12 @@ import {
   PROJECT_ID,
   PROJECT_TABS,
   SETUP_CHECK_SCREEN,
-  START_SCREEN,
   UNBUILT_SCREEN_NAMES,
 } from './navigation';
 import type { ScreenParams, ScreenRegistry, ShellContext } from './screens';
 import { createTabBar, type ActiveTab } from './tab-bar';
 import { createSaveNotice } from './save-notice';
+import { chooseStartScreen } from './start-up';
 import { createUpdatePopup } from './update-popup';
 
 export interface ShellOptions {
@@ -38,6 +38,21 @@ function unbuiltName(screenId: string): string {
 const OPENS_ON_PROJECT: ReadonlySet<string> = new Set([...PROJECT_TABS.map(({ screenId }) => screenId), GENERIC_AGENT_SCREEN]);
 const OUTSIDE_PROJECT: ReadonlySet<string> = new Set(APP_TABS.map(({ screenId }) => screenId));
 
+/** What the shell has open before the first screen: nothing, and no tab is the active one. */
+const NO_SCREEN = '';
+
+/** The calm note a later start shows while the setup check runs (prototype `screen-setup-check`, state `start-check`). */
+function startCheckNote(): HTMLElement {
+  const text = document.createElement('span');
+  text.className = 'muted';
+  text.textContent = 'Checking your setup…';
+  const note = document.createElement('div');
+  note.className = 'card';
+  note.setAttribute('role', 'status');
+  note.append(text);
+  return note;
+}
+
 function emptyState(title: string): HTMLElement {
   const message = document.createElement('p');
   message.className = 'muted';
@@ -52,6 +67,9 @@ function emptyState(title: string): HTMLElement {
  * from the registry; agent tabs come from the agent runtime's list (`agents:list`, then `agents:list-changed`). The
  * update pop-up covers the whole window when a newer version is found.
  *
+ * The first screen is chosen by `chooseStartScreen`. Any screen opened before that answer, such as a tab the member
+ * pressed while the check runs, wins over it, so nobody is pulled off a screen they chose.
+ *
  * The current project is the one the member opened last in this window: the last screen opened with
  * `{ project }`, or the one a screen says it shows (`showProject`). The title bar names it, and the Map, Tickets and
  * PRD tabs and "+" open on it, so with two projects open each screen shows the project the member is working in.
@@ -60,7 +78,9 @@ function emptyState(title: string): HTMLElement {
  */
 export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions): Shell {
   let agents: readonly AgentInfo[] = [];
-  let current: { screenId: string; params: ScreenParams } = { screenId: START_SCREEN, params: {} };
+  let current: { screenId: string; params: ScreenParams } = { screenId: NO_SCREEN, params: {} };
+  /** True until a screen has opened (or the shell closed): only then may the start-up decision still open one. */
+  let awaitingFirstScreen = true;
   let closeScreen: (() => void) | undefined;
   let project: string | null = null;
   /** True once the open screen has said which project it shows, since it was opened. */
@@ -160,6 +180,8 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
     closeScreen?.();
     closeScreen = undefined;
     current = { screenId, params };
+    awaitingFirstScreen = false;
+    updatePopup.start();
     screenNamedProject = false;
     followProject(params['project']);
     content.replaceChildren();
@@ -200,12 +222,17 @@ export function createShell(root: HTMLElement, { grillo, screens }: ShellOptions
 
   const stopScreens = [...screens.values()].flatMap((screen) => screen.start?.(shellContext) ?? []);
 
-  navigate(START_SCREEN);
+  void chooseStartScreen(grillo, () => {
+    if (awaitingFirstScreen) content.replaceChildren(startCheckNote());
+  }).then((screenId) => {
+    if (awaitingFirstScreen) navigate(screenId);
+  });
 
   return {
     navigate,
     agentTabHeader: (agentId) => tabBar.agentTabHeader(agentId),
     dispose() {
+      awaitingFirstScreen = false;
       stopListening();
       updatePopup.dispose();
       saveNotice.dispose();

@@ -164,7 +164,7 @@ describe('support agent tab: on the tab bar', () => {
     run('grilling-1', 'grilling', TARGET);
     await flush();
     expect(agentTabLabels(root)).toEqual(['Support', TARGET]);
-    expect([...root.querySelectorAll('nav .tab')].map((tab) => text(tab.querySelector('.tab-name') ?? tab)).at(-1)).toBe(
+    expect([...root.querySelectorAll('nav .tab-strip .tab')].map((tab) => text(tab.querySelector('.tab-name') ?? tab)).at(-1)).toBe(
       '+',
     );
   });

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { EventChannel, EventPayload, GrilloApi } from '../../shared/ipc';
+import type { ToolStatus } from '../../shared/tools';
 import type { UpdateState } from '../../shared/updates';
 import { RELEASE_PAGE_URL } from '../screens/setup-check/update-card';
 import { registerScreens } from './screens';
@@ -14,6 +15,8 @@ const NO_UPDATE: UpdateState = {
   autoUpdate: false,
   manualInstall: false,
 };
+const OFFER: UpdateState = { ...NO_UPDATE, phase: 'available', version: '1.1.0' };
+const READY_TOOL: ToolStatus = { installed: true, signedIn: true, version: '1.0.0', guidance: null };
 
 type Handler = (payload: unknown) => unknown;
 
@@ -69,12 +72,29 @@ async function startOnMap(grillo: GrilloApi): Promise<HTMLElement> {
   return root;
 }
 
+/** Everything a later start needs to pass, so Grillo opens on Project. */
+const LATER_START: Record<string, Handler> = {
+  'settings:get': () => true,
+  'tools:check': () => ({ claude: READY_TOOL, gh: READY_TOOL }),
+  'tools:identity': () => ({ ok: true, identity: { login: 'member-a', name: null, email: null } }),
+};
+
+/** Starts Grillo (a fresh shell is a restart) and leaves it on whichever screen it chooses. */
+async function start(grillo: GrilloApi): Promise<HTMLElement> {
+  const root = document.createElement('div');
+  document.body.append(root);
+  shells.push(createShell(root, { grillo, screens: registerScreens({}) }));
+  await flush();
+  return root;
+}
+
 const popup = (root: HTMLElement) => root.querySelector<HTMLElement>('.window > .overlay');
 const isShown = (root: HTMLElement) => popup(root)?.hidden === false;
 const dialog = (root: HTMLElement) => popup(root)?.querySelector<HTMLElement>('[role="dialog"]');
 const buttonNamed = (root: HTMLElement, label: string) =>
   [...(popup(root)?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find((b) => b.textContent === label);
 const screenBehind = (root: HTMLElement) => root.querySelector<HTMLElement>('main.window-body');
+const activeTab = (root: HTMLElement) => root.querySelector('nav [aria-current="page"]')?.textContent;
 
 afterEach(() => {
   shells.splice(0).forEach((shell) => shell.dispose());
@@ -178,6 +198,69 @@ describe('update pop-up over any screen', () => {
     expect(isShown(root)).toBe(false);
   });
 
+  it('opens for a version main found before the pop-up was listening, once, and an event for it changes nothing', async () => {
+    const fake = fakeGrillo({ ...LATER_START, 'updates:get-state': () => OFFER });
+    const root = await start(fake.grillo);
+
+    expect(isShown(root)).toBe(true);
+    expect(dialog(root)?.textContent).toContain('Grillo 1.1.0 is available. You have 1.0.0.');
+
+    buttonNamed(root, 'Later')?.click();
+    await flush();
+    fake.emit('updates:update-available', { version: '1.1.0' });
+
+    expect(isShown(root)).toBe(false);
+  });
+
+  it.each<[string, UpdateState, string]>([
+    ['downloading', { ...OFFER, phase: 'downloading', percent: 42 }, 'Downloading Grillo 1.1.0: 42%.'],
+    ['ready to install', { ...OFFER, phase: 'ready' }, 'Grillo 1.1.0 is downloaded.'],
+  ])('opens for a version already %s when the pop-up started listening', async (_case, state, says) => {
+    const root = await start(fakeGrillo({ ...LATER_START, 'updates:get-state': () => state }).grillo);
+
+    expect(isShown(root)).toBe(true);
+    expect(dialog(root)?.textContent).toContain(says);
+  });
+
+  it('does not bring back a version Later put off, when the window reads the update state again', async () => {
+    let state: UpdateState = OFFER;
+    const fake = fakeGrillo({
+      ...LATER_START,
+      'updates:get-state': () => state,
+      // As the updates feature does: Later takes the offer away until Grillo restarts.
+      'updates:later': () => {
+        state = NO_UPDATE;
+      },
+    });
+    const root = await start(fake.grillo);
+    expect(isShown(root)).toBe(true);
+    buttonNamed(root, 'Later')?.click();
+    await flush();
+
+    // The window loads again while the main process keeps running.
+    const reloaded = await start(fake.grillo);
+
+    expect(isShown(root)).toBe(false);
+    expect(isShown(reloaded)).toBe(false);
+  });
+
+  it.each<[string, Handler]>([
+    ['a refused read', () => Promise.reject(new Error('made-up failure'))],
+    ['no answer', () => null],
+    ['an offer with no version', () => ({ ...OFFER, version: null })],
+    ['an unknown phase', () => ({ ...OFFER, phase: 'gremlins' })],
+  ])('opens no pop-up for %s of the update state, and still follows later events', async (_case, read) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fake = fakeGrillo({ 'updates:get-state': read });
+    const root = await startOnMap(fake.grillo);
+    await flush();
+    expect(isShown(root)).toBe(false);
+
+    fake.emit('updates:update-available', { version: '1.1.0' });
+
+    expect(isShown(root)).toBe(true);
+  });
+
   it.each([
     ['no payload', null],
     ['a payload without a version', {}],
@@ -201,6 +284,71 @@ describe('update pop-up over any screen', () => {
     fake.emit('updates:ready-to-install', { version: '1.1.0' });
 
     expect(isShown(root)).toBe(false);
+  });
+
+  describe('for a member who starts on Project', () => {
+    it('offers a version found after the start through the pop-up', async () => {
+      const fake = fakeGrillo(LATER_START);
+      const root = await start(fake.grillo);
+      expect(activeTab(root)).toBe('Project');
+      expect(isShown(root)).toBe(false);
+
+      fake.emit('updates:update-available', { version: '1.1.0' });
+
+      expect(isShown(root)).toBe(true);
+    });
+
+    it('offers a version found before the window was listening', async () => {
+      const root = await start(fakeGrillo({ ...LATER_START, 'updates:get-state': () => OFFER }).grillo);
+
+      expect(activeTab(root)).toBe('Project');
+      expect(isShown(root)).toBe(true);
+      expect(dialog(root)?.textContent).toContain('Grillo 1.1.0 is available.');
+    });
+
+    it('offers a version found while the start-up check runs, only once Project is open', async () => {
+      let state = NO_UPDATE;
+      let answerCheck: (report: unknown) => void = () => undefined;
+      const fake = fakeGrillo({
+        ...LATER_START,
+        'updates:get-state': () => state,
+        'tools:check': () => new Promise((done) => (answerCheck = done)),
+      });
+      const root = await start(fake.grillo);
+
+      state = OFFER;
+      fake.emit('updates:update-available', { version: '1.1.0' });
+      expect(isShown(root)).toBe(false);
+
+      answerCheck({ claude: READY_TOOL, gh: READY_TOOL });
+      await flush();
+
+      expect(activeTab(root)).toBe('Project');
+      expect(isShown(root)).toBe(true);
+    });
+  });
+
+  describe('for a member who lands on Setup', () => {
+    it.each<[string, Record<string, Handler>]>([
+      ['on a first launch', {}],
+      ['on a failing later start', { 'settings:get': () => true, 'tools:check': () => Promise.reject(new Error('made-up failure')) }],
+    ])('leaves a version found early to the setup card %s, and does not pop it up on the next screen', async (_case, overrides) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const fake = fakeGrillo({ 'updates:get-state': () => OFFER, ...overrides });
+      const root = document.createElement('div');
+      document.body.append(root);
+      const shell = createShell(root, { grillo: fake.grillo, screens: registerScreens({}) });
+      shells.push(shell);
+      await flush();
+
+      expect(activeTab(root)).toBe('Setup');
+      expect(isShown(root)).toBe(false);
+
+      shell.navigate('map');
+      await flush();
+
+      expect(isShown(root)).toBe(false);
+    });
   });
 
   it('stops listening to the update events when the shell is disposed', async () => {
