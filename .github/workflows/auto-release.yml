@@ -24,9 +24,10 @@ on:
     branches: [main]
 
 # One release run at a time, never cancelled half-way: two runs must not draft the same version. A release run still
-# waiting is replaced by a newer one, which is fine: the newer commit holds the waiting one's changes too. Only a run
-# that can release joins the group (the same three conditions as `decide`); any other run gets a group of its own, so
-# a failed CI run or a pull request's never replaces a waiting release.
+# waiting is replaced by the next one to join. That next one usually holds the waiting one's changes too; when it does
+# not (CI on an older commit finishing late, or run again), the waiting release is only delayed until the next green
+# push to main, never lost. Only a run that can release joins the group (the same three conditions as `decide`); any
+# other run gets a group of its own, so a failed CI run or a pull request's never replaces a waiting release.
 concurrency:
   group: >-
     ${{ github.event.workflow_run.conclusion == 'success' &&

@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { decideRelease, isAppFile, nextVersion, workflowOutputs } from './next-release.mjs';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { decideRelease, filesChangedSince, isAppFile, nextVersion, workflowOutputs } from './next-release.mjs';
 
 describe('next version', () => {
   it.each([
@@ -105,5 +109,70 @@ describe('workflow outputs', () => {
       workflowOutputs({ release: true, version: '0.1.1', tag: 'v0.1.1', reason: 'the app changed since v0.1.0' }),
     ).toBe('release=true\nversion=0.1.1\ntag=v0.1.1\n');
     expect(workflowOutputs({ release: false, reason: 'no app change since v0.1.0' })).toBe('release=false\n');
+  });
+});
+
+describe('files changed since the latest release, read from a real git repository', () => {
+  const RELEASED_APP_FILE = 'resources/skills/README.md';
+  let repository: string;
+
+  function git(...args: string[]): string {
+    return execFileSync('git', ['-c', 'user.name=Made Up', '-c', 'user.email=made.up@example.com', ...args], {
+      cwd: repository,
+      encoding: 'utf8',
+    }).trim();
+  }
+
+  function writeFile(file: string, content: string): void {
+    mkdirSync(dirname(join(repository, file)), { recursive: true });
+    writeFileSync(join(repository, file), content);
+  }
+
+  function commitAll(message: string): void {
+    git('add', '.');
+    git('commit', '-q', '-m', message);
+  }
+
+  beforeEach(() => {
+    repository = mkdtempSync(join(tmpdir(), 'grillo-next-release-'));
+    git('init', '-q');
+    writeFile(RELEASED_APP_FILE, 'A made-up skill folder note that is long enough for git to see a move as a rename.');
+    writeFile('docs/runbook.md', 'A made-up run-book');
+    commitAll('made-up first release');
+    git('tag', 'v0.1.0');
+  });
+
+  afterEach(() => {
+    rmSync(repository, { recursive: true, force: true });
+  });
+
+  it('counts a file moved out of the app as an app change, under both its old and its new name', () => {
+    mkdirSync(join(repository, 'docs', 'moved'));
+    git('mv', RELEASED_APP_FILE, 'docs/moved/README.md');
+    commitAll('made-up move out of the app');
+
+    const changedFiles = filesChangedSince('v0.1.0', 'HEAD', repository);
+
+    expect(changedFiles.sort()).toEqual(['docs/moved/README.md', RELEASED_APP_FILE]);
+    expect(decideRelease({ latestTag: 'v0.1.0', packageVersion: '0.1.0', changedFiles }).release).toBe(true);
+  });
+
+  it('counts an app file whose name is not plain ASCII, which git would otherwise print quoted', () => {
+    writeFile('resources/日本語 note.txt', 'A made-up file');
+    commitAll('made-up file with a non-ASCII name');
+
+    const changedFiles = filesChangedSince('v0.1.0', 'HEAD', repository);
+
+    expect(changedFiles).toEqual(['resources/日本語 note.txt']);
+    expect(decideRelease({ latestTag: 'v0.1.0', packageVersion: '0.1.0', changedFiles }).release).toBe(true);
+  });
+
+  it('lists nothing for a commit already inside the release, and only the docs for a change to the docs', () => {
+    const insideTheRelease = git('rev-parse', 'v0.1.0');
+    writeFile('docs/runbook.md', 'A changed made-up run-book');
+    commitAll('made-up docs change');
+
+    expect(filesChangedSince('v0.1.0', insideTheRelease, repository)).toEqual([]);
+    expect(filesChangedSince('v0.1.0', 'HEAD', repository)).toEqual(['docs/runbook.md']);
   });
 });

@@ -95,10 +95,15 @@ function latestReleaseTag(): string | null {
 /**
  * Files changed on the commit's side since it and the tag parted. The three dots mean a commit already inside the
  * release (CI on an older commit finishing after a newer one was released) shows no change and publishes nothing.
+ * `--no-renames` lists both names of a moved file, so a file moved out of the app still counts as an app change. `-z`
+ * ends each name with a zero byte and prints it as it is: git would otherwise quote a name that is not plain ASCII.
  */
-function filesChangedSince(tag: string, commit: string): string[] {
-  const output = run('git', ['diff', '--name-only', `${tag}...${commit}`]);
-  return output === '' ? [] : output.split('\n');
+export function filesChangedSince(tag: string, commit: string, folder = process.cwd()): string[] {
+  const output = execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', `${tag}...${commit}`], {
+    cwd: folder,
+    encoding: 'utf8',
+  });
+  return output.split('\0').filter((file) => file !== '');
 }
 
 function packageVersionAt(commit: string): string {
