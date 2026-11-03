@@ -33,6 +33,8 @@ interface AppOptions {
   failAgentStarts?: number;
   /** The GitHub identity cannot be read (gh signed out), so the screen does not know who "you" are. */
   noIdentity?: boolean;
+  /** What a refused agent start says; the default is a plain reason, with none of Electron's wrapping. */
+  agentRefusal?: string;
 }
 
 /** The screen as it runs: the in-memory store and the settings behind the real store IPC, agents recorded. */
@@ -47,7 +49,7 @@ function app(options: AppOptions = {}) {
   ipc.handle('agents:start', (request) => {
     if (failures > 0) {
       failures -= 1;
-      throw new Error('Claude Code is not installed on this laptop');
+      throw new Error(options.agentRefusal ?? 'Claude Code is not installed on this laptop');
     }
     starts.push(request);
     return `agent-${starts.length}`;
@@ -1181,6 +1183,31 @@ describe('project creation: the guided steps', () => {
     } finally {
       if (scrollIntoView) Object.defineProperty(Element.prototype, 'scrollIntoView', scrollIntoView);
     }
+  });
+
+  it('shows only the reason of a refused agent, not the wrapping Electron adds, after creating, on coming back and in the editor', async () => {
+    const reason = 'Claude Code is not installed on this laptop';
+    const context = app({ failAgentStarts: 3, agentRefusal: `Error invoking remote method 'agents:start': Error: ${reason}` });
+    const { root } = context;
+    await context.open();
+    click(root, 'New project');
+    await until(() => onWhere(root), 'the first step');
+    fillNewProject(root);
+    click(root, 'Create project');
+    await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step');
+    expect(text(root.querySelector('.note.err'))).toBe(reason);
+
+    root.replaceChildren();
+    await context.open();
+    click(cardTitled(root, 'Your projects'), 'Open');
+    await until(() => buttonNamed(root, 'Try again') !== undefined, 'the failed step again');
+    expect(text(root.querySelector('.note.err'))).toBe(reason);
+
+    root.replaceChildren();
+    await context.open({ project: 'example-org/sample-project-1' });
+    click(root, 'Save and regenerate');
+    await until(() => root.querySelector('.note.err') !== null, 'the refusal');
+    expect(text(root.querySelector('.note.err'))).toBe(reason);
   });
 
   it('keeps what was typed for each way in when the switch on Where changes it', async () => {

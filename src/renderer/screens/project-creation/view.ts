@@ -65,9 +65,17 @@ export function pageActions(trailing: HTMLElement[], leading: HTMLElement[] = []
   return el('div', 'row page-actions', [...leading, el('span', 'spacer'), ...trailing]);
 }
 
+/** What Electron puts in front of an error thrown in the main process; it means nothing to the member. */
+const IPC_WRAPPING = /^Error invoking remote method '[^']*': (?:\w*Error: )?/;
+
+/** A refusal's text as the member should read it: the reason alone. */
+export function plainReason(text: string): string {
+  return text.replace(IPC_WRAPPING, '');
+}
+
 /** The text of any refusal, to show the member. */
 export function messageOf(error: unknown): string {
-  return error instanceof Error && error.message !== '' ? error.message : String(error);
+  return plainReason(error instanceof Error && error.message !== '' ? error.message : String(error));
 }
 
 /** A labelled control, as the prototype's `.field`. */

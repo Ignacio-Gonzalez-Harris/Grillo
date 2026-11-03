@@ -83,7 +83,7 @@ export function ideaCard(ctx: WizardContext): HTMLElement {
     ...(reason === null ? [] : [reasonNote(reason)]),
     files,
     el('p', 'small muted m0', [
-      'The destination is always a PRD. Grillo then opens a grilling agent that builds the map, the tickets and their questions.',
+      'Grillo always works towards a PRD (the product document). It then opens a grilling agent (an AI assistant that asks the questions) that builds the map (your project's overview), the tickets (pieces of work) and their questions.',
     ]),
   ]);
 }

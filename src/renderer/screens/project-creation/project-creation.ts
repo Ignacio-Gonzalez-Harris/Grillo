@@ -43,7 +43,7 @@ import { structureCard, structureHead, structureRows } from './step-structure';
 import { modeSwitch, whereCard, whereHead } from './step-where';
 import { addSection, checkedStructure, structureProblem } from './structure';
 import { forgetUnstartedAgent, readUnstartedAgents, type UnstartedAgent } from './unstarted';
-import { dropReason, el, messageOf, note, pageActions, pageHead, stepProgress, type Content } from './view';
+import { dropReason, el, messageOf, note, pageActions, pageHead, plainReason, stepProgress, type Content } from './view';
 import type { Drafts, WizardContext } from './wizard';
 
 /** The project tabs this screen opens (src/renderer/app/navigation.ts, PROJECT_TABS), with `{ project }`. */
@@ -512,7 +512,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
         : el('li', '', [
             el('div', 'grow', [
               el('div', 'row', [el('span', 'strong', [problem.repository]), badge('Cannot connect', 'err')]),
-              el('p', 'small muted m0', [problem.message]),
+              el('p', 'small muted m0', [plainReason(problem.message)]),
             ]),
             button('Check again', { small: true, disabled: busy, onClick: () => back('connect') }),
           ]);
@@ -627,7 +627,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     return [
       pageHead(
         'Change the PRD structure',
-        'Any member can change the structure at any time. A new section makes the engine add tickets or fog first, so the PRD is regenerated once every section can be written.',
+        'Any member can change the structure at any time. A new section may need more answers first: Grillo adds tickets (pieces of work and their questions) or notes what is still unclear, and writes the PRD again once every section can be written.',
       ),
       el('div', 'card stack', [
         ...structureRows(current.structure, {

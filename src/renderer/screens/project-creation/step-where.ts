@@ -113,7 +113,7 @@ function connectFields(ctx: WizardContext): HTMLElement[] {
     ...(reason === null ? [] : [reasonNote(reason)]),
     ...repositoryList(ctx),
     el('p', 'note small', [
-      "Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.",
+      "Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.",
     ]),
   ];
 }
