@@ -1,1 +1,1 @@
-PRD: signing is not planned for now; installers stay unsigned and Mac members update by hand.
+PRD: signing and the Agent SDK terms check are not planned; installers stay unsigned and the terminal stays the default agent view for good.
