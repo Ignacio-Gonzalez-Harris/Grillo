@@ -3,7 +3,7 @@
  * still stops the project from being created, and the draft the creation steps run from.
  */
 import { DEFAULT_PRD_STRUCTURE } from '../../../main/store/defaults';
-import type { Login, Permission, PrdStructure, ProjectId, RepositoryAccess, RepositoryRef } from '../../../main/store/types';
+import type { Login, Permission, PrdStructure, ProjectId, RepositoryAccess, RepositoryRef, RepositoryVisibility } from '../../../main/store/types';
 import type { Attachment, ProjectDraft, RepositoryChoice } from './create';
 import { cleanDomains, type LastMembership } from './membership';
 import { structureProblem } from './structure';
@@ -24,7 +24,12 @@ export const DEFAULT_STRUCTURE_CHOICE = 'default';
 export interface ProjectForm {
   mode: RepositoryMode;
   projectName: string;
+  /** The new repository's owner: one of the member's organisations, or their own account. */
   organisation: Login;
+  /** The signed-in account, or null when it could not be read. */
+  ownAccount: Login | null;
+  /** Chosen for the own account only; an organisation's repository is always private. */
+  visibility: RepositoryVisibility;
   repositoryName: string;
   /** True once the member typed a repository name: the project name stops suggesting one. */
   repositoryNameTyped: boolean;
@@ -49,11 +54,13 @@ export interface ProjectForm {
   attachments: Attachment[];
 }
 
-export function newProjectForm(organisations: readonly Login[], last: LastMembership | null): ProjectForm {
+export function newProjectForm(organisations: readonly Login[], last: LastMembership | null, ownAccount: Login | null = null): ProjectForm {
   return {
     mode: 'new',
     projectName: '',
-    organisation: organisations[0] ?? '',
+    organisation: organisations[0] ?? ownAccount ?? '',
+    ownAccount,
+    visibility: 'private',
     repositoryName: '',
     repositoryNameTyped: false,
     connectSearch: '',
@@ -109,6 +116,11 @@ export function inviteProblem(login: string, invites: readonly Login[], me: Logi
   return null;
 }
 
+/** True when the new repository goes under the member's own account: only then is there a private or public choice. */
+export function ownedByMember(form: ProjectForm): boolean {
+  return form.organisation === form.ownAccount;
+}
+
 /** Inviting is for repository admins (PRD section 7): in a connected repository, only once admin access is known. */
 export function canInvite(form: ProjectForm): boolean {
   return form.mode === 'new' || (form.access.state === 'known' && form.access.permission === 'admin');
@@ -121,7 +133,7 @@ function ideaOf(form: ProjectForm): string {
 /** The first thing that stops the project from being created, said for the member; null when nothing does. */
 export function formProblem(form: ProjectForm): string | null {
   if (form.mode === 'new') {
-    if (form.organisation === '') return 'Pick the organisation the new repository goes in.';
+    if (form.organisation === '') return 'Pick the owner of the new repository.';
     if (!REPOSITORY_NAME.test(form.repositoryName.trim())) {
       return 'Give the repository a name: letters, digits, ".", "-" and "_" only.';
     }
@@ -138,7 +150,13 @@ export function formProblem(form: ProjectForm): string | null {
 export function draftOf(form: ProjectForm): ProjectDraft {
   const repository: RepositoryChoice =
     form.mode === 'new'
-      ? { newRepository: { organisation: form.organisation, name: form.repositoryName.trim() } }
+      ? {
+          newRepository: {
+            organisation: form.organisation,
+            name: form.repositoryName.trim(),
+            ...(ownedByMember(form) ? { visibility: form.visibility } : {}),
+          },
+        }
       : { connectRepository: repositoryToConnect(form.connectTo) as RepositoryRef };
   const text = form.ideaFormat === 'text';
   return {

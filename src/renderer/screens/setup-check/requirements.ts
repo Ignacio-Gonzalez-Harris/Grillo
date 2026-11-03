@@ -41,13 +41,13 @@ const TOOL_COPY: Record<ToolName, ToolCopy> = {
   },
   gh: {
     name: 'GitHub command-line tool (gh)',
-    about: () => ["Grillo keeps every project in your company's GitHub through ", code('gh'), '.'],
+    about: () => ['Grillo keeps every project in your GitHub account through ', code('gh'), '.'],
     installSteps: () => [
       ['Install ', code('gh'), '.'],
       ['Sign in once: run ', code('gh auth login'), ' and follow the steps in your browser.'],
     ],
     signedOut: (command) => [
-      'You are signed out of GitHub. Sign in once with your company GitHub account: open a terminal, run ',
+      'You are signed out of GitHub. Sign in once with your GitHub account: open a terminal, run ',
       code(command),
       ' and follow the steps in your browser. Then press Check again.',
     ],

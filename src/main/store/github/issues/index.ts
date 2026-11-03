@@ -14,6 +14,7 @@ import {
   formatTicketBody,
   isCommentId,
   isDomainLabel,
+  isFromCollaborator,
   isKindLabel,
   isSessionFile,
   isTagsByHand,
@@ -37,6 +38,7 @@ import {
   type MarkedComment,
   type OmitEach,
   type PlainComment,
+  type RawComment,
   type TicketBody,
 } from './bodies';
 import { createIssuesApi, type IssueData, type IssueState } from './issues-api';
@@ -81,6 +83,8 @@ export const ISSUES_METHODS = [
 ] as const satisfies readonly StoreMethod[];
 
 type IssuesStore = Pick<Store, (typeof ISSUES_METHODS)[number]>;
+
+type CommentGate = (comment: RawComment) => boolean;
 
 const MERGE_POINTER = /^Merged into #(\d+)$/;
 const mergePointer = (number: number): string => `Merged into #${number}`;
@@ -343,8 +347,20 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
 
   // Tickets.
 
-  async function commentsOf(ref: RepositoryRef, issue: IssueData): Promise<IssueComment[]> {
-    return issue.comments === 0 ? [] : (await api.comments(ref, issue.number)).map(parseComment);
+  /**
+   * Which of a repository's comments may be read at all: anyone can comment on a public repository, with Grillo's marker
+   * line and a made-up `who:` line, so there only a collaborator's count (docs/store-layout.md, "Comment markers").
+   */
+  async function commentGate(ref: RepositoryRef): Promise<CommentGate> {
+    return (await repositories.repository(ref)).isPublic ? isFromCollaborator : () => true;
+  }
+
+  async function commentsOf(ref: RepositoryRef, issue: IssueData, gate?: CommentGate): Promise<IssueComment[]> {
+    if (issue.comments === 0) {
+      return [];
+    }
+    const readable = gate ?? (await commentGate(ref));
+    return (await api.comments(ref, issue.number)).filter(readable).map(parseComment);
   }
 
   /** The ticket's issue; one that does not exist or is no ticket is refused as `not-found`. */
@@ -385,9 +401,9 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
   }
 
   /** A ticket for a list: one whose issue or comments are damaged is flagged, never fails the list. */
-  async function listedTicket(ref: RepositoryRef, issue: IssueData): Promise<Ticket> {
+  async function listedTicket(ref: RepositoryRef, issue: IssueData, gate: CommentGate): Promise<Ticket> {
     try {
-      return toTicket(ref, issue, await commentsOf(ref, issue));
+      return toTicket(ref, issue, await commentsOf(ref, issue, gate));
     } catch (error) {
       return damagedTicket(ref, issue, damageOf(error));
     }
@@ -661,7 +677,8 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       const wanted = domains === undefined ? null : new Set(checkFilterDomains(domains));
       const me = await api.viewer();
       const issues = await listTicketIssues(ref, state ?? 'all');
-      const tickets = await Promise.all(issues.map((issue) => listedTicket(ref, issue)));
+      const gate = await commentGate(ref);
+      const tickets = await Promise.all(issues.map((issue) => listedTicket(ref, issue, gate)));
       const mine = (ticket: Ticket): boolean => ticket.assignee !== null && sameLogin(ticket.assignee, me);
       return tickets
         .filter((ticket) => wanted === null || mine(ticket) || ticket.noDomain || ticket.domains.some((domain) => wanted.has(domain)))
@@ -712,7 +729,8 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
       // Every read comes before the first write, so a failed read leaves the ticket as it was.
       const handBack = !noDomain && domains.length === 0;
       const who = handBack ? null : await api.viewer();
-      const markers = handBack ? (await api.comments(ref, number)).filter((comment) => isTagsByHand(comment.body)) : [];
+      const readable = await commentGate(ref);
+      const markers = handBack ? (await api.comments(ref, number)).filter((comment) => readable(comment) && isTagsByHand(comment.body)) : [];
       const edited = await api.editIssue(ref, number, { labels: [...issue.labels.filter((label) => !isDomainLabel(label)), ...tagLabels({ domains, noDomain })] });
       if (who !== null) {
         await api.createComment(ref, number, formatTagsByHand({ who, when: timestamp(), domains, noDomain }));
@@ -907,7 +925,8 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
     async listProjectPickupComments(project) {
       const ref = repositoryOf(project);
       const open = new Set((await listTicketIssues(ref, 'open')).map((issue) => issue.number));
-      const comments = (await api.repositoryComments(ref)).filter((comment) => open.has(comment.issue));
+      const readable = await commentGate(ref);
+      const comments = (await api.repositoryComments(ref)).filter((comment) => open.has(comment.issue) && readable(comment));
       const parsed = comments.flatMap((comment) => {
         try {
           return [{ issue: comment.issue, entry: parseComment(comment) }];

@@ -57,6 +57,7 @@ function fakeGrillo(overrides: Record<string, Handler> = {}) {
     'updates:later': () => undefined,
     'transcription:get-model-updates': () => 'ask',
     'transcription:set-model-updates': () => undefined,
+    'settings:set': () => undefined,
     ...overrides,
   };
   const listeners = new Map<string, Set<(payload: unknown) => void>>();
@@ -208,6 +209,51 @@ describe('setup check screen: the requirement rows', () => {
     expect(buttonNamed(el, 'Check again')).toBeUndefined();
     continueButton(el)?.click();
     expect(navigate).toHaveBeenCalledWith('project-creation');
+  });
+
+  it('stores that setup is finished when Continue is pressed, and only then', async () => {
+    const fake = fakeGrillo();
+    const el = await open(fake.grillo);
+    expect(fake.calls('settings:set')).toEqual([]);
+
+    continueButton(el)?.click();
+    await flush();
+
+    expect(fake.calls('settings:set')).toEqual([{ key: 'setupFinished', value: true }]);
+  });
+
+  it('still opens the project screen when the setting cannot be stored', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const el = await open(fakeGrillo({ 'settings:set': () => Promise.reject(new Error('disk full')) }).grillo);
+
+    continueButton(el)?.click();
+    await flush();
+
+    expect(navigate).toHaveBeenCalledWith('project-creation');
+    expect(warn).toHaveBeenCalledWith('Grillo could not store that setup is finished; it opens on Setup next time.', expect.any(Error));
+    warn.mockRestore();
+  });
+
+  it('stores nothing while a row is not green, as Continue stays locked', async () => {
+    const fake = fakeGrillo({ 'tools:check': () => GH_SIGNED_OUT });
+    const el = await open(fake.grillo);
+
+    continueButton(el)?.click();
+    await flush();
+
+    expect(fake.calls('settings:set')).toEqual([]);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('names the GitHub account in neutral words, with no company in what it says about gh', async () => {
+    const noGh = await open(fakeGrillo({ 'tools:check': () => EVERYTHING_MISSING }).grillo);
+    expect(rowNamed(noGh, GH)?.textContent).toContain('Grillo keeps every project in your GitHub account through gh.');
+    expect(noGh.textContent).not.toMatch(/company/i);
+    unmount?.();
+
+    const signedOutOfGh = await open(fakeGrillo({ 'tools:check': () => GH_SIGNED_OUT }).grillo);
+    expect(rowNamed(signedOutOfGh, GH)?.textContent).toContain('You are signed out of GitHub. Sign in once with your GitHub account: open a terminal, run ');
+    expect(signedOutOfGh.textContent).not.toMatch(/company/i);
   });
 
   it('shows the one-time email step with Check again when GitHub shares no email, and says when no name is set', async () => {

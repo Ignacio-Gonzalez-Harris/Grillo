@@ -788,3 +788,140 @@ describe('project creation: registration', () => {
     expect(APP_TABS.find((tab) => tab.label === 'Project')?.screenId).toBe(screen.id);
   });
 });
+
+describe('project creation: the owner of a new repository', () => {
+  const PUBLIC_WARNING = 'Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.';
+
+  async function formOf(options: AppOptions = {}) {
+    const context = app(options);
+    await context.open();
+    click(context.root, 'New project');
+    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
+    const card = () => cardTitled(context.root, '1 · Repository');
+    const owner = () => card().querySelector('select') as HTMLSelectElement;
+    const pick = (login: string) => {
+      owner().value = login;
+      owner().dispatchEvent(new Event('change'));
+    };
+    const fill = () => {
+      type(context.root, 'input[aria-label="Project name"]', 'Sample project 1');
+      type(context.root, 'textarea[aria-label="The idea"]', IDEA);
+    };
+    return { ...context, card, owner, pick, fill };
+  }
+
+  const visibility = (card: HTMLElement) => card.querySelector('[aria-label="Visibility"]');
+  const NO_ORGANISATION = { organisations: [] };
+
+  it('words the field Owner and lists the organisations and the own account, an organisation first', async () => {
+    const { card, owner } = await formOf({ seed: { organisations: [{ login: 'example-org', name: null }, { login: 'example-org-2', name: null }] } });
+
+    expect(texts(card().querySelectorAll('label.field')).find((label) => label.startsWith('Owner'))).toBeDefined();
+    expect(texts(owner().options)).toEqual(['example-org', 'example-org-2', 'ada-example (your account)']);
+    expect(owner().value).toBe('example-org');
+    expect(visibility(card())).toBeNull();
+    expect(text(card())).toContain('Every member becomes a repository admin.');
+  });
+
+  it('preselects the own account with no organisation, Private by default, and finishes the form', async () => {
+    const { store, starts, root, card, owner, fill } = await formOf({ seed: NO_ORGANISATION });
+
+    expect(owner().value).toBe('ada-example');
+    expect(owner().disabled).toBe(false);
+    expect(texts(card().querySelectorAll('[aria-label="Visibility"] button[aria-pressed="true"]'))).toEqual(['Private']);
+    expect(text(card())).toContain('A private repository under your own GitHub account. Only you can invite people, close and reopen the project');
+    expect(text(card())).not.toContain('Every member becomes a repository admin.');
+    fill();
+
+    click(root, 'Create project');
+    await until(() => starts.length === 1, 'the grilling agent to start');
+
+    expect(await store.viewerPermission('ada-example/sample-project-1')).toBe('admin');
+    expect(text(root.querySelector('.rows.card > li'))).toContain('Private repository ada-example/sample-project-1 created');
+  });
+
+  it('shows the warning only on Public, says public on the Creating row and creates it public', async () => {
+    const { store, starts, root, card, pick, fill } = await formOf();
+    const created = vi.spyOn(store, 'createProject');
+    pick('ada-example');
+    fill();
+    expect(text(card())).not.toContain(PUBLIC_WARNING);
+
+    click(visibility(card()) as HTMLElement, 'Public');
+    const warning = card().querySelector('.note.warn');
+    expect(text(warning)).toBe(PUBLIC_WARNING);
+    expect(text(card())).toContain('A public repository under your own GitHub account.');
+
+    click(visibility(card()) as HTMLElement, 'Private');
+    expect(card().querySelector('.note.warn')).toBeNull();
+    click(visibility(card()) as HTMLElement, 'Public');
+
+    click(root, 'Create project');
+    await until(() => starts.length === 1, 'the grilling agent to start');
+
+    expect(created.mock.calls[0][0]).toMatchObject({ newRepository: { organisation: 'ada-example', name: 'sample-project-1', visibility: 'public' } });
+    expect(text(root.querySelector('.rows.card > li'))).toContain('Public repository ada-example/sample-project-1 created');
+  });
+
+  it('takes the choice away and goes back to Private on moving to an organisation', async () => {
+    const { store, starts, root, card, pick, fill } = await formOf();
+    const created = vi.spyOn(store, 'createProject');
+    pick('ada-example');
+    click(visibility(card()) as HTMLElement, 'Public');
+    pick('example-org');
+    fill();
+
+    expect(visibility(card())).toBeNull();
+    expect(card().querySelector('.note.warn')).toBeNull();
+    pick('ada-example');
+    expect(texts(card().querySelectorAll('[aria-label="Visibility"] button[aria-pressed="true"]'))).toEqual(['Private']);
+    pick('example-org');
+
+    click(root, 'Create project');
+    await until(() => starts.length === 1, 'the grilling agent to start');
+
+    expect(created.mock.calls[0][0]).toEqual(expect.objectContaining({ newRepository: { organisation: 'example-org', name: 'sample-project-1' } }));
+  });
+
+  it('keeps what was typed when the owner changes', async () => {
+    const { root, pick, fill } = await formOf();
+    fill();
+
+    pick('ada-example');
+
+    expect(root.querySelector<HTMLInputElement>('input[aria-label="Project name"]')?.value).toBe('Sample project 1');
+    expect(root.querySelector<HTMLTextAreaElement>('textarea[aria-label="The idea"]')?.value).toBe(IDEA);
+  });
+
+  it('says so when neither an organisation nor the own account can be read, and asks for an owner', async () => {
+    const context = app({ seed: NO_ORGANISATION });
+    vi.spyOn(context.store, 'signedInLogin').mockRejectedValue(new Error('gh is signed out'));
+    await context.open();
+    click(context.root, 'New project');
+    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
+
+    const card = cardTitled(context.root, '1 · Repository');
+    expect((card.querySelector('select') as HTMLSelectElement).disabled).toBe(true);
+    expect(context.root.textContent).toContain('Grillo could not read your GitHub account: gh is signed out');
+    expect(text(card)).toContain('Grillo cannot create a repository without an owner. Connect an existing one instead.');
+    type(context.root, 'input[aria-label="Repository name"]', 'sample-project-1');
+    type(context.root, 'textarea[aria-label="The idea"]', IDEA);
+
+    click(context.root, 'Create project');
+
+    expect(context.root.textContent).toContain('Pick the owner of the new repository.');
+    expect(await context.store.listProjects()).toEqual([]);
+  });
+
+  it('still offers the organisations when the own account cannot be read', async () => {
+    const context = app();
+    vi.spyOn(context.store, 'signedInLogin').mockRejectedValue(new Error('gh is signed out'));
+    await context.open();
+    click(context.root, 'New project');
+    await until(() => cardTitled(context.root, '1 · Repository') !== undefined, 'the form');
+
+    const select = cardTitled(context.root, '1 · Repository').querySelector('select') as HTMLSelectElement;
+    expect(texts(select.options)).toEqual(['example-org']);
+    expect(select.value).toBe('example-org');
+  });
+});

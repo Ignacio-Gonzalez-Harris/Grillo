@@ -7,8 +7,10 @@ How to use each part of Grillo, one section per feature. Each feature's story ed
 Every screen sits in one window: the title bar ("Grillo", where you are and the project you are in), the tab bar,
 and the screen below it.
 
-- **The tab bar**, left to right: Setup and Project; then Map, Tickets and PRD; then one tab per running agent;
-  then "+". Grillo opens on Setup. A screen whose own story has not landed yet says "<name> is not built yet."
+- **The tab bar**, left to right: Project; then Map, Tickets and PRD; then one tab per running agent; then "+"; and
+  Setup at the far right. With many agent tabs the tabs scroll sideways, but Setup stays where it is, always in reach.
+  A screen whose own story has not landed yet says "<name> is not built yet."
+- **Which screen Grillo opens on** is explained under Setup, Where Grillo opens, below.
 - **The current project** is the one you opened last in this window: opening a project (from the Project tab, a
   link such as Open the map, or a meeting agent's tab) makes it current. The title bar names it (`<owner>/<repo>`),
   and Map, Tickets, PRD and "+" open on it, so with two projects open you never see one project's map, tickets or
@@ -46,8 +48,20 @@ and the screen below it.
 
 ## Setup
 
-Grillo opens on the setup check. It checks the two tools every member needs and reads who the member is on GitHub.
-It holds no credentials: it only asks each tool about its own sign-in.
+The first time, Grillo opens on the setup check. It checks the two tools every member needs and reads who the member
+is on GitHub. It holds no credentials: it only asks each tool about its own sign-in.
+
+### Where Grillo opens
+
+- **First launch:** the setup check. Pressing Continue with everything green stores `setupFinished` in the app data
+  folder's `settings.json`. A setting that cannot be read, or holds anything but `true`, counts as a first launch, and
+  so does the first start of a member who used Grillo before this setting existed.
+- **Every later start** runs the same checks while the screen says "Checking your setup…". Everything passing opens
+  Project. Anything failing opens the setup check, which shows what is wrong; that includes a check that itself fails.
+  The setting stays stored, so the next passing start opens Project again.
+- **A tab you press while the check runs** stays open: the check's answer does not move you.
+- **To see the setup check again**, press Setup at the far right of the tab bar. It behaves as on a first launch.
+- **To start over as a first launch**, close Grillo and delete `setupFinished` from `settings.json`.
 
 ### The setup check screen
 
@@ -59,7 +73,8 @@ It holds no credentials: it only asks each tool about its own sign-in.
 - **Your GitHub account** shows your login, name and email once gh is signed in. No email means gh may not read it
   yet: the row shows `gh auth refresh -h github.com -s user:email`; run it once in a terminal, approve it in your
   browser, then press "Check again" and Grillo reads your email again. Sign-in itself stays `gh auth login --web`.
-- **Continue** opens the Project screen. It unlocks when every row is green; a missing email does not lock it.
+- **Continue** opens the Project screen and remembers that setup is finished (see Where Grillo opens). It unlocks when
+  every row is green; a missing email does not lock it.
 - **The update card** appears below the rows once the first check has finished. It always holds the two update
   settings: the app updates switch ("Install automatically on the next restart") and speech model updates
   (Automatic, Ask or Never). Both are saved at once in the app data folder's `settings.json`, by the updates and
@@ -103,14 +118,23 @@ The project screens arrive with their own stories. What already works underneath
 - **The project folder** is `~/Grillo/<owner>/<repo>`: cloned with `gh repo clone` the first time, brought up to
   date with `git pull --ff-only` after that. Every agent runs there. If it holds changes that are not on GitHub,
   opening the project stops and lists them; Grillo never resets or deletes them. Save or discard them yourself.
-- **A new project** is a new private repository in the organisation you pick, tagged with the topic
-  `grillo-created`, with Grillo's labels and a `.grillo/` folder (`members.json`, `structure.json`) on main.
+- **A new project** is a new repository under the owner you pick, tagged with the topic `grillo-created`, with
+  Grillo's labels and a `.grillo/` folder (`members.json`, `structure.json`) on main. In an organisation it is always
+  private. Under your own GitHub account it is private unless you choose public.
 - **Connecting an existing repository** needs write access and issues turned on. A repository that already
   holds a Grillo project opens that project. An empty repository (no commits yet) works too: Grillo's first
   save makes its first commit. With write access only, inviting, removing people, closing and reopening are
   refused with the reason: GitHub keeps those for repository admins.
-- **Invitations** are GitHub repository invitations: an admin in a repository Grillo created, write access in
-  a connected one. Pending invitations to you are listed and accepted inside Grillo.
+- **Invitations** are GitHub repository invitations: an admin in a repository Grillo created in an organisation,
+  write access in a connected one. A repository under a personal account has only its owner and collaborators, so
+  only the owner can invite, close and reopen; a collaborator sees those greyed out with the reason. Pending
+  invitations to you are listed and accepted inside Grillo.
+- **A public project exposes its data:** anyone can read its transcripts, answers and PRD. Anyone can also comment on
+  it, so Grillo counts only comments from the repository's owner, an organisation member or a collaborator. Others are
+  never answers, discussions, decisions or comments waiting to be picked up. Agents read comments through `gh`, so
+  there this is an instruction they follow and name in their report, not something the code enforces. Once GitHub
+  stops calling someone who left a public project a collaborator, their comments stop counting and the questions they
+  answered read as open again.
 - **Saves** go through the project folder: commit, then push to main. If someone pushed first, Grillo pulls and
   saves again, renumbering a new source or PRD version to the next free number. If main is protected, Grillo
   pushes a `grillo/save-<time>` branch and opens a pull request instead; main changes once someone merges it.
@@ -127,7 +151,9 @@ Open) and **Pending invitations** (each with Accept).
   pre-filled from the last project you joined. "Save and open the project" saves them and opens the map.
 - **New project** opens the form, in four cards:
   1. **Repository.** "Create a new repository": a project name (it suggests the repository name), the
-     organisation (the GitHub organisations your sign-in belongs to) and the repository name. "Connect an existing
+     owner (the GitHub organisations your sign-in belongs to and your own account; an organisation first, your own
+     account when you have none) and the repository name. For your own account, Private (the default) or Public; choosing
+     Public warns that transcripts, answers and the PRD are visible to anyone. "Connect an existing
      one": your repositories are listed with your access to each. Search narrows the list; pick one. Read access only
      says it cannot be connected. "Check access" asks GitHub again, and also checks a repository typed in full as
      `owner/repository` that the list does not hold. With write access only, inviting is greyed out with the reason;
@@ -982,6 +1008,9 @@ never opens a separate system window: the offer is the update card, drawn inside
 - **Once per version.** The pop-up opens once for each new version found since Grillo started. A version first
   offered while the setup screen was open does not pop up again on the other screens. The pop-up stays open while the
   update downloads (with its percent) and once it is ready ("Restart and install").
+- **Found before the window was ready.** Grillo may find a version before its window is listening. So once the first
+  screen is open, the window also asks for the current offer: a member who starts on Project still gets the pop-up, and
+  a member who lands on the setup check sees it on the card.
 
 - **Download and install** downloads the new version, then closes Grillo, installs it and opens it again.
 - **Later** hides that version until Grillo starts again, and closes the pop-up; a newer version is still offered.
@@ -1003,7 +1032,7 @@ Grillo reads and writes its data through one store. Which one is picked when the
    GitHub, and the data is gone when the app closes, except the recent-projects list in the settings file. It
    starts with one organisation, three repositories to connect (`example-org/team-code` with write access,
    `example-org/team-docs` with admin, `example-org/company-handbook` read only) and one invitation
-   (`example-org/kickoff-notes`). Its project folders do not exist on disk, so starting a grilling agent is always
+   (`example-org/kickoff-notes`), signed in as `ada-example`, the account a project can also go under. Its project folders do not exist on disk, so starting a grilling agent is always
    refused here.
 
 With any other value of `GRILLO_STORE` the app opens no window, and the terminal names the two allowed

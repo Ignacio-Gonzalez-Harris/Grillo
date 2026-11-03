@@ -33,7 +33,11 @@
 .empty-screen p { margin: 0; }
 
 /* ---------- Project tab bar ---------- */
-.tabbar { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); overflow-x: auto; }
+.tabbar { display: flex; align-items: flex-start; gap: var(--space-1); padding-right: var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); }
+/* Everything but Setup scrolls in the strip, so Setup stays in reach however many agent tabs are open. */
+.tab-strip { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); overflow-x: auto; }
+/* Level with the strip's tabs, also when the strip shows its scroll bar below them. */
+.tabbar > .tab { flex: none; margin-block: var(--space-2); }
 .agent-tabs { display: contents; }
 .tab { font: inherit; display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--size-control-height); padding: 0 var(--space-3); border-radius: var(--radius-pill); color: var(--color-text-muted); white-space: nowrap; border: var(--border-width) solid transparent; background: none; cursor: pointer; }
 .tab.active { background: var(--color-glass-fill-strong); color: var(--color-text); border-color: var(--color-glass-border); box-shadow: 0 var(--border-width) var(--space-2) var(--color-glass-shadow); font-weight: var(--font-weight-strong); }
@@ -45,6 +49,7 @@
 .tab.add { color: var(--color-accent); font-weight: var(--font-weight-strong); font-size: var(--font-size-l); }
 .tab.add[aria-pressed="true"] { background: var(--color-accent-soft); }
 .tab-sep { width: var(--border-width); align-self: stretch; background: var(--color-divider); margin: 0 var(--space-2); flex: none; }
+.tabbar > .tab-sep { margin-block: var(--space-2); }
 
 /* ---------- Update pop-up over any screen ---------- */
 .overlay-host { position: relative; }

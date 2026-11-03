@@ -24,8 +24,8 @@ Today's rudimentary process, which Grillo reproduces as a workflow but not as a 
 - **Everything happens inside the app.** Grillo offers a way of working similar to today's process without third-party services such as Granola `[T3]`.
 - **The wayfinder skill and its sub-skills are the grilling engine.** An agent is a visible Claude Code session running on the member's own laptop; Grillo starts it in the project folder, ships the skill files there and types the first message. That plumbing is the only hidden part `[T3, T21]`.
 - **Claude Code is a hard requirement for every member.** No Claude Code signed in with the member's own Claude subscription (any plan), no Grillo `[T8, T40]`.
-- **Questions and answers live in Grillo's own store, whose first backend is the company's own GitHub Issues**, one repository per project. Every member needs a company GitHub account and the GitHub command-line tool `gh` signed in `[T21]`.
-- **Organisation data never sits on a non-company host at rest.** It still reaches Anthropic through each member's own Claude Code subscription; that is accepted `[T21]`.
+- **Questions and answers live in Grillo's own store, whose first backend is GitHub Issues**, one repository per project: in the member's GitHub organisation, or under the member's own GitHub account, private or public (owner's decision, 2026-11-03). Every member needs a GitHub account and the GitHub command-line tool `gh` signed in `[T21]`.
+- **Organisation data never sits on a non-company host at rest**, unless a member puts a project under their own GitHub account (owner's decision, 2026-11-03): its data then sits in that account, and **a public project exposes its data: its transcripts, answers and PRD are visible to anyone**. It still reaches Anthropic through each member's own Claude Code subscription; that is accepted `[T21]`.
 
 ### 1.2 Wanted outcomes
 
@@ -86,10 +86,11 @@ Not app words: cluster, team, business unit, expert, administrator `[T5, T29]`.
 2. Grillo checks that Claude Code and `gh` are installed and signed in. If not, it guides the install and the one-time sign-in, or at minimum says what must be set up `[T8, T21]`.
 3. The member signs in with their GitHub account; Grillo shows their GitHub login, name and email `[T31]`.
 4. Grillo checks for a newer version at start and while open, and offers to download it; an auto-update setting installs it on the next restart instead (Windows only: unsigned, Mac members install updates by hand, section 8) `[T39, T42]`.
+5. The first launch opens Setup. Once the member has pressed Continue with everything green, every later start runs the same checks behind a calm "checking" state and opens Project if all pass, or Setup if anything fails; the Setup tab sits at the far right of the tab bar and can be opened at any time (owner's decision, 2026-11-03).
 
 ### 4.2 Starting a project
 
-1. A member creates a project. Two ways in: Grillo creates a new private repository in the company GitHub organisation, or the member connects an existing repository (a team's code repository, an empty one, or an earlier Grillo project) `[T21, T44]`.
+1. A member creates a project. Two ways in: Grillo creates a new repository, or the member connects an existing repository (a team's code repository, an empty one, or an earlier Grillo project) `[T21, T44]`. A new repository goes in one of the member's GitHub organisations, always private, or under the member's own GitHub account, private unless they choose public. With no organisation the own account is preselected. **A public project exposes its data: its transcripts, answers and PRD are visible to anyone.** Grillo warns of this when Public is chosen, and in a public project a comment from someone who is not a collaborator is never treated as an answer (owner's decision, 2026-11-03).
 2. The member picks the PRD structure: Grillo's shipped default or the structure of an earlier project they belong to, then edits it (add, remove, rename, reorder sections). With no choice made, the default applies `[T26]`. The shipped default has 13 sections: Problem; Users and roles; Vocabulary; Flows; Screens; Data model; Permissions; Build decisions; Design system; Do-not-build list; Acceptance demo; Release order; Assumptions `[I1]`.
 3. The member invites people; an invite is a repository access invite. Each invitee sets their free-text role and domains, pre-filled from the last project they joined `[T10, T21, T31]`. Grillo lists the member's pending invitations and accepts one with a click `[I1]`.
 4. The member gives the idea: written text (typed or pasted, with text documents attachable; PDF and Word documents are not read) or a recorded conversation's transcript pasted or uploaded `[T6, T11]`.
@@ -178,7 +179,7 @@ Release 1 has exactly these eight screens, the ones the acceptance walkthrough p
 | # | Screen | Holds |
 |---|---|---|
 | 1 | **Setup check** | Claude Code and `gh` detected and signed in; GitHub sign-in; guidance for what is missing; update offer; the speech-model update setting (automatic / ask / never) `[T8, T21, T39, T42, I1]`. |
-| 2 | **Project creation and invites, with the PRD structure** | New repository or connect an existing one; pick and edit the PRD structure; invite members; role and domains; the idea as text or pasted/uploaded transcript; recent projects, pending invitations accepted with one click, organisation picker `[T6, T26, T31, T44, I1]`. |
+| 2 | **Project creation and invites, with the PRD structure** | New repository or connect an existing one; pick and edit the PRD structure; invite members; role and domains; the idea as text or pasted/uploaded transcript; recent projects, pending invitations accepted with one click, an Owner picker (the member's organisations and own account), with private or public for the own account only and a warning on public (owner's decision, 2026-11-03) `[T6, T26, T31, T44, I1]`. |
 | 3 | **The map and its tickets** | Destination, settled, fog, out of scope; the ticket list with kinds, domain tags and assignees; "run tagging round"; the Sources list (every source with its code, who, when, where, full text on open); "Start meeting", which launches the session's grilling agent (one meeting agent per laptop); close and reopen the project `[T5, T6, T7, I1]`. |
 | 4 | **Ticket-and-question management** | Per ticket: questions and their answered state, tags (change by hand), take, send, reassign; the member's own list first `[T7, T8]`. |
 | 5 | **Meeting screen** (on the grilling agent's tab) | Attendee ticks; consent tick, read-aloud script and red banner; global recording switch; Listen/Type; "use it"; skip/jump; running transcript strip; Open channel per tab `[T13, T22, T35]`. |
@@ -228,9 +229,9 @@ GitHub is the single truth; each member's Grillo reads it on demand. No live syn
 
 ## 7. Permissions
 
-- **Sign-in is with GitHub.** Authentication and organisation membership are GitHub's job; a member must belong to the company's GitHub organisation `[T29, T31]`.
+- **Sign-in is with GitHub.** Authentication and organisation membership are GitHub's job; a member need not belong to an organisation, since a project may live under their own GitHub account (owner's decision, 2026-11-03) `[T29, T31]`.
 - **A project is visible only to its members** (the repository's collaborators) `[T4, T31]`.
-- **In a repository Grillo creates, every member is a repository admin**, so every member can invite, close and reopen `[T31]`.
+- **In a repository Grillo creates in an organisation, every member is a repository admin**, so every member can invite, close and reopen `[T31]`. **A repository under a personal account has only an owner and collaborators**: only the owner can invite, close and reopen, and every other member sees those actions greyed out with the reason (owner's decision, 2026-11-03).
 - **In a connected repository, write access is enough**; admin-only actions are greyed out with the reason `[T44]`.
 - **Every member can see and change everything** inside the project. GitHub's history of issues and files is the "who did what" record and the undo trail `[T4, T31]`.
 - **Grillo holds no credentials.** Claude Code and `gh` are signed in by the member; Grillo never stores, routes or intermediates Claude or GitHub tokens `[T17, T21, T39]`.
@@ -357,6 +358,7 @@ Risk: release 1 is the largest of the options offered, so the wait before anyone
 Carried from the tickets so nobody mistakes them for facts.
 
 - Members may create private repositories in the company GitHub organisation and grant admin on them `[T21, T31]`.
+- GitHub's `author_association` on a comment tells a repository's owner, organisation members and collaborators from everyone else, for a public project; and an invite to a personal repository works with no `permission` value. Both come from GitHub's public documentation and were never tried against real GitHub (owner's decision, 2026-11-03).
 - `gh` can be installed and signed in on company laptops without administrator help `[T21]`.
 - Signing in to Grillo can reuse the member's `gh` sign-in `[T31]`.
 - Claude Code's machine-readable mode or the Agent SDK carries every wayfinder prompt (clickable options, permission prompts) and loads the member's user-level `CLAUDE.md`; and a plain terminal agent's conversation can be captured word for word `[T22, T23, T28]`.
