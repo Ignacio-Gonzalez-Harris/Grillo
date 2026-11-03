@@ -1,0 +1,56 @@
+{
+  "run_id": "Grillo-20261103-223347-721f",
+  "issue": 223,
+  "title": "Make every project screen a guided, friendly set of steps",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-03T22:33:47Z",
+  "finished_at": "2026-11-03T23:50:53Z",
+  "outcome": "merged",
+  "pr": 224,
+  "summary": "The project screens were one long, clunky form. They are now a start page, four guided steps (Where, Structure, People, Idea) shared by New project and Connect existing, a review page, and a creating, invitee and structure-editor view in the same look; store code did not change.",
+  "agents": [
+    {
+      "name": "dev-223",
+      "model": "opus",
+      "tokens_total": 699179
+    },
+    {
+      "name": "review-223",
+      "model": "opus",
+      "tokens_total": 333013
+    },
+    {
+      "name": "review-223-r2",
+      "model": "opus",
+      "tokens_total": 317723
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 2781,
+    "review_seconds": 1558,
+    "ci_seconds": 0
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/project-creation/",
+      "what": "On the Where step of Connect existing, a repository with read access only does not stop Next, so the person walks all four steps and is refused at the end; the row and the review both warn, and the refusal offers Pick another repository.",
+      "why": "Stopping earlier is a new rule and the issue ruled out new behaviour.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/screens/",
+      "what": "Other screens that start agents can still show Electron's raw \"Error invoking remote method\" wrapping in front of a refusal (the first review named generic-agent.ts, which prints messageOf(error)); the fake IPC in tests adds no wrapping, so no test sees it.",
+      "why": "Outside this issue's seam; fixed only on the project screens here.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

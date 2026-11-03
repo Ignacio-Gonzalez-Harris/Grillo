@@ -1,0 +1,80 @@
+{
+  "run_id": "Grillo-20261103-223347-721f",
+  "issue": 223,
+  "title": "Make every project screen a guided, friendly set of steps",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 224,
+  "merged_at": "2026-11-03T23:49:38Z",
+  "merge_commit": "f4fbe0bb7d67d5371d36048e7ad1ab139896471e",
+  "seam": "src/renderer/screens/project-creation/",
+  "story": "The Project tab used to open one long form for creating or connecting a project. Now it opens a start page with New project and Connect existing, then one topic per page (Where, Structure, People, Idea) with Back and Next, and a review page where the create button now lives. A problem now stops Next on its own step with the reason beside the field, instead of showing above Create project. The creating progress, the view after accepting an invitation and the structure editor have the same look, and \"Back to the form\" is now \"Back to Where\". A refusal shows its reason alone, the lines kept from the old screen explain their terms in plain words, and the note about organisations or an account that could not be read stays on Where.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/project-creation/start-page",
+      "criterion": "The start page lists your projects and pending invitations, with New project and Connect existing as the two clear ways in.",
+      "steps": "Start the app with GRILLO_STORE=memory. Open the Project tab.",
+      "expected": "Your projects with an empty line, the buttons New project and Connect existing each with a one-line explanation, and Pending invitations listing example-org/kickoff-notes with Accept."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/step-order",
+      "criterion": "New project and Connect existing walk the same four steps in the same order, each showing which step of four it is, then a review page.",
+      "steps": "From the start page press New project, type Sample project 1 as the project name, and press Next four times with the made-up idea \"Sample idea\" typed on the last step. Repeat with Connect existing, picking example-org/team-docs.",
+      "expected": "\"Step 1 of 4\" to \"Step 4 of 4\" with Where, Structure, People and Idea marked in turn, then \"Does this look right?\". Only the Where page differs between the two."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/next-blocked",
+      "criterion": "Next on a step is stopped only by that step's own problems, and the reason shows beside the control that caused it.",
+      "steps": "New project, press Next with nothing typed. Type a project name, press Next. On Structure rename the second section to Problem, press Next. Fix it, press Next twice with no idea typed.",
+      "expected": "A reason under Repository name, gone once typed. A reason on the second section's row, about two sections with one name. No stop on People. A reason under the text box on Idea. An empty idea never stops an earlier step."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/back-keeps",
+      "criterion": "Back keeps everything typed, in every step.",
+      "steps": "Fill every step of New project, leave a login typed but not invited on People, reach the review, then press Back to Where.",
+      "expected": "The idea, the typed login, the role, the domains, the edited sections, the project name and the repository name are all still there. Where has no Back button."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/review",
+      "criterion": "The review page lists each step's answers with a way back to change them.",
+      "steps": "Reach the review as above, under your own account with Public chosen. Press Change on Where, edit the project name, press Back to review.",
+      "expected": "Answers for Where, Structure, People and Idea, each with Change. The Public warning repeated. A line saying the typed login will not be invited. The edited name, after returning without walking the later steps."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/creation-errors",
+      "criterion": "Errors from creation are shown with a way to the step that fixes them.",
+      "steps": "New project with repository name team-code under example-org, walk to the review, press Create project, press Back to Where. Then Connect existing with example-org/company-handbook, walk to the review, press Connect and start, press Pick another repository.",
+      "expected": "A failed row with \"Repository example-org/team-code already exists\", then Where with the name kept. A \"Cannot connect\" row with the reason, Check again and Pick another repository, then Where with every answer kept."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/both-create",
+      "criterion": "Both workflows reach creation from the review page and call the store as they do today.",
+      "steps": "Finish New project and Connect existing (example-org/team-docs) from the review page.",
+      "expected": "The creating steps run for each repository and the role, invites and idea steps finish. In the memory store the agent step is then always refused, with its reason alone (no \"Error invoking remote method\" in front), Open the map and Try again."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/connect-states",
+      "criterion": "No behaviour is lost: every connect problem state survives.",
+      "steps": "Connect existing: press Next with nothing picked, search for no-such, pick example-org/company-handbook, pick example-org/team-code and press Check access, walk to People, then finish and connect example-org/team-code a second time.",
+      "expected": "The pick-a-repository reason beside the search. \"No repository of yours matches this search.\" \"Connecting needs write access\" on the read-only row. Write access on the highlighted row. Inviting greyed with its reason. \"Already holds a Grillo project\" with Open it."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/public-warning",
+      "criterion": "The Public warning survives, and own-account projects keep Owner, private and public.",
+      "steps": "New project, pick your own account as Owner, press Public, then Private, then pick example-org.",
+      "expected": "Visibility only for your own account, the warning only on Public, and Visibility gone on the organisation."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/family",
+      "criterion": "The creating progress, the refused-agent state, the view after accepting an invitation and the structure editor look like one family with the steps.",
+      "steps": "Accept the kickoff-notes invitation. Open a project whose agent was refused from Your projects. In the PRD view of a project with a version, press Edit structure and regenerate, then press Save and regenerate.",
+      "expected": "The same large heading with a plain line under it and the buttons at the bottom right. Open the map and Try again on the refused agent, with the reason alone and no \"Error invoking remote method\" in front. Your role and domains, then Save and open the project, on the invitee page. On the editor, a reason on a blank row, Cancel going back unsaved, and the refusal after saving shown with the reason alone."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/narrow-window",
+      "criterion": "A narrow window still shows every step without horizontal scrolling or a hidden control.",
+      "steps": "Make the window about 400 pixels wide and walk every step of both workflows, the review, the invitee page and the structure editor.",
+      "expected": "No sideways scrolling of the page, and every button and field can be reached. The tab bar has its own small scrollbar there, and it scrolls away on a long page, as on any long screen."
+    }
+  ],
+  "no_qa_reason": null
+}
