@@ -1,0 +1,20 @@
+{
+  "run_id": "Grillo-20261103-193223-1d84",
+  "issue": 206,
+  "title": "First release: publish the unsigned Windows and Mac installers on GitHub Releases",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": null,
+  "merged_at": "2026-11-03T19:41:24Z",
+  "merge_commit": "5c78861200d0394517c4e6c5ba24c23b9e5867dc",
+  "seam": "none",
+  "story": "Before this story Grillo had no published version, so the download site's buttons only opened the empty releases page. Version 0.1.0 is now published with an unsigned Windows installer and an unsigned Mac disk image, and the site's buttons download them.",
+  "checks": [
+    {
+      "key": "site/download-buttons",
+      "criterion": "The download site's Windows and Mac buttons download the latest installers",
+      "steps": "Open https://ignacio-gonzalez-harris.github.io/Grillo/ in a browser. Look at both download buttons, then click each one.",
+      "expected": "The Windows button names and downloads Grillo-Setup-0.1.0.exe (or a newer version); the Mac button names and downloads Grillo-0.1.0-universal.dmg (or newer)."
+    }
+  ],
+  "no_qa_reason": null
+}

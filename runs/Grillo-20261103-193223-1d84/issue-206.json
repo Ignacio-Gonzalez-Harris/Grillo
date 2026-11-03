@@ -1,0 +1,22 @@
+{
+  "run_id": "Grillo-20261103-193223-1d84",
+  "issue": 206,
+  "title": "First release: publish the unsigned Windows and Mac installers on GitHub Releases",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-03T19:32:23Z",
+  "finished_at": "2026-11-03T19:47:17Z",
+  "outcome": "merged",
+  "pr": null,
+  "summary": "Published Grillo 0.1.0, the first public version, with unsigned Windows and Mac installers and the update files on GitHub Releases; no files changed, so there was no pull request and the evidence is on the issue.",
+  "agents": [
+    { "name": "dev-206", "model": "opus", "tokens_total": 81655 },
+    { "name": "review-206-r1", "model": "opus", "tokens_total": 92642 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 305, "review_seconds": 115, "ci_seconds": 300 },
+  "rounds": { "review": 1, "ci": 2 },
+  "friction": [],
+  "lessons_learned": [
+    "GitHub Actions runs again since the repository went public on 2026-11-03 (CI and release runs green), so the CLAUDE.md rule that treats the project as having no CI is out of date and makes runs skip a CI that exists"
+  ],
+  "deferred": []
+}
