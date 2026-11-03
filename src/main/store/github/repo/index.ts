@@ -4,7 +4,7 @@ import { runProcess } from '../../gh';
 import { DEFAULT_PRD_STRUCTURE } from '../../defaults';
 import { readRecentProjects, recordRecentProject } from '../../recent-projects';
 import { StoreError, type NewMember, type Store, type StoreMethod } from '../../store';
-import type { Member, PrdStructure, PrdVersion, Project, ProjectId, RepositoryRef, Score } from '../../types';
+import type { Member, PrdStructure, PrdVersion, Project, ProjectId, RepositoryRef, RepositoryVisibility, Score } from '../../types';
 import type { GithubDeps } from '..';
 import { damageOf } from '../damage';
 import { createProjectFolders, type FolderReader, type SavePlan } from './folder';
@@ -47,6 +47,7 @@ import {
 export const REPO_METHODS = [
   'currentMember',
   'viewerPermission',
+  'signedInLogin',
   'listOrganisations',
   'listRepositories',
   'listPendingInvitations',
@@ -85,6 +86,7 @@ type RepoStore = Pick<Store, (typeof REPO_METHODS)[number]>;
 export const DEFAULT_FOLDER_ROOT = join(homedir(), 'Grillo');
 const LOWEST_MARK = 0;
 const HIGHEST_MARK = 10;
+const VISIBILITIES: readonly unknown[] = ['private', 'public'] satisfies RepositoryVisibility[];
 
 function refuse(kind: ConstructorParameters<typeof StoreError>[0], message: string): never {
   throw new StoreError(kind, message);
@@ -283,6 +285,9 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
     async viewerPermission(id) {
       return (await api.repository(repositoryOf(id))).permission;
     },
+    async signedInLogin() {
+      return (await api.identity()).login;
+    },
     listOrganisations: () => api.organisations(),
     listRepositories: () => api.repositories(),
     listPendingInvitations: () => api.invitations(),
@@ -331,15 +336,21 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
       const structure = input.structure ?? DEFAULT_PRD_STRUCTURE;
       checkStructure(structure);
       if ('newRepository' in input) {
-        const { organisation, name } = input.newRepository;
+        const { organisation, name, visibility = 'private' } = input.newRepository;
         if (!isLogin(organisation)) {
-          refuse('invalid', `'${String(organisation)}' is not an organisation`);
+          refuse('invalid', `'${String(organisation)}' is not an organisation or an account`);
         }
         if (!isRepositoryName(name)) {
           refuse('invalid', `'${String(name)}' is not a repository name: letters, digits, '.', '-' and '_' only`);
         }
+        if (!VISIBILITIES.includes(visibility)) {
+          refuse('invalid', `'${String(visibility)}' is not a repository visibility: private or public`);
+        }
+        if (visibility === 'public' && !sameLogin(organisation, (await api.identity()).login)) {
+          refuse('forbidden', `A public repository can be created only under your own GitHub account, not under ${organisation}`);
+        }
         const ref = { owner: organisation, name };
-        await api.createRepository(ref);
+        await api.createRepository(ref, visibility);
         return startProject(ref, await api.repository(ref), structure);
       }
       const ref = repositoryOf(projectIdOf(input.connectRepository ?? { owner: '', name: '' }));
@@ -401,7 +412,7 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
       }
       const account = (await api.account(login)) ?? refuse('invalid', `No GitHub account ${login}`);
       const line: MemberLine = { login: account.login, ...fields };
-      await api.invite(ref, account.login, repository.createdByGrillo ? 'admin' : 'push');
+      await api.invite(ref, account.login, repository.personal ? null : repository.createdByGrillo ? 'admin' : 'push');
       await folders.saving(ref, repository.defaultBranch, async (files) => {
         const others = (await memberLines(files, id)).filter((entry) => !sameLogin(entry.login, account.login));
         return { changes: [{ path: GRILLO_FILES.members, content: formatMembers([...others, line]) }], message: `grillo: add member ${account.login}`, result: undefined };

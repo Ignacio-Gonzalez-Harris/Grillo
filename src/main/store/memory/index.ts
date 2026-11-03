@@ -21,6 +21,7 @@ import type {
   ProjectMap,
   RepositoryAccess,
   RepositoryRef,
+  RepositoryVisibility,
   Score,
   Source,
   Ticket,
@@ -90,6 +91,7 @@ const MERGE_POINTER = /^Merged into #(\d+)$/;
 const mergePointer = (number: number): string => `Merged into #${number}`;
 const LOWEST_MARK = 0;
 const HIGHEST_MARK = 10;
+const VISIBILITIES: readonly unknown[] = ['private', 'public'] satisfies RepositoryVisibility[];
 
 interface TicketRecord {
   /** `duplicateOf` is not kept: it is read from the merge decision (docs/store-layout.md). */
@@ -326,6 +328,9 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       const permission = projects.get(id)?.permission ?? seededRepository(id)?.permission;
       return permission ?? refuse('not-found', `No repository ${id}, or you have no access to it`);
     },
+    async signedInLogin() {
+      return me();
+    },
     async listOrganisations() {
       return clone(seed.organisations);
     },
@@ -361,8 +366,15 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
     async createProject(input) {
       const structure = input.structure ?? DEFAULT_PRD_STRUCTURE;
       if ('newRepository' in input) {
-        const { organisation, name } = input.newRepository;
-        if (!seed.organisations.some((entry) => entry.login === organisation)) {
+        const { organisation, name, visibility = 'private' } = input.newRepository;
+        const ownAccount = String(organisation).toLowerCase() === me().toLowerCase();
+        if (!VISIBILITIES.includes(visibility)) {
+          refuse('invalid', `'${String(visibility)}' is not a repository visibility: private or public`);
+        }
+        if (visibility === 'public' && !ownAccount) {
+          refuse('forbidden', `A public repository can be created only under your own GitHub account, not under ${organisation}`);
+        }
+        if (!ownAccount && !seed.organisations.some((entry) => entry.login === organisation)) {
           refuse('invalid', `You are not in the organisation '${organisation}'`);
         }
         if (!REPOSITORY_NAME.test(name)) {

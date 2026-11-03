@@ -688,7 +688,7 @@ describe('GitHub repository backend: untrusted input', () => {
 
   it('refuses every method called without its arguments as invalid, before running gh or git', async () => {
     const { store, github } = await setup();
-    const takingNone = ['listOrganisations', 'listRepositories', 'listPendingInvitations', 'listProjects', 'listRecentProjects'];
+    const takingNone = ['signedInLogin', 'listOrganisations', 'listRepositories', 'listPendingInvitations', 'listProjects', 'listRecentProjects'];
 
     for (const method of REPO_METHODS.filter((name) => !takingNone.includes(name))) {
       const error = await refusal((store[method] as () => Promise<unknown>)());
@@ -735,5 +735,128 @@ describe('GitHub repository backend: untrusted input', () => {
     const { store } = await setup();
 
     expect((await refusal(store.getProject('example-org/missing'))).kind).toBe('not-found');
+  });
+});
+
+describe('GitHub repository backend: a project under the own account', () => {
+  const OWN = 'ada-example/mine';
+
+  it.each([
+    ['no visibility', {}, '--private'],
+    ['private', { visibility: 'private' as const }, '--private'],
+    ['public', { visibility: 'public' as const }, '--public'],
+  ])('creates the repository under the signed-in account with %s', async (_case, choice, flag) => {
+    const { store, github } = await setup();
+
+    const project = await store.createProject({ newRepository: { organisation: 'ada-example', name: 'mine', ...choice } });
+
+    expect(github.calls).toContain(`gh repo create ${OWN} ${flag} --add-readme`);
+    expect(github.repositories.get(OWN)!.topics).toEqual(['grillo-created']);
+    expect(project.id).toBe(OWN);
+  });
+
+  it('knows the signed-in account whatever case the owner is written in', async () => {
+    const { store, github } = await setup();
+
+    await store.createProject({ newRepository: { organisation: 'ADA-Example', name: 'mine', visibility: 'public' } });
+
+    expect(github.calls).toContain('gh repo create ADA-Example/mine --public --add-readme');
+  });
+
+  it('answers who is signed in without a project', async () => {
+    const { store } = await setup();
+
+    await expect(store.signedInLogin()).resolves.toBe('ada-example');
+  });
+
+  it.each([
+    ['an organisation', 'example-org'],
+    ['another person', 'ben-example'],
+  ])('refuses a public repository owned by %s, creating nothing', async (_case, owner) => {
+    const { store, github } = await setup();
+
+    const error = await refusal(store.createProject({ newRepository: { organisation: owner, name: 'demo', visibility: 'public' } }));
+
+    expect(error.kind).toBe('forbidden');
+    expect(error.message).toContain('only under your own GitHub account');
+    expect(github.calls.filter((call) => call.startsWith('gh repo create'))).toEqual([]);
+    expect(github.repositories.has(`${owner}/demo`)).toBe(false);
+  });
+
+  it.each([['internal'], ['PUBLIC'], [''], [null], [1], [true]])('refuses %s as a visibility, creating nothing', async (visibility) => {
+    const { store, github } = await setup();
+    const input = { newRepository: { organisation: 'ada-example', name: 'mine', visibility } } as unknown as Parameters<typeof store.createProject>[0];
+
+    expect((await refusal(store.createProject(input))).kind).toBe('invalid');
+    expect(github.calls).toEqual([]);
+  });
+
+  it('sends no permission value in an invite to a personal repository, and writes the member line', async () => {
+    const { store, github, seed } = await setup();
+    const repository = seed(OWN, { topics: ['grillo-created'] });
+
+    await store.addMember(OWN, { login: 'ben-example', role: 'product', domains: [] });
+
+    expect(github.calls).toContain(`gh api --method PUT repos/${OWN}/collaborators/ben-example`);
+    expect(repository.invitations.map((invitation) => invitation.permission)).toEqual([undefined]);
+    expect((remoteJson(repository, '.grillo/members.json') as { login: string }[]).map((member) => member.login)).toEqual(['ada-example', 'ben-example']);
+  });
+
+  it('refuses inviting, removing, closing and reopening to a collaborator of a personal repository Grillo created', async () => {
+    const { store, seed } = await setup();
+    const project = 'ben-example/shared';
+    seed(project, { topics: ['grillo-created'], permission: 'write' });
+
+    await expect(store.viewerPermission(project)).resolves.toBe('write');
+    const refused = [
+      await refusal(store.addMember(project, { login: 'ben-example', role: '', domains: [] })),
+      await refusal(store.removeMember(project, 'ada-example')),
+      await refusal(store.archiveProject(project)),
+      await refusal(store.unarchiveProject(project)),
+    ];
+
+    expect(refused.map((error) => error.kind)).toEqual(['forbidden', 'forbidden', 'forbidden', 'forbidden']);
+    expect(refused[0].message).toContain('may invite people');
+  });
+
+  it("lists the member's own repositories in the connect list, with their access", async () => {
+    const { store, github } = await setup();
+    github.addRepository('ada-example/own-code');
+    github.addRepository('example-org/team-code', { permission: 'write' });
+
+    await expect(store.listRepositories()).resolves.toEqual([
+      { repository: { owner: 'ada-example', name: 'own-code' }, permission: 'admin' },
+      { repository: { owner: 'example-org', name: 'team-code' }, permission: 'write' },
+    ]);
+  });
+});
+
+describe('GitHub repository backend: what a repository read says of its owner and visibility', () => {
+  const answering = (repository: Record<string, unknown>) =>
+    createGithubApi(
+      createGh(async () => ({
+        exitCode: 0,
+        stdout: JSON.stringify({ archived: false, has_issues: true, default_branch: 'main', permissions: { admin: true }, ...repository }),
+        stderr: '',
+      })),
+    ).repository({ owner: 'ada-example', name: 'mine' });
+
+  it.each([
+    ['private: true', { private: true }, false],
+    ['private: false', { private: false }, true],
+    ['no private field', {}, true],
+    ['private: null', { private: null }, true],
+    ['private as text', { private: 'true' }, true],
+  ])('treats a repository as public unless GitHub says it is private: %s', async (_case, answer, isPublic) => {
+    await expect(answering(answer)).resolves.toMatchObject({ isPublic });
+  });
+
+  it.each([
+    ['a user', { login: 'ada-example', type: 'User' }, true],
+    ['an organisation', { login: 'example-org', type: 'Organization' }, false],
+    ['an owner of unknown type', { login: 'example-org' }, false],
+    ['no owner', null, false],
+  ])('calls a repository personal only when GitHub says its owner is a user: %s', async (_case, owner, personal) => {
+    await expect(answering({ owner })).resolves.toMatchObject({ personal });
   });
 });

@@ -34,6 +34,7 @@ import {
   inviteProblem,
   matchingRepositories,
   newProjectForm,
+  ownedByMember,
   repositoryToConnect,
   suggestedRepositoryName,
   type ProjectForm,
@@ -68,6 +69,8 @@ const TRANSCRIPT_FILES = '.txt,.md,.vtt,.srt';
 const DAMAGED_PROJECT_HINT = 'Fix the file on GitHub, then open the project again.';
 const SEARCH_LABEL = 'Search repositories';
 const SEARCH_SELECTOR = `input[aria-label="${SEARCH_LABEL}"]`;
+const PUBLIC_WARNING =
+  'Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.';
 
 interface RecentRow {
   id: ProjectId;
@@ -350,8 +353,9 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
 
   async function openForm(): Promise<void> {
     show({ name: 'loading', text: 'Loading your organisations…' });
-    const [orgs, repositoryList, projects, last, identity] = await Promise.allSettled([
+    const [orgs, own, repositoryList, projects, last, identity] = await Promise.allSettled([
       store.listOrganisations(),
+      store.signedInLogin(),
       store.listRepositories(),
       store.listProjects(),
       readLastMembership(grillo),
@@ -374,12 +378,14 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     form = newProjectForm(
       organisations.map((organisation) => organisation.login),
       last.status === 'fulfilled' ? last.value : null,
+      own.status === 'fulfilled' && isText(own.value) && own.value !== '' ? own.value : null,
     );
     inviteDraft = '';
     inviteError = null;
     domainDraft = '';
     show({ name: 'form' });
     if (orgs.status === 'rejected') actionError = `Grillo could not list your organisations: ${messageOf(orgs.reason)}`;
+    else if (own.status === 'rejected') actionError = `Grillo could not read your GitHub account: ${messageOf(own.reason)}`;
     draw();
   }
 
@@ -514,32 +520,58 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
           }
         },
       });
-      const organisation = el(
-        'select',
-        '',
-        organisations.map((entry) => {
-          const option = el('option', '', [entry.login]);
-          option.value = entry.login;
-          option.selected = entry.login === form.organisation;
-          return option;
-        }),
-      );
-      organisation.disabled = busy || organisations.length === 0;
-      organisation.addEventListener('change', () => {
-        form.organisation = organisation.value;
+      const ownerChoice = (login: string, label: string): HTMLOptionElement => {
+        const option = el('option', '', [label]);
+        option.value = login;
+        option.selected = login === form.organisation;
+        return option;
+      };
+      const owner = el('select', '', [
+        ...organisations.map((entry) => ownerChoice(entry.login, entry.login)),
+        ...(form.ownAccount === null ? [] : [ownerChoice(form.ownAccount, `${form.ownAccount} (your account)`)]),
+      ]);
+      owner.disabled = busy || owner.options.length === 0;
+      owner.addEventListener('change', () => {
+        form.organisation = owner.value;
+        form.visibility = 'private';
+        draw();
       });
+      const own = ownedByMember(form);
       card.append(
         el('div', 'grid-2', [
           el('label', 'field', ['Project name', projectName]),
-          el('label', 'field', ['Organisation', organisation]),
+          el('label', 'field', ['Owner', owner]),
           el('label', 'field', ['Repository name', repositoryName]),
+          ...(own
+            ? [
+                el('div', 'field', [
+                  'Visibility',
+                  segmented(
+                    'Visibility',
+                    [
+                      { value: 'private', text: 'Private' },
+                      { value: 'public', text: 'Public' },
+                    ],
+                    form.visibility,
+                    (visibility) => {
+                      form.visibility = visibility;
+                      draw();
+                    },
+                    busy,
+                  ),
+                ]),
+              ]
+            : []),
         ]),
         el('p', 'small muted m0', [
-          'A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.',
+          own
+            ? `A ${form.visibility} repository under your own GitHub account. Only you can invite people, close and reopen the project; the people you invite get write access.`
+            : 'A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.',
         ]),
       );
-      if (organisations.length === 0) {
-        card.append(note('Your GitHub sign-in belongs to no organisation, so Grillo cannot create a repository. Connect an existing one instead.', 'warn'));
+      if (own && form.visibility === 'public') card.append(note(PUBLIC_WARNING, 'warn'));
+      if (owner.options.length === 0) {
+        card.append(note('Grillo cannot create a repository without an owner. Connect an existing one instead.', 'warn'));
       }
       return card;
     }

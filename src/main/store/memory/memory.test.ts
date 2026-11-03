@@ -855,3 +855,54 @@ describe('in-memory store: records handed out are copies', () => {
     expect((await store.getTicket(ticket)).questions).toHaveLength(2);
   });
 });
+
+describe('in-memory store: a project under the own account', () => {
+  const OWN = 'ada-example/mine';
+
+  it('creates a private or a public project under the signed-in account, whatever case its login is written in', async () => {
+    const store = createMemoryStore();
+
+    await store.createProject({ newRepository: { organisation: 'ada-example', name: 'mine' } });
+    await store.createProject({ newRepository: { organisation: 'ADA-Example', name: 'open', visibility: 'public' } });
+
+    expect(await store.viewerPermission(OWN)).toBe('admin');
+    expect(await store.signedInLogin()).toBe('ada-example');
+    expect((await store.listRepositories()).map(({ repository }) => repository.name)).toEqual(expect.arrayContaining(['mine', 'open']));
+  });
+
+  it.each([
+    ['an organisation', 'example-org'],
+    ['another person', 'ben-example'],
+  ])('refuses a public repository owned by %s, creating nothing', async (_case, owner) => {
+    const store = createMemoryStore();
+
+    expect(await refusal(store.createProject({ newRepository: { organisation: owner, name: 'demo', visibility: 'public' } }))).toBe('forbidden');
+    expect(await store.listProjects()).toEqual([]);
+  });
+
+  it('refuses a private repository under an owner that is neither the member nor one of their organisations', async () => {
+    const store = createMemoryStore();
+
+    expect(await refusal(store.createProject({ newRepository: { organisation: 'ben-example', name: 'demo' } }))).toBe('invalid');
+  });
+
+  it.each([['internal'], [''], [null]])('refuses %s as a visibility', async (visibility) => {
+    const store = createMemoryStore();
+    const input = { newRepository: { organisation: 'ada-example', name: 'mine', visibility } } as unknown as Parameters<typeof store.createProject>[0];
+
+    expect(await refusal(store.createProject(input))).toBe('invalid');
+  });
+
+  it('keeps inviting, closing and reopening from a member who joined by invitation to a personal repository', async () => {
+    const store = createMemoryStore({
+      seed: { invitations: [{ id: 2, repository: { owner: 'ben-example', name: 'shared' }, inviter: 'ben-example', createdAt: '2026-10-20T09:00:00.000Z' }] },
+    });
+    await store.acceptInvitation(2);
+    const project = 'ben-example/shared';
+
+    expect(await store.viewerPermission(project)).toBe('write');
+    expect(await refusal(store.addMember(project, { login: 'cy-example', role: '', domains: [] }))).toBe('forbidden');
+    expect(await refusal(store.archiveProject(project))).toBe('forbidden');
+    expect(await refusal(store.unarchiveProject(project))).toBe('forbidden');
+  });
+});

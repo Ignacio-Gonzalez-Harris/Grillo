@@ -166,6 +166,7 @@ export function parseRawComment(value: unknown): RawComment {
     body: comment.body === null || comment.body === undefined ? '' : text(comment.body, 'the comment body'),
     author: user === null ? GHOST : login(user.login, 'the comment author'),
     createdAt: text(comment.created_at, 'the comment date'),
+    association: typeof comment.author_association === 'string' ? comment.author_association : null,
   };
 }
 

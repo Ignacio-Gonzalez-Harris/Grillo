@@ -31,11 +31,15 @@ export interface FakeComment {
   issue: number;
   body: string;
   author: string | null;
+  /** GitHub's `author_association`; left out, the answer holds no such field at all. */
+  association?: string;
   createdAt: string;
 }
 
 export interface FakeIssuesRepository {
   archived: boolean;
+  /** Anyone can comment on a public repository. */
+  isPublic: boolean;
   /** Only collaborators can be assigned. */
   collaborators: Set<string>;
   files: Map<string, string>;
@@ -71,6 +75,7 @@ export function createFakeIssues(me = 'ada-example') {
     const lines = members.map(({ login, role = '', domains = [] }) => ({ login, role, domains }));
     const repository: FakeIssuesRepository = {
       archived: false,
+      isPublic: false,
       collaborators: new Set(members.map((member) => member.login.toLowerCase())),
       files: new Map([['.grillo/members.json', JSON.stringify(lines)]]),
       issues: new Map(),
@@ -103,10 +108,17 @@ export function createFakeIssues(me = 'ada-example') {
     return created;
   }
 
-  /** A member writing a comment in GitHub's own web or phone app. */
-  function addComment(id: string, issue: number, author: string | null, body: string): FakeComment {
+  /** How GitHub calls this author's standing in the repository, unless a test says otherwise. */
+  function associationOf(repository: FakeIssuesRepository, author: string | null): string {
+    return author !== null && repository.collaborators.has(author.toLowerCase()) ? 'COLLABORATOR' : 'NONE';
+  }
+
+  /** Someone writing a comment in GitHub's own web or phone app; `null` for an answer with no association field. */
+  function addComment(id: string, issue: number, author: string | null, body: string, association?: string | null): FakeComment {
+    const repository = repositories.get(id)!;
     const comment: FakeComment = { id: nextCommentId++, issue, body, author, createdAt: moment() };
-    repositories.get(id)!.comments.push(comment);
+    if (association !== null) comment.association = association ?? associationOf(repository, author);
+    repository.comments.push(comment);
     return comment;
   }
 
@@ -136,6 +148,7 @@ export function createFakeIssues(me = 'ada-example') {
     id: comment.id,
     body: comment.body,
     user: comment.author === null ? null : { login: comment.author },
+    ...(comment.association === undefined ? {} : { author_association: comment.association }),
     created_at: comment.createdAt,
   });
 
@@ -283,7 +296,7 @@ export function createFakeIssues(me = 'ada-example') {
     const repository = repositories.get(id);
     if (!repository) return notFound();
     if (rest === '' && verb === 'GET') {
-      return json({ archived: repository.archived, has_issues: true, default_branch: 'main', topics: [], permissions: { admin: true, push: true, pull: true } });
+      return json({ private: !repository.isPublic, archived: repository.archived, has_issues: true, default_branch: 'main', topics: [], permissions: { admin: true, push: true, pull: true } });
     }
     const assignable = /^\/assignees\/([^/]+)$/.exec(rest);
     if (assignable && verb === 'GET') {
