@@ -1036,6 +1036,29 @@ describe('project creation: the guided steps', () => {
     expect(root.querySelector(SEARCH)).toBeNull();
   });
 
+  it('says why when a list on the start page cannot be read, and both ways in still work', async () => {
+    const { store, root, open } = app();
+    vi.spyOn(store, 'listRecentProjects').mockRejectedValue(new Error('gh is signed out'));
+    vi.spyOn(store, 'listPendingInvitations').mockRejectedValue(new Error('gh is signed out'));
+    await open();
+
+    expect(text(cardTitled(root, 'Your projects').querySelector('.note.err'))).toBe('gh is signed out');
+    expect(text(cardTitled(root, 'Pending invitations').querySelector('.note.err'))).toBe('gh is signed out');
+    click(root, 'Connect existing');
+    await until(() => onWhere(root), 'the first step');
+  });
+
+  it('says Grillo found no repository when the member can reach none, and why when the organisations cannot be read', async () => {
+    const { store, root, open } = app({ seed: { repositories: [] } });
+    vi.spyOn(store, 'listOrganisations').mockRejectedValue(new Error('gh is signed out'));
+    await open();
+    click(root, 'Connect existing');
+    await until(() => onWhere(root), 'the first step');
+
+    expect(text(stepCard(root))).toContain('Grillo found no repository of yours.');
+    expect(text(root.querySelector('.note.err'))).toBe('Grillo could not list your organisations: gh is signed out');
+  });
+
   it.each(WAYS_IN)('%s walks Where, Structure, People and Idea in that order, says which step it is, then reviews', async (way) => {
     const { root } = await wayIn(way);
     const seen: Array<[string, string, string]> = [];
