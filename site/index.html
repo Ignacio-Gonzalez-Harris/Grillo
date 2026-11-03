@@ -1,11 +1,13 @@
 <!doctype html>
 <!--
   Grillo's download site, published to GitHub Pages from main by .github/workflows/pages.yml. It implements the UX
-  prototype's screen `screen-download-site` (docs/ux/prototypes/grillo/index.html). A public web page, not a version
-  of Grillo (PRD section 10 item 1).
+  prototype's screen `screen-download-site` (docs/ux/prototypes/grillo/index.html): the screen's own style block is
+  copied below as written, after the prototype's shared rules the screen uses. A public web page, not a version of
+  Grillo (PRD section 10 item 1).
 
   data-repository: the repository the installers are published to (electron-builder.yml, publish).
   data-installers: `unsigned` in the pilot (the warning note and warning steps show); the signing story sets `signed`.
+  latest-release.js puts the visitor's own system's download button first and fills the release details in.
 -->
 <html lang="en" data-repository="Ignacio-Gonzalez-Harris/Grillo" data-installers="unsigned">
 <head>
@@ -13,10 +15,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Grillo: download</title>
 <meta name="description" content="Grillo turns a first idea, through a guided grilling of the right experts, into a finished, traceable PRD. Download it for Windows or Mac.">
-<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="icon" type="image/png" href="grillo-logo.png">
 <link rel="stylesheet" href="tokens.css">
 <style>
 /* Every colour, spacing, radius, blur and size below comes from tokens.css (a copy of the UX prototype's). */
+
+/* ---------- The prototype's shared rules that the download-site screen uses, as written there ---------- */
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
@@ -32,18 +36,15 @@ body {
     linear-gradient(135deg, var(--color-backdrop-1), var(--color-backdrop-2) 50%, var(--color-backdrop-3));
   background-attachment: fixed;
 }
-h1, h2 { font-weight: var(--font-weight-strong); line-height: 1.25; }
-h1 { font-size: var(--font-size-xl); margin: 0; display: flex; align-items: center; gap: var(--space-3); }
-h1 .logo { width: var(--size-logo); height: var(--size-logo); }
-h2 { font-size: var(--font-size-m); margin: 0 0 var(--space-2); }
+h1, h2, h3, h4 { font-weight: var(--font-weight-strong); line-height: 1.25; }
+h3 { font-size: var(--font-size-l); margin: 0 0 var(--space-3); }
 p { margin: 0 0 var(--space-2); }
 code { font-family: var(--font-family-mono); font-size: var(--font-size-s); background: var(--color-disabled-fill); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); }
 a { color: var(--color-accent); }
 :focus-visible { outline: var(--focus-ring-width) solid var(--color-focus-ring); outline-offset: var(--space-0); }
-.muted { color: var(--color-text-muted); }
-.small { font-size: var(--font-size-s); }
+.strong { font-weight: var(--font-weight-strong); }
+.m0 { margin: 0; }
 
-/* ---------- Glass ---------- */
 .glass {
   background: var(--color-glass-fill);
   border: var(--border-width) solid var(--color-glass-border);
@@ -51,6 +52,11 @@ a { color: var(--color-accent); }
   box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow), inset 0 var(--border-width) 0 var(--color-glass-highlight);
   -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(var(--saturate-glass));
   backdrop-filter: blur(var(--blur-glass)) saturate(var(--saturate-glass));
+}
+.glass-strong {
+  background: var(--color-glass-fill-strong);
+  -webkit-backdrop-filter: blur(var(--blur-glass-strong)) saturate(var(--saturate-glass));
+  backdrop-filter: blur(var(--blur-glass-strong)) saturate(var(--saturate-glass));
 }
 .card {
   background: var(--color-glass-fill-strong);
@@ -61,101 +67,334 @@ a { color: var(--color-accent); }
 /* Fallback: no backdrop-filter (some Windows set-ups). */
 @supports not ((backdrop-filter: none) or (-webkit-backdrop-filter: none)) {
   .glass { background: var(--color-glass-fill-fallback); border-color: var(--color-glass-border-fallback); }
-  .card { background: var(--color-glass-fill-strong-fallback); border-color: var(--color-glass-border-fallback); }
+  .glass-strong, .card { background: var(--color-glass-fill-strong-fallback); border-color: var(--color-glass-border-fallback); }
 }
 
-/* ---------- Page layout ---------- */
-.page { max-width: var(--size-content-max); margin: var(--space-7) auto; padding: var(--space-5); display: grid; gap: var(--space-5); }
-.stack { display: grid; gap: var(--space-3); }
+.titlebar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); color: var(--color-text-muted); flex-wrap: wrap; }
+.titlebar strong { color: var(--color-text); }
+.titlebar .logo { width: var(--size-logo); height: var(--size-logo); }
+.spacer { flex: 1; }
 .row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
 
-/* ---------- Controls ---------- */
 .btn { font: inherit; text-decoration: none; min-height: var(--size-control-height); padding: 0 var(--space-4); border-radius: var(--radius-pill); border: var(--border-width) solid var(--color-input-border); background: var(--color-glass-fill-strong); color: var(--color-text); cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
 .btn:hover { border-color: var(--color-accent); }
 .btn.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-text-on-accent); font-weight: var(--font-weight-strong); }
 .btn.primary:hover { background: var(--color-accent-hover); }
+.btn.sm { min-height: 0; padding: var(--space-1) var(--space-3); font-size: var(--font-size-s); }
 
-/* ---------- Notes and lists ---------- */
+.badge { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); background: var(--color-disabled-fill); color: var(--color-text-muted); white-space: nowrap; }
+.badge.ok { background: var(--color-success-soft); color: var(--color-success); }
+.badge.warn { background: var(--color-warning-soft); color: var(--color-warning); }
+.badge.info { background: var(--color-accent-soft); color: var(--color-accent); }
+.tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); color: var(--color-text); white-space: nowrap; }
+.tag.d1 { background: var(--color-tag-1); } .tag.none { background: var(--color-tag-none); }
+.code-chip { font-family: var(--font-family-mono); font-size: var(--font-size-s); color: var(--color-accent); background: var(--color-accent-soft); padding: var(--space-0) var(--space-1); border-radius: var(--radius-s); white-space: nowrap; }
+.sdot { display: inline-block; width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-disabled); flex: none; }
+.sdot.ok { background: var(--color-success); } .sdot.warn { background: var(--color-warning); }
+
 .note { padding: var(--space-3) var(--space-4); border-radius: var(--radius-m); background: var(--color-accent-soft); }
 .note.warn { background: var(--color-warning-soft); }
 .note > :last-child { margin-bottom: 0; }
+
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows > li { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: flex-start; justify-content: space-between; padding: var(--space-3) 0; border-bottom: var(--border-width) solid var(--color-divider); }
+.rows > li:last-child { border-bottom: 0; }
+.rows .grow { flex: 1; min-width: 0; }
 ol.steps { margin: var(--space-2) 0; padding-left: var(--space-5); }
 ol.steps li { margin-bottom: var(--space-1); }
 
-/* ---------- Pilot (unsigned) and signed release ---------- */
-html[data-installers="signed"] .unsigned-only { display: none; }
-
-/* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
-@media (max-width: 760px) {
-  .page { margin: var(--space-4); padding: var(--space-4); gap: var(--space-4); }
-  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+.tabbar { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-4); border-bottom: var(--border-width) solid var(--color-divider); overflow-x: auto; }
+.tab { font: inherit; display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--size-control-height); padding: 0 var(--space-3); border-radius: var(--radius-pill); color: var(--color-text-muted); white-space: nowrap; border: var(--border-width) solid transparent; background: none; }
+.tab.active { background: var(--color-glass-fill-strong); color: var(--color-text); border-color: var(--color-glass-border); box-shadow: 0 var(--border-width) var(--space-2) var(--color-glass-shadow); font-weight: var(--font-weight-strong); }
+.tab .dot { width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-attention-dot); flex: none; }
+.tab-sep { width: var(--border-width); align-self: stretch; background: var(--color-divider); margin: 0 var(--space-2); flex: none; }
+</style>
+<style data-screen="screen-download-site">
+/* ===== Screen 9, the download site (GitHub Pages): a landing page in the liquid glass theme. =====
+   Every colour, spacing and size is a token; nothing moves unless the visitor's system allows motion. */
+.dl-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  container: dl-page / inline-size;
+  display: grid;
+  gap: var(--space-7);
+  padding: var(--space-7) var(--space-7) var(--space-6);
+  background: linear-gradient(160deg, var(--color-backdrop-1), var(--color-backdrop-2) 55%, var(--color-backdrop-3));
 }
+
+/* Glowing backdrop: soft blobs of token colours behind the frosted panels. */
+.dl-glow { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.dl-glow span { position: absolute; aspect-ratio: 1; border-radius: var(--radius-pill); }
+.dl-glow span:nth-child(1) { width: 75%; top: -12%; left: -22%; background: radial-gradient(circle, var(--color-backdrop-glow), transparent 68%); }
+.dl-glow span:nth-child(2) { width: 65%; top: 6%; right: -24%; background: radial-gradient(circle, var(--color-tag-3), transparent 66%); }
+.dl-glow span:nth-child(3) { width: 60%; top: 38%; left: -18%; background: radial-gradient(circle, var(--color-tag-1), transparent 64%); }
+.dl-glow span:nth-child(4) { width: 70%; top: 58%; right: -20%; background: radial-gradient(circle, var(--color-warning-soft), transparent 66%); }
+.dl-glow span:nth-child(5) { width: 70%; bottom: -18%; left: 10%; background: radial-gradient(circle, var(--color-backdrop-glow), transparent 66%); }
+@keyframes dl-drift-a { from { transform: translate(0, 0) scale(1); } to { transform: translate(14%, 9%) scale(1.18); } }
+@keyframes dl-drift-b { from { transform: translate(0, 0) scale(1.12); } to { transform: translate(-16%, -7%) scale(0.94); } }
+
+/* Line icons drawn inline, in the colour of the text around them. */
+.dl-icon { width: var(--size-icon); height: var(--size-icon); flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.dl-disc {
+  position: relative;
+  width: var(--size-icon-disc);
+  height: var(--size-icon-disc);
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border: var(--border-width) solid var(--color-glass-border);
+  box-shadow: inset 0 var(--border-width) 0 var(--color-glass-highlight), 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow);
+}
+
+/* ---------- Hero ---------- */
+.dl-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--space-7); align-items: center; }
+.dl-hero-text { display: grid; gap: var(--space-4); justify-items: start; }
+.dl-brand { display: flex; align-items: center; gap: var(--space-4); }
+.dl-logo { width: var(--size-logo-hero); height: var(--size-logo-hero); filter: drop-shadow(0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow)); }
+.dl-hero h1 {
+  font-size: var(--font-size-display);
+  line-height: 1;
+  margin: 0;
+  color: var(--color-text);
+  background: linear-gradient(120deg, var(--color-text) 35%, var(--color-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dl-pitch { font-size: var(--font-size-xl); line-height: 1.35; margin: 0; }
+.dl-sub { margin: 0; color: var(--color-text-muted); }
+.dl-downloads { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-2); }
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-control-height-l);
+  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: var(--font-size-l);
+  font-weight: var(--font-weight-strong);
+  line-height: 1.2;
+  background: var(--color-glass-fill-strong);
+  border: var(--border-width) solid var(--color-glass-border);
+  box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow), inset 0 var(--border-width) 0 var(--color-glass-highlight);
+}
+.dl-btn:hover { border-color: var(--color-accent); }
+.dl-btn small { display: block; font-size: var(--font-size-s); font-weight: var(--font-weight-regular); color: var(--color-text-muted); overflow-wrap: anywhere; }
+.dl-btn-own { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-text-on-accent); box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-focus-ring), inset 0 var(--border-width) 0 var(--color-glass-border); }
+.dl-btn-own:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.dl-btn-own small { color: var(--color-text-on-accent); }
+.dl-release { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); margin: 0; font-size: var(--font-size-s); color: var(--color-text-muted); }
+.dl-release [data-release-line] { overflow-wrap: anywhere; }
+.dl-release a { font-weight: var(--font-weight-strong); }
+
+/* The illustrative app window in the hero: tokens and prototype parts only, no screenshot. */
+.dl-mock-wrap { position: relative; padding-bottom: var(--space-7); }
+.dl-mock { overflow: hidden; font-size: var(--font-size-s); }
+.dl-mock .titlebar { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+.dl-mock .tabbar { overflow: hidden; }
+.dl-mock .tab { min-height: var(--size-switch-height); padding: var(--space-1) var(--space-3); }
+.dl-mock-body { display: grid; gap: var(--space-3); padding: var(--space-4); }
+.dl-mock-dest { display: grid; gap: var(--space-1); justify-items: start; padding: var(--space-3); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-glass-border); }
+.dl-mock .rows > li { padding: var(--space-2) 0; align-items: center; flex-wrap: nowrap; }
+.dl-mock .rows .grow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl-mock-float {
+  position: absolute;
+  left: calc(-1 * var(--space-6));
+  bottom: 0;
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--size-side-column);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow);
+}
+.dl-mock-float .who { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
+
+/* ---------- Sections ---------- */
+.dl-section { display: grid; gap: var(--space-5); }
+.dl-section-head { display: grid; gap: var(--space-1); justify-items: center; text-align: center; }
+.dl-eyebrow { margin: 0; font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-accent); text-transform: uppercase; }
+.dl-section-head h2 { margin: 0; font-size: var(--font-size-xl); }
+.dl-section-head p { margin: 0; color: var(--color-text-muted); }
+
+/* What Grillo is: a grid of glass feature cards. */
+.dl-features { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.dl-feature { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); }
+.dl-feature h3, .dl-step h3, .dl-card h3 { margin: 0; font-size: var(--font-size-l); }
+.dl-feature p { margin: 0; color: var(--color-text-muted); }
+
+/* How it works: a numbered flow, joined by a dashed line. */
+.dl-flow-panel { padding: var(--space-6) var(--space-4); }
+.dl-flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); row-gap: var(--space-5); }
+.dl-step { position: relative; display: grid; gap: var(--space-2); justify-items: center; align-content: start; text-align: center; padding: 0 var(--space-3); }
+.dl-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--size-icon-disc) / 2);
+  left: calc(50% + var(--size-icon-disc) / 2 + var(--space-2));
+  width: calc(100% - var(--size-icon-disc) - var(--space-4));
+  border-top: var(--border-width) dashed var(--color-accent);
+}
+.dl-step h3 { font-size: var(--font-size-m); margin-top: var(--space-1); }
+.dl-step p { margin: 0; font-size: var(--font-size-s); color: var(--color-text-muted); }
+.dl-num {
+  position: absolute;
+  top: calc(-1 * var(--space-1));
+  right: calc(-1 * var(--space-1));
+  min-width: var(--size-switch-height);
+  height: var(--size-switch-height);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-strong);
+  box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow);
+}
+
+/* Install: what you need first, the unsigned warning, then the steps per system. */
+.dl-install { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.dl-warning { grid-column: 1 / -1; display: flex; gap: var(--space-3); align-items: flex-start; margin: 0; color: var(--color-text); border: var(--border-width) solid var(--color-glass-border); }
+.dl-warning .dl-icon { color: var(--color-warning); }
+.dl-card { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); }
+.dl-card-head { display: flex; align-items: center; gap: var(--space-3); }
+.dl-card .steps { margin: 0; font-size: var(--font-size-m); }
+.dl-card .steps li { margin-bottom: var(--space-2); }
+.dl-card .steps li:last-child { margin-bottom: 0; }
+.dl-need { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.dl-need li { display: flex; gap: var(--space-3); align-items: flex-start; }
+.dl-need .dl-icon { color: var(--color-accent); }
+
+.dl-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); color: var(--color-text-muted); }
+.dl-footer .logo { width: var(--size-logo); height: var(--size-logo); }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css, measured on the page itself) ---------- */
+@container dl-page (max-width: 760px) {
+  .dl-hero, .dl-features, .dl-install { grid-template-columns: minmax(0, 1fr); }
+  .dl-hero { gap: var(--space-6); }
+  .dl-pitch { font-size: var(--font-size-l); }
+  .dl-downloads, .dl-btn { width: 100%; }
+  .dl-mock-wrap { padding-bottom: 0; display: grid; gap: var(--space-3); }
+  .dl-mock-float { position: static; max-width: none; }
+  .dl-flow { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+  .dl-step { grid-template-columns: var(--size-icon-disc) minmax(0, 1fr); column-gap: var(--space-4); row-gap: var(--space-1); justify-items: start; text-align: left; padding: 0 0 var(--space-5); }
+  .dl-step:last-child { padding-bottom: 0; }
+  .dl-step .dl-disc { grid-row: span 2; }
+  .dl-step h3 { margin-top: var(--space-3); }
+  .dl-step:not(:last-child)::after { top: calc(var(--size-icon-disc) + var(--space-1)); bottom: var(--space-1); left: calc(var(--size-icon-disc) / 2); width: 0; border-top: 0; border-left: var(--border-width) dashed var(--color-accent); }
+}
+@media (max-width: 760px) {
+  .dl-page { padding: var(--space-6) var(--space-4); gap: var(--space-6); }
+}
+
+/* ---------- Motion: only when the visitor's system allows it; with reduced motion asked for, nothing moves ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .dl-glow span { animation: dl-drift-a var(--duration-drift) ease-in-out infinite alternate; }
+  .dl-glow span:nth-child(even) { animation-name: dl-drift-b; }
+  .dl-glow span:nth-child(3) { animation-duration: calc(var(--duration-drift) * 1.3); }
+}
+</style>
+<style>
+/* ---------- The live page only ---------- */
+/* The landing page fills the browser window (its sections stay their own height, packed at the top); its content keeps
+   to the widest a screen's content grows. */
+.dl-page { min-height: 100vh; grid-template-columns: minmax(0, var(--size-content-max)); justify-content: center; align-content: start; }
+/* Pilot (unsigned) and signed release: data-installers on <html> picks which parts show. */
+html[data-installers="signed"] .unsigned-only, html:not([data-installers="signed"]) .signed-only { display: none; }
 </style>
 </head>
 <body>
-<main class="page glass">
-  <section class="card stack">
-    <h1><img class="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAZ7klEQVR42qV7e5QdVZX3b59TVffZt7vT6Q5NEhIS8iIEQwIhEDAhISMIykMaAqKCojIqOI4KutBpIqgzoqOji6Uz34Azoo4kGhD5gkJ4+MHiGSZASAKYRBLygrw6/biPqjpnf3/U61Td20GXd63Ourl1b9U5+/Hbe//2PoSjvVb1SVy+WgEAM4s7X/r1rHV/fvZUz20sHKqNTKmqeo8trZ6h+rBX8xv1BrsNZiIAkESCwVqzcb/wfXANrKEhSAitWQEAKPwOmd9ngMIPOLxIREXpFCq5ct4Ssk6EnWNylb3txcqmEzonPP6NxZ9bT0RevIe+1RoEbrVFavVhf3+/WImVwEpoZu5c8cCXV+w5sv/KfYOH53nwSj4UtNKAZmjNkFIAJECE5DlM4d2DRTNHD+PwGxRuqHk1RARw8s2mLzGDmaFZB59YAgBgWzYsLRqlfPHlCZVxv7t06pJ7Pjn/sh0MoJ/7xUpaqd9VAP39/WLlypXagYVr1vb//fq9m758sHHkeNdzAR8gDSaCJiICE4W7DjfD6Vu22ASBQCJUrjau82grSl+g8B7x9yJZAZFABFkE4VioiPyBE8dN/dGqi757BxHVWgkh9bjoC+8Mv9N7+Zqv/ODPw/sur9fqkBpKCEEcPT9eRLD/eAUcmGsgD060nZELkQitQqUWwpl3aSFQYh3x+8RL0lJnzQytoK1cWw7H5Dqf/vxpl3/uqtkXb+hb1SdXh26dEkCk+Wf2bpj89cd+/IfNB7dN57pWUkpiQCRP5HDTFPtm2tpDlRibaza74LfMOi2AeEfRo7j5l4KOCluJMQai0awVO7AmtPW8M71z8jm/uPjbm01LoFBxRAQMDAx0XnD/5//4p8M7T7J94UMIK1YvJdqh0IYZgU1EJkmhQLTWsWoiy4i/YyAct3RIETwj6z6UvBGR4FuLNhFc4pa+S57V0zZm97Wzz1/yxTM/uTVSuBWti5mx9J7r/nP70K6TbCV9ECzoUPeU9kdGKDEiQDPC1QJMJsTFcuNR7YBTDsAMCAEw0tYB07qM4BD/Ona7SGiGGQUvy2FbHawPjr93y6O/YOZz6VYaYWaSWAWJk6B3nKKuffnQn25WVeUTkRX9Prq5AWHxfQURqEUgIU4WHFwV8TUhBDQrKK0hSEJKmdIoGfJsZR0pDAh/JIjSCuLEKhmxWwny4Fctd+Jjf3rW33rj+sc2zd4kCQANDAx0LL73Uy+9PbR/ogXJTMGKzc1xqE/KPAypb1ByyQjfYECDIYhQ9eroyJchSWKgPoQRrwpJAiWniJx0oKFjE+aMAAgiXofIwCNHph/+lkKXNd2IQOxql7uKHbWvLvz43I/Ov2irBIBtp7if2Day+0pd9zQJkjG8UiTpYGuR9DmB/dFhznQbAoQgDLtVLD3+NPzskm/iunkX48IZ78WC8XNQdorYN3QA+4b3QxAhb+XSKQI3x634erxnTq4Tt05xGCQA7do6t3/k8ND236x/zGLm3KKffvTqWr3GdoD4xr3YsAJT82x4MUfQGDsmhQvgZHWQJFD367j0xKWYOmYiAGB85RicPv5kXDP3g9gz+A7ue+0x3P3ifXjt4J/Rma9ASgtKq3gNbKyHI92SsaTQJ9h4T4kLAMwQJMhtuLxncN9livW35IwPn3Xyw68/dUu1XrOFEKHuOIXYqcQjTOkiECQDiCSJABfCvxRGBA/HtoM70dvWA0Ajb1lwZA4AoS1XxILxJ+OKOeehYOXx/O6NqHp1FKwcNOmMQ2Zegox0+ehwC4CgmSDQOcgjT0pe3H3ejsHdl7GvmYQkilGVEp+P/Ilb2BQIRAK+76Hq1jDiVTHs1lD16qh7dTSUC6UVNDPyVg77q4exauND+OUra7Hq1Yfxwu6N8JSH4zp64UgHeSlw9uTTcM7xC7B+zyb8eWA3Sk4RzIH9NmODsfk4HMdwbSgxpTQFW8parb5RTr5k7rV7qwdPh2JNJERWzAQRJC2I8kAKUZ5D/2MMNUbQUahgds9ULBx/Ms6adAoWTJiD2d1TMbHSi0quBMUKh+uDGGnUIIWAgMBAbRDrd2/GfVvWYe2fnoQgibm9M0HE6G3rwaWzluGN/W/i5b2voZwrQmsdg3ATKJug29JW4kIKggT7pMSYfPsALb3nuoc2H9x+nvShgAAAmSPNUuukmTkOWXXVwOcXXo1PnHIxuooVONJJhT1AwVUeBupD2HLgTazfvQnrtj+L9W9twrA7gvZ8G2xhY6gxjKpbxZIpp+MH778ZJ/acAK0b0JD4xH3/hDWvPYquYgd8rRKFpByD4kw1SYDMxVPgKgwQWCupxITyuKdl+X2Trqn77hTSZGQOZKB+WrxRVSeI0PBdjC9345eXfQdtuRKksFpIX0AKCyWnhMkd43HmxLm4YvZyLJt6BhyZw5b923GgehiVfBllp4TXD7yJ1a/+ATO6j8eM7qnQ7OKCGUvw3K5XsPXQDhTtggGGlMpSszlLOoZG2BRc8ZWijnxFyMkXnXLz4fpgjyDBUSJPSV2aRvwIAMPbSggMNoZRyZfRni/jiTdfwG9ffxxrNq/D/VsexSPbnsYLuzdi66EdOFIfQtnJo+TkIYWN8ZUenDdtES6Y/l4MuVWs3/UqNGu05yuo+XWs2vgQpo+djJPGzYAgYPHxp2LN5nUYdmuwhJWpEyjjGi3Kyxi4g/9qVlSwCg1a9J9X73rj4M7xOemE2+Ns9pHk2HGqk4Q8X/twlYuiXcBAbRBeGLbMFISIkLccjCt1Yf742fjgjCU4f9oitOXagpoYAvdtXod/fOg72F87jA6nDTW/Dl8rPPiRO3H2pHkABH6z+WFcs+Zr6Cy0Q0eYxOm8g1P/UGu+AcSKFOWEvV2OPX/G54bdWqckEZcryQ9Fi3AokqgQfuZIB0prFHMFlJ0iSnYBBaeAopNH0Smi5BRgSRtDbhUb972B+7c8hrVbn4Qkwnt6p0MQY1b3CbhgxmI8uWM9dhzZi4pTRsN38f/eXI++k85DwbIxu2caXtyzGZv3b0PRLmaKJRPtDeVRphQ3pOBptUce+4GTvjjkjrRLkoGniwyoZEoWEEGbRhY7DcXFCIcgyRQkJTrMTCwpUbQLKDoFvDN8CPdvfhRP7diAecfORk9pDLqKFVw44xw8tv1Z7BjYi85CO3YM7MGIW8UFM88BABxTGotVr/4ejrTD+5qVKlIuCiMnSYJAaDaSyNPeXkGUSpZDAE2bDlOQd2lmsNZhFMj6GBm0HSWlrQjyhMi5NGsoVijYeYyrjMXTu17G3/30Ojz42hMABHrbxmDVFd/D+LYeDDVG0F3qxM9feRDrd28EAzhr0nsw/9jZGGqMJEVQHJY5CQKU8WaRMHUIuYaSXSgJ1gaasIGqMdXDSXWXycGbK3GMdhEJI5hkZr5S6Mi3o6F8XPXrm7Bm8zoAEpM7J+DfL+6HYgVJEq7n4a71a0AgSOHgghnvRd1vpF0zSruZ421wlBYHccsgawKrlCQtEZuEiZ5sCCQqUU1X0jDycTbKvygFJxirSMXleNHhQnzloWjn4ZCDK371BfzfN54As4elUxbis6evwDtDb8PTPn616SHsOrILALDouFNQdopQWmfWnLGIKGcxlhgRqmBAaV9ZGsxJmq9N5ishNRjp2tao+9lwk1GLQ2SSKOYUwfnO8CF0Fip43wmLMFgbAkBQfhX/tORTWD71DOwe2o+ntj2PbYf2YEL7BEwfcyx6y93YN7wfjuW0TNRiiyMGtEqskLXhMiCLIv5CZ2gqSjMvCUUVmRulIi5xlstvpr45MUwIAJ7yMdKo4qq5F+LGhVdhbu8MAAJaVQEi5KWNZVPPBAB8dO5F8Pw6lKqikquglC+idriBgp2Hzyp5FhkEJROQXZfx8lm5gpmIdTp1jJDcZKy1cScOP4Fp/si6BVLXOfIjMAQINa8BwYS7Lr0dd19yG+b2ToPn1eD6I3G2oZnheSNouENwvWEIaLAOOMnPn/5hFGQOVbcRECU8CidBrailQEgCkFaY+qOp7M/mU3FVy0fvqtDo/F9UY7jaRcFysHrFv+LMSfPgesNB+RzWYpwq9AQEm9mcgK/qWDHnfIxv68aVq26G53uwpR0qiRNQNEJjph6CAMFTyhVKaxUBITUBHgekSMb96Si7TkpQTgOqDlBPsYLSCj/r+zbOnDQPdXcIlpAQJBI3isooHXxXsYaKVs+AIIGGN4SzJ5+K/7jo63CVG6/fXCfH60nKYRHlNszISScvBMiKwh5ntoEw84uIUBIGAUmUMie0MrcIN1hDc8AJDlQH8a1zb8SyKWeg4Q7CllaCLJTwzmCGY5eTP6sU0O3hZUtYaLhDeP+MJbju1A/hUHUAUsgk2HKz2ceUXhgGBSAtQbBMCpoJGTBJyt+4KCTTRjibYqaAjwAo1rCExMGRw7h09rm4fsGVcN1hWMJu6gVxiBHCcnDf5kfw+LbnIKTAhdMX49wTFsH3q3H0l0JCaxdfOOPD+M2mRzDi12EJKxUa2cwKOYwKhphl94UnfnakUe0U8c7S6WW6UcvQzXCSps2yaBS6VM2toac0Bv9z+b+gbOfA0Cm+gQyaG8LGP6z9Dr700B14ae/reGHXq/j5Kw+iaOVx1vELoHQDRAFFrrWPjmIXth7agWd3bUTZKYUpQbOj6jgyMCBADd/dLWwIi1tQyJnsIdwJpwgHZhMUOfBzIyowB9onZoy4Nfzz8n/A+EovlGpAkmgCW6UVpFXA7994Cnc+80scUx6LMaUOdJe70JFrw7ee+Am2HNgGW+bjznAUrpdMXgDBlMoxTA1xrHUdg3nBzhWENrn0FjQStwgtCfGQhMKoGRpnpFpDs4JFAu+MHMZH5n4AfXPOh+sPh8RJsyVF4eiZnRtgCQmA4GsFT3mwpYWqV8eLb20CyEqSNggQFGZ2T0YlX4Kn/FTQjhVHweYjai9wNSEFU5ItG4RQqh1m1vUxNhglcUSURDdG2NwgAMNuFVM7J+Bby2+EVg0IUDZ1aCppO8sdgTUIYWRlAQr3VsYm/cl4iRpd+TYU7Dw0VHMcZxPWKabpa369KsCUTuIIzQs0zN5kx82mCYyWuOkxdbeOO877R/SUu+FrFyLiE6g5cAgisPZwyYxl6K304MDIoZiI2Tv0Ns6aNA+LJs2DUrXgPqmOR5BHxARJqnKLuEBh9BWCwCfAWiMMC4mfmBVxEuM4Nm+DeOR0pNA66A5bQmD/yCFcO/9ifGDWMrhe2vQ5K1sE8V3pBqZ0TcTqFd/F/N4TY219aM55+OmltyMnZGxd8VZI4nBtGFW3BilkKmHj7GxMTPEz8la+aIFIpqY04okPpAgyImrBtiY9BM06BMEgyxqqj2Ba1yTcvvwGKB2AHo2elhtWIOH5NSw87hT88ZN34/WDbyFvOZgy5jiAPfgqsKK4T80MhsQbB3fiSGMYHfn2FFdB2WgQCSYUhAVwZlqCQRGaMhmIzunIEt5oxK1Bg1Gy8qkavO418L33fwldxS643nAIahl6gNMNnZiIIwHPH4GEwIk9xwPM8L1qOCAhkE3GCcDj25+Hr4LQyplSmESK7UmKxSAZIjIZJdZRWczxHABR0hiN0FqAcKg6gM8sWIE7L/wqqn4NYA2JAPU/vaAP509fHGye5LtWydkWnyABDcD3GvCVG8R9QenUnhlSOtg79DYeeP2PqORKaErqQkCO9hTT5yH1ZQEsjBEFc14lhfZhQyE28WG3ipljj8fXllyHolPGuq3P4t5Xfo+CncfsnqlYufxzUKoexPvRGjUtpoBS1IkxddI0Q8UchFlRxB1P/Rf2DO3H2GJHHAA5E1nSZHYQtRrsuyIa5mEzCoS1YoZOjcdfCIya18DXlnwKRacMX9Wxculn0FVqx7A7gu9fcDM68hVo7Tf7YAZbuSVnotPFjZkrAFBhjuHYbbh341rc9eIadBbaoGLtGzfndCczqk2CHqlWFpGwon4/h+wIU0rxgNZBTg+GJMLB6hG8b9qZuHT2cvh+FZoZk8cch0+dejn2De/HsqlnwPOGY0QGj1Ymt67CLasI6AY85TcJyCIB2y4AEPjphvtx0x++h7wddJiZzCCXWEC0P4rjc6D3osgVLMXaj8tXHTWHAqKMKGOxzPC1Rt5y0H/O9RBhoSNJQqsavnL2xwINqRoEyRBwshMNRhfXxFkj7K5/ayNmjZuMklNpEpjSLp7b9SrufO5/cN+WR1G0C5BSGomawVkSg4hB2hAJJ0UeC7AForhGoCiTixktjn1Ra4YkgberB3DDwqswf/wcuO5QKu7amRisGaNNqKZnC0HwlY+c04YfPfNzfHntv2BO70zMPXYWZo6dhDHFCjyt8ObhvXhh9yZs2Psaan4D7fm2JvuJexWaUzOMadou2KBmwGIdZhUmC2qEw4hDjyq6iR29uOnsa6FVw0hHOam2jN4i4S+hjAhaK+ScMp5762Xc+tidqBTbsfXQW3h1/7agmDJyk5x0UHIKyNt5KK3jRlWMGDoay0tzAsI0PoM1tiwhbc0aIJloPpM4aM2whMBgYwS3n3sDeivHhNq30izxUbY9GvwzGELaOFQ7gs/87pvQAHLShiVtlEQp5Pt0bIlR1aiY47DILZrBbI7wZFjtVL/EkVLRaMvmoJMjQDhSG8TpE0/Gx+d/CL5fhRASfxkPfvSXZoaUOdz0++9h8ztbUXJKcctLM8NnBQUNBQ2fdVgGU4aAowwVlxQ9wsgGY7I4JHyEAIu3qwe3WpYFzcxRfa/jPwXWwVS2rzVuPed65O1cGAr/1hdBaQXHLuP/rF+Nn7/0ILpKQRUYFExmTz8gP0iIuGEbTZOmcgSzLmGdHrbkpIlDRNBKoSwLRdFd6rJjcsEYgwl6gUFGdqh6BJef9HdYPu2sMLyJv3nzmhUcp4QNezfjlnU/REehDTqaTGnSrsFBRGM6JNKDKMzQ0E3PiWl6SpOlDEbecrRoswv7wzMObPY5o76wq1x0FSv4+jmfBmv/L/Dxv8TsNYSwcKQ+jOsfuA2u8mBJO1ioSLq6mRZ0rB9B6XF5aknlU6Z2MYSnAZCAltgnLGlvkuH4qmaG1hpaK7DWwSBTdRA3nPFhTBs7Ba5fiysxbu4oZqYIjwaDDCnzuPnh7+Plva+hLVeGgk6iSgqwDOqNkxAtRi0mOBQSDEI8Jv2jMKBJAgWR3yZmjpvyek7aUEpJ1oHfsNKgMN+fc8w03LjwygD4ghmCUXGdm4mYjKASv7/7xV/jvzbcj7GlTvih3wsSGaYnEoI2/uVUcyb2bObUKFzL6RAdYIOGhhQSFTv/qrhizvJnCsI5AEkwu1pEhIZy8fVzPo22fHswsUn0V3q6SUMR/NDv/3fPJnzl4R+g3WkLSGDjDADR0e3I7Eenus/cXPazkQUIY3JCKSXzZOlTJ71nvVg6YeGOnraxz5MjOBr+sITE4dogLph+Ni6dvRyum8nr/0oxRNmhJSwM1Idw/W+/gYbvwbbs0DRFPFBtHrLio/VdOMlaU+Bmjslxpp8ZCFdrCS47xW23Lf7sU6KhPUzumPizgpUj1sGspM8aJaeAW5f+vdFPN25oSv0of8wco7CGhpR5fOmh72LjvjdQiVA/Y1UtZ9HJnAileNIEnB2Q5hY4xGmrUMzCkXRMuXuNJDEoANDPLr79gXGFri3KZmGT0IerR/Dp0y7De46djYY7EpCNoxXyLREhOVgBBpTykbPL+Mnzv8I9L/0OXeVO+KzCuI6m2R4+ymxBPJCdOZxlpoPUnBhGSmSPfdFBxeqHZi39Dw2GQF+fIKLayeNm3lLKFXGkOqhPGDORv7joY/C9asy+ZloeLabHm6jkoITWPnK5Mp7duQG3rPshOguVUPNilK3yKLUDp6J7YhVJz46z4TC0mMhatPKVKNg0s/uEf7thwdXb+/r6pMDq1Qr9/eKei7953/S2if/tFdi6ZfEn/bHlsfCVl9YSt9DGu8R7y3JwYOQwrn/gG8H/pYVW50y4JfRlTp61nttNfN8oZqJR/XjOgbXv27DG58e++LslP7pd9bNYtWqVDnjqW2/lW26FOG3juV84cecTEz4y/5JlbmPIF0Ja76qgd3EEIWzc+OA/4/UDb2JsaQx8DkJeHMqIm8RhdgyzZCwdZT2UbbVGdYPWfo1da0JH79tfXXTNJ2g8Vfv7+wURsUGxMRERM3NZK+9uIe2+Rn1QEwkmCllNwtHrPcMzfOUjn2/HHU/ehVse+SF6yl1BsgNKZvzN802CmtlRs6cXnUk0Zv7AnJoDSGckQR2vlK90XlidufLOaeVJ56392I+3oL9fYGVwbE4Y/D73c78gouFv3PbNFdD+d3L5knByRam10szh0H/TGcVmTSitkM9X8OjWp3Hb4z/BmGI7FKt4PC6F1WxskBM2J1i/ztybU6eyzHEcTt9PMyvf0z5R0bImtfc+c9O8qz+w9mM/3tK3qk9Gm29tUSGHRUTsebVlguxbhaSzAAHWdXieBwCKiBLiiEILCgEnZ+fx1uABLLvr4zhQHUDezsUt64C3b+HJlDmZYtJomSNy8bhW2KwJT+sxa0UaELAJ0paoyNLBWT0n3Hl/3/e/TUT17KnRo1szsyAKygbP8z4oBFZo7S1ljW7bKUTURDrOag0QUNcaF/3iRvxx+wsYU6xAxae+0XS0Je5MGmf/sucSUvMKlJwMjfMIEZwotYSExcIt5Qobett6fvvZuSvu7Tt5+fa/6vB0RgiSSCijO3QM4C/wvMaJAM0SwuoFUAnScLYUaydnF/gHz/y3/bVHfpjrLXezzxqQlB21AOuQyJLC8HsdDo+HhJ1IGlVklH7MzBZJUcmXcqx5UEprbyVX2uVI+3/nHzfn+dvf+5nnicgHAKyCRB/rRNLp1/8HcQK/+dOECr0AAAAASUVORK5CYII=" alt="">Grillo</h1>
-    <p>From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD. A desktop app for Windows and Mac.</p>
-    <div class="row">
-      <a class="btn primary" data-download="windows" href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases/latest">Download for Windows</a>
-      <a class="btn primary" data-download="mac" href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases/latest">Download for Mac</a>
-      <a class="btn" data-all-releases href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases">All releases on GitHub</a>
+<main class="dl-page">
+  <div class="dl-glow" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+
+  <header class="dl-hero">
+    <div class="dl-hero-text">
+      <span class="badge warn unsigned-only" data-release-badge="unsigned">Pilot release</span>
+      <span class="badge ok signed-only" data-release-badge="signed">Signed for Windows and Mac</span>
+      <div class="dl-brand"><img class="dl-logo" src="grillo-logo.png" alt=""><h1>Grillo</h1></div>
+      <p class="dl-pitch">From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD.</p>
+      <p class="dl-sub">A desktop app for Windows and Mac.</p>
+      <div class="dl-downloads">
+        <a class="dl-btn dl-btn-own" data-download="windows" href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases/latest"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>Download for Windows<small data-file="windows">Windows installer (.exe)</small></span></a>
+        <a class="dl-btn dl-btn-own" data-download="mac" href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases/latest"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>Download for Mac<small data-file="mac">Mac disk image (.dmg)</small></span></a>
+      </div>
+      <p class="dl-release"><span data-release-line>The latest release and its installers are on GitHub.</span><a data-all-releases href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases">All releases on GitHub</a></p>
     </div>
-    <p class="small muted" data-release-line>The latest release and its installers are on GitHub.</p>
+    <div class="dl-mock-wrap" data-app-mock role="img" aria-label="An illustration of the Grillo window: a project's map with settled and open questions, and a grilling agent asking a question">
+      <div class="dl-mock glass glass-strong">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling<span class="dot"></span></span></div>
+        <div class="dl-mock-body">
+          <div class="dl-mock-dest"><span class="badge info">Destination</span><span class="strong">Sample destination: the first release ships</span></div>
+          <ul class="rows">
+            <li><span class="sdot ok"></span><span class="grow">Sample ticket 1 · settled</span><span class="code-chip">S4</span></li>
+            <li><span class="sdot ok"></span><span class="grow">Sample ticket 2 · settled</span><span class="code-chip">Q12</span></li>
+            <li><span class="sdot warn"></span><span class="grow">Sample ticket 3 · open</span><span class="tag d1">product</span></li>
+            <li><span class="sdot"></span><span class="grow">Fog · not asked yet</span><span class="tag none">no domain</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="dl-mock-float card glass-strong">
+        <span class="who"><span class="sdot warn"></span>Grilling agent · Sample ticket 3</span>
+        <span>Who signs off the first release?</span>
+        <span class="row"><span class="btn sm primary">Answer</span><span class="btn sm">Skip</span></span>
+      </div>
+    </div>
+  </header>
+
+  <section class="dl-section" aria-labelledby="dl-what">
+    <div class="dl-section-head"><p class="dl-eyebrow">What Grillo is</p><h2 id="dl-what">The right experts, the right questions, a PRD you can trace</h2></div>
+    <ul class="dl-features">
+      <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5a3 3 0 0 1 0 6"/><path d="M21 20c0-2.6-1.7-4.9-4-5.7"/></svg></span><h3>Only your questions</h3><p>Experts answer only the questions for their domain, live or in their own time.</p></li>
+      <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span><h3>Recorded on your laptop</h3><p>Answers are recorded with their discussion, on your own laptop.</p></li>
+      <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><h3>Every line has a source</h3><p>Every line of the PRD traces back to who said it, when and where.</p></li>
+    </ul>
   </section>
 
-  <div class="grid-2">
-    <section class="card stack">
-      <h2>What Grillo is</h2>
-      <ul class="small">
-        <li>Experts answer only the questions for their domain, live or in their own time.</li>
-        <li>Answers are recorded with their discussion, on your own laptop.</li>
-        <li>Every line of the PRD traces back to who said it, when and where.</li>
-      </ul>
-    </section>
-    <section class="card stack">
-      <h2>What you need first</h2>
-      <ul class="small">
-        <li>Claude Code, signed in with your own Claude subscription (any plan).</li>
-        <li>The GitHub command-line tool <code>gh</code>, signed in.</li>
-        <li>A company GitHub account.</li>
-      </ul>
-    </section>
-  </div>
-
-  <p class="note warn unsigned-only" data-warning="unsigned">These pilot installers are not signed yet, so Windows and Mac each show one warning the first time. This is expected; the steps below say what to click.</p>
-
-  <div class="grid-2">
-    <section class="card stack">
-      <h2>Install on Windows</h2>
-      <ol class="steps small">
-        <li>Run <span data-file="windows">the Grillo-Setup .exe file you downloaded</span>.</li>
-        <li class="unsigned-only">If Windows says it protected your PC, click "More info", then "Run anyway".</li>
-        <li>Open Grillo; the setup check guides you through the rest.</li>
+  <section class="dl-section" aria-labelledby="dl-how">
+    <div class="dl-section-head"><p class="dl-eyebrow">How it works</p><h2 id="dl-how">From idea to PRD in five steps</h2></div>
+    <div class="glass dl-flow-panel">
+      <ol class="dl-flow">
+        <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6"/><path d="M9 13h6"/></svg><span class="dl-num">1</span></span><h3>Create a project</h3><p>Create a project and invite the people who know the subject.</p></li>
+        <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span class="dl-num">2</span></span><h3>Give the idea</h3><p>Give the idea as text or a transcript; Grillo turns it into a map of tickets and questions.</p></li>
+        <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/></svg><span class="dl-num">3</span></span><h3>Tag the questions</h3><p>Run the tagging round so each question reaches the right domain.</p></li>
+        <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v2l-3-2"/></svg><span class="dl-num">4</span></span><h3>Answer together</h3><p>Answer together in a live session, or each in your own time.</p></li>
+        <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="m9 14 2 2 4-4"/></svg><span class="dl-num">5</span></span><h3>Get the PRD</h3><p>When the map is done, Grillo writes the PRD; download it as Markdown or HTML.</p></li>
       </ol>
-    </section>
-    <section class="card stack">
-      <h2>Install on Mac</h2>
-      <ol class="steps small">
-        <li>Open <span data-file="mac">the Grillo .dmg file you downloaded</span> and drag Grillo into Applications.</li>
-        <li class="unsigned-only">If macOS says it cannot check the developer, open System Settings, Privacy and Security, and click "Open Anyway".</li>
-        <li>Open Grillo; the setup check guides you through the rest.</li>
-      </ol>
-    </section>
-  </div>
-
-  <section class="card stack">
-    <h2>How to use it</h2>
-    <ol class="steps small">
-      <li>Create a project and invite the people who know the subject.</li>
-      <li>Give the idea as text or a transcript; Grillo turns it into a map of tickets and questions.</li>
-      <li>Run the tagging round so each question reaches the right domain.</li>
-      <li>Answer together in a live session, or each in your own time.</li>
-      <li>When the map is done, Grillo writes the PRD; download it as Markdown or HTML.</li>
-    </ol>
+    </div>
   </section>
+
+  <section class="dl-section" aria-labelledby="dl-install">
+    <div class="dl-section-head"><p class="dl-eyebrow">Install</p><h2 id="dl-install">Get Grillo running</h2><p class="unsigned-only">Three things first, then a few clicks on Windows or Mac.</p><p class="signed-only">Signed for Windows and Mac: no warning to click through.</p></div>
+    <div class="dl-install">
+      <div class="note warn dl-warning unsigned-only" data-warning="unsigned" role="note"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5"/><path d="M12 18h.01"/></svg><p class="m0">These pilot installers are not signed yet, so Windows and Mac each show one warning the first time. This is expected; the steps below say what to click.</p></div>
+      <div class="dl-card glass">
+        <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span><h3>What you need first</h3></div>
+        <ul class="dl-need">
+          <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M12 15h5"/></svg><span>Claude Code, signed in with your own Claude subscription (any plan).</span></li>
+          <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M12 15h5"/></svg><span>The GitHub command-line tool <code>gh</code>, signed in.</span></li>
+          <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>A company GitHub account.</span></li>
+        </ul>
+      </div>
+      <div class="dl-card glass" data-install="windows">
+        <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/></svg></span><h3>Install on Windows</h3></div>
+        <ol class="steps"><li>Run <span data-file="windows">the Grillo-Setup .exe file you downloaded</span>.</li><li class="unsigned-only">If Windows says it protected your PC, click "More info", then "Run anyway".</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+      </div>
+      <div class="dl-card glass" data-install="mac">
+        <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/></svg></span><h3>Install on Mac</h3></div>
+        <ol class="steps"><li>Open <span data-file="mac">the Grillo .dmg file you downloaded</span> and drag Grillo into Applications.</li><li class="unsigned-only">If macOS says it cannot check the developer, open System Settings, Privacy and Security, and click "Open Anyway".</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+      </div>
+    </div>
+  </section>
+
+  <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="spacer"></span><a href="https://github.com/Ignacio-Gonzalez-Harris/Grillo/releases">All releases on GitHub</a></footer>
 </main>
 <script type="module" src="latest-release.js"></script>
 </body>

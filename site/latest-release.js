@@ -1,8 +1,8 @@
 // @ts-check
 /**
- * The download site's one script: it asks GitHub for the latest release and points the download buttons straight at
- * its installers. Without it (no JavaScript, no network, no release yet) the buttons keep their static link to the
- * releases page, so the page always works.
+ * The download site's one script: it puts the visitor's own system's download button first, asks GitHub for the latest
+ * release and points the download buttons straight at its installers. Without it (no JavaScript, no network, no
+ * release yet) both buttons keep their static link to the releases page, so the page always works.
  *
  * The repository comes from the page's `data-repository` attribute and the signing state from `data-installers`
  * (`unsigned` in the pilot, `signed` once the signing story lands); the stylesheet shows or hides the warning parts.
@@ -20,6 +20,13 @@ export class ReleaseDataError extends Error {
 /** @typedef {{ name: string, url: string }} Installer */
 /** @typedef {{ version: string, date: string, windows: Installer | null, mac: Installer | null }} LatestRelease */
 /** @typedef {(url: string) => Promise<{ ok: boolean, json: () => Promise<unknown> }>} FetchLatest */
+/** @typedef {'windows' | 'mac'} System */
+/** @typedef {{ userAgentData?: { platform?: string }, platform?: string, userAgent?: string }} NavigatorLike */
+
+/** The class that fills a download button as the visitor's own system's. */
+const OWN_SYSTEM = 'dl-btn-own';
+/** Phones and tablets: neither installer runs there, so no button is put first. */
+const PHONE_OR_TABLET = /iphone|ipad|ipod|android/i;
 
 /** The file ending of the installer each system downloads. */
 const INSTALLER_ENDINGS = { windows: '.exe', mac: '.dmg' };
@@ -100,6 +107,38 @@ export function showRelease(document, release) {
   const details = signed ? ['signed for Windows and Mac'] : files;
   const line = document.querySelector('[data-release-line]');
   if (line) line.textContent = ['Latest release: version ' + release.version, release.date, ...details].join(' · ');
+  const pilotBadge = document.querySelector('[data-release-badge="unsigned"]');
+  if (pilotBadge) pilotBadge.textContent = `Pilot release · version ${release.version}`;
+  const signedBadge = document.querySelector('[data-release-badge="signed"]');
+  if (signedBadge) signedBadge.textContent = `Version ${release.version} · signed for Windows and Mac`;
+}
+
+/**
+ * The visitor's system, from what the browser says about itself; `null` when it is neither Windows nor a Mac.
+ * @param {NavigatorLike} navigator
+ * @returns {System | null}
+ */
+export function detectSystem(navigator) {
+  const described = [navigator.userAgentData?.platform, navigator.platform, navigator.userAgent].join(' ');
+  if (PHONE_OR_TABLET.test(described)) return null;
+  if (/mac/i.test(described)) return 'mac';
+  if (/win/i.test(described)) return 'windows';
+  return null;
+}
+
+/**
+ * Puts the visitor's own system's download button first and fills only it. With no system known, both buttons stay
+ * as the page has them: both filled, Windows first.
+ * @param {Document} document
+ * @param {System | null} system
+ */
+export function showOwnSystemFirst(document, system) {
+  if (!system) return;
+  const own = document.querySelector(`a[data-download="${system}"]`);
+  const row = own?.parentElement;
+  if (!own || !row) return;
+  for (const button of row.querySelectorAll('a[data-download]')) button.classList.toggle(OWN_SYSTEM, button === own);
+  row.prepend(own);
 }
 
 /**
@@ -120,5 +159,6 @@ export async function start(document, fetchLatest) {
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  showOwnSystemFirst(document, detectSystem(window.navigator));
   start(document, (url) => window.fetch(url));
 }
