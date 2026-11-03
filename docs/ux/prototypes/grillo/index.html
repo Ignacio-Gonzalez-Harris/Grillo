@@ -728,18 +728,21 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
     <p class="purpose">The member creates a project in a new or an existing repository, shapes its PRD structure, invites people, sets their own role and domains, and gives the idea.</p>
     <dl class="meta">
       <dt>PRD section</dt><dd>5 (Screens), row 2 · flows 4.2 (Starting a project) · 7 (Permissions)</dd>
-      <dt>Controls</dt><dd>Your projects (recently opened) with Open; pending invitations with one-click Accept; New project; new repository with organisation picker, or connect existing; repository picker; PRD structure source (default of 13 sections), add, remove, rename, reorder sections; Save and regenerate for an existing project; invite by GitHub login; own role and domains; idea as text with attachments, or a pasted or uploaded transcript; Create project.</dd>
-      <dt>States</dt><dd>Your projects and invitations · New repository · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · Connect: the repository list · Connect: read access only · Connect: checking access (loading) · Connect: access not known (error) · Connect: nothing picked (error) · Connect: no repository matches the search · Connect: no repository found · Connect: the list cannot be read (error) · After accepting an invite · Creating (loading) · Creating: the grilling agent refused (error) · A refused project that never opened, in the list · Editing the structure of an existing project · A damaged project in the list · Saved as a pull request (main is protected)</dd>
+      <dt>Controls</dt><dd>Your projects (recently opened) with Open; pending invitations with one-click Accept; New project; new repository with an Owner picker (your organisations and your own account) and, for your own account only, Private or Public, or connect existing; repository picker; PRD structure source (default of 13 sections), add, remove, rename, reorder sections; Save and regenerate for an existing project; invite by GitHub login; own role and domains; idea as text with attachments, or a pasted or uploaded transcript; Create project.</dd>
+      <dt>States</dt><dd>Your projects and invitations · New repository · New repository: your own account · New repository: your own account, Public (warning) · Connect existing (write access only, admin actions greyed) · Connect: repository problems (error) · Connect: the repository list · Connect: read access only · Connect: checking access (loading) · Connect: access not known (error) · Connect: nothing picked (error) · Connect: no repository matches the search · Connect: no repository found · Connect: the list cannot be read (error) · After accepting an invite · Creating (loading) · Creating: a public repository (loading) · Creating: the grilling agent refused (error) · A refused project that never opened, in the list · Editing the structure of an existing project · A damaged project in the list · Saved as a pull request (main is protected)</dd>
     </dl>
   </header>
   <div class="states">
     <div class="state-tabs"><span class="label">States:</span>
       <button class="btn sm" data-state="start">Your projects and invitations</button>
       <button class="btn sm" data-state="new">New repository</button>
+      <button class="btn sm" data-state="new-own-account">New repository: your own account</button>
+      <button class="btn sm" data-state="new-own-public">New repository: your own account, Public</button>
       <button class="btn sm" data-state="connect">Connect existing, write access only</button>
       <button class="btn sm" data-state="connect-problems">Connect: repository problems</button>
       <button class="btn sm" data-state="invitee">After accepting an invite</button>
       <button class="btn sm" data-state="creating">Creating</button>
+      <button class="btn sm" data-state="creating-public">Creating: a public repository</button>
       <button class="btn sm" data-state="structure">Editing the structure</button>
       <button class="btn sm" data-state="damaged-project">A damaged project</button>
       <button class="btn sm" data-state="save-notice">Saved as a pull request</button>
@@ -1016,7 +1019,7 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
             <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
             <div class="grid-2">
               <label class="field">Project name<input type="text" value="Sample project 1"></label>
-              <label class="field">Organisation<select><option>example-org</option><option>example-org-2</option></select></label>
+              <label class="field">Owner<select><option>example-org</option><option>example-org-2</option><option>member-a (your account)</option></select></label>
               <label class="field">Repository name<input type="text" value="sample-project-1"></label>
             </div>
             <p class="small muted">A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.</p>
@@ -1159,6 +1162,64 @@ Sample transcript line 2: a made-up reply.</textarea>
             <p class="small muted">Pre-filled from the last project you joined, Sample project 1.</p>
             <div class="row"><span class="spacer"></span><a class="btn primary" href="#screen-map-and-tickets">Save and open the project</a></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="new-own-account">
+      <p class="state-caption">State: New repository: your own account (the only choice when you belong to no organisation; Private by default)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
+            <div class="grid-2">
+              <label class="field">Project name<input type="text" value="Sample project 1"></label>
+              <label class="field">Owner<select><option>member-a (your account)</option></select></label>
+              <label class="field">Repository name<input type="text" value="sample-project-1"></label>
+              <div class="field">Visibility<div class="seg" role="group" aria-label="Visibility"><button aria-pressed="true">Private</button><button aria-pressed="false">Public</button></div></div>
+            </div>
+            <p class="small muted">A private repository under your own GitHub account. Only you can invite people, close and reopen the project; the people you invite get write access.</p>
+          </div>
+          <p class="small muted">The PRD structure, members and idea cards follow, as in the New repository state.</p>
+          <div class="row"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating">Create project</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="new-own-public">
+      <p class="state-caption">State: New repository: your own account, Public (warning)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+        <div class="window-body">
+          <div class="card stack">
+            <h3>1 · Repository</h3>
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="true">Create a new repository</button><button aria-pressed="false">Connect an existing one</button></div>
+            <div class="grid-2">
+              <label class="field">Project name<input type="text" value="Sample project 1"></label>
+              <label class="field">Owner<select><option>example-org</option><option selected>member-a (your account)</option></select></label>
+              <label class="field">Repository name<input type="text" value="sample-project-1"></label>
+              <div class="field">Visibility<div class="seg" role="group" aria-label="Visibility"><button aria-pressed="false">Private</button><button aria-pressed="true">Public</button></div></div>
+            </div>
+            <p class="small muted">A public repository under your own GitHub account. Only you can invite people, close and reopen the project; the people you invite get write access.</p>
+            <p class="note small warn">Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.</p>
+          </div>
+          <p class="small muted">The PRD structure, members and idea cards follow, as in the New repository state.</p>
+          <div class="row"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating-public">Create project</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="creating-public">
+      <p class="state-caption">State: Creating: a public repository (loading)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span></div>
+        <div class="window-body">
+          <ul class="rows card">
+            <li><span class="row"><span class="sdot ok"></span>Public repository member-a/sample-project-1 created</span><span class="badge ok">Done</span></li>
+            <li><span class="row"><span class="sdot warn"></span>Grilling agent started; it is building the map and tickets</span><span class="badge warn">Working…</span></li>
+          </ul>
         </div>
       </div>
     </div>

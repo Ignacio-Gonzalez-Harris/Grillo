@@ -259,6 +259,8 @@ export interface RawComment {
   body: string;
   author: Login;
   createdAt: IsoDateTime;
+  /** GitHub's `author_association`, the author's standing in the repository; absent when GitHub does not say. */
+  association?: string | null;
 }
 
 const HEADERS = {
@@ -334,6 +336,13 @@ export interface TagsByHand {
   /** The member set the "no domain" tag (`domain:none`). */
   noDomain: boolean;
 }
+
+// Who may be read in a public repository, where anyone can comment and a marker line and a `who:` line prove nothing.
+
+/** GitHub's `author_association` of someone with a place in the repository: every other value, or none, is an outsider. */
+const COLLABORATOR_ASSOCIATIONS: readonly unknown[] = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+
+export const isFromCollaborator = ({ association }: RawComment): boolean => COLLABORATOR_ASSOCIATIONS.includes(association);
 
 /** Whether a comment body is a tags-by-hand marker: its first line is the marker. */
 export const isTagsByHand = (body: string): boolean => unixLines(body).split('\n')[0] === TAGS_BY_HAND_MARKER;

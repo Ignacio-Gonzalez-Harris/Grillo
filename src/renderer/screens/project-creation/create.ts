@@ -9,7 +9,7 @@
  * idea and the grilling agent follow, since the member can invite them later.
  */
 import type { Store } from '../../../main/store/store';
-import type { Login, Member, PrdStructure, ProjectId, RepositoryRef, SourceKind } from '../../../main/store/types';
+import type { Login, Member, PrdStructure, ProjectId, RepositoryRef, RepositoryVisibility, SourceKind } from '../../../main/store/types';
 import { agentTitle, type AgentId } from '../../../shared/agents';
 import type { GrilloApi } from '../../../shared/ipc';
 import { StoreError } from '../../../shared/store';
@@ -41,7 +41,9 @@ export interface Idea {
 }
 
 /** The two ways in (PRD section 4.2 item 1), as `createProject` takes them. */
-export type RepositoryChoice = { newRepository: { organisation: Login; name: string } } | { connectRepository: RepositoryRef };
+export type RepositoryChoice =
+  | { newRepository: { organisation: Login; name: string; visibility?: RepositoryVisibility } }
+  | { connectRepository: RepositoryRef };
 
 export interface ProjectDraft {
   repository: RepositoryChoice;
@@ -95,8 +97,8 @@ const listed = (logins: readonly string[]): string =>
 
 function repositoryLabel(input: RepositoryChoice): string {
   if ('newRepository' in input) {
-    const { organisation, name } = input.newRepository;
-    return `Private repository ${organisation}/${name} created, with Grillo's labels and folder`;
+    const { organisation, name, visibility } = input.newRepository;
+    return `${visibility === 'public' ? 'Public' : 'Private'} repository ${organisation}/${name} created, with Grillo's labels and folder`;
   }
   const { owner, name } = input.connectRepository;
   return `Repository ${owner}/${name} connected, with Grillo's labels and folder`;

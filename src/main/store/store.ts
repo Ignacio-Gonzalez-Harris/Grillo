@@ -19,6 +19,7 @@ import type {
   RecentProject,
   RepositoryAccess,
   RepositoryRef,
+  RepositoryVisibility,
   Score,
   Source,
   SourceCode,
@@ -32,9 +33,13 @@ import type {
 // The error type and the method list are shared with the renderer, which gets the same refusals.
 export { STORE_METHODS, StoreError, type StoreErrorKind, type StoreMethod } from '../../shared/store';
 
-/** Two ways in (PRD section 4.2 item 1). The structure defaults to the 13 shipped sections. */
+/**
+ * Two ways in (PRD section 4.2 item 1). The structure defaults to the 13 shipped sections. `organisation` is the new
+ * repository's owner: one of the member's organisations or their own account. `visibility` defaults to private, and
+ * public is refused for any owner but the signed-in account.
+ */
 export type CreateProjectInput = (
-  | { newRepository: { organisation: Login; name: string } }
+  | { newRepository: { organisation: Login; name: string; visibility?: RepositoryVisibility } }
   | { connectRepository: RepositoryRef }
 ) & { structure?: PrdStructure };
 
@@ -155,6 +160,8 @@ export interface Store {
   /** The GitHub identity (login, name, email) plus role and domains from the project's members file. */
   currentMember(project: ProjectId): Promise<Member>;
   viewerPermission(project: ProjectId): Promise<Permission>;
+  /** The login of the account signed in to GitHub: a new repository may go under it. */
+  signedInLogin(): Promise<Login>;
   listOrganisations(): Promise<Organisation[]>;
   /** Every repository the member can reach, except archived ones, which cannot be connected. */
   listRepositories(): Promise<RepositoryAccess[]>;
