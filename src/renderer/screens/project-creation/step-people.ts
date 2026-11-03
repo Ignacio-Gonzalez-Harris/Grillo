@@ -34,7 +34,7 @@ function domainsField(busy: boolean, drafts: Drafts, domains: string[], onChange
     'Your domains',
     el('span', 'row', [
       ...domains.map((domain) => tag(domain, busy ? undefined : () => onChange(domains.filter((entry) => entry !== domain)))),
-      el('span', 'fill', [adding]),
+      el('span', 'domain-input', [adding]),
       button('Add domain', { small: true, disabled: busy, onClick: add }),
     ]),
   ]);

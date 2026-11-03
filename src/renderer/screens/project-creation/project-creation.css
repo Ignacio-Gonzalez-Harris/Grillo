@@ -17,6 +17,8 @@
 .project-creation input:disabled, .project-creation select:disabled, .project-creation textarea:disabled { background: var(--color-disabled-fill); color: var(--color-text-disabled); }
 .project-creation .field { display: grid; gap: var(--space-1); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
 .project-creation .file-input { display: none; }
+/* Starts wide, so beside a long domain tag it wraps to a line of its own instead of being squeezed to nothing. */
+.project-creation .domain-input { flex: 1 1 var(--size-side-column); min-width: 0; }
 .project-creation .reason { font-size: var(--font-size-s); color: var(--color-warning); }
 
 /* ---------- New repository / Connect an existing one, and the idea's format ---------- */
