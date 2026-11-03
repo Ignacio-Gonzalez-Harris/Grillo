@@ -1,0 +1,50 @@
+{
+  "run_id": "Grillo-20261103-213413-15b3",
+  "issue": 219,
+  "title": "Let a member create a project under their own GitHub account, private or public",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 220,
+  "merged_at": "2026-11-03T22:06:53Z",
+  "merge_commit": "947f7e9dc794ae5353feff745535c0b5c54edf6c",
+  "seam": "src/renderer/screens/project-creation/",
+  "story": "The new-project form now says Owner instead of Organisation and adds the member's own GitHub account, so someone with no organisation can create a project. With the own account chosen they can pick Private or Public, and Public warns that everything is visible to anyone. In a public project only the repository's owner, organisation members and collaborators count as answers. This replaces the old dead end where a person with no organisation could only connect an existing repository.",
+  "checks": [
+    {
+      "key": "src/renderer/screens/project-creation/owner-picker-with-organisation",
+      "criterion": "The field is worded Owner, lists organisations and the own account, an organisation is the default, and no visibility choice shows for an organisation.",
+      "steps": "Start with GRILLO_STORE=memory, then npm run dev. Open Project, then New project.",
+      "expected": "Owner offers example-org and ada-example (your account), with example-org chosen. There is no Visibility control, and the wording says private and that every member becomes a repository admin."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/own-account-visibility-warning",
+      "criterion": "Private is the default for the own account, and Public shows the warning.",
+      "steps": "In the same form, pick ada-example (your account), press Public, press Private, then pick example-org and pick ada-example again.",
+      "expected": "Visibility appears on Private. Public shows a warning that transcripts, answers and the PRD are visible to anyone, and the wording says public. Private removes the warning. After the switch to the organisation and back, the control is on Private."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/own-account-public-create",
+      "criterion": "The confirmation says private or public truthfully.",
+      "steps": "Pick the own account, press Public, type a made-up project name and idea, press Create project.",
+      "expected": "The first row reads 'Public repository ada-example/<name> created, with Grillo's labels and folder'. The memory store then fails the grilling agent step, as the runbook says it always does."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/no-organisation",
+      "criterion": "A person with no organisation can finish the form.",
+      "steps": "Use a store where the member has no organisation. Open New project, fill in a made-up name and idea, press Create project.",
+      "expected": "The own account is preselected on Private, and the first row reads 'Private repository <login>/<name> created'."
+    },
+    {
+      "key": "src/renderer/screens/project-creation/personal-repository-collaborator",
+      "criterion": "On a personal-account repository only the owner can invite, close and reopen.",
+      "steps": "Open a project under someone else's personal account as an invited collaborator, then open the map.",
+      "expected": "Close project is greyed with 'Only a repository admin can close the project; you have write access.'"
+    },
+    {
+      "key": "src/renderer/screens/tickets/public-project-outsider-comment",
+      "criterion": "In a public repository, a non-collaborator's comment never counts, even with a forged marker and who line.",
+      "steps": "On a made-up public test project, have a made-up account with no access post a comment holding the grillo answer marker and a who line naming a member, plus a plain comment. Open the ticket and Pick up GitHub comments.",
+      "expected": "No new answer, the question stays unanswered, and nothing waits for pickup."
+    }
+  ],
+  "no_qa_reason": null
+}

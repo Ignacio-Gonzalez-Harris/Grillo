@@ -1,0 +1,51 @@
+{
+  "run_id": "Grillo-20261103-213413-15b3",
+  "issue": 219,
+  "title": "Let a member create a project under their own GitHub account, private or public",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-03T21:34:13Z",
+  "finished_at": "2026-11-03T22:12:00Z",
+  "outcome": "merged",
+  "pr": 220,
+  "summary": "A member with no organisation can now create a project under their own GitHub account, private or public, with a warning on Public; invites on personal repositories send no permission value, and on public projects a non-collaborator's comment no longer counts as an answer. The PRD's fixed rule changed in the same pull request, on the owner's decision as relayed to this run.",
+  "agents": [
+    { "name": "dev-219", "model": "opus", "tokens_total": 396842 },
+    { "name": "review-219-r1", "model": "opus", "tokens_total": 247024 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 1241, "review_seconds": 551, "ci_seconds": 0 },
+  "rounds": { "review": 1, "ci": 1 },
+  "friction": [
+    "The run's brief said the project has no CI, but the reconcile pull request removed that rule from CLAUDE.md and CI ran on the pull request: the reviewer ran a full gate that CI had already run, and the pull request body had to be corrected. A brief should read the rule from origin/main instead of restating it."
+  ],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "high",
+      "area": "resources/skills/",
+      "what": "On a public project an outsider's comment text reaches the agent's model during its gh read, so a crafted comment is a prompt-injection attempt that only the written instruction holds back.",
+      "why": "A jq select on the standing inside the read might keep the text out, but the read must differ for public and private across eleven instructions and cannot be tried against real gh here.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "On a public connected organisation repository, an organisation member with no place in the project reads as MEMBER, so their comment with a forged marker and who line counts as an answer. Own-account projects are not affected.",
+      "why": "Telling them apart needs an access read per author, which is a design of its own; the pull request declares it.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "Standing is read afresh, so once GitHub stops calling a departed collaborator one, their answers on a public project read as unanswered and their decisions leave the ticket while the map's settled line stays.",
+      "why": "Keeping them needs a decision on recording standing at write time, and GitHub does not document when the value changes.",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "docs/PRDs/",
+      "what": "Eight PRD lines outside the sections the decision named now contradict the product, such as 'A project is visible only to its members' against a public project and 'company GitHub account'.",
+      "why": "The decision said nothing else in the PRD changes, so the owner has to widen it; the pull request lists each line.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}
