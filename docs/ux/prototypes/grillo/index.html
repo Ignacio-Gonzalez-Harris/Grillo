@@ -115,6 +115,10 @@
   --size-logo: 20px;            /* The Grillo logo beside the name in the title bar. */
   --size-terminal-min: 260px;   /* Minimum height of a terminal panel. */
   --size-textarea-min: 96px;    /* Minimum height of a multi-line text field. */
+  --size-logo-hero: 72px;       /* The Grillo logo in the download site's hero. */
+  --size-control-height-l: 56px; /* The download site's download buttons, its largest controls. */
+  --size-icon: 24px;            /* An inline line icon: download site steps, feature cards and buttons. */
+  --size-icon-disc: 48px;       /* The round glass disc an icon sits on (download site). */
   /* --breakpoint-narrow: 760px;   Phone-width layout below this. Media queries cannot read custom
                                     properties, so this value is copied into @media rules by hand. */
 
@@ -125,8 +129,12 @@
   --font-size-m: 14px;   /* Body text and controls. */
   --font-size-l: 17px;   /* Panel headings. */
   --font-size-xl: 22px;  /* Screen headings. */
+  --font-size-display: 60px; /* The product name in the download site's hero. */
   --font-weight-regular: 400; /* Body text. */
   --font-weight-strong: 600;  /* Headings, labels, primary buttons. */
+
+  /* ---------- Motion (used only when the system allows it: prefers-reduced-motion no-preference) ---------- */
+  --duration-drift: 30s;      /* One loop of the download site's drifting backdrop glow. */
 }
 /* ===== end of the copy of tokens.css ===== */
 
@@ -360,6 +368,198 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
   .bubble { margin-right: var(--space-5); }
   .bubble.me { margin-left: var(--space-5); }
   .overlay { padding: var(--space-4); }
+}
+</style>
+<style data-screen="screen-download-site">
+/* ===== Screen 9, the download site (GitHub Pages): a landing page in the liquid glass theme. =====
+   Every colour, spacing and size is a token; nothing moves unless the visitor's system allows motion. */
+.dl-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  container: dl-page / inline-size;
+  display: grid;
+  gap: var(--space-7);
+  padding: var(--space-7) var(--space-7) var(--space-6);
+  background: linear-gradient(160deg, var(--color-backdrop-1), var(--color-backdrop-2) 55%, var(--color-backdrop-3));
+}
+
+/* Glowing backdrop: soft blobs of token colours behind the frosted panels. */
+.dl-glow { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.dl-glow span { position: absolute; aspect-ratio: 1; border-radius: var(--radius-pill); }
+.dl-glow span:nth-child(1) { width: 75%; top: -12%; left: -22%; background: radial-gradient(circle, var(--color-backdrop-glow), transparent 68%); }
+.dl-glow span:nth-child(2) { width: 65%; top: 6%; right: -24%; background: radial-gradient(circle, var(--color-tag-3), transparent 66%); }
+.dl-glow span:nth-child(3) { width: 60%; top: 38%; left: -18%; background: radial-gradient(circle, var(--color-tag-1), transparent 64%); }
+.dl-glow span:nth-child(4) { width: 70%; top: 58%; right: -20%; background: radial-gradient(circle, var(--color-warning-soft), transparent 66%); }
+.dl-glow span:nth-child(5) { width: 70%; bottom: -18%; left: 10%; background: radial-gradient(circle, var(--color-backdrop-glow), transparent 66%); }
+@keyframes dl-drift-a { from { transform: translate(0, 0) scale(1); } to { transform: translate(14%, 9%) scale(1.18); } }
+@keyframes dl-drift-b { from { transform: translate(0, 0) scale(1.12); } to { transform: translate(-16%, -7%) scale(0.94); } }
+
+/* Line icons drawn inline, in the colour of the text around them. */
+.dl-icon { width: var(--size-icon); height: var(--size-icon); flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.dl-disc {
+  position: relative;
+  width: var(--size-icon-disc);
+  height: var(--size-icon-disc);
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border: var(--border-width) solid var(--color-glass-border);
+  box-shadow: inset 0 var(--border-width) 0 var(--color-glass-highlight), 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow);
+}
+
+/* ---------- Hero ---------- */
+.dl-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--space-7); align-items: center; }
+.dl-hero-text { display: grid; gap: var(--space-4); justify-items: start; }
+.dl-brand { display: flex; align-items: center; gap: var(--space-4); }
+.dl-logo { width: var(--size-logo-hero); height: var(--size-logo-hero); filter: drop-shadow(0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow)); }
+.dl-hero h1 {
+  font-size: var(--font-size-display);
+  line-height: 1;
+  margin: 0;
+  color: var(--color-text);
+  background: linear-gradient(120deg, var(--color-text) 35%, var(--color-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dl-pitch { font-size: var(--font-size-xl); line-height: 1.35; margin: 0; }
+.dl-sub { margin: 0; color: var(--color-text-muted); }
+.dl-downloads { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-2); }
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-control-height-l);
+  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: var(--font-size-l);
+  font-weight: var(--font-weight-strong);
+  line-height: 1.2;
+  background: var(--color-glass-fill-strong);
+  border: var(--border-width) solid var(--color-glass-border);
+  box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow), inset 0 var(--border-width) 0 var(--color-glass-highlight);
+}
+.dl-btn:hover { border-color: var(--color-accent); }
+.dl-btn small { display: block; font-size: var(--font-size-s); font-weight: var(--font-weight-regular); color: var(--color-text-muted); overflow-wrap: anywhere; }
+.dl-btn-own { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-text-on-accent); box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-focus-ring), inset 0 var(--border-width) 0 var(--color-glass-border); }
+.dl-btn-own:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.dl-btn-own small { color: var(--color-text-on-accent); }
+.dl-release { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); margin: 0; font-size: var(--font-size-s); color: var(--color-text-muted); }
+.dl-release [data-release-line] { overflow-wrap: anywhere; }
+.dl-release a { font-weight: var(--font-weight-strong); }
+
+/* The illustrative app window in the hero: tokens and prototype parts only, no screenshot. */
+.dl-mock-wrap { position: relative; padding-bottom: var(--space-7); }
+.dl-mock { overflow: hidden; font-size: var(--font-size-s); }
+.dl-mock .titlebar { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+.dl-mock .tabbar { overflow: hidden; }
+.dl-mock .tab { min-height: var(--size-switch-height); padding: var(--space-1) var(--space-3); }
+.dl-mock-body { display: grid; gap: var(--space-3); padding: var(--space-4); }
+.dl-mock-dest { display: grid; gap: var(--space-1); justify-items: start; padding: var(--space-3); border-radius: var(--radius-m); background: var(--color-glass-fill-strong); border: var(--border-width) solid var(--color-glass-border); }
+.dl-mock .rows > li { padding: var(--space-2) 0; align-items: center; flex-wrap: nowrap; }
+.dl-mock .rows .grow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl-mock-float {
+  position: absolute;
+  left: calc(-1 * var(--space-6));
+  bottom: 0;
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--size-side-column);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  box-shadow: 0 var(--shadow-offset-y) var(--shadow-blur) var(--color-glass-shadow);
+}
+.dl-mock-float .who { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-text-muted); }
+
+/* ---------- Sections ---------- */
+.dl-section { display: grid; gap: var(--space-5); }
+.dl-section-head { display: grid; gap: var(--space-1); justify-items: center; text-align: center; }
+.dl-eyebrow { margin: 0; font-size: var(--font-size-s); font-weight: var(--font-weight-strong); color: var(--color-accent); text-transform: uppercase; }
+.dl-section-head h2 { margin: 0; font-size: var(--font-size-xl); }
+.dl-section-head p { margin: 0; color: var(--color-text-muted); }
+
+/* What Grillo is: a grid of glass feature cards. */
+.dl-features { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.dl-feature { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); }
+.dl-feature h3, .dl-step h3, .dl-card h3 { margin: 0; font-size: var(--font-size-l); }
+.dl-feature p { margin: 0; color: var(--color-text-muted); }
+
+/* How it works: a numbered flow, joined by a dashed line. */
+.dl-flow-panel { padding: var(--space-6) var(--space-4); }
+.dl-flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); row-gap: var(--space-5); }
+.dl-step { position: relative; display: grid; gap: var(--space-2); justify-items: center; align-content: start; text-align: center; padding: 0 var(--space-3); }
+.dl-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--size-icon-disc) / 2);
+  left: calc(50% + var(--size-icon-disc) / 2 + var(--space-2));
+  width: calc(100% - var(--size-icon-disc) - var(--space-4));
+  border-top: var(--border-width) dashed var(--color-accent);
+}
+.dl-step h3 { font-size: var(--font-size-m); margin-top: var(--space-1); }
+.dl-step p { margin: 0; font-size: var(--font-size-s); color: var(--color-text-muted); }
+.dl-num {
+  position: absolute;
+  top: calc(-1 * var(--space-1));
+  right: calc(-1 * var(--space-1));
+  min-width: var(--size-switch-height);
+  height: var(--size-switch-height);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-strong);
+  box-shadow: 0 var(--border-width) var(--space-1) var(--color-glass-shadow);
+}
+
+/* Install: what you need first, the unsigned warning, then the steps per system. */
+.dl-install { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.dl-warning { grid-column: 1 / -1; display: flex; gap: var(--space-3); align-items: flex-start; margin: 0; color: var(--color-text); border: var(--border-width) solid var(--color-glass-border); }
+.dl-warning .dl-icon { color: var(--color-warning); }
+.dl-card { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); }
+.dl-card-head { display: flex; align-items: center; gap: var(--space-3); }
+.dl-card .steps { margin: 0; font-size: var(--font-size-m); }
+.dl-card .steps li { margin-bottom: var(--space-2); }
+.dl-card .steps li:last-child { margin-bottom: 0; }
+.dl-need { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.dl-need li { display: flex; gap: var(--space-3); align-items: flex-start; }
+.dl-need .dl-icon { color: var(--color-accent); }
+
+.dl-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding-top: var(--space-5); border-top: var(--border-width) solid var(--color-divider); font-size: var(--font-size-s); color: var(--color-text-muted); }
+.dl-footer .logo { width: var(--size-logo); height: var(--size-logo); }
+
+/* ---------- Phone width (breakpoint-narrow in tokens.css, measured on the page itself) ---------- */
+@container dl-page (max-width: 760px) {
+  .dl-hero, .dl-features, .dl-install { grid-template-columns: minmax(0, 1fr); }
+  .dl-hero { gap: var(--space-6); }
+  .dl-pitch { font-size: var(--font-size-l); }
+  .dl-downloads, .dl-btn { width: 100%; }
+  .dl-mock-wrap { padding-bottom: 0; display: grid; gap: var(--space-3); }
+  .dl-mock-float { position: static; max-width: none; }
+  .dl-flow { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+  .dl-step { grid-template-columns: var(--size-icon-disc) minmax(0, 1fr); column-gap: var(--space-4); row-gap: var(--space-1); justify-items: start; text-align: left; padding: 0 0 var(--space-5); }
+  .dl-step:last-child { padding-bottom: 0; }
+  .dl-step .dl-disc { grid-row: span 2; }
+  .dl-step h3 { margin-top: var(--space-3); }
+  .dl-step:not(:last-child)::after { top: calc(var(--size-icon-disc) + var(--space-1)); bottom: var(--space-1); left: calc(var(--size-icon-disc) / 2); width: 0; border-top: 0; border-left: var(--border-width) dashed var(--color-accent); }
+}
+@media (max-width: 760px) {
+  .dl-page { padding: var(--space-6) var(--space-4); gap: var(--space-6); }
+}
+
+/* ---------- Motion: only when the visitor's system allows it; with reduced motion asked for, nothing moves ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .dl-glow span { animation: dl-drift-a var(--duration-drift) ease-in-out infinite alternate; }
+  .dl-glow span:nth-child(even) { animation-name: dl-drift-b; }
+  .dl-glow span:nth-child(3) { animation-duration: calc(var(--duration-drift) * 1.3); }
 }
 </style>
 </head>
@@ -2334,8 +2534,8 @@ Sample transcript line 2: a made-up reply.</textarea>
     <h2>Download site (GitHub Pages)</h2>
     <p class="purpose">A visitor reads what Grillo is, downloads the latest installer for Windows or Mac, and follows the install and first-use steps. A public web page, not a version of Grillo.</p>
     <dl class="meta">
-      <dt>PRD section</dt><dd>8 (Distribution, Signing) · 10 item 1 (the page is not a Grillo web app) · 4.1 step 1</dd>
-      <dt>Controls</dt><dd>What Grillo is; what you need first; Download for Windows and Download for Mac (latest release, version and date); All releases on GitHub; install steps per system with the unsigned-installer warning note; how to use it, step by step.</dd>
+      <dt>PRD section</dt><dd>8 (Distribution, Signing) · 10 item 1 (the page is not a Grillo web app) · 4.1 step 1 · 9 (liquid glass theme)</dd>
+      <dt>Controls</dt><dd>Hero: the logo, the product name, a one-line pitch and the two download buttons, the largest controls on the page (Download for Windows, Download for Mac, each naming its installer file; the visitor's own system comes first and is filled, the other stays beside it), the latest release line (version and date) and All releases on GitHub; an illustrative glass mock of the app window (built from tokens, no screenshot). What Grillo is, as glass feature cards. How it works, a numbered flow of the how-to-use steps. Install: what you need first, the unsigned-installer warning note, the install steps per system. Behind the glass, a softly drifting glow made of token colours; it stands still when the visitor's system asks for reduced motion.</dd>
       <dt>States</dt><dd>Pilot release (unsigned installers, warning note shown) · Signed release (company-wide, no warning)</dd>
     </dl>
   </header>
@@ -2346,89 +2546,176 @@ Sample transcript line 2: a made-up reply.</textarea>
     </div>
 
     <div class="state" data-state="pilot">
-      <p class="state-caption">State: Pilot release, unsigned installers (demo install step)</p>
+      <p class="state-caption">State: Pilot release, unsigned installers (warning note shown), as a Windows visitor sees it: Download for Windows comes first and is filled; a Mac visitor sees Download for Mac there instead</p>
       <div class="window glass">
         <div class="titlebar"><span class="badge">Browser</span><span>example-owner.github.io/grillo</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3 class="m0">Grillo</h3>
-            <p>From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD. A desktop app for Windows and Mac.</p>
-            <div class="row"><button class="btn primary">Download for Windows</button><button class="btn primary">Download for Mac</button><a class="btn" href="#screen-download-site">All releases on GitHub</a></div>
-            <p class="small muted">Latest release: version 1.0.0 · 2026-10-22 · Grillo-Setup-1.0.0.exe · Grillo-1.0.0.dmg</p>
-          </div>
-          <div class="grid-2">
-            <div class="card stack">
-              <h4>What Grillo is</h4>
-              <ul class="small">
-                <li>Experts answer only the questions for their domain, live or in their own time.</li>
-                <li>Answers are recorded with their discussion, on your own laptop.</li>
-                <li>Every line of the PRD traces back to who said it, when and where.</li>
-              </ul>
+        <div class="dl-page">
+          <div class="dl-glow" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+
+          <header class="dl-hero">
+            <div class="dl-hero-text">
+              <span class="badge warn">Pilot release · version 1.0.0</span>
+              <div class="dl-brand"><img class="dl-logo" src="grillo-logo.png" alt=""><h1>Grillo</h1></div>
+              <p class="dl-pitch">From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD.</p>
+              <p class="dl-sub">A desktop app for Windows and Mac.</p>
+              <div class="dl-downloads"><a class="dl-btn dl-btn-own" data-download="windows" href="#screen-download-site"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>Download for Windows<small data-file="windows">Grillo-Setup-1.0.0.exe</small></span></a><a class="dl-btn" data-download="mac" href="#screen-download-site"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>Download for Mac<small data-file="mac">Grillo-1.0.0-universal.dmg</small></span></a></div>
+              <p class="dl-release"><span data-release-line>Latest release: version 1.0.0 · 2026-10-22 · Grillo-Setup-1.0.0.exe · Grillo-1.0.0-universal.dmg</span><a data-all-releases href="#screen-download-site">All releases on GitHub</a></p>
             </div>
-            <div class="card stack">
-              <h4>What you need first</h4>
-              <ul class="small">
-                <li>Claude Code, signed in with your own Claude subscription (any plan).</li>
-                <li>The GitHub command-line tool <code>gh</code>, signed in.</li>
-                <li>A company GitHub account.</li>
-              </ul>
+            <div class="dl-mock-wrap" data-app-mock role="img" aria-label="An illustration of the Grillo window: a project's map with settled and open questions, and a grilling agent asking a question">
+              <div class="dl-mock glass glass-strong">
+                <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+                <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling<span class="dot"></span></span></div>
+                <div class="dl-mock-body">
+                  <div class="dl-mock-dest"><span class="badge info">Destination</span><span class="strong">Sample destination: the first release ships</span></div>
+                  <ul class="rows">
+                    <li><span class="sdot ok"></span><span class="grow">Sample ticket 1 · settled</span><span class="code-chip">S4</span></li>
+                    <li><span class="sdot ok"></span><span class="grow">Sample ticket 2 · settled</span><span class="code-chip">Q12</span></li>
+                    <li><span class="sdot warn"></span><span class="grow">Sample ticket 3 · open</span><span class="tag d1">product</span></li>
+                    <li><span class="sdot"></span><span class="grow">Fog · not asked yet</span><span class="tag none">no domain</span></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="dl-mock-float card glass-strong">
+                <span class="who"><span class="sdot warn"></span>Grilling agent · Sample ticket 3</span>
+                <span>Who signs off the first release?</span>
+                <span class="row"><span class="btn sm primary">Answer</span><span class="btn sm">Skip</span></span>
+              </div>
             </div>
-          </div>
-          <p class="note warn">These pilot installers are not signed yet, so Windows and Mac each show one warning the first time. This is expected; the steps below say what to click.</p>
-          <div class="grid-2">
-            <div class="card stack">
-              <h4>Install on Windows</h4>
-              <ol class="steps small">
-                <li>Run Grillo-Setup-1.0.0.exe.</li>
-                <li>If Windows says it protected your PC, click "More info", then "Run anyway".</li>
-                <li>Open Grillo; the setup check guides you through the rest.</li>
-              </ol>
-            </div>
-            <div class="card stack">
-              <h4>Install on Mac</h4>
-              <ol class="steps small">
-                <li>Open Grillo-1.0.0.dmg and drag Grillo into Applications.</li>
-                <li>If macOS says it cannot check the developer, open System Settings, Privacy and Security, and click "Open Anyway".</li>
-                <li>Open Grillo; the setup check guides you through the rest.</li>
-              </ol>
-            </div>
-          </div>
-          <div class="card stack">
-            <h4>How to use it</h4>
-            <ol class="steps small">
-              <li>Create a project and invite the people who know the subject.</li>
-              <li>Give the idea as text or a transcript; Grillo turns it into a map of tickets and questions.</li>
-              <li>Run the tagging round so each question reaches the right domain.</li>
-              <li>Answer together in a live session, or each in your own time.</li>
-              <li>When the map is done, Grillo writes the PRD; download it as Markdown or HTML.</li>
+          </header>
+
+          <section class="dl-section" aria-labelledby="dl-what-pilot">
+            <div class="dl-section-head"><p class="dl-eyebrow">What Grillo is</p><h2 id="dl-what-pilot">The right experts, the right questions, a PRD you can trace</h2></div>
+            <ul class="dl-features">
+            <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5a3 3 0 0 1 0 6"/><path d="M21 20c0-2.6-1.7-4.9-4-5.7"/></svg></span><h3>Only your questions</h3><p>Experts answer only the questions for their domain, live or in their own time.</p></li>
+            <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span><h3>Recorded on your laptop</h3><p>Answers are recorded with their discussion, on your own laptop.</p></li>
+            <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><h3>Every line has a source</h3><p>Every line of the PRD traces back to who said it, when and where.</p></li>
+            </ul>
+          </section>
+
+          <section class="dl-section" aria-labelledby="dl-how-pilot">
+            <div class="dl-section-head"><p class="dl-eyebrow">How it works</p><h2 id="dl-how-pilot">From idea to PRD in five steps</h2></div>
+            <div class="glass dl-flow-panel">
+            <ol class="dl-flow">
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6"/><path d="M9 13h6"/></svg><span class="dl-num">1</span></span><h3>Create a project</h3><p>Create a project and invite the people who know the subject.</p></li>
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span class="dl-num">2</span></span><h3>Give the idea</h3><p>Give the idea as text or a transcript; Grillo turns it into a map of tickets and questions.</p></li>
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/></svg><span class="dl-num">3</span></span><h3>Tag the questions</h3><p>Run the tagging round so each question reaches the right domain.</p></li>
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v2l-3-2"/></svg><span class="dl-num">4</span></span><h3>Answer together</h3><p>Answer together in a live session, or each in your own time.</p></li>
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="m9 14 2 2 4-4"/></svg><span class="dl-num">5</span></span><h3>Get the PRD</h3><p>When the map is done, Grillo writes the PRD; download it as Markdown or HTML.</p></li>
             </ol>
-          </div>
+            </div>
+          </section>
+
+          <section class="dl-section" aria-labelledby="dl-install-pilot">
+            <div class="dl-section-head"><p class="dl-eyebrow">Install</p><h2 id="dl-install-pilot">Get Grillo running</h2><p>Three things first, then a few clicks on Windows or Mac.</p></div>
+            <div class="dl-install">
+            <div class="note warn dl-warning" data-warning="unsigned" role="note"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5"/><path d="M12 18h.01"/></svg><p class="m0">These pilot installers are not signed yet, so Windows and Mac each show one warning the first time. This is expected; the steps below say what to click.</p></div>
+              <div class="dl-card glass">
+                <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span><h3>What you need first</h3></div>
+                <ul class="dl-need">
+                <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M12 15h5"/></svg><span>Claude Code, signed in with your own Claude subscription (any plan).</span></li>
+                <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M12 15h5"/></svg><span>The GitHub command-line tool <code>gh</code>, signed in.</span></li>
+                <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>A company GitHub account.</span></li>
+                </ul>
+              </div>
+              <div class="dl-card glass" data-install="windows">
+                <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/></svg></span><h3>Install on Windows</h3></div>
+                <ol class="steps"><li>Run Grillo-Setup-1.0.0.exe.</li><li class="unsigned-only">If Windows says it protected your PC, click "More info", then "Run anyway".</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+              </div>
+              <div class="dl-card glass" data-install="mac">
+                <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/></svg></span><h3>Install on Mac</h3></div>
+                <ol class="steps"><li>Open Grillo-1.0.0-universal.dmg and drag Grillo into Applications.</li><li class="unsigned-only">If macOS says it cannot check the developer, open System Settings, Privacy and Security, and click "Open Anyway".</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+              </div>
+            </div>
+          </section>
+
+          <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="spacer"></span><a href="#screen-download-site">All releases on GitHub</a></footer>
         </div>
       </div>
     </div>
 
     <div class="state" data-state="signed">
-      <p class="state-caption">State: Signed release (company-wide; no warning note)</p>
+      <p class="state-caption">State: Signed release (company-wide; no warning note), as a Mac visitor sees it: Download for Mac comes first and is filled</p>
       <div class="window glass">
         <div class="titlebar"><span class="badge">Browser</span><span>example-owner.github.io/grillo</span></div>
-        <div class="window-body">
-          <div class="card stack">
-            <h3 class="m0">Grillo</h3>
-            <p>From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD. A desktop app for Windows and Mac.</p>
-            <div class="row"><button class="btn primary">Download for Windows</button><button class="btn primary">Download for Mac</button><a class="btn" href="#screen-download-site">All releases on GitHub</a></div>
-            <p class="small muted">Latest release: version 1.2.0 · 2026-12-01 · signed for Windows and Mac</p>
-          </div>
-          <div class="grid-2">
-            <div class="card stack">
-              <h4>Install on Windows</h4>
-              <ol class="steps small"><li>Run Grillo-Setup-1.2.0.exe.</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+        <div class="dl-page">
+          <div class="dl-glow" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+
+          <header class="dl-hero">
+            <div class="dl-hero-text">
+              <span class="badge ok">Version 1.2.0 · signed for Windows and Mac</span>
+              <div class="dl-brand"><img class="dl-logo" src="grillo-logo.png" alt=""><h1>Grillo</h1></div>
+              <p class="dl-pitch">From the first statement of an idea, through a guided grilling of the right experts, to a finished, traceable PRD.</p>
+              <p class="dl-sub">A desktop app for Windows and Mac.</p>
+              <div class="dl-downloads"><a class="dl-btn dl-btn-own" data-download="mac" href="#screen-download-site"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>Download for Mac<small data-file="mac">Grillo-1.2.0-universal.dmg</small></span></a><a class="dl-btn" data-download="windows" href="#screen-download-site"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>Download for Windows<small data-file="windows">Grillo-Setup-1.2.0.exe</small></span></a></div>
+              <p class="dl-release"><span data-release-line>Latest release: version 1.2.0 · 2026-12-01 · signed for Windows and Mac</span><a data-all-releases href="#screen-download-site">All releases on GitHub</a></p>
             </div>
-            <div class="card stack">
-              <h4>Install on Mac</h4>
-              <ol class="steps small"><li>Open Grillo-1.2.0.dmg and drag Grillo into Applications.</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+            <div class="dl-mock-wrap" data-app-mock role="img" aria-label="An illustration of the Grillo window: a project's map with settled and open questions, and a grilling agent asking a question">
+              <div class="dl-mock glass glass-strong">
+                <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a</span></div>
+                <div class="tabbar"><span class="tab active">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><span class="tab">Grilling<span class="dot"></span></span></div>
+                <div class="dl-mock-body">
+                  <div class="dl-mock-dest"><span class="badge info">Destination</span><span class="strong">Sample destination: the first release ships</span></div>
+                  <ul class="rows">
+                    <li><span class="sdot ok"></span><span class="grow">Sample ticket 1 · settled</span><span class="code-chip">S4</span></li>
+                    <li><span class="sdot ok"></span><span class="grow">Sample ticket 2 · settled</span><span class="code-chip">Q12</span></li>
+                    <li><span class="sdot warn"></span><span class="grow">Sample ticket 3 · open</span><span class="tag d1">product</span></li>
+                    <li><span class="sdot"></span><span class="grow">Fog · not asked yet</span><span class="tag none">no domain</span></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="dl-mock-float card glass-strong">
+                <span class="who"><span class="sdot warn"></span>Grilling agent · Sample ticket 3</span>
+                <span>Who signs off the first release?</span>
+                <span class="row"><span class="btn sm primary">Answer</span><span class="btn sm">Skip</span></span>
+              </div>
             </div>
-          </div>
-          <p class="small muted">"What Grillo is", "What you need first" and "How to use it" stay as in the pilot state.</p>
+          </header>
+
+          <section class="dl-section" aria-labelledby="dl-what-signed">
+            <div class="dl-section-head"><p class="dl-eyebrow">What Grillo is</p><h2 id="dl-what-signed">The right experts, the right questions, a PRD you can trace</h2></div>
+            <ul class="dl-features">
+            <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5a3 3 0 0 1 0 6"/><path d="M21 20c0-2.6-1.7-4.9-4-5.7"/></svg></span><h3>Only your questions</h3><p>Experts answer only the questions for their domain, live or in their own time.</p></li>
+            <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span><h3>Recorded on your laptop</h3><p>Answers are recorded with their discussion, on your own laptop.</p></li>
+            <li class="dl-feature glass"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><h3>Every line has a source</h3><p>Every line of the PRD traces back to who said it, when and where.</p></li>
+            </ul>
+          </section>
+
+          <section class="dl-section" aria-labelledby="dl-how-signed">
+            <div class="dl-section-head"><p class="dl-eyebrow">How it works</p><h2 id="dl-how-signed">From idea to PRD in five steps</h2></div>
+            <div class="glass dl-flow-panel">
+            <ol class="dl-flow">
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6"/><path d="M9 13h6"/></svg><span class="dl-num">1</span></span><h3>Create a project</h3><p>Create a project and invite the people who know the subject.</p></li>
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span class="dl-num">2</span></span><h3>Give the idea</h3><p>Give the idea as text or a transcript; Grillo turns it into a map of tickets and questions.</p></li>
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/></svg><span class="dl-num">3</span></span><h3>Tag the questions</h3><p>Run the tagging round so each question reaches the right domain.</p></li>
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v2l-3-2"/></svg><span class="dl-num">4</span></span><h3>Answer together</h3><p>Answer together in a live session, or each in your own time.</p></li>
+              <li class="dl-step"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="m9 14 2 2 4-4"/></svg><span class="dl-num">5</span></span><h3>Get the PRD</h3><p>When the map is done, Grillo writes the PRD; download it as Markdown or HTML.</p></li>
+            </ol>
+            </div>
+          </section>
+
+          <section class="dl-section" aria-labelledby="dl-install-signed">
+            <div class="dl-section-head"><p class="dl-eyebrow">Install</p><h2 id="dl-install-signed">Get Grillo running</h2><p>Signed for Windows and Mac: no warning to click through.</p></div>
+            <div class="dl-install">
+              <div class="dl-card glass">
+                <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span><h3>What you need first</h3></div>
+                <ul class="dl-need">
+                <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M12 15h5"/></svg><span>Claude Code, signed in with your own Claude subscription (any plan).</span></li>
+                <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M12 15h5"/></svg><span>The GitHub command-line tool <code>gh</code>, signed in.</span></li>
+                <li><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>A company GitHub account.</span></li>
+                </ul>
+              </div>
+              <div class="dl-card glass" data-install="windows">
+                <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/></svg></span><h3>Install on Windows</h3></div>
+                <ol class="steps"><li>Run Grillo-Setup-1.2.0.exe.</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+              </div>
+              <div class="dl-card glass" data-install="mac">
+                <div class="dl-card-head"><span class="dl-disc"><svg class="dl-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/></svg></span><h3>Install on Mac</h3></div>
+                <ol class="steps"><li>Open Grillo-1.2.0-universal.dmg and drag Grillo into Applications.</li><li>Open Grillo; the setup check guides you through the rest.</li></ol>
+              </div>
+            </div>
+          </section>
+
+          <footer class="dl-footer"><img class="logo" src="grillo-logo.png" alt=""><span><strong>Grillo</strong> · a desktop app for Windows and Mac</span><span class="spacer"></span><a href="#screen-download-site">All releases on GitHub</a></footer>
         </div>
       </div>
     </div>

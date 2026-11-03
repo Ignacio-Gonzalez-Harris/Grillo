@@ -107,6 +107,10 @@
   --size-logo: 20px;            /* The Grillo logo beside the name in the title bar. */
   --size-terminal-min: 260px;   /* Minimum height of a terminal panel. */
   --size-textarea-min: 96px;    /* Minimum height of a multi-line text field. */
+  --size-logo-hero: 72px;       /* The Grillo logo in the download site's hero. */
+  --size-control-height-l: 56px; /* The download site's download buttons, its largest controls. */
+  --size-icon: 24px;            /* An inline line icon: download site steps, feature cards and buttons. */
+  --size-icon-disc: 48px;       /* The round glass disc an icon sits on (download site). */
   /* --breakpoint-narrow: 760px;   Phone-width layout below this. Media queries cannot read custom
                                     properties, so this value is copied into @media rules by hand. */
 
@@ -117,6 +121,10 @@
   --font-size-m: 14px;   /* Body text and controls. */
   --font-size-l: 17px;   /* Panel headings. */
   --font-size-xl: 22px;  /* Screen headings. */
+  --font-size-display: 60px; /* The product name in the download site's hero. */
   --font-weight-regular: 400; /* Body text. */
   --font-weight-strong: 600;  /* Headings, labels, primary buttons. */
+
+  /* ---------- Motion (used only when the system allows it: prefers-reduced-motion no-preference) ---------- */
+  --duration-drift: 30s;      /* One loop of the download site's drifting backdrop glow. */
 }

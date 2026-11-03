@@ -1,0 +1,1 @@
+The UX prototype's download-site screen is now a liquid glass landing page (hero with the largest download buttons, feature cards, a five-step flow, a still-when-reduced-motion glow), so the live site story has a striking design to build.
