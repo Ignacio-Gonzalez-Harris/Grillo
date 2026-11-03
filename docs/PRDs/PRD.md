@@ -252,12 +252,12 @@ GitHub is the single truth; each member's Grillo reads it on demand. No live syn
 | Store | Company GitHub Issues, one repository per project, through `gh`; one swappable store interface in Grillo's code; MCP tools deferred until a second backend `[T21, T31]`. |
 | Other models | None in this PRD: no laptop model, no company-paid account or gateway `[T40]`. |
 | Distribution | Windows and Mac installers on GitHub Releases of Grillo's own repository, which stays on the owner's personal account and is **public** from the pilot on, with a GitHub Pages site (what Grillo is, how to install and use it, downloads) `[T39, T42]`. |
-| Signing | Release 1 pilot ships unsigned (about ten colleagues; one warning to click past). Company-wide release is signed on both systems; signing must be ready by the end of the pilot; **signing owner to be named** `[T39, T42]`. |
+| Signing | Release 1 pilot ships unsigned (about ten colleagues; one warning to click past) `[T39, T42]`. Signing is not planned (owner's decision, 2026-11-03): installers stay unsigned, people click past the Windows and Mac warnings, and Mac members install updates by hand; it is revisited if company IT blocks unsigned apps or before a company-wide release. |
 | Updates | Grillo checks for new releases while open and shows a pop-up offering to install; an auto-update setting installs on the next restart (Mac only once signed) `[T39, T42]`. |
 | CI | GitHub Actions on GitHub-hosted **Windows and Mac** runners: every pull request runs build, lint and tests on both; installers are built only when a version is published `[T39]`. |
 | Hosting | Nothing central: no Grillo server or database `[T10, T43]`. |
 
-Risks carried from the decisions: code written as an employee may belong to the company, to check before the repository goes public `[T42]`; Apple and Azure enrolment can take weeks and may hold the end of the pilot `[T42]`; an unsigned Mac update may need "Open Anyway" and the audio permission again `[T39]`; `node-pty` must match Electron's native ABI `[T36]`; live delivery uses more of each member's Claude usage than one chunk at "use it" `[T22]`.
+Risks carried from the decisions: code written as an employee may belong to the company, to check before the repository goes public `[T42]`; company IT may block unsigned apps on some laptops (signing not planned, owner's decision, 2026-11-03); an unsigned Mac update may need "Open Anyway" and the audio permission again `[T39]`; `node-pty` must match Electron's native ABI `[T36]`; live delivery uses more of each member's Claude usage than one chunk at "use it" `[T22]`.
 
 ---
 
@@ -329,7 +329,7 @@ Later releases get their own demo steps when they are planned `[T34]`.
 
 ## 12. Release order
 
-**Release 1 — both halves, kept plain. Fixes all three problems.** Ships to the unsigned pilot, then company-wide once the pilot passes and the app is signed `[T16, T39, T42]`. The release order is the build order: nothing in the app is switched off by release, so a later release's feature merged before an installer is published ships in it.
+**Release 1 — both halves, kept plain. Fixes all three problems.** Ships to the unsigned pilot, then company-wide once the pilot passes `[T16, T39, T42]`; the app stays unsigned until signing is revisited (section 8, Signing). The release order is the build order: nothing in the app is switched off by release, so a later release's feature merged before an installer is published ships in it.
 
 1. Setup check (Claude Code and `gh` signed in), GitHub sign-in, project creation (new repository or connected one) and invites `[T16, T42, T44]`.
 2. The PRD structure: pick the default or an earlier project's, edit sections `[T26]`.
