@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261103-182746-e267",
+  "issue": 207,
+  "title": "Prototype: redesign the download-site screen into a striking liquid-glass landing page",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 209,
+  "merged_at": "2026-11-03T18:58:33Z",
+  "merge_commit": "a05e373fa3ab18314027fed27ace7449c10a6228",
+  "seam": "docs/ux/prototypes/grillo/",
+  "story": "The download page in the design prototype now looks like a real product landing page, not a plain list. The big green button for my own computer comes first, a little picture of the app shows what Grillo looks like, and the steps read as a clear numbered flow. If my computer asks for less motion, the soft glowing background stays still.",
+  "checks": [
+    {
+      "key": "docs/ux/prototypes/grillo/download-site-landing",
+      "criterion": "The redesigned screen shows every part of the landing page, in both states",
+      "steps": "Open docs/ux/prototypes/grillo/index.html from disk, click '9 Download site', then click 'Pilot release, unsigned'. Then click 'Signed release'.",
+      "expected": "Pilot: logo and large 'Grillo', one-line pitch, filled 'Download for Windows' first with 'Download for Mac' beside it, release line with 'All releases on GitHub', a glass app-window mock, three feature cards, a five-step numbered flow with icons, 'What you need first', the amber warning note and the Windows and Mac install steps. Signed: same page with 'Download for Mac' first and a 'signed' badge, no warning note, two install steps per system."
+    },
+    {
+      "key": "docs/ux/prototypes/grillo/download-site-reduced-motion",
+      "criterion": "With reduced motion asked for, nothing moves",
+      "steps": "Turn on the system's reduce-motion setting (Windows: Settings, Accessibility, Visual effects, Animation effects off), then open the screen.",
+      "expected": "The coloured glow behind the panels stands still; with the setting off it drifts slowly."
+    },
+    {
+      "key": "docs/ux/prototypes/grillo/download-site-phone",
+      "criterion": "The screen is readable at phone width",
+      "steps": "Open the screen at 390 px wide (browser developer tools, phone size).",
+      "expected": "A single column, full-width download buttons and a vertical step timeline; nothing cut off, no sideways scrolling."
+    }
+  ],
+  "no_qa_reason": null
+}

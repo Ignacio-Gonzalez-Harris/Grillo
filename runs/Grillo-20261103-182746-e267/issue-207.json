@@ -1,0 +1,39 @@
+{
+  "run_id": "Grillo-20261103-182746-e267",
+  "issue": 207,
+  "title": "Prototype: redesign the download-site screen into a striking liquid-glass landing page",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-03T18:27:56Z",
+  "finished_at": "2026-11-03T18:59:30Z",
+  "outcome": "merged",
+  "pr": 209,
+  "summary": "The UX prototype's download-site screen became a landing page: logo hero, own-system download button first, a glass app-window mock, feature cards, a numbered how-it-works flow and a drifting glow that stops under reduced motion; six new named tokens copied into every token file.",
+  "agents": [
+    {
+      "name": "dev-207",
+      "model": "opus",
+      "tokens_total": 200992
+    },
+    {
+      "name": "review-207",
+      "model": "opus",
+      "tokens_total": 135541
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1508,
+    "review_seconds": 231,
+    "ci_seconds": 722
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [
+    "The Node pin (24.22.2) is not the node on PATH here (24.4.1); it lives under AppData/Roaming/fnm/node-versions/v24.22.2/installation and must be put first on PATH in every brief",
+    "The repository went public on 2026-11-03, so GitHub Actions CI runs again on Windows and Mac; the CLAUDE.md rule that the project counts as having no CI is now stale and should be deleted"
+  ],
+  "deferred": []
+}
