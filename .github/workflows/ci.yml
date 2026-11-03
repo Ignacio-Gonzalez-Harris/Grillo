@@ -3,7 +3,7 @@
 #
 # Each runner runs orion's mechanical install check (it fails when a file orion installed is missing, doubled or
 # broken), then the gate chain from CLAUDE.md section 5: build, lint, typecheck, full suite. Installers are not
-# built here; they are built only when a version is published.
+# built here; once this run is green on a push to main, auto-release.yml publishes a version if the app changed.
 name: ci
 
 on:
