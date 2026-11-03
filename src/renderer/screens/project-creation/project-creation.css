@@ -26,7 +26,7 @@
 .project-creation .seg button:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
 
 /* ---------- Domain and file tags ---------- */
-.project-creation .tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); font-weight: var(--font-weight-regular); color: var(--color-text); white-space: nowrap; }
+.project-creation .tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-size-s); font-weight: var(--font-weight-regular); color: var(--color-text); overflow-wrap: anywhere; }
 .project-creation .tag.d1 { background: var(--color-tag-1); }
 .project-creation .tag.d2 { background: var(--color-tag-2); }
 .project-creation .tag.d3 { background: var(--color-tag-3); }
@@ -38,7 +38,7 @@
 .project-creation .rows .grow { flex: 1; min-width: 0; }
 .project-creation .rows > li.selected { background: var(--color-accent-soft); border-radius: var(--radius-s); padding-left: var(--space-2); padding-right: var(--space-2); }
 .project-creation .rows.card { padding: 0 var(--space-4); }
-.project-creation .check { display: inline-flex; gap: var(--space-2); align-items: center; }
+.project-creation .check { display: inline-flex; gap: var(--space-2); align-items: center; min-width: 0; overflow-wrap: anywhere; }
 .project-creation .rows.structure > li { align-items: center; }
 .project-creation .sdot { display: inline-block; width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-disabled); flex: none; }
 .project-creation .sdot.ok { background: var(--color-success); }
@@ -50,6 +50,24 @@
 .project-creation .note.warn { background: var(--color-warning-soft); }
 .project-creation .note.err { background: var(--color-danger-soft); }
 .project-creation .note.ok { background: var(--color-success-soft); }
+
+/* ---------- The guided family: page heads, the stepper, page buttons, the ways in and the review ---------- */
+.project-creation .page-head { display: grid; gap: var(--space-1); }
+.project-creation .page-head h3 { margin: 0; font-size: var(--font-size-xl); }
+.project-creation .page-head h3:focus { outline: none; }
+.project-creation .page-head p { margin: 0; color: var(--color-text-muted); }
+.project-creation .step-progress { display: grid; gap: var(--space-1); }
+.project-creation .stepper { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); font-size: var(--font-size-s); font-weight: var(--font-weight-strong); }
+.project-creation .stepper li { padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--color-disabled-fill); color: var(--color-text-muted); }
+.project-creation .stepper li.done { background: var(--color-success-soft); color: var(--color-success); }
+.project-creation .stepper li[aria-current="step"] { background: var(--color-accent); color: var(--color-text-on-accent); }
+.project-creation .page-actions { justify-content: flex-end; }
+.project-creation .way-ins { border-top: var(--border-width) solid var(--color-divider); padding-top: var(--space-3); }
+.project-creation .way-in { display: grid; gap: var(--space-1); justify-items: start; }
+.project-creation .answers { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-1) var(--space-3); margin: 0; font-size: var(--font-size-s); }
+.project-creation .answers dt { color: var(--color-text-muted); }
+.project-creation .answers dd { margin: 0; overflow-wrap: anywhere; }
+.project-creation .answers .clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; white-space: pre-wrap; }
 
 /* ---------- Phone width (breakpoint-narrow in tokens.css) ---------- */
 @media (max-width: 760px) {

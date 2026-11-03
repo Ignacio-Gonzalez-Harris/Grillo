@@ -145,36 +145,44 @@ The project screens arrive with their own stories. What already works underneath
 ### The project screen
 
 The Project tab. It opens on **Your projects** (the projects opened on this laptop, last opened first, each with
-Open) and **Pending invitations** (each with Accept).
+Open), the two ways in, **New project** and **Connect existing**, and **Pending invitations** (each with Accept).
 
 - **Accept** takes the GitHub repository invite in one click, then asks for your role (free text) and domains,
   pre-filled from the last project you joined. "Save and open the project" saves them and opens the map.
-- **New project** opens the form, in four cards:
-  1. **Repository.** "Create a new repository": a project name (it suggests the repository name), the
-     owner (the GitHub organisations your sign-in belongs to and your own account; an organisation first, your own
-     account when you have none) and the repository name. For your own account, Private (the default) or Public; choosing
-     Public warns that transcripts, answers and the PRD are visible to anyone. "Connect an existing
-     one": your repositories are listed with your access to each. Search narrows the list; pick one. Read access only
-     says it cannot be connected. "Check access" asks GitHub again, and also checks a repository typed in full as
-     `owner/repository` that the list does not hold. With write access only, inviting is greyed out with the reason;
-     admin access allows it.
-  2. **PRD structure.** "Start from" Grillo's default of 13 sections or an earlier project's structure, then move
+- **New project** and **Connect existing** walk the same four steps, one topic per page, each saying which step of
+  four it is. Back keeps everything typed, and Cancel goes back to Your projects. Next is stopped only by that step's
+  own problem, with the reason beside the control that caused it; the reason goes as soon as the control changes.
+  1. **Where.** New project: a project name (it suggests the repository name), the owner (the GitHub organisations
+     your sign-in belongs to and your own account; an organisation first, your own account when you have none) and
+     the repository name. For your own account, Private (the default) or Public; choosing Public warns that
+     transcripts, answers and the PRD are visible to anyone. Connect existing: your repositories are listed with your
+     access to each. Search narrows the list; pick one. Read access only says it cannot be connected. "Check access"
+     asks GitHub again, and also checks a repository typed in full as `owner/repository` that the list does not hold.
+     The switch at the top changes between the two ways in and keeps what was typed for each.
+  2. **Structure.** "Start from" Grillo's default of 13 sections or an earlier project's structure, then move
      sections up or down, rename them, change their notes, remove them or add new ones. When connecting, it is
-     folded until you press Edit.
-  3. **Members.** Type a GitHub login and press Invite; invites are sent when the project is created. Set your own
-     role and domains (pre-filled from the last project you joined).
-  4. **The idea.** Write or paste text, with documents attached (text files), or paste or upload a transcript.
+     folded until you press Edit, and it opens by itself if a section needs fixing.
+  3. **People.** Type a GitHub login and press Invite; invites are sent when the project is created. Set your own
+     role and domains (pre-filled from the last project you joined). When connecting with write access only, inviting
+     is greyed out with the reason; admin access allows it.
+  4. **Idea.** Write or paste text, with documents attached (text files), or paste or upload a transcript.
+- **The review page** lists each step's answers, with Change going back to that step and "Back to review" returning.
+  It repeats the Public warning, says when your access is read only, and says when a login or a domain was typed but
+  never added, because neither stops the project and neither is kept. Nothing is created until you press the button
+  at the bottom.
 - **Create project** (or "Connect and start") lists each step as it runs: the repository with Grillo's labels and
   folder, your role and domains, the invites, the idea saved as source S1 (attached documents as S2, S3, …), then a
   grilling agent started in the project folder with `/grillo-wayfinder .grillo/sources/S1.md`. A failed step shows
-  its reason; "Try again" carries on from that step. Then open the map or the grilling agent.
+  its reason; "Try again" carries on from that step. If GitHub refuses the new repository, "Back to Where" changes
+  the answers that caused it, with the others kept. Then open the map or the grilling agent.
 - **A grilling agent that was refused** can be started again later, also after leaving this screen or closing Grillo:
   press Open on the project under Your projects (it is listed even if its folder never opened, as "created <date>").
   It shows the failed start with its reason, "Try again" and "Open the map"; once the agent has started, or the
   project has a map, Open goes to the map as usual. The refusals are kept in the app data folder's `settings.json`
   under `unstartedGrillingAgents`.
 - **A repository that already holds a Grillo project** is not connected twice: "Open it" opens that project. One
-  that cannot be connected (issues turned off, read access only) says why, with "Check again".
+  that cannot be connected (issues turned off, read access only) says why, with "Check again". Both offer "Pick
+  another repository", which goes back to Where with every answer kept.
 - **Editing the structure later.** The PRD view's "Edit structure and regenerate" opens this screen with the
   project (`{ project: '<owner>/<repo>' }`): edit the sections, then "Save and regenerate" saves
   `.grillo/structure.json` and starts a grilling agent with `/grillo-prd regenerate`; Cancel goes back unsaved.

@@ -1,16 +1,14 @@
 /**
  * Project creation and invites, with the PRD structure (PRD sections 4.2 and 7, section 5 screen 2; prototype
- * `screen-project-creation`). Opened with no params it shows the member's recent projects and pending invitations,
- * and from there the new-project form. Opened with `{ project: '<owner>/<repo>' }` (from the PRD view) it shows that
- * project's structure editor.
+ * `screen-project-creation`). Opened with no params it shows the member's recent projects and pending invitations, and
+ * from there the two ways in: four guided steps (Where, Structure, People, Idea) and a review. Opened with
+ * `{ project: '<owner>/<repo>' }` (from the PRD view) it shows that project's structure editor.
  */
 import './project-creation.css';
 import type { Store } from '../../../main/store/store';
-import { DEFAULT_PRD_STRUCTURE } from '../../../main/store/defaults';
 import type {
   Invitation,
   Organisation,
-  Permission,
   PrdStructure,
   Project,
   ProjectId,
@@ -21,36 +19,32 @@ import { agentTitle } from '../../../shared/agents';
 import type { GrilloApi } from '../../../shared/ipc';
 import { AGENT_SCREEN } from '../../app/navigation';
 import type { ScreenParams } from '../../app/screens';
-import { asSentence } from '../../../shared/store';
 import { badge, button } from '../../theme/components';
 import { REGENERATE_COMMAND, resumeCreation, startCreation, type Creation } from './create';
+import { creatingPage } from './creating-page';
 import {
-  DEFAULT_STRUCTURE_CHOICE,
+  FORM_STEPS,
   NO_REPOSITORY_PICKED,
-  attachmentsFrom,
-  canInvite,
   draftOf,
-  formProblem,
-  inviteProblem,
-  matchingRepositories,
+  firstStepWithProblem,
   newProjectForm,
-  ownedByMember,
   repositoryToConnect,
-  suggestedRepositoryName,
+  stepProblem,
+  type FormStep,
   type ProjectForm,
+  type RepositoryMode,
 } from './form';
 import { cleanDomains, readLastMembership, saveLastMembership, type LastMembership } from './membership';
-import {
-  addSection,
-  checkedStructure,
-  moveSection,
-  removeSection,
-  renameSection,
-  setSectionNote,
-  structureProblem,
-} from './structure';
+import { reviewHead, reviewList } from './review-page';
+import { startPage, type RecentRow, type StartData } from './start-page';
+import { ideaCard, ideaHead } from './step-idea';
+import { peopleCard, peopleHead, roleAndDomains } from './step-people';
+import { structureCard, structureHead, structureRows } from './step-structure';
+import { modeSwitch, whereCard, whereHead } from './step-where';
+import { addSection, checkedStructure, structureProblem } from './structure';
 import { forgetUnstartedAgent, readUnstartedAgents, type UnstartedAgent } from './unstarted';
-import { el, field, filePicker, messageOf, note, segmented, tag, textInput, type Content } from './view';
+import { dropReason, el, messageOf, note, pageActions, pageHead, stepProgress, type Content } from './view';
+import type { Drafts, WizardContext } from './wizard';
 
 /** The project tabs this screen opens (src/renderer/app/navigation.ts, PROJECT_TABS), with `{ project }`. */
 export const MAP_SCREEN = 'map';
@@ -64,28 +58,6 @@ export interface ProjectCreationDeps {
 }
 
 const PROJECT_ID = /^[^/\s]+\/[^/\s]+$/;
-const TEXT_FILES = '.txt,.md,.markdown,.csv,.json,.vtt,.srt';
-const TRANSCRIPT_FILES = '.txt,.md,.vtt,.srt';
-const DAMAGED_PROJECT_HINT = 'Fix the file on GitHub, then open the project again.';
-const SEARCH_LABEL = 'Search repositories';
-const SEARCH_SELECTOR = `input[aria-label="${SEARCH_LABEL}"]`;
-const PUBLIC_WARNING =
-  'Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.';
-
-interface RecentRow {
-  id: ProjectId;
-  name: string;
-  archived: boolean;
-  /** When the member last had it: `opened <date>`, or `created <date>` for one whose folder never opened. */
-  when: string;
-  /** Why the project's Grillo files or folder cannot be read (prototype state `damaged-project`); null when fine. */
-  damaged: string | null;
-}
-
-interface StartData {
-  recents: RecentRow[] | { error: string };
-  invitations: Invitation[] | { error: string };
-}
 
 type ConnectProblem = { repository: ProjectId } & ({ kind: 'grillo-project' } | { kind: 'refused'; message: string });
 
@@ -97,6 +69,9 @@ interface Joined {
   prefilledFrom: ProjectId | null;
 }
 
+/** The page of the guided steps on screen: one of the four steps, or the review. */
+type FormPage = FormStep | 'review';
+
 type View =
   | { name: 'loading'; text: string }
   | { name: 'failed'; message: string }
@@ -106,12 +81,6 @@ type View =
   | { name: 'invitee'; joined: Joined }
   | { name: 'creating'; creation: Creation }
   | { name: 'structure'; project: ProjectId; structure: PrdStructure };
-
-const ACCESS_BADGES: Record<Permission, () => HTMLElement> = {
-  admin: () => badge('Admin access', 'ok'),
-  write: () => badge('Write access', 'warn'),
-  read: () => badge('Read access only', 'err'),
-};
 
 const date = (iso: string): string => iso.slice(0, 10);
 const isText = (value: unknown): value is string => typeof value === 'string';
@@ -171,20 +140,24 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
   let disposed = false;
   let busy = false;
   let actionError: string | null = null;
+  /** Why the page stopped the member, shown beside the control that caused it. */
+  let stepReason: string | null = null;
   let view: View = { name: 'loading', text: 'Loading your projects…' };
   let form: ProjectForm = newProjectForm([], null);
+  let formPage: FormPage = 'where';
+  /** Once the review has been seen, every step offers a way straight back to it. */
+  let reviewSeen = false;
   let organisations: Organisation[] = [];
   let repositories: RepositoryAccess[] | { error: string } = [];
   let earlierProjects: Project[] = [];
   let myLogin: string | null = null;
-  let inviteDraft = '';
-  let inviteError: string | null = null;
-  let domainDraft = '';
+  const drafts: Drafts = { invite: '', inviteError: null, domain: '' };
 
   function show(next: View): void {
     if (disposed) return;
     view = next;
     actionError = null;
+    stepReason = null;
     draw();
   }
 
@@ -204,6 +177,26 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
   }
 
   const errorNote = (): HTMLElement[] => (actionError === null ? [] : [note(actionError, 'err')]);
+
+  function clearReason(): void {
+    stepReason = null;
+    dropReason(root);
+  }
+
+  /** Brings the new page to the top and to the keyboard: the page before may have been scrolled a long way down. */
+  function revealPage(): void {
+    const heading = root.querySelector<HTMLElement>('.page-head h3');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus();
+    }
+    // The whole window scrolls on a long screen (shell.css), so the top of the document brings the tab bar back too.
+    document.scrollingElement?.scrollTo?.(0, 0);
+  }
+
+  function revealReason(): void {
+    root.querySelector('[data-reason]')?.scrollIntoView?.({ block: 'center' });
+  }
 
   // ---------- Your projects and invitations ----------
 
@@ -286,72 +279,9 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     });
   }
 
-  function drawStart(data: StartData): HTMLElement[] {
-    const projects = el('div', 'card stack', [
-      el('div', 'row', [
-        el('h3', 'm0', ['Your projects']),
-        el('span', 'spacer'),
-        button('New project', { variant: 'primary', disabled: busy, onClick: () => void openForm() }),
-      ]),
-      el('p', 'small muted m0', ['Recently opened first.']),
-    ]);
-    if (!Array.isArray(data.recents)) projects.append(note(data.recents.error, 'err'));
-    else if (data.recents.length === 0) {
-      projects.append(el('p', 'muted m0', ['No project opened on this laptop yet. Create one, or accept an invitation.']));
-    } else {
-      projects.append(
-        el(
-          'ul',
-          'rows',
-          data.recents.map((recent) =>
-            el('li', '', [
-              el('div', 'grow', [
-                el('span', 'strong', [recent.name]),
-                ...(recent.archived ? [' ', badge('Archived')] : []),
-                ...(recent.damaged === null ? [] : [' ', badge('Damaged', 'warn')]),
-                el('br', ''),
-                el('span', 'small muted', [`${recent.id} · ${recent.when}`]),
-                ...(recent.damaged === null ? [] : [el('br', ''), el('span', 'reason', [`${asSentence(recent.damaged)} ${DAMAGED_PROJECT_HINT}`])]),
-              ]),
-              button('Open', { small: true, disabled: busy, onClick: () => void openProject(recent.id) }),
-            ]),
-          ),
-        ),
-      );
-    }
+  // ---------- The guided steps ----------
 
-    const pending = el('div', 'card stack', [el('h3', '', ['Pending invitations'])]);
-    if (!Array.isArray(data.invitations)) pending.append(note(data.invitations.error, 'err'));
-    else if (data.invitations.length === 0) pending.append(el('p', 'muted m0', ['No pending invitations.']));
-    else {
-      pending.append(
-        el(
-          'ul',
-          'rows',
-          data.invitations.map((invitation) =>
-            el('li', '', [
-              el('div', 'grow', [
-                el('span', 'strong', [invitation.repository.name]),
-                el('br', ''),
-                el('span', 'small muted', [
-                  `${idOf(invitation.repository)} · invited by ${invitation.inviter} on ${date(invitation.createdAt)}`,
-                ]),
-              ]),
-              button('Accept', { variant: 'primary', small: true, disabled: busy, onClick: () => void accept(invitation) }),
-            ]),
-          ),
-        ),
-      );
-    }
-    pending.append(
-      el('p', 'small muted m0', ['Accepting takes the GitHub repository invite in one click; you then set your role and domains.']),
-    );
-    return [...errorNote(), projects, pending];
-  }
-
-  // ---------- The new-project form ----------
-
-  async function openForm(): Promise<void> {
+  async function openForm(mode: RepositoryMode): Promise<void> {
     show({ name: 'loading', text: 'Loading your organisations…' });
     const [orgs, own, repositoryList, projects, last, identity] = await Promise.allSettled([
       store.listOrganisations(),
@@ -380,19 +310,60 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
       last.status === 'fulfilled' ? last.value : null,
       own.status === 'fulfilled' && isText(own.value) && own.value !== '' ? own.value : null,
     );
-    inviteDraft = '';
-    inviteError = null;
-    domainDraft = '';
+    form.mode = mode;
+    form.structureOpen = mode === 'new';
+    formPage = 'where';
+    reviewSeen = false;
+    drafts.invite = '';
+    drafts.inviteError = null;
+    drafts.domain = '';
     show({ name: 'form' });
     if (orgs.status === 'rejected') actionError = `Grillo could not list your organisations: ${messageOf(orgs.reason)}`;
     else if (own.status === 'rejected') actionError = `Grillo could not read your GitHub account: ${messageOf(own.reason)}`;
     draw();
+    if (!disposed) revealPage();
+  }
+
+  function goTo(page: FormPage): void {
+    formPage = page;
+    if (page === 'review') reviewSeen = true;
+    show({ name: 'form' });
+    if (!disposed) revealPage();
+  }
+
+  /** Puts the member on this step with the reason beside the control that caused it. */
+  function stopAt(step: FormStep, reason: string): void {
+    formPage = step;
+    if (step === 'structure') form.structureOpen = true;
+    show({ name: 'form' });
+    stepReason = reason;
+    draw();
+    revealReason();
+  }
+
+  /** The review, unless some step has a problem by now: then that step, saying why. */
+  function toReview(): void {
+    const step = firstStepWithProblem(form);
+    if (step === null) goTo('review');
+    else stopAt(step, stepProblem(form, step) as string);
+  }
+
+  /** Next is stopped by this step's own problem and by nothing else. */
+  function next(step: FormStep): void {
+    const problem = stepProblem(form, step);
+    if (problem !== null) {
+      stopAt(step, problem);
+      return;
+    }
+    const following = FORM_STEPS[FORM_STEPS.indexOf(step) + 1];
+    if (following === undefined) toReview();
+    else goTo(following);
   }
 
   function checkAccess(): Promise<void> {
     const repository = repositoryToConnect(form.connectTo);
     if (repository === null) {
-      actionError = NO_REPOSITORY_PICKED;
+      stepReason = NO_REPOSITORY_PICKED;
       draw();
       return Promise.resolve();
     }
@@ -412,30 +383,6 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     });
   }
 
-  /** Makes this repository the one to connect; the list already says the access to any repository it holds. */
-  function chooseRepository(id: string): void {
-    const listed = (Array.isArray(repositories) ? repositories : []).find(({ repository }) => idOf(repository).toLowerCase() === id.toLowerCase());
-    form.connectTo = listed ? idOf(listed.repository) : id;
-    form.access = listed ? { state: 'known', permission: listed.permission } : { state: 'unchecked' };
-    actionError = null;
-  }
-
-  /** A full `owner/repo` typed is chosen; other typing only narrows the list, and drops a choice that was only typed. */
-  function searchRepositories(value: string): void {
-    form.connectSearch = value;
-    const typed = repositoryToConnect(value);
-    if (typed !== null) chooseRepository(idOf(typed));
-    else if (!(Array.isArray(repositories) && repositories.some(({ repository }) => idOf(repository) === form.connectTo))) {
-      form.connectTo = '';
-      form.access = { state: 'unchecked' };
-    }
-    const caret = root.querySelector<HTMLInputElement>(SEARCH_SELECTOR)?.selectionStart ?? null;
-    draw();
-    const again = root.querySelector<HTMLInputElement>(SEARCH_SELECTOR);
-    again?.focus();
-    again?.setSelectionRange(caret, caret);
-  }
-
   /** True when the repository already holds a Grillo project: one project per repository (PRD section 4.2). */
   async function holdsProject(id: ProjectId): Promise<boolean> {
     try {
@@ -447,10 +394,9 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
   }
 
   function create(): Promise<void> {
-    const problem = formProblem(form);
-    if (problem !== null) {
-      actionError = problem;
-      draw();
+    const step = firstStepWithProblem(form);
+    if (step !== null) {
+      stopAt(step, stepProblem(form, step) as string);
       return Promise.resolve();
     }
     const draft = draftOf(form);
@@ -480,478 +426,68 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     }
   }
 
-  function repositoryCard(): HTMLElement {
-    const card = el('div', 'card stack', [
-      el('h3', '', ['1 · Repository']),
-      segmented(
-        'Repository',
-        [
-          { value: 'new', text: 'Create a new repository' },
-          { value: 'connect', text: 'Connect an existing one' },
-        ],
-        form.mode,
-        (mode) => {
-          form.mode = mode;
-          form.structureOpen = mode === 'new';
-          draw();
-        },
-        busy,
-      ),
-    ]);
-    if (form.mode === 'new') {
-      const repositoryName = textInput({
-        value: form.repositoryName,
-        label: 'Repository name',
-        disabled: busy,
-        onInput: (value) => {
-          form.repositoryName = value;
-          form.repositoryNameTyped = true;
-        },
-      });
-      const projectName = textInput({
-        value: form.projectName,
-        label: 'Project name',
-        disabled: busy,
-        onInput: (value) => {
-          form.projectName = value;
-          if (!form.repositoryNameTyped) {
-            form.repositoryName = suggestedRepositoryName(value);
-            repositoryName.value = form.repositoryName;
-          }
-        },
-      });
-      const ownerChoice = (login: string, label: string): HTMLOptionElement => {
-        const option = el('option', '', [label]);
-        option.value = login;
-        option.selected = login === form.organisation;
-        return option;
-      };
-      const owner = el('select', '', [
-        ...organisations.map((entry) => ownerChoice(entry.login, entry.login)),
-        ...(form.ownAccount === null ? [] : [ownerChoice(form.ownAccount, `${form.ownAccount} (your account)`)]),
-      ]);
-      owner.disabled = busy || owner.options.length === 0;
-      owner.addEventListener('change', () => {
-        form.organisation = owner.value;
-        form.visibility = 'private';
-        draw();
-      });
-      const own = ownedByMember(form);
-      card.append(
-        el('div', 'grid-2', [
-          el('label', 'field', ['Project name', projectName]),
-          el('label', 'field', ['Owner', owner]),
-          el('label', 'field', ['Repository name', repositoryName]),
-          ...(own
-            ? [
-                el('div', 'field', [
-                  'Visibility',
-                  segmented(
-                    'Visibility',
-                    [
-                      { value: 'private', text: 'Private' },
-                      { value: 'public', text: 'Public' },
-                    ],
-                    form.visibility,
-                    (visibility) => {
-                      form.visibility = visibility;
-                      draw();
-                    },
-                    busy,
-                  ),
-                ]),
-              ]
-            : []),
-        ]),
-        el('p', 'small muted m0', [
-          own
-            ? `A ${form.visibility} repository under your own GitHub account. Only you can invite people, close and reopen the project; the people you invite get write access.`
-            : 'A private repository in the organisation you pick (the GitHub organisations your sign-in belongs to). Every member becomes a repository admin.',
-        ]),
-      );
-      if (own && form.visibility === 'public') card.append(note(PUBLIC_WARNING, 'warn'));
-      if (owner.options.length === 0) {
-        card.append(note('Grillo cannot create a repository without an owner. Connect an existing one instead.', 'warn'));
-      }
-      return card;
-    }
-
-    const search = textInput({
-      value: form.connectSearch,
-      type: 'search',
-      label: SEARCH_LABEL,
-      placeholder: 'Search your repositories',
-      disabled: busy,
-      onInput: searchRepositories,
-    });
-    card.append(
-      el('div', 'row', [el('div', 'fill', [search]), button('Check access', { disabled: busy, onClick: () => void checkAccess() })]),
-      ...repositoryList(),
-    );
-    card.append(
-      el('p', 'note small', [
-        "Write access is enough. Grillo adds its labels, the map issue and its tickets, and one Grillo folder on the main branch. How saves reach main follows this repository's own rules. Existing issues are ignored.",
-      ]),
-    );
-    return card;
-  }
-
-  /** The prototype's list of the member's repositories, then the chosen one on its own when the list does not show it. */
-  function repositoryList(): HTMLElement[] {
-    const parts: HTMLElement[] = [];
-    const visible = Array.isArray(repositories) ? matchingRepositories(repositories, form.connectSearch) : [];
-    if (!Array.isArray(repositories)) {
-      parts.push(note(`Grillo could not list your repositories: ${asSentence(repositories.error)} Type the repository in full as owner/repository instead.`, 'warn'));
-    } else if (visible.length === 0) {
-      parts.push(el('p', 'small muted m0', [repositories.length === 0 ? 'Grillo found no repository of yours.' : 'No repository of yours matches this search.']));
-    }
-    const rows = visible.map(({ repository, permission }) => {
-      const id = idOf(repository);
-      const radio = el('input', '');
-      radio.type = 'radio';
-      radio.name = 'repo-connect';
-      radio.checked = id === form.connectTo;
-      radio.disabled = busy;
-      radio.addEventListener('change', () => {
-        chooseRepository(id);
-        draw();
-      });
-      const label = el('label', 'check', [radio, id]);
-      return (radio.checked ? accessRow(label) : null) ?? el('li', '', [label, ACCESS_BADGES[permission]()]);
-    });
-    if (!visible.some(({ repository }) => idOf(repository) === form.connectTo)) {
-      const repository = repositoryToConnect(form.connectTo);
-      const chosen = repository && accessRow(el('span', 'strong', [idOf(repository)]));
-      if (chosen) rows.push(chosen);
-    }
-    if (rows.length > 0) parts.push(el('ul', 'rows', rows));
-    return parts;
-  }
-
-  function accessRow(name: HTMLElement): HTMLLIElement | null {
-    const { access } = form;
-    if (access.state === 'unchecked') return null;
-    switch (access.state) {
-      case 'checking':
-        return el('li', '', [name, badge('Checking…')]);
-      case 'unknown':
-        return el('li', '', [el('div', 'grow', [name, el('p', 'small muted m0', [access.message])]), badge('Access not known', 'warn')]);
-      case 'known': {
-        const row = el('li', access.permission === 'read' ? '' : 'selected', [name, ACCESS_BADGES[access.permission]()]);
-        if (access.permission === 'read') {
-          row.append(el('p', 'small muted m0 full', ['Connecting needs write access. Ask one of its admins for it, or pick another repository.']));
-        }
-        return row;
-      }
-    }
-  }
-
-  function structureRows(structure: PrdStructure, update: (next: PrdStructure, redraw: boolean) => void): HTMLUListElement {
-    const last = structure.sections.length - 1;
-    return el(
-      'ul',
-      'rows structure',
-      structure.sections.map((section, index) =>
-        el('li', '', [
-          el('span', 'row', [
-            moveButton('↑', 'Move up', busy || index === 0, () => update(moveSection(structure, index, -1), true)),
-            moveButton('↓', 'Move down', busy || index === last, () => update(moveSection(structure, index, 1), true)),
-          ]),
-          el('div', 'grow grid-2', [
-            textInput({
-              value: section.name,
-              label: 'Section name',
-              disabled: busy,
-              onInput: (value) => {
-                structure = renameSection(structure, index, value);
-                update(structure, false);
-              },
-            }),
-            textInput({
-              value: section.note,
-              label: 'Section note',
-              disabled: busy,
-              onInput: (value) => {
-                structure = setSectionNote(structure, index, value);
-                update(structure, false);
-              },
-            }),
-          ]),
-          button('Remove', { small: true, disabled: busy, onClick: () => update(removeSection(structure, index), true) }),
-        ]),
-      ),
-    );
-  }
-
-  function moveButton(arrow: string, label: string, disabled: boolean, onClick: () => void): HTMLButtonElement {
-    const move = button(arrow, { small: true, disabled, onClick });
-    move.setAttribute('aria-label', label);
-    return move;
-  }
-
-  function structureSourceName(): string {
-    const earlier = earlierProjects.find((project) => project.id === form.structureFrom);
-    return earlier ? earlier.name : 'Grillo default';
-  }
-
-  function structureCard(): HTMLElement {
-    const card = el('div', 'card stack', [el('h3', '', ['2 · PRD structure'])]);
-    if (!form.structureOpen) {
-      const count = form.structure.sections.length;
-      card.append(
-        el('div', 'row', [
-          el('span', '', [`${structureSourceName()} · ${count} ${count === 1 ? 'section' : 'sections'}`]),
-          el('span', 'spacer'),
-          button('Edit', {
-            small: true,
-            disabled: busy,
-            onClick: () => {
-              form.structureOpen = true;
-              draw();
-            },
-          }),
-        ]),
-      );
-      return card;
-    }
-    const from = el('select', '', [
-      Object.assign(el('option', '', ['Grillo default']), { value: DEFAULT_STRUCTURE_CHOICE }),
-      ...earlierProjects.map((project) =>
-        Object.assign(el('option', '', [`${project.name} (an earlier project of yours)`]), { value: project.id }),
-      ),
-    ]);
-    from.value = form.structureFrom;
-    from.disabled = busy;
-    from.addEventListener('change', () => {
-      form.structureFrom = from.value;
-      const earlier = earlierProjects.find((project) => project.id === from.value);
-      form.structure = structuredClone(earlier ? earlier.structure : DEFAULT_PRD_STRUCTURE);
-      draw();
-    });
-    card.append(
-      field('Start from', from),
-      el('p', 'small muted m0', ['With no choice made, the default applies. Edit it now or at any time later.']),
-      structureRows(form.structure, (next, redraw) => {
-        form.structure = next;
-        if (redraw) draw();
-      }),
-      el('div', 'row', [
-        button('Add section', {
-          small: true,
-          disabled: busy,
-          onClick: () => {
-            form.structure = addSection(form.structure);
-            draw();
-          },
-        }),
-      ]),
-    );
-    return card;
-  }
-
-  function domainsField(domains: string[], onChange: (next: string[]) => void): HTMLElement {
-    const adding = textInput({
-      value: domainDraft,
-      label: 'Add a domain',
-      placeholder: 'A domain, for example product',
-      disabled: busy,
-      onInput: (value) => {
-        domainDraft = value;
+  function wizard(): WizardContext {
+    return {
+      root,
+      form,
+      busy,
+      reason: stepReason,
+      organisations,
+      repositories,
+      earlierProjects,
+      myLogin,
+      drafts,
+      redraw: draw,
+      act,
+      clearReason,
+      clearMessages: () => {
+        stepReason = null;
+        actionError = null;
       },
-    });
-    const add = () => {
-      const typed = domainDraft;
-      // Cleared before onChange redraws, so the redrawn field starts empty.
-      domainDraft = '';
-      onChange(cleanDomains([...domains, typed]));
+      checkAccess,
     };
-    adding.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') add();
-    });
-    return el('div', 'field', [
-      'Your domains',
-      el('span', 'row', [
-        ...domains.map((domain) => tag(domain, busy ? undefined : () => onChange(domains.filter((entry) => entry !== domain)))),
-        el('span', 'fill', [adding]),
-        button('Add domain', { small: true, disabled: busy, onClick: add }),
-      ]),
-    ]);
   }
 
-  function roleAndDomains(
-    current: { role: string; domains: string[]; prefilledFrom: ProjectId | null },
-    onRole: (role: string) => void,
-    onDomains: (domains: string[]) => void,
-  ): HTMLElement[] {
-    const role = textInput({ value: current.role, disabled: busy, onInput: onRole });
-    const parts: HTMLElement[] = [
-      el('div', 'grid-2', [field('Your role (free text)', role), domainsField(current.domains, onDomains)]),
-    ];
-    if (current.prefilledFrom !== null) {
-      parts.push(el('p', 'small muted m0', [`Pre-filled from the last project you joined, ${current.prefilledFrom}.`]));
-    }
-    return parts;
-  }
-
-  function addInvite(): void {
-    inviteError = inviteProblem(inviteDraft, form.invites, myLogin);
-    if (inviteError === null) {
-      form.invites = [...form.invites, inviteDraft.trim()];
-      inviteDraft = '';
-    }
-    draw();
-    root.querySelector<HTMLInputElement>('input[aria-label="GitHub login to invite"]')?.focus();
-  }
-
-  function membersCard(): HTMLElement {
-    const allowed = canInvite(form);
-    const login = textInput({
-      value: inviteDraft,
-      label: 'GitHub login to invite',
-      placeholder: allowed ? 'GitHub login, for example member-b' : 'GitHub login',
-      disabled: busy || !allowed,
-      onInput: (value) => {
-        inviteDraft = value;
-      },
-    });
-    login.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') addInvite();
-    });
-    const card = el('div', 'card stack', [
-      el('h3', '', ['3 · Members']),
-      el('div', 'row', [el('div', 'fill', [login]), button('Invite', { disabled: busy || !allowed, onClick: addInvite })]),
-    ]);
-    if (!allowed) {
-      const repository = repositoryToConnect(form.connectTo);
-      const where = repository ? idOf(repository) : 'the repository';
-      const why =
-        form.access.state === 'known'
-          ? `you have ${form.access.permission} access`
-          : 'Grillo has not confirmed your access yet (press Check access)';
-      card.append(el('p', 'reason m0', [`Inviting needs admin rights on ${where}, and ${why}. Ask one of its admins to add people.`]));
-    } else {
-      card.append(el('p', 'small muted m0', ['An invite is a GitHub repository access invite.']));
-    }
-    if (inviteError !== null) card.append(note(inviteError, 'warn'));
-
-    const me = el('li', '', [
-      el('div', 'grow stack', [
-        el('div', 'row', [el('span', 'strong', [myLogin ?? 'You']), badge('You', 'info')]),
-        ...roleAndDomains(
-          form,
-          (role) => {
-            form.role = role;
-          },
-          (domains) => {
-            form.domains = domains;
-            draw();
-          },
-        ),
-      ]),
-    ]);
-    const invited = (allowed ? form.invites : []).map((entry) =>
-      el('li', '', [
-        el('span', 'row', [el('span', 'strong', [entry])]),
-        el('span', 'row', [
-          badge('Invited on create', 'warn'),
-          el('span', 'small muted', ['sets their own role and domains']),
-          button('Remove', {
-            small: true,
-            disabled: busy,
-            onClick: () => {
-              form.invites = form.invites.filter((login) => login !== entry);
-              draw();
-            },
-          }),
-        ]),
-      ]),
-    );
-    card.append(el('ul', 'rows', [me, ...invited]));
-    return card;
-  }
-
-  function ideaCard(): HTMLElement {
-    const text = form.ideaFormat === 'text';
-    const area = el('textarea', '');
-    area.setAttribute('aria-label', text ? 'The idea' : 'Transcript');
-    area.placeholder = text
-      ? 'The product idea in your own words: what it is for, who uses it, what goes wrong today.'
-      : 'Paste the transcript of a recorded conversation, or upload its file.';
-    area.value = text ? form.ideaText : form.transcript;
-    area.disabled = busy;
-    area.addEventListener('input', () => {
-      if (text) form.ideaText = area.value;
-      else form.transcript = area.value;
-    });
-    const files = text
-      ? el('div', 'row', [
-          ...filePicker('Attach documents', {
-            accept: TEXT_FILES,
-            multiple: true,
-            disabled: busy,
-            onFiles: (picked) =>
-              void act(async () => {
-                form.attachments = [...form.attachments, ...(await attachmentsFrom(picked))];
-              }),
-          }),
-          ...form.attachments.map((attachment, index) =>
-            tag(attachment.name, busy ? undefined : () => {
-              form.attachments = form.attachments.filter((_entry, at) => at !== index);
-              draw();
-            }, 'none'),
-          ),
-        ])
-      : el('div', 'row', [
-          ...filePicker('Upload transcript file', {
-            accept: TRANSCRIPT_FILES,
-            multiple: false,
-            disabled: busy,
-            onFiles: (picked) =>
-              void act(async () => {
-                const [file] = await attachmentsFrom(picked);
-                if (file) form.transcript = file.text;
-              }),
-          }),
-        ]);
-    return el('div', 'card stack', [
-      el('h3', '', ['4 · The idea']),
-      segmented(
-        'Idea format',
-        [
-          { value: 'text', text: 'Write or paste text' },
-          { value: 'transcript', text: 'Paste or upload a transcript' },
-        ],
-        form.ideaFormat,
-        (format) => {
-          form.ideaFormat = format;
-          draw();
-        },
-        busy,
-      ),
-      area,
-      files,
-      el('p', 'small muted m0', [
-        'The destination is always a PRD. Grillo then opens a grilling agent that builds the map, the tickets and their questions.',
-      ]),
-    ]);
-  }
-
-  function drawForm(): HTMLElement[] {
+  function drawStep(step: FormStep): HTMLElement[] {
+    const ctx = wizard();
+    const pages: Record<FormStep, () => [HTMLElement, HTMLElement]> = {
+      where: () => [whereHead(form.mode), whereCard(ctx)],
+      structure: () => [structureHead(), structureCard(ctx)],
+      people: () => [peopleHead(), peopleCard(ctx)],
+      idea: () => [ideaHead(), ideaCard(ctx)],
+    };
+    const [head, card] = pages[step]();
+    const at = FORM_STEPS.indexOf(step);
     return [
-      repositoryCard(),
-      structureCard(),
-      membersCard(),
-      ideaCard(),
+      stepProgress(step),
+      head,
       ...errorNote(),
-      el('div', 'row', [
-        el('span', 'spacer'),
-        button('Cancel', { disabled: busy, onClick: () => void loadStart() }),
-        button(form.mode === 'new' ? 'Create project' : 'Connect and start', {
-          variant: 'primary',
-          disabled: busy,
-          onClick: () => void create(),
-        }),
-      ]),
+      card,
+      pageActions(
+        [
+          button('Cancel', { disabled: busy, onClick: () => void loadStart() }),
+          ...(reviewSeen ? [button('Back to review', { disabled: busy, onClick: toReview })] : []),
+          button('Next', { variant: 'primary', disabled: busy, onClick: () => next(step) }),
+        ],
+        at === 0 ? [] : [button('Back', { disabled: busy, onClick: () => goTo(FORM_STEPS[at - 1]) })],
+      ),
+    ];
+  }
+
+  function drawReview(): HTMLElement[] {
+    const action = form.mode === 'new' ? 'Create project' : 'Connect and start';
+    return [
+      stepProgress('review'),
+      reviewHead(action),
+      ...errorNote(),
+      reviewList(wizard(), goTo),
+      pageActions(
+        [
+          button('Cancel', { disabled: busy, onClick: () => void loadStart() }),
+          button(action, { variant: 'primary', disabled: busy, onClick: () => void create() }),
+        ],
+        [button('Back', { disabled: busy, onClick: () => goTo('idea') })],
+      ),
     ];
   }
 
@@ -960,6 +496,7 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
   function drawProblem(problem: ConnectProblem): HTMLElement[] {
     const back = (mode: ProjectForm['mode']) => {
       form.mode = mode;
+      formPage = 'where';
       show({ name: 'form' });
       if (mode === 'connect') void checkAccess();
     };
@@ -980,78 +517,36 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
             button('Check again', { small: true, disabled: busy, onClick: () => back('connect') }),
           ]);
     return [
-      el('div', 'card stack', [
-        el('h3', '', ['1 · Repository']),
-        segmented(
-          'Repository',
-          [
-            { value: 'new', text: 'Create a new repository' },
-            { value: 'connect', text: 'Connect an existing one' },
-          ],
-          'connect',
-          back,
-          busy,
-        ),
-        el('ul', 'rows', [row]),
-      ]),
+      stepProgress('where'),
+      pageHead("This repository can't be used as it is", 'Your other answers are safe. Sort this out, or pick another repository.'),
+      el('div', 'card stack', [modeSwitch('connect', busy, back), el('ul', 'rows', [row])]),
       ...errorNote(),
+      pageActions([
+        button('Cancel', { disabled: busy, onClick: () => void loadStart() }),
+        button('Pick another repository', {
+          disabled: busy,
+          onClick: () => {
+            form.mode = 'connect';
+            goTo('where');
+          },
+        }),
+      ]),
     ];
   }
 
   // ---------- Creating ----------
 
   function drawCreating(creation: Creation): HTMLElement[] {
-    const lastIndex = creation.steps.length - 1;
-    const rows = creation.steps.map((step, index) => {
-      const working = step.state === 'running' || (step.state === 'done' && index === lastIndex);
-      const partly = step.state === 'done' && step.warning !== null;
-      const dot = { waiting: '', running: 'warn', done: working || partly ? 'warn' : 'ok', failed: 'err' }[step.state];
-      const status = working
-        ? badge('Working…', 'warn')
-        : partly
-          ? badge('Partly done', 'warn')
-          : step.state === 'done'
-            ? badge('Done', 'ok')
-            : step.state === 'failed'
-              ? badge('Failed', 'err')
-              : badge('Waiting');
-      const row = el('li', '', [el('span', 'row', [el('span', `sdot ${dot}`.trim()), step.label]), status]);
-      if (partly && step.warning !== null) row.append(el('p', 'small muted m0 full', [step.warning]));
-      return row;
-    });
-    const failed = creation.steps.find((step) => step.state === 'failed');
-    const parts: HTMLElement[] = [el('ul', 'rows card', rows)];
-    if (failed) {
-      parts.push(note(failed.error ?? 'This step failed.', 'err'));
-      const actions: HTMLElement[] = [el('span', 'spacer')];
-      const created = creation.project();
-      if (created === null) actions.push(button('Back to the form', { disabled: busy, onClick: () => show({ name: 'form' }) }));
-      else actions.push(button('Open the map', { disabled: busy, onClick: () => navigate(MAP_SCREEN, { project: created }) }));
-      actions.push(
-        button('Try again', {
-          variant: 'primary',
-          disabled: busy,
-          onClick: () =>
-            void act(async () => {
-              await creation.run(() => draw());
-            }),
+    return creatingPage(creation, {
+      busy,
+      backToWhere: () => goTo('where'),
+      openMap: (project) => navigate(MAP_SCREEN, { project }),
+      openAgent: (agentId) => navigate(AGENT_SCREEN, { agentId }),
+      tryAgain: () =>
+        void act(async () => {
+          await creation.run(() => draw());
         }),
-      );
-      parts.push(el('div', 'row', actions));
-    }
-    const project = creation.project();
-    const agentId = creation.agent();
-    if (project !== null && agentId !== null) {
-      parts.push(
-        el('p', 'note small', ['Tickets appear on the map as the engine creates them, and you can edit them at once.']),
-        el('div', 'row', [
-          el('span', 'spacer'),
-          button('Open the map', { onClick: () => navigate(MAP_SCREEN, { project }) }),
-          button('Open the grilling agent', { variant: 'primary', onClick: () => navigate(AGENT_SCREEN, { agentId }) }),
-        ]),
-      );
-    }
-    return parts;
+    });
   }
 
   // ---------- After accepting an invite ----------
@@ -1070,10 +565,15 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
         if (!disposed) navigate(MAP_SCREEN, { project: joined.project });
       });
     return [
+      pageHead(
+        `You joined ${joined.invitation.repository.name}`,
+        `Invited by ${joined.invitation.inviter} · repository ${joined.project}. Tell Grillo your role and domains (the subjects you know about), so the right questions reach you.`,
+        badge('Invite accepted', 'ok'),
+      ),
       el('div', 'card stack', [
-        el('div', 'row', [el('h3', 'm0', [`You joined ${joined.invitation.repository.name}`]), badge('Invite accepted', 'ok')]),
-        el('p', 'small muted m0', [`Invited by ${joined.invitation.inviter} · repository ${joined.project}.`]),
         ...roleAndDomains(
+          busy,
+          drafts,
           joined,
           (role) => {
             joined.role = role;
@@ -1083,12 +583,9 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
             draw();
           },
         ),
-        ...errorNote(),
-        el('div', 'row', [
-          el('span', 'spacer'),
-          button('Save and open the project', { variant: 'primary', disabled: busy, onClick: () => void save() }),
-        ]),
       ]),
+      ...errorNote(),
+      pageActions([button('Save and open the project', { variant: 'primary', disabled: busy, onClick: () => void save() })]),
     ];
   }
 
@@ -1107,8 +604,9 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
     const saveAndRegenerate = () => {
       const problem = structureProblem(current.structure);
       if (problem !== null) {
-        actionError = problem;
+        stepReason = problem;
         draw();
+        revealReason();
         return;
       }
       void act(async () => {
@@ -1127,29 +625,36 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
       });
     };
     return [
+      pageHead(
+        'Change the PRD structure',
+        'Any member can change the structure at any time. A new section makes the engine add tickets or fog first, so the PRD is regenerated once every section can be written.',
+      ),
       el('div', 'card stack', [
-        el('h3', '', ['PRD structure']),
-        el('p', 'small muted m0', [
-          'Any member can change the structure at any time. A new section makes the engine add tickets or fog first, so the PRD is regenerated once every section can be written.',
-        ]),
-        structureRows(current.structure, (next, redraw) => {
-          current.structure = next;
-          if (redraw) draw();
+        ...structureRows(current.structure, {
+          busy,
+          reason: stepReason,
+          update: (next, redraw) => {
+            current.structure = next;
+            clearReason();
+            if (redraw) draw();
+          },
         }),
-        ...errorNote(),
         el('div', 'row', [
           button('Add section', {
             small: true,
             disabled: busy,
             onClick: () => {
               current.structure = addSection(current.structure);
+              clearReason();
               draw();
             },
           }),
-          el('span', 'spacer'),
-          button('Cancel', { disabled: busy, onClick: () => navigate(PRD_SCREEN, { project: current.project }) }),
-          button('Save and regenerate', { variant: 'primary', disabled: busy, onClick: saveAndRegenerate }),
         ]),
+      ]),
+      ...errorNote(),
+      pageActions([
+        button('Cancel', { disabled: busy, onClick: () => navigate(PRD_SCREEN, { project: current.project }) }),
+        button('Save and regenerate', { variant: 'primary', disabled: busy, onClick: saveAndRegenerate }),
       ]),
     ];
   }
@@ -1160,11 +665,20 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
         case 'loading':
           return [el('p', 'muted', [view.text])];
         case 'failed':
-          return [note(view.message, 'err')];
+          return [pageHead("This structure can't be opened", 'Grillo could not read it. Try again from the PRD view.'), note(view.message, 'err')];
         case 'start':
-          return drawStart(view.data);
+          return [
+            ...errorNote(),
+            ...startPage(view.data, {
+              busy,
+              onNewProject: () => void openForm('new'),
+              onConnectExisting: () => void openForm('connect'),
+              onOpen: (project) => void openProject(project),
+              onAccept: (invitation) => void accept(invitation),
+            }),
+          ];
         case 'form':
-          return drawForm();
+          return formPage === 'review' ? drawReview() : drawStep(formPage);
         case 'problem':
           return drawProblem(view.problem);
         case 'invitee':
