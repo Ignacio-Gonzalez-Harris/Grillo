@@ -1,0 +1,40 @@
+{
+  "run_id": "Grillo-20261103-213356-7d06",
+  "issue": 217,
+  "title": "Theme every input control in the app with one shared liquid glass rule",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-03T21:33:56Z",
+  "finished_at": "2026-11-03T22:34:00Z",
+  "outcome": "merged",
+  "pr": 222,
+  "summary": "Every text field, search field, text area, dropdown, radio button, checkbox and visible file control now takes its liquid glass look from one shared rule in the theme folder, with a test that fails if a control is left unthemed. The open dropdown list's highlight bar stays the system colour.",
+  "agents": [
+    { "name": "dev-217", "model": "opus", "tokens_total": 336797 },
+    { "name": "review-217", "model": "opus", "tokens_total": 199429 },
+    { "name": "review-217-r2", "model": "opus", "tokens_total": 165051 }
+  ],
+  "phases": { "qa_seconds": 0, "dev_seconds": 2060, "review_seconds": 1080, "ci_seconds": 390 },
+  "rounds": { "review": 2, "ci": 1 },
+  "friction": [
+    "CLAUDE.md section 4 still says the account has no Actions minutes and that the project counts as having no CI, but CI ran every step on Mac and Windows on all three heads of this pull request and passed. The dev wrote a false 'nothing can run on Mac' evidence row because of it, which cost a review finding; the rule says to delete it when the minutes return"
+  ],
+  "lessons_learned": [
+    "The test browser cannot read ::after, ::placeholder, file buttons or forced colours, and misreads combinators inside :not() and :where(), so a theme test can pass while a control is broken: a slip removed the checkbox tick with the theme tests still green, and only the look in real Chromium caught it. Check drawn parts of a control in the real app"
+  ],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/renderer/theme/",
+      "what": "On Windows the highlighted row of an open dropdown stays the system accent blue, the list's fill is the pure white token so it still looks close to the system list, and on Mac the list may open as a system menu that ignores option colours (an assumption; nobody has seen it on Mac)",
+      "why": "appearance: base-select would address it but moved 28 elements on Tickets, and the issue forbids layout changes",
+      "owner": "unowned — next harvest"
+    },
+    {
+      "severity": "medium",
+      "area": "src/renderer/theme/",
+      "what": "Under a Windows contrast theme a toggle looks the same on and off, so Record does not show whether it is on; seen with forced-colors emulated in the app's own Chromium, and already so before this story",
+      "why": "The issue says the toggle keeps its own look",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

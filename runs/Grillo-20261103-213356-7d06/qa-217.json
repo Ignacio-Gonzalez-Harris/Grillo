@@ -1,0 +1,44 @@
+{
+  "run_id": "Grillo-20261103-213356-7d06",
+  "issue": 217,
+  "title": "Theme every input control in the app with one shared liquid glass rule",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 222,
+  "merged_at": "2026-11-03T22:32:00Z",
+  "merge_commit": "f9460aab2bd3b23485717727e29218ee947c0800",
+  "seam": "src/renderer/theme/",
+  "story": "Fields, dropdowns, radio buttons and checkboxes now look the same on every screen. Radio buttons on the Project screen and checkboxes in PRD task lists used to show the system's look; they now match the glass style, and checkboxes on the meeting screen are now drawn the same way. Open dropdown lists are a solid white with the app's text colour. Nothing on any screen moved.",
+  "checks": [
+    {
+      "key": "src/renderer/theme/text-fields",
+      "criterion": "Every typed field and text area is themed in normal, focus and disabled states, and nothing moves.",
+      "steps": "Start Grillo, open Project, press New project. Click Project name and type 'Made-up project'. Press Connect an existing one, then click the search field. Open any project's Map, press Add ticket, fill Title, Question and Why it matters with 'Made-up text', and save.",
+      "expected": "See-through white fields with a thin grey border, and muted placeholder text. A soft green ring shows on the focused field. While the save runs, the fields turn pale grey with grey text."
+    },
+    {
+      "key": "src/renderer/theme/dropdown-open-list",
+      "criterion": "An open dropdown's options use token colours.",
+      "steps": "Open any project's Tickets and pick a ticket. Click Add a domain, then press the down arrow. Press Escape.",
+      "expected": "A solid white list with dark text, readable over whatever is behind it. On Windows the highlighted row is the system accent colour, which is the known limit. The closed field keeps its width."
+    },
+    {
+      "key": "src/renderer/theme/radio-and-checkbox",
+      "criterion": "Radio buttons and plain checkboxes are themed everywhere, the toggle keeps its look, and a chosen radio stands out under a contrast theme.",
+      "steps": "Open Project, press New project, press Connect an existing one. Click a repository's radio button, then stop there without pressing Connect. Turn on a Windows contrast theme and look at that radio, then turn it off. Open a project's Map, press Start meeting. Tick a name under Present. Press Tab. Tick Everyone here agreed. Look at the Channel and Record toggles.",
+      "expected": "A chosen radio is green with a white dot, also under the contrast theme, where it clearly differs from the empty ones. A ticked box is green with a white tick, and Tab shows the green ring. The consent box turns grey with a grey tick once ticked. Toggles are still pill-shaped sliders, and Record is red when on."
+    },
+    {
+      "key": "src/renderer/theme/file-controls",
+      "criterion": "Hidden file inputs stay hidden.",
+      "steps": "Open Project, press New project. Scroll to Attach documents.",
+      "expected": "Only the pill button, with no browser 'Choose file' control beside it."
+    },
+    {
+      "key": "src/renderer/theme/prd-task-list",
+      "criterion": "A disabled checkbox in PRD text is themed and sits in line.",
+      "steps": "Open a project whose PRD text holds '- [x] A done made-up task' and '- [ ] An open made-up task'.",
+      "expected": "A grey ticked box and a grey empty box, level with their text and with even row spacing."
+    }
+  ],
+  "no_qa_reason": null
+}
