@@ -96,6 +96,14 @@ describe('the shared control theme: every form control in the app takes its look
     expect(getComputedStyle(box).backgroundColor).toBe(token('--color-disabled-fill'));
   });
 
+  it('keeps a chosen radio button visible under a system contrast theme, which would paint its dot and fill alike', () => {
+    const radio = inputOfType('radio');
+    expect(getComputedStyle(radio).getPropertyValue('forced-color-adjust')).toBe('');
+
+    radio.checked = true;
+    expect(getComputedStyle(radio).getPropertyValue('forced-color-adjust')).toBe('none');
+  });
+
   it('leaves the toggle with its own look', () => {
     const { root, input } = toggle('Channel');
     document.body.append(root);

@@ -93,6 +93,8 @@ body.no-glass .glass-strong, body.no-glass .card { -webkit-backdrop-filter: none
 :where(:not(.switch)) > :where(input[type="checkbox"]):checked, :where(input[type="radio"]):checked { background: var(--color-accent); border-color: var(--color-accent); }
 :where(:not(.switch)) > :where(input[type="checkbox"]):checked::after, :where(input[type="radio"]):checked::after { content: ""; position: absolute; inset: 0; margin: auto; }
 :where(:not(.switch)) > :where(input[type="checkbox"]):checked::after { width: var(--space-1); height: var(--space-2); border: solid var(--color-text-on-accent); border-width: 0 var(--space-0) var(--space-0) 0; transform: rotate(45deg); }
+/* A system contrast theme would paint a chosen radio's fill and dot the same colour, so it keeps its own; a checkbox's tick is a border and stays visible. */
+:where(input[type="radio"]):checked { forced-color-adjust: none; }
 :where(input[type="radio"]):checked::after { width: var(--size-dot); height: var(--size-dot); border-radius: var(--radius-pill); background: var(--color-text-on-accent); }
 :where(:not(.switch)) > :where(input[type="checkbox"]):disabled, :where(input[type="radio"]):disabled { background: var(--color-disabled-fill); border-color: var(--color-divider); cursor: not-allowed; }
 :where(:not(.switch)) > :where(input[type="checkbox"]):disabled::after { border-color: var(--color-text-disabled); }
