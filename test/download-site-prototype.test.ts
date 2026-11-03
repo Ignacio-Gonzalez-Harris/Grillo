@@ -78,7 +78,7 @@ describe('the download-site prototype screen', () => {
     const pilot = screenState('pilot');
     const signed = screenState('signed');
 
-    expect(pilot.querySelector('[data-warning="unsigned"]')).not.toBeNull();
+    expect(pilot.querySelector('[data-warning="unsigned"]')).toBeNull();
     expect(pilot.querySelectorAll('.unsigned-only').length).toBeGreaterThan(0);
     expect(signed.querySelector('[data-warning="unsigned"]')).toBeNull();
     expect(signed.querySelectorAll('.unsigned-only')).toHaveLength(0);

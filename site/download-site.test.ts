@@ -185,7 +185,7 @@ describe('the download page', () => {
     expect(page.document.querySelector('a[data-all-releases]')?.getAttribute('href')).toBe(
       `https://github.com/${REPOSITORY}/releases`,
     );
-    expect(isShown(page, '[data-warning="unsigned"]')).toBe(true);
+    expect(page.document.querySelector('[data-warning="unsigned"]')).toBeNull();
     expect(isShown(page, '.unsigned-only')).toBe(true);
     expect(isShown(page, '.signed-only')).toBe(false);
     expect(releaseBadge(page, 'unsigned')).toBe('Pilot release');
@@ -216,10 +216,11 @@ describe('the download page', () => {
     ]);
     for (const step of page.document.querySelectorAll('.dl-flow > li')) expect(step.querySelector('svg')).not.toBeNull();
     expect(page.document.querySelectorAll('.dl-need li')).toHaveLength(3);
-    expect(page.document.querySelector('.dl-install [data-warning="unsigned"]')).not.toBeNull();
+    expect(page.document.querySelector('[data-warning="unsigned"]')).toBeNull();
     expect(page.document.querySelector('[data-install="windows"] [data-file="windows"]')).not.toBeNull();
     expect(page.document.querySelector('[data-install="mac"] [data-file="mac"]')).not.toBeNull();
     expect(page.document.querySelector('.dl-footer a')?.getAttribute('href')).toBe(`https://github.com/${REPOSITORY}/releases`);
+    expect(page.document.querySelector('.dl-footer')?.textContent).toContain('By Ignacio Gonzalez');
   });
 
   it('in the pilot, links the latest installers and names them in the release line and the install steps', () => {
@@ -241,7 +242,7 @@ describe('the download page', () => {
       'Grillo-1.0.0-universal.dmg',
     ]);
     expect(releaseBadge(page, 'unsigned')).toBe('Pilot release · version 1.0.0');
-    expect(isShown(page, '[data-warning="unsigned"]')).toBe(true);
+    expect(page.document.querySelector('[data-warning="unsigned"]')).toBeNull();
   });
 
   it('for a signed release, hides the warning note and the warning steps and says the installers are signed', () => {
@@ -250,7 +251,7 @@ describe('the download page', () => {
     showRelease(documentOf(page), readLatestRelease(sampleRelease(), REPOSITORY));
 
     expect(releaseLine(page)).toBe('Latest release: version 1.0.0 · 2026-10-22 · signed for Windows and Mac');
-    expect(isShown(page, '[data-warning="unsigned"]')).toBe(false);
+    expect(page.document.querySelector('[data-warning="unsigned"]')).toBeNull();
     expect(isShown(page, '.unsigned-only')).toBe(false);
     expect(isShown(page, '.signed-only')).toBe(true);
     expect(releaseBadge(page, 'signed')).toBe('Version 1.0.0 · signed for Windows and Mac');

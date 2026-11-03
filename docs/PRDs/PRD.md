@@ -82,10 +82,10 @@ Not app words: cluster, team, business unit, expert, administrator `[T5, T29]`.
 
 ### 4.1 Setup
 
-1. The member installs Grillo from the download page (unsigned in the pilot: one warning to click past on Mac and on Windows; signed from the company-wide release on) `[T39, T42]`.
+1. The member installs Grillo from the download page (unsigned: one warning to click past on Mac and on Windows; signing is not planned, section 8) `[T39, T42]`.
 2. Grillo checks that Claude Code and `gh` are installed and signed in. If not, it guides the install and the one-time sign-in, or at minimum says what must be set up `[T8, T21]`.
 3. The member signs in with their GitHub account; Grillo shows their GitHub login, name and email `[T31]`.
-4. Grillo checks for a newer version at start and while open, and offers to download it; an auto-update setting installs it on the next restart instead (on Mac only once the app is signed) `[T39, T42]`.
+4. Grillo checks for a newer version at start and while open, and offers to download it; an auto-update setting installs it on the next restart instead (Windows only: unsigned, Mac members install updates by hand, section 8) `[T39, T42]`.
 
 ### 4.2 Starting a project
 
@@ -253,7 +253,7 @@ GitHub is the single truth; each member's Grillo reads it on demand. No live syn
 | Other models | None in this PRD: no laptop model, no company-paid account or gateway `[T40]`. |
 | Distribution | Windows and Mac installers on GitHub Releases of Grillo's own repository, which stays on the owner's personal account and is **public** from the pilot on, with a GitHub Pages site (what Grillo is, how to install and use it, downloads) `[T39, T42]`. |
 | Signing | Release 1 pilot ships unsigned (about ten colleagues; one warning to click past) `[T39, T42]`. Signing is not planned (owner's decision, 2026-11-03): installers stay unsigned, people click past the Windows and Mac warnings, and Mac members install updates by hand; it is revisited if company IT blocks unsigned apps or before a company-wide release. |
-| Updates | Grillo checks for new releases while open and shows a pop-up offering to install; an auto-update setting installs on the next restart (Mac only once signed) `[T39, T42]`. |
+| Updates | Grillo checks for new releases while open and shows a pop-up offering to install; an auto-update setting installs on the next restart (Windows only: unsigned, Mac members install updates by hand, see Signing) `[T39, T42]`. |
 | CI | GitHub Actions on GitHub-hosted **Windows and Mac** runners: every pull request runs build, lint and tests on both; installers are built only when a version is published `[T39]`. |
 | Hosting | Nothing central: no Grillo server or database `[T10, T43]`. |
 

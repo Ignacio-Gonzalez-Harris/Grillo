@@ -1072,7 +1072,7 @@ Installers are built only when a version is published; the download site is publ
   without an answer they open the releases page. It also puts the download button for the visitor's own system
   (Windows or Mac) first and fills only it; on any other system both stay filled, Windows first.
 - **Once the installers are signed**, set `data-installers="signed"` on the `<html>` element of `site/index.html`:
-  the unsigned-installer warning and the "Run anyway" and "Open Anyway" steps disappear, and the hero badge and the
+  the "Run anyway" and "Open Anyway" steps disappear, and the hero badge and the
   install section say the installers are signed.
 - Open `site/index.html` from disk to check its look; putting the visitor's own system first and the latest-release
   lookup only run when it is served by a web server (any local static server will do).
