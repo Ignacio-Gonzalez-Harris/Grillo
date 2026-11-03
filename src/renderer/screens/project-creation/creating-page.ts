@@ -22,7 +22,7 @@ function headOf(creation: Creation): HTMLElement {
     return pageHead('Something stopped the set-up', 'The steps marked Done are safe and will not run twice. The reason is below.');
   }
   if (creation.project() !== null && creation.agent() !== null) {
-    return pageHead('Your project is on its way', 'Grillo has done its part. The grilling agent (an AI assistant that asks the questions) is building the map (your project's overview) and the tickets now.');
+    return pageHead('Your project is on its way', "Grillo has done its part. The grilling agent (an AI assistant that asks the questions) is building the map (your project's overview) and the tickets now.");
   }
   return pageHead('Setting up your project', 'Grillo is working through these steps, one at a time.');
 }
@@ -65,7 +65,7 @@ export function creatingPage(creation: Creation, actions: CreatingActions): HTML
   const agentId = creation.agent();
   if (project !== null && agentId !== null) {
     parts.push(
-      el('p', 'note small', ['Tickets (pieces of work and their questions) appear on the map (your project's overview) as Grillo creates them, and you can edit them at once.']),
+      el('p', 'note small', ["Tickets (pieces of work and their questions) appear on the map (your project's overview) as Grillo creates them, and you can edit them at once."]),
       pageActions([
         button('Open the map', { onClick: () => actions.openMap(project) }),
         button('Open the grilling agent', { variant: 'primary', onClick: () => actions.openAgent(agentId) }),
