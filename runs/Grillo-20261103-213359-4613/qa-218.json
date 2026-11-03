@@ -1,0 +1,56 @@
+{
+  "run_id": "Grillo-20261103-213359-4613",
+  "issue": 218,
+  "title": "Open on Project once setup is done, and move the Setup tab to the far right",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 221,
+  "merged_at": "2026-11-03T22:12:29Z",
+  "merge_commit": "3687eedf195fe47e2579eab6411a71445105eccb",
+  "seam": "src/renderer/app/ plus src/renderer/screens/setup-check/",
+  "story": "Grillo used to open on Setup every time, and now does so only on the first launch or when a check fails. Otherwise it shows a brief \"Checking your setup…\" note and opens Project. The Setup tab moved from far left to far right, outside the scrolling tabs, and Project is now first. The update pop-up now also asks for the current offer, and two setup lines no longer say \"company\".",
+  "checks": [
+    {
+      "key": "src/renderer/app/first-launch-opens-setup",
+      "criterion": "First launch opens Setup; Continue with everything green stores the setting and goes to Project.",
+      "steps": "Start Grillo with an empty app data folder, with Claude Code and gh installed and signed in. Wait for every row to turn green. Press Continue.",
+      "expected": "Setup is the active tab and no \"Checking your setup…\" note appears. After Continue, Project opens and settings.json holds setupFinished: true."
+    },
+    {
+      "key": "src/renderer/app/later-start-opens-project",
+      "criterion": "A later start where all checks pass opens Project and never flashes Setup.",
+      "steps": "Close Grillo after the check above, then start it again.",
+      "expected": "A card saying \"Checking your setup…\" with no active tab, then Project. The Setup screen never appears."
+    },
+    {
+      "key": "src/renderer/app/failing-start-opens-setup",
+      "criterion": "A later start where a check fails opens Setup and keeps the setting; the next passing start opens Project.",
+      "steps": "With setupFinished stored, run gh auth logout, or put a made-up gh first on PATH that says signed out, and start Grillo. Sign in again and restart.",
+      "expected": "Setup with the gh row \"Signed out\" and Continue locked, while setupFinished stays true. After signing in and restarting, Project opens."
+    },
+    {
+      "key": "src/renderer/app/tab-during-check-stays",
+      "criterion": "A tab opened during the start-up check keeps its screen.",
+      "steps": "On a later start, press Tickets while \"Checking your setup…\" shows. This needs a slow check, such as a made-up slow claude first on PATH.",
+      "expected": "Tickets stays open after the check ends."
+    },
+    {
+      "key": "src/renderer/app/setup-tab-far-right",
+      "criterion": "The Setup tab sits at the far right after \"+\" and the agent tabs and stays reachable; Project is first.",
+      "steps": "Open many agent tabs. Scroll the tabs sideways to both ends. Narrow the window. Press Setup.",
+      "expected": "Setup does not move and can be pressed, the other tabs scroll, and Setup opens with its update card. Continue there goes to Project."
+    },
+    {
+      "key": "src/renderer/screens/setup-check/neutral-wording",
+      "criterion": "The setup page says \"your GitHub account\" and no longer names a company.",
+      "steps": "Open Setup signed out of gh, then with gh not installed.",
+      "expected": "\"Sign in once with your GitHub account\" and \"Grillo keeps every project in your GitHub account through gh.\""
+    },
+    {
+      "key": "src/renderer/app/update-popup-on-project-start",
+      "criterion": "The update offer reaches a member who starts on Project, including a version found before the window listens, once per version.",
+      "steps": "On an installed build with a newer release published and setup finished, start Grillo. Press Later. Open other tabs.",
+      "expected": "The pop-up over Project. After Later it does not return until Grillo restarts."
+    }
+  ],
+  "no_qa_reason": null
+}

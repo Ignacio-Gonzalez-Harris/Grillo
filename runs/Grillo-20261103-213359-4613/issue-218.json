@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261103-213359-4613",
+  "issue": 218,
+  "title": "Open on Project once setup is done, and move the Setup tab to the far right",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-03T21:33:59Z",
+  "finished_at": "2026-11-03T22:13:39Z",
+  "outcome": "merged",
+  "pr": 221,
+  "summary": "Grillo now opens on Project once setup has been finished, unless a start-up check fails, and the Setup tab sits at the far right of the tab bar. The update pop-up also picks up a version found before the window was listening.",
+  "agents": [
+    {
+      "name": "dev-218",
+      "model": "opus",
+      "tokens_total": 327342
+    },
+    {
+      "name": "review-218",
+      "model": "opus",
+      "tokens_total": 198210
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 1468,
+    "review_seconds": 479,
+    "ci_seconds": 240
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}
