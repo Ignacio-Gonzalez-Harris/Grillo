@@ -1,6 +1,6 @@
 {
-  "reconciled_at": "09e5cd66256d74a3a85eda08ed8ad18941f9a8d6",
-  "last_reconcile": "2026-11-03",
+  "reconciled_at": "f4fbe0bb7d67d5371d36048e7ad1ab139896471e",
+  "last_reconcile": "2026-11-04",
   "accepted": [
     { "lens": "2", "issue": "82", "section": "docs/PRDs/PRD.md 4.4 item 5", "reason": "Turning GitHub comments into answers by a Pick up button is fine: the PRD says the agent may do it.", "on": "2026-10-24" },
     { "lens": "2", "issue": "57", "section": "none", "reason": "The closed demo-materials story cites section 7 for the made-up-data rule (it is in section 11); closed, nothing to build.", "on": "2026-10-24" },
@@ -14,6 +14,9 @@
     { "lens": "2", "issue": "190", "section": "docs/PRDs/PRD.md 4.2 item 6", "reason": "Trying a refused grilling agent again from Your projects, and Open the map on the failed Creating view, are fine without a PRD line.", "on": "2026-11-03" },
     { "lens": "2", "issue": "189", "section": "docs/PRDs/PRD.md 4.7 item 1", "reason": "A fog removal outside the map-done rule starts no PRD writer; accepted by the owner on 2026-10-30.", "on": "2026-11-03" },
     { "lens": "2", "issue": "213", "section": "docs/PRDs/PRD.md 8 CI", "reason": "The exact list of app files, the failed-build rule and the release notes rule live in the run-book and the ticket, not the PRD.", "on": "2026-11-03" },
-    { "lens": "2", "issue": "213", "section": "docs/PRDs/PRD.md 11 and 12", "reason": "No pilot or demo check holds back an automatic release; the owner chose automatic releases knowingly.", "on": "2026-11-03" }
+    { "lens": "2", "issue": "213", "section": "docs/PRDs/PRD.md 11 and 12", "reason": "No pilot or demo check holds back an automatic release; the owner chose automatic releases knowingly.", "on": "2026-11-03" },
+    { "lens": "2", "issue": "218", "section": "docs/PRDs/PRD.md 4.1 item 5", "reason": "Start-up details such as a failing start keeping the setting, a tab opened during the check winning, and earlier users seeing Setup once more are fine without a PRD line.", "on": "2026-11-04" },
+    { "lens": "2", "issue": "223", "section": "docs/PRDs/PRD.md 5 row 2", "reason": "The guided-step details live in the prototype and need no PRD line.", "on": "2026-11-04" },
+    { "lens": "2", "issue": "219", "section": "docs/PRDs/PRD.md 10 item 2", "reason": "The do-not-build line on administrators stays true: the owner limit on a personal repository is GitHub's, and Grillo stores no role.", "on": "2026-11-04" }
   ]
 }
