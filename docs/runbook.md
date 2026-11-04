@@ -1135,7 +1135,8 @@ that changes the app; the download site is published from `main`.
 
   The page asks GitHub for the latest release when it opens and points the download buttons at its installers;
   without an answer they open the releases page. It also puts the download button for the visitor's own system
-  (Windows or Mac) first and fills only it; on any other system both stay filled, Windows first.
+  (Windows or Mac) first and fills only it; on any other system both stay filled, Windows first. Its "What you need
+  first" list asks for a GitHub account, not a company one: a personal account works too.
 - **Once the installers are signed**, set `data-installers="signed"` on the `<html>` element of `site/index.html`:
   the "Run anyway" and "Open Anyway" steps disappear, and the hero badge and the
   install section say the installers are signed.
