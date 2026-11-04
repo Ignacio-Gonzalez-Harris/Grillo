@@ -223,6 +223,13 @@ describe('the download page', () => {
     expect(page.document.querySelector('.dl-footer')?.textContent).toContain('By Ignacio Gonzalez');
   });
 
+  it('asks for a GitHub account of any kind, not a company one', () => {
+    const needs = texts(loadPage(), '.dl-need li');
+
+    expect(needs).toContain('A GitHub account.');
+    expect(needs.join(' ')).not.toMatch(/company/i);
+  });
+
   it('in the pilot, links the latest installers and names them in the release line and the install steps', () => {
     const page = loadPage('unsigned');
 

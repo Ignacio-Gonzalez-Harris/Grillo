@@ -74,6 +74,13 @@ describe('the download-site prototype screen', () => {
     for (const step of steps) expect(step.querySelector('svg')).not.toBeNull();
   });
 
+  it.each(['pilot', 'signed'] as const)('in the %s state, asks for a GitHub account of any kind, not a company one', (state) => {
+    const needs = texts(screenState(state), '.dl-need li');
+
+    expect(needs).toContain('A GitHub account.');
+    expect(needs.join(' ')).not.toMatch(/company/i);
+  });
+
   it('shows no warning note, and the unsigned install steps in the pilot state only', () => {
     const pilot = screenState('pilot');
     const signed = screenState('signed');
