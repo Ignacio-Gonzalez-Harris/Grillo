@@ -22,8 +22,7 @@ Teacup Building and the rooms do not exist. Never replace any of it with real na
   - **Ben**: domain *developer*.
   - **Carla**: domain *platform*.
 - **Laptops:** at least one is a Mac and one is Windows. Each has Claude Code signed in with that member's own Claude
-  subscription, and the GitHub command-line tool `gh` installed. Each member has a company GitHub account in the
-  company's GitHub organisation.
+  subscription, and the GitHub command-line tool `gh` installed. Each member has a GitHub account.
 - **Carla's phone:** Carla also needs the GitHub phone app, signed in, for step 8.
 - **Install:** Grillo is installed from the unsigned installers, so the Mac and Windows installs include the warning
   click.
@@ -40,7 +39,7 @@ Steps and pass conditions are copied from PRD section 11. A step passes only whe
 | # | Step | Pass |
 |---|---|---|
 | 1 | **Setup.** All three open Grillo; Carla starts signed out of GitHub. | The setup check tells her and guides her in; then Claude Code and GitHub show signed in on all three. |
-| 2 | **Project.** Ana creates "Room booking", picks the default PRD structure, adds one section, invites Ben and Carla. | A private repository exists in the company GitHub, and all three see the project. |
+| 2 | **Project.** Ana creates "Room booking", picks the default PRD structure, adds one section, invites Ben and Carla. | A private repository exists under the owner Ana picked, and all three see the project. |
 | 3 | **Idea.** Ana pastes the kick-off transcript. | A map and at least three tickets with questions appear, in Grillo and as GitHub issues. |
 | 4 | **Tagging.** A member runs the tagging round. | Every ticket carries one or more domains or "no domain", also visible as GitHub labels. |
 | 5 | **Send and take.** Ana sends a platform ticket to Carla; Ben takes a developer ticket. | All three Grillos show both tickets locked, with their owners. |
@@ -49,7 +48,7 @@ Steps and pass conditions are copied from PRD section 11. A step passes only whe
 | 8 | **Own time.** Ben answers his ticket by form; Carla comments her answer from the GitHub phone app. | Ana's Grillo picks up Carla's comment and records it with the source "Carla, via GitHub, date", naming Ana as the one who recorded it. |
 | 9 | **Generic agent.** Ben opens "+" and pastes a made-up customer email that clashes with a recorded answer. | The clash is shown, Ben resolves it, the change is marked "Ben, via generic agent, date", and the email becomes a source. |
 | 10 | **Finish.** The remaining tickets are answered and the map completes. | The PRD is written automatically, in Ana's structure including her extra section. |
-| 11 | **PRD check.** | Decision statements carry source codes like `[S4, Q12]`, unsupported ones are marked `[no source]`, an audit appendix exists, and one line traces back to Carla's phone answer. |
+| 11 | **PRD check.** | Decision statements carry source codes like `[S4, Q12.3]`, unsupported ones are marked `[no source]`, an audit appendix exists, and one line traces back to Carla's phone answer. |
 | 12 | **Version.** A member edits the PRD structure and regenerates. | Version 2 exists, and version 1 is kept, numbered and dated. |
 | 13 | **Close.** Ana closes the project. | The repository is archived. |
 
