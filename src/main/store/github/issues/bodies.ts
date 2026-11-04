@@ -6,7 +6,7 @@
 import { StoreError } from '../../store';
 import type { IsoDateTime, Login, QuestionCode, SettledLine, SourceCode, TicketKind, Via } from '../../types';
 import { formatHeader, parseHeader, splitList } from '../repo/records';
-import { isLogin, isSessionId, sourceNumberOf } from '../repo/names';
+import { isLogin, isSessionId, sameLogin, sourceNumberOf } from '../repo/names';
 
 export const MAP_TITLE = 'Map';
 export const MAP_LABEL = 'wayfinder:map';
@@ -339,10 +339,15 @@ export interface TagsByHand {
 
 // Who may be read in a public repository, where anyone can comment and a marker line and a `who:` line prove nothing.
 
-/** GitHub's `author_association` of someone with a place in the repository: every other value, or none, is an outsider. */
-const COLLABORATOR_ASSOCIATIONS: readonly unknown[] = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+/** GitHub's `author_association` of someone the repository itself gives a place: every other value, or none, is an outsider. */
+export const REPOSITORY_ASSOCIATIONS: readonly unknown[] = ['OWNER', 'COLLABORATOR'];
+/** Any member of the organisation that owns the repository, with a place in this project or not, so it proves nothing alone. */
+export const ORGANISATION_ASSOCIATION = 'MEMBER';
 
-export const isFromCollaborator = ({ association }: RawComment): boolean => COLLABORATOR_ASSOCIATIONS.includes(association);
+/** Whether a comment in a public repository counts: an organisation member must also be in the project's members file. */
+export const isFromCollaborator = ({ association, author }: RawComment, members: readonly Login[]): boolean =>
+  REPOSITORY_ASSOCIATIONS.includes(association) ||
+  (association === ORGANISATION_ASSOCIATION && members.some((member) => sameLogin(member, author)));
 
 /** Whether a comment body is a tags-by-hand marker: its first line is the marker. */
 export const isTagsByHand = (body: string): boolean => unixLines(body).split('\n')[0] === TAGS_BY_HAND_MARKER;

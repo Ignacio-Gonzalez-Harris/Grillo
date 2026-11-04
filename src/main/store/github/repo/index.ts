@@ -47,6 +47,7 @@ import {
 export const REPO_METHODS = [
   'currentMember',
   'viewerPermission',
+  'isPublicRepository',
   'signedInLogin',
   'listOrganisations',
   'listRepositories',
@@ -284,6 +285,9 @@ export function createRepoStore(deps: GithubDeps): RepoStore {
     },
     async viewerPermission(id) {
       return (await api.repository(repositoryOf(id))).permission;
+    },
+    async isPublicRepository(id) {
+      return (await api.repository(repositoryOf(id))).isPublic;
     },
     async signedInLogin() {
       return (await api.identity()).login;

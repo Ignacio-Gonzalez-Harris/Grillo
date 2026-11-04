@@ -3,7 +3,7 @@
  * facts the draft is made from, so what it lists is what gets created.
  */
 import { button } from '../../theme/components';
-import { canInvite, ideaOf, ownedByMember, repositoryToConnect, STEP_NAMES, type FormStep } from './form';
+import { canInvite, connectsPublicRepository, ideaOf, ownedByMember, repositoryToConnect, STEP_NAMES, type FormStep } from './form';
 import { structureSummary } from './step-structure';
 import { ACCESS_BADGES, PUBLIC_WARNING, READ_ACCESS_HINT } from './step-where';
 import type { WizardContext } from './wizard';
@@ -46,7 +46,10 @@ function whereAnswers(ctx: WizardContext): StepAnswers {
         ['Repository', repository ? `${repository.owner}/${repository.name}` : ''],
         ['Your access', accessAnswer(ctx)],
       ],
-      extra: form.access.state === 'known' && form.access.permission === 'read' ? [el('p', 'reason m0', [READ_ACCESS_HINT])] : [],
+      extra: [
+        ...(form.access.state === 'known' && form.access.permission === 'read' ? [el('p', 'reason m0', [READ_ACCESS_HINT])] : []),
+        ...(connectsPublicRepository(form) ? [note(PUBLIC_WARNING, 'warn')] : []),
+      ],
     };
   }
   const own = ownedByMember(form);

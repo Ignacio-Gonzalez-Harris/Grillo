@@ -36,6 +36,7 @@ export function asSentence(reason: string): string {
 export const STORE_METHODS = [
   'currentMember',
   'viewerPermission',
+  'isPublicRepository',
   'signedInLogin',
   'listOrganisations',
   'listRepositories',

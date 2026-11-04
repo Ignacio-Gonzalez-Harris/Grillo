@@ -116,10 +116,34 @@ describe('in-memory store: the member and their GitHub surroundings', () => {
     await store.archiveProject('example-org/closed-demo');
 
     expect(await store.listRepositories()).toEqual([
-      { repository: { owner: 'example-org', name: 'alpha' }, permission: 'write' },
-      { repository: { owner: 'example-org', name: 'grilling-demo' }, permission: 'admin' },
-      { repository: { owner: 'example-org', name: 'zebra' }, permission: 'read' },
+      { repository: { owner: 'example-org', name: 'alpha' }, permission: 'write', isPublic: false },
+      { repository: { owner: 'example-org', name: 'grilling-demo' }, permission: 'admin', isPublic: false },
+      { repository: { owner: 'example-org', name: 'zebra' }, permission: 'read', isPublic: false },
     ]);
+  });
+
+  it('says which repositories are public, before and after they hold a project', async () => {
+    const store = createMemoryStore({
+      seed: {
+        repositories: [
+          { repository: { owner: 'example-org', name: 'open' }, permission: 'write', issuesEnabled: true, isPublic: true },
+          { repository: { owner: 'example-org', name: 'closed' }, permission: 'write', issuesEnabled: true },
+        ],
+      },
+    });
+
+    expect((await store.listRepositories()).map(({ isPublic }) => isPublic)).toEqual([false, true]);
+    expect(await store.isPublicRepository('example-org/open')).toBe(true);
+    expect(await store.isPublicRepository('example-org/closed')).toBe(false);
+    expect(await refusal(store.isPublicRepository('example-org/no-such-repository'))).toBe('not-found');
+
+    await store.createProject({ connectRepository: { owner: 'example-org', name: 'open' } });
+    await store.createProject({ newRepository: { organisation: 'ada-example', name: 'own-open', visibility: 'public' } });
+    await store.createProject({ newRepository: { organisation: 'ada-example', name: 'own-closed' } });
+
+    expect(await store.isPublicRepository('example-org/open')).toBe(true);
+    expect(await store.isPublicRepository('ada-example/own-open')).toBe(true);
+    expect(await store.isPublicRepository('ada-example/own-closed')).toBe(false);
   });
 
   it('gives the creator of a new repository admin and a connected repository its own permission', async () => {

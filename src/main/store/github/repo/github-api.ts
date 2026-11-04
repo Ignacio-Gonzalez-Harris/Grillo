@@ -195,6 +195,7 @@ function parseRepositoryPage(value: unknown): (RepositoryAccess & { archived: bo
     return {
       repository: repositoryRef(repository),
       permission: permissionOf(object(repository.permissions, 'the permissions')),
+      isPublic: repository.private !== true,
       archived: repository.archived,
     };
   });
@@ -264,8 +265,8 @@ export function createGithubApi(gh: Gh) {
       const found: RepositoryAccess[] = [];
       for (let page = 1; ; page += 1) {
         const entries = await gh.json(['api', `user/repos?${PAGE}&page=${page}`], parseRepositoryPage);
-        for (const { repository, permission, archived } of entries) {
-          if (!archived) found.push({ repository, permission });
+        for (const { archived, ...access } of entries) {
+          if (!archived) found.push(access);
         }
         if (entries.length < PAGE_SIZE) return found;
       }

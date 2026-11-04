@@ -38,6 +38,8 @@ interface AppOptions {
 }
 
 /** The screen as it runs: the in-memory store and the settings behind the real store IPC, agents recorded. */
+const PUBLIC_WARNING = 'Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.';
+
 function app(options: AppOptions = {}) {
   const fake = createFakeIpc();
   const ipc = createMainIpc(fake.main, () => [fake.window]);
@@ -513,6 +515,83 @@ describe('project creation: the repository list', () => {
     expect(text(stepCard(root))).toContain('No repository of yours matches this search.');
   });
 
+  describe('a public repository', () => {
+    const OPEN = 'example-org/open-repo';
+    const openSeed: MemoryStoreOptions['seed'] = {
+      repositories: [...(seed?.repositories ?? []), { repository: { owner: 'example-org', name: 'open-repo' }, permission: 'write', issuesEnabled: true, isPublic: true }],
+    };
+    const warningOn = (part: Element | null) => [...(part?.querySelectorAll('.note.warn') ?? [])].map(text);
+    const toReviewFromWhere = (root: HTMLElement) => {
+      walkTo(root, 'Idea');
+      type(root, 'textarea[aria-label="The idea"]', IDEA);
+      walkTo(root, 'Review');
+    };
+
+    it('warns on the Where step and the review page when it is picked, and takes the warning away for a private one', async () => {
+      const context = app({ seed: openSeed });
+      const { root } = context;
+      await listed(context);
+      expect(warningOn(stepCard(root))).toEqual([]);
+
+      (radio(root, OPEN) as HTMLInputElement).click();
+      expect(warningOn(stepCard(root))).toEqual([PUBLIC_WARNING]);
+
+      toReviewFromWhere(root);
+      expect(warningOn(root.querySelector('.review'))).toEqual([PUBLIC_WARNING]);
+
+      root.querySelector<HTMLButtonElement>('[aria-label="Change Where"]')?.click();
+      (radio(root, 'example-org/sample-repo-1') as HTMLInputElement).click();
+      expect(warningOn(stepCard(root))).toEqual([]);
+      click(root, 'Back to review');
+      expect(warningOn(root.querySelector('.review'))).toEqual([]);
+    });
+
+    it('warns once Check access has read a public repository typed in full, and says nothing of a private one', async () => {
+      const context = app({ seed: openSeed });
+      const { root, store } = context;
+      vi.spyOn(store, 'listRepositories').mockResolvedValue([]);
+      await listed(context);
+
+      type(root, 'input[aria-label="Search repositories"]', 'example-org/sample-repo-1');
+      click(root, 'Check access');
+      await until(() => root.querySelector('.rows .badge.warn') !== null, 'the access check');
+      expect(warningOn(stepCard(root))).toEqual([]);
+
+      type(root, 'input[aria-label="Search repositories"]', OPEN);
+      expect(warningOn(stepCard(root))).toEqual([]);
+      click(root, 'Check access');
+      await until(() => warningOn(stepCard(root)).length > 0, 'the warning');
+      expect(warningOn(stepCard(root))).toEqual([PUBLIC_WARNING]);
+    });
+
+    it('still warns on the review page when a repository typed in full was never checked', async () => {
+      const context = app({ seed: openSeed });
+      const { root, store } = context;
+      vi.spyOn(store, 'listRepositories').mockResolvedValue([]);
+      await listed(context);
+
+      type(root, 'input[aria-label="Search repositories"]', OPEN);
+      toReviewFromWhere(root);
+
+      await until(() => warningOn(root.querySelector('.review')).length > 0, 'the warning');
+      expect(warningOn(root.querySelector('.review'))).toEqual([PUBLIC_WARNING]);
+    });
+
+    it('shows no warning when GitHub cannot say what the repository is', async () => {
+      const context = app({ seed: openSeed });
+      const { root, store } = context;
+      vi.spyOn(store, 'listRepositories').mockResolvedValue([]);
+      vi.spyOn(store, 'isPublicRepository').mockRejectedValue(new Error('GitHub did not answer'));
+      await listed(context);
+
+      type(root, 'input[aria-label="Search repositories"]', OPEN);
+      click(root, 'Check access');
+      await until(() => root.querySelector('.rows .badge.warn') !== null, 'the access check');
+
+      expect(warningOn(stepCard(root))).toEqual([]);
+    });
+  });
+
   it('picking a repository selects it with no Check access: an admin may invite, and connecting uses that repository', async () => {
     const context = app({ seed });
     const { store, starts, root } = context;
@@ -855,8 +934,6 @@ describe('project creation: registration', () => {
 });
 
 describe('project creation: the owner of a new repository', () => {
-  const PUBLIC_WARNING = 'Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.';
-
   async function formOf(options: AppOptions = {}) {
     const context = app(options);
     await context.open();

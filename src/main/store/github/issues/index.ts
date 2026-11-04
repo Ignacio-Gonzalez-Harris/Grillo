@@ -349,10 +349,15 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
 
   /**
    * Which of a repository's comments may be read at all: anyone can comment on a public repository, with Grillo's marker
-   * line and a made-up `who:` line, so there only a collaborator's count (docs/store-layout.md, "Comment markers").
+   * line and a made-up `who:` line, so there only a collaborator's count (docs/store-layout.md, "Comments in a public
+   * repository"). A members file that cannot be read is refused, never read as "nobody is a member".
    */
   async function commentGate(ref: RepositoryRef): Promise<CommentGate> {
-    return (await repositories.repository(ref)).isPublic ? isFromCollaborator : () => true;
+    if (!(await repositories.repository(ref)).isPublic) {
+      return () => true;
+    }
+    const members = (await api.memberLines(ref)).map(({ login }) => login);
+    return (comment) => isFromCollaborator(comment, members);
   }
 
   async function commentsOf(ref: RepositoryRef, issue: IssueData, gate?: CommentGate): Promise<IssueComment[]> {

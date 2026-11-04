@@ -294,9 +294,9 @@ describe('GitHub repository backend: members and invitations', () => {
     const listed = await store.listRepositories();
 
     expect(listed).toHaveLength(103);
-    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'sample-repo-100' }, permission: 'write' });
-    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'read-only' }, permission: 'read' });
-    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'owned' }, permission: 'admin' });
+    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'sample-repo-100' }, permission: 'write', isPublic: false });
+    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'read-only' }, permission: 'read', isPublic: false });
+    expect(listed).toContainEqual({ repository: { owner: 'example-org', name: 'owned' }, permission: 'admin', isPublic: false });
     expect(listed.map(({ repository }) => repository.name)).not.toContain('closed');
     expect(github.calls.filter((call) => call.includes('user/repos'))).toEqual([
       'gh api user/repos?per_page=100&page=1',
@@ -825,9 +825,22 @@ describe('GitHub repository backend: a project under the own account', () => {
     github.addRepository('example-org/team-code', { permission: 'write' });
 
     await expect(store.listRepositories()).resolves.toEqual([
-      { repository: { owner: 'ada-example', name: 'own-code' }, permission: 'admin' },
-      { repository: { owner: 'example-org', name: 'team-code' }, permission: 'write' },
+      { repository: { owner: 'ada-example', name: 'own-code' }, permission: 'admin', isPublic: false },
+      { repository: { owner: 'example-org', name: 'team-code' }, permission: 'write', isPublic: false },
     ]);
+  });
+
+  it('says which repositories are public, in the connect list and when asked of one', async () => {
+    const { store, github } = await setup();
+    github.addRepository('example-org/open-code', { visibility: 'public' });
+    github.addRepository('example-org/closed-code');
+
+    const listed = await store.listRepositories();
+
+    expect(listed.find(({ repository }) => repository.name === 'open-code')?.isPublic).toBe(true);
+    expect(listed.find(({ repository }) => repository.name === 'closed-code')?.isPublic).toBe(false);
+    await expect(store.isPublicRepository('example-org/open-code')).resolves.toBe(true);
+    await expect(store.isPublicRepository('example-org/closed-code')).resolves.toBe(false);
   });
 });
 

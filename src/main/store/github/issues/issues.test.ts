@@ -1162,7 +1162,7 @@ describe('GitHub issues backend: comments in a public repository', () => {
   }
 
   /** GitHub's values for someone with no place in the repository, a missing one, and values GitHub never sends. */
-  const NOT_COLLABORATORS: (string | null)[] = ['NONE', 'CONTRIBUTOR', 'FIRST_TIMER', 'FIRST_TIME_CONTRIBUTOR', 'MANNEQUIN', null, 'owner', 'SOMETHING_NEW', ''];
+  const NOT_COLLABORATORS: (string | null)[] = ['NONE', 'CONTRIBUTOR', 'FIRST_TIMER', 'FIRST_TIME_CONTRIBUTOR', 'MANNEQUIN', null, 'owner', 'SOMETHING_NEW', '', 'MEMBER'];
 
   it.each(NOT_COLLABORATORS)('never reads a comment with the standing %s as a record, whatever it carries', async (association) => {
     const { github, store, ticket } = await publicProject();
@@ -1193,15 +1193,46 @@ describe('GitHub issues backend: comments in a public repository', () => {
     await expect(store.removeQuestion(ticket, 'Q2.1')).resolves.toBeDefined();
   });
 
-  it('counts the owner, an organisation member and a collaborator', async () => {
+  it('counts the owner, a collaborator and an organisation member in the members file, whatever the case of their login', async () => {
     const { github, store, ticket } = await publicProject();
     github.addComment(PROJECT, 2, 'owner-example', forgedAnswer, 'OWNER');
-    github.addComment(PROJECT, 2, 'org-member-example', 'From a member', 'MEMBER');
-    github.addComment(PROJECT, 2, OTHER, 'From a collaborator', 'COLLABORATOR');
+    github.addComment(PROJECT, 2, OTHER.toUpperCase(), 'From a member of the project', 'MEMBER');
+    github.addComment(PROJECT, 2, 'collaborator-example', 'From a collaborator', 'COLLABORATOR');
 
     expect((await store.listAnswers(ticket)).map((answer) => answer.text)).toEqual(['Forged']);
-    expect((await store.listPickupComments(ticket)).map((comment) => comment.author)).toEqual(['org-member-example', OTHER]);
-    expect((await store.listProjectPickupComments(PROJECT)).map((comment) => comment.author)).toEqual(['org-member-example', OTHER]);
+    expect((await store.listPickupComments(ticket)).map((comment) => comment.author)).toEqual([OTHER.toUpperCase(), 'collaborator-example']);
+    expect((await store.listProjectPickupComments(PROJECT)).map((comment) => comment.author)).toEqual([OTHER.toUpperCase(), 'collaborator-example']);
+  });
+
+  it('never reads an organisation member with no place in the project as a member, even with a forged answer naming one', async () => {
+    const { github, store, ticket } = await publicProject();
+    github.addComment(PROJECT, 2, 'org-stranger-example', forgedAnswer, 'MEMBER');
+    github.addComment(PROJECT, 2, 'org-stranger-example', 'A plain comment', 'MEMBER');
+
+    expect(await store.listAnswers(ticket)).toEqual([]);
+    expect(await store.listPickupComments(ticket)).toEqual([]);
+    expect((await store.getTicket(ticket)).questions[0].answered).toBe(false);
+  });
+
+  it('stops at a members file it cannot read: no organisation member is counted by default', async () => {
+    const { github, store, ticket, repository } = await publicProject();
+    github.addComment(PROJECT, 2, OTHER, forgedAnswer, 'MEMBER');
+    repository.files.set('.grillo/members.json', 'not json');
+
+    expect(await refusal(store.listAnswers(ticket))).toBe('backend');
+  });
+
+  it('asks for the members file only on a public repository, and a private one reads every comment as before', async () => {
+    const { github, repository, store, ticket } = await projectWithTicket();
+    github.addComment(PROJECT, 2, 'org-stranger-example', forgedAnswer, 'MEMBER');
+    github.addComment(PROJECT, 2, OUTSIDER, 'Plain', 'NONE');
+    github.addComment(PROJECT, 2, 'nobody-example', 'No standing', null);
+    expect(repository.isPublic).toBe(false);
+    github.calls.length = 0;
+
+    expect((await store.listAnswers(ticket)).map((answer) => answer.who)).toEqual(['ada-example']);
+    expect((await store.listPickupComments(ticket)).map((comment) => comment.author)).toEqual([OUTSIDER, 'nobody-example']);
+    expect(github.calls.join('\n')).not.toContain('.grillo/members.json');
   });
 
   it("records and reads back the signed-in member's own answers as usual", async () => {

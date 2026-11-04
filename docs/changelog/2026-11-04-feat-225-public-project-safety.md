@@ -1,0 +1,1 @@
+Public projects are safer: agents' comment commands leave outsiders out, an organisation member needs a place in the project to count, and people are warned before connecting a public repository or recording in one.

@@ -49,6 +49,7 @@ import meetingTabPanels from './tab-panel';
 const NOW = new Date('2026-10-24T09:15:00.000Z');
 const PROJECT = 'example-org/sample-project-1';
 const HOST = 'ada-example';
+const PUBLIC_SCRIPT = '"This call is recorded and transcribed by Grillo. This project is public, so anyone on the internet can read the transcript."';
 const BEN = 'ben-example';
 const CARLA = 'carla-example';
 const ENTER = '\r';
@@ -342,6 +343,19 @@ describe('meeting screen: its states', () => {
     await modelReady();
 
     expect(visible(status)).toBe(false);
+  });
+
+  it.each([
+    ['says the transcript is public on a public project', () => Promise.resolve(true), PUBLIC_SCRIPT],
+    ['stays as it was on a private project', () => Promise.resolve(false), '"This call is recorded and transcribed by Grillo."'],
+    ['says public when GitHub cannot say', () => Promise.reject(new Error('GitHub did not answer')), PUBLIC_SCRIPT],
+  ])('the consent script %s', async (_case, answer, script) => {
+    const { store, panel, modelReady, startMeeting } = await app();
+    vi.spyOn(store, 'isPublicRepository').mockImplementation(answer);
+    await startMeeting();
+    await modelReady();
+
+    expect(text(cardNamed(panel(), 'Consent').querySelector('.script'))).toBe(script);
   });
 
   it('Before consent: shows the script, keeps Record disabled, and records the tick with the host and the time', async () => {

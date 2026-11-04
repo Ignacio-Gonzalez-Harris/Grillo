@@ -28,6 +28,7 @@ import { MEETING_AGENT_TITLE, startMeetingAgent, type MeetingAgents } from './me
 /** Below the own-time panel, which never shows on a meeting agent anyway. */
 export const MEETING_PANEL_PRIORITY = 5;
 export const CONSENT_SCRIPT = '"This call is recorded and transcribed by Grillo."';
+export const CONSENT_SCRIPT_PUBLIC = '"This call is recorded and transcribed by Grillo. This project is public, so anyone on the internet can read the transcript."';
 export const CONSENT_LABEL = 'Everyone here agreed';
 
 export const REASON_MODEL = 'Record unlocks once the speech model is ready.';
@@ -666,6 +667,9 @@ export function meetingPanels({ agents, capture, now = () => new Date() }: Meeti
 
       async function load(of: string): Promise<void> {
         try {
+          // In doubt the script says public: saying so needlessly costs a sentence, staying silent costs consent.
+          const isPublic = await store.isPublicRepository(of).catch(() => true);
+          script.textContent = isPublic ? CONSENT_SCRIPT_PUBLIC : CONSENT_SCRIPT;
           const [me, list, open] = await Promise.all([
             store.currentMember(of),
             store.listMembers(of),
