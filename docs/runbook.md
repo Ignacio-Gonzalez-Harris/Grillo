@@ -130,9 +130,12 @@ The project screens arrive with their own stories. What already works underneath
   only the owner can invite, close and reopen; a collaborator sees those greyed out with the reason. Pending
   invitations to you are listed and accepted inside Grillo.
 - **A public project exposes its data:** anyone can read its transcripts, answers and PRD. Anyone can also comment on
-  it, so Grillo counts only comments from the repository's owner, an organisation member or a collaborator. Others are
-  never answers, discussions, decisions or comments waiting to be picked up. Agents read comments through `gh`, so
-  there this is an instruction they follow and name in their report, not something the code enforces. Once GitHub
+  it, so Grillo counts only comments from the repository's owner, a collaborator, or an organisation member listed in
+  `.grillo/members.json`. Others, an organisation member with no place in the project included, are never answers,
+  discussions, decisions or comments waiting to be picked up. Agents read comments through `gh`, with commands that
+  leave those comments out, so their text does not reach the model; an agent that runs a command of its own, or text a
+  member pastes, can still bring an outsider's words in (PRD section 8, Risks). With a protected main, an organisation
+  member's comments count only once the pull request that adds them to the members file is merged. Once GitHub
   stops calling someone who left a public project a collaborator, their comments stop counting and the questions they
   answered read as open again.
 - **Saves** go through the project folder: commit, then push to main. If someone pushed first, Grillo pulls and
@@ -156,7 +159,8 @@ Open), the two ways in, **New project** and **Connect existing**, and **Pending 
      your sign-in belongs to and your own account; an organisation first, your own account when you have none) and
      the repository name. For your own account, Private (the default) or Public; choosing Public warns that
      transcripts, answers and the PRD are visible to anyone. Connect existing: your repositories are listed with your
-     access to each. Search narrows the list; pick one. Read access only says it cannot be connected. "Check access"
+     access to each. Search narrows the list; pick one. Read access only says it cannot be connected. Picking a public
+     repository shows the same warning; it can still be connected. "Check access"
      asks GitHub again, and also checks a repository typed in full as `owner/repository` that the list does not hold.
      The switch at the top changes between the two ways in and keeps what was typed for each.
   2. **Structure.** "Start from" Grillo's default of 13 sections or an earlier project's structure, then move
@@ -167,7 +171,7 @@ Open), the two ways in, **New project** and **Connect existing**, and **Pending 
      is greyed out with the reason; admin access allows it.
   4. **Idea.** Write or paste text, with documents attached (text files), or paste or upload a transcript.
 - **The review page** lists each step's answers, with Change going back to that step and "Back to review" returning.
-  It repeats the Public warning, says when your access is read only, and says when a login or a domain was typed but
+  It repeats the Public warning, for a new repository or a connected one, says when your access is read only, and says when a login or a domain was typed but
   never added, because neither stops the project and neither is kept. Nothing is created until you press the button
   at the bottom.
 - **Create project** (or "Connect and start") lists each step as it runs: the repository with Grillo's labels and
@@ -567,7 +571,8 @@ separate session screen. **Start meeting** on the Map tab starts one (see Starti
   written to the session file and typed into the agent as a new `present:` message.
 - **Preparing speech model:** before the first recording on a laptop the speech model downloads, with its progress.
   Record stays off until it is ready; a failed download says why and offers "Try again". Type answers work meanwhile.
-- **Consent:** the line to read aloud, then "Everyone here agreed". Record stays disabled until the host ticks it;
+- **Consent:** the line to read aloud (on a public project it also says the transcript is public), then "Everyone
+  here agreed". Record stays disabled until the host ticks it;
   the card then says who ticked and when.
 - **Record** captures the source chosen above it (see Recording source, below) and shows the red Recording banner with the
   time since Record went on. Switching it off saves the transcript file and goes back to Type. If the microphone

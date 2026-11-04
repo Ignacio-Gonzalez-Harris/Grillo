@@ -349,10 +349,30 @@ export function createIssuesStore(deps: GithubDeps): IssuesStore {
 
   /**
    * Which of a repository's comments may be read at all: anyone can comment on a public repository, with Grillo's marker
-   * line and a made-up `who:` line, so there only a collaborator's count (docs/store-layout.md, "Comment markers").
+   * line and a made-up `who:` line, so there only a collaborator's count (docs/store-layout.md, "Comments in a public
+   * repository"). A damaged members file is refused, never read as "nobody is a member".
    */
   async function commentGate(ref: RepositoryRef): Promise<CommentGate> {
-    return (await repositories.repository(ref)).isPublic ? isFromCollaborator : () => true;
+    if (!(await repositories.repository(ref)).isPublic) {
+      return () => true;
+    }
+    const members = await loginsOnMain(ref);
+    return (comment) => isFromCollaborator(comment, members);
+  }
+
+  /**
+   * The logins in the members file on main. None while main holds no such file, as when a protected main keeps the
+   * first save waiting in a pull request: the owner and collaborators still count, and no organisation member does.
+   */
+  async function loginsOnMain(ref: RepositoryRef): Promise<Login[]> {
+    try {
+      return (await api.memberLines(ref)).map(({ login }) => login);
+    } catch (error) {
+      if (error instanceof StoreError && error.kind === 'not-found') {
+        return [];
+      }
+      throw error;
+    }
   }
 
   async function commentsOf(ref: RepositoryRef, issue: IssueData, gate?: CommentGate): Promise<IssueComment[]> {

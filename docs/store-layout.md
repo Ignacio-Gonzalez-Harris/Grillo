@@ -250,17 +250,27 @@ turned into an answer until an answer comment names its id in `from:`; deleting 
 
 Anyone can comment on a public repository, and nothing stops them writing a marker line and any `who:`. So in a
 repository GitHub does not call private (`private: true`; a missing value counts as public), a comment counts only
-when its `author_association` is exactly `OWNER`, `MEMBER` or `COLLABORATOR`. Any other value, or none, means the comment
+when its `author_association` is exactly `OWNER` or `COLLABORATOR`, or is `MEMBER` and its author's login is in
+`.grillo/members.json` on the default branch, compared without regard to case. In an organisation's repository `MEMBER`
+means any member of that organisation, so it proves no place in the project on its own; the members file is the check
+because only someone with push access can change it, and every member Grillo invites is written there. It is read from
+main alone, never with this laptop's waiting saves over it (see "Saves to a protected main"), because a waiting save has
+not passed the repository's own rules and neither agents nor other laptops can see it. So while main holds no members
+file, or a waiting save holds a new member's line, those organisation members do not count; the owner and collaborators
+do. A damaged members file refuses the read rather than counting nobody. Any other value, or none, means the comment
 does not exist for the store: no answer, discussion, decision, tags-by-hand marker or plain comment, and it cannot damage a
 ticket. The value is read afresh every time, so **once GitHub stops calling someone a collaborator after they leave,
 their comments stop counting** (GitHub's documentation does not say when the value changes, and this was not tried
 against real GitHub): their answers read as unanswered again and their decisions as gone, though the map's settled
-lines stay until a member changes them. In a public organisation repository `MEMBER` means any member of that
-organisation. A private repository reads every comment, as always.
+lines stay until a member changes them. A private repository reads every comment, as always, and never reads the
+members file for this.
 
-An agent reads comments through `gh`, not the store, so there this is an instruction (every `SKILL.md`, "Ground rules",
-and `record-answer.md`), never enforced. An outsider's issue is no ticket: GitHub drops the labels of someone with
-no push access, and Grillo reads only labelled issues.
+An agent reads comments through `gh`, not the store. Every `SKILL.md` ("Ground rules") and `record-answer.md` give it
+one command for a private repository and one for a public one, whose `--jq` filter applies the same check, so a left-out
+comment's text never reaches the model through them (`resources/skills/public-comments.test.ts` fails on any other
+comment read in a shipped skill). Which command to run is still the agent's to follow: nothing stops an agent running
+another `gh` command of its own, and PRD section 8, Risks, names what else can reach it. An outsider's issue is no ticket:
+GitHub drops the labels of someone with no push access, and Grillo reads only labelled issues.
 
 ## Tags set by hand
 

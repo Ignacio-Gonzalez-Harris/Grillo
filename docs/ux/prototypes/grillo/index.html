@@ -787,6 +787,7 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
       <button class="btn sm" data-state="where-blocked">Where: Next stopped</button>
       <button class="btn sm" data-state="connect-list">Where: the repository list</button>
       <button class="btn sm" data-state="connect">Where: connect, write access</button>
+      <button class="btn sm" data-state="connect-public">Where: connect, a public repository</button>
       <button class="btn sm" data-state="connect-read-only">Where: read access only</button>
       <button class="btn sm" data-state="connect-checking">Where: checking access</button>
       <button class="btn sm" data-state="connect-access-unknown">Where: access not known</button>
@@ -807,6 +808,7 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
       <button class="btn sm" data-state="review">Review: a new repository</button>
       <button class="btn sm" data-state="review-public">Review: Public</button>
       <button class="btn sm" data-state="review-connect">Review: connecting</button>
+      <button class="btn sm" data-state="review-connect-public">Review: connecting, public</button>
       <button class="btn sm" data-state="review-not-invited">Review: a login never added</button>
       <button class="btn sm" data-state="connect-problems">Connect: repository problems</button>
       <button class="btn sm" data-state="creating">Creating</button>
@@ -1106,6 +1108,30 @@ body.no-glass .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; }
               <li class="selected"><label class="check"><input type="radio" name="repo-connect" checked> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
               <li><label class="check"><input type="radio" name="repo-connect"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
             </ul>
+            <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
+          </div>
+          <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-folded">Next</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="connect-public">
+      <p class="state-caption">State: Step 1 of 4, Where: connect, a public repository (warning; it also shows on the review page; it never stops the member)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Step 1 of 4</p><ol class="stepper" aria-label="Steps"><li aria-current="step">Where</li><li>Structure</li><li>People</li><li>Idea</li></ol></div>
+          <div class="page-head"><h3>Which repository should this project use?</h3><p>Pick a repository you already have on GitHub. Grillo works beside what is there and leaves your existing issues alone.</p></div>
+          <div class="card stack">
+            <div class="seg" role="group" aria-label="Repository"><button aria-pressed="false">Create a new repository</button><button aria-pressed="true">Connect an existing one</button></div>
+            <div class="row"><div class="fill"><input type="search" placeholder="Search your repositories" aria-label="Search repositories"></div><button class="btn">Check access</button></div>
+            <ul class="rows">
+              <li class="selected"><label class="check"><input type="radio" name="repo-connect" checked> example-org/sample-repo-1</label><span class="badge warn">Write access</span></li>
+              <li><label class="check"><input type="radio" name="repo-connect"> example-org/sample-repo-2</label><span class="badge ok">Admin access</span></li>
+            </ul>
+            <p class="note small warn">Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.</p>
             <p class="note small">Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.</p>
           </div>
           <div class="row page-actions"><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/structure-folded">Next</a></div>
@@ -1588,6 +1614,26 @@ Sample transcript line 2: a made-up reply.</textarea>
           <div class="page-head"><h3>Does this look right?</h3><p>Nothing has been created yet. Check your answers, then press Connect and start.</p></div>
           <ul class="rows card review">
             <li><div class="grow stack"><span class="strong">Where</span><dl class="answers"><dt>Repository</dt><dd>example-org/sample-repo-1</dd><dt>Your access</dt><dd><span class="badge warn">Write access</span></dd></dl></div><a class="btn sm" href="#screen-project-creation/connect" aria-label="Change Where">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Structure</span><dl class="answers"><dt>Starts from</dt><dd>Grillo default · 13 sections</dd><dt>Sections</dt><dd>Problem, Users and roles, Vocabulary, Flows, Screens, Data model, Permissions, Build decisions, Design system, Do-not-build list, Acceptance demo, Release order, Assumptions</dd></dl></div><a class="btn sm" href="#screen-project-creation/structure-folded" aria-label="Change Structure">Change</a></li>
+            <li><div class="grow stack"><span class="strong">People</span><dl class="answers"><dt>You</dt><dd>member-a</dd><dt>Your role</dt><dd>Sample role A</dd><dt>Your domains</dt><dd>product</dd><dt>Invited</dt><dd>Nobody: inviting needs admin rights</dd></dl></div><a class="btn sm" href="#screen-project-creation/people-greyed" aria-label="Change People">Change</a></li>
+            <li><div class="grow stack"><span class="strong">Idea</span><dl class="answers"><dt>Transcript</dt><dd>Sample transcript line 1: a made-up kick-off remark.</dd></dl></div><a class="btn sm" href="#screen-project-creation/idea-transcript" aria-label="Change Idea">Change</a></li>
+          </ul>
+          <div class="row page-actions"><a class="btn" href="#screen-project-creation/idea-transcript">Back</a><span class="spacer"></span><a class="btn" href="#screen-project-creation/start">Cancel</a><a class="btn primary" href="#screen-project-creation/creating">Connect and start</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="review-connect-public">
+      <p class="state-caption">State: Review, connecting a public repository (warning)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>New project</span><span class="spacer"></span><span>member-a</span></div>
+
+        <div class="tabbar"><div class="tab-strip"><span class="tab active">Project</span><span class="tab-sep"></span><span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span><button class="tab add" aria-label="Open a generic agent">+</button></div><span class="tab-sep"></span><span class="tab">Setup</span></div>
+        <div class="window-body">
+          <div class="step-progress"><p class="small muted m0">Last check before Grillo starts</p><ol class="stepper" aria-label="Steps"><li class="done">Where</li><li class="done">Structure</li><li class="done">People</li><li class="done">Idea</li></ol></div>
+          <div class="page-head"><h3>Does this look right?</h3><p>Nothing has been created yet. Check your answers, then press Connect and start.</p></div>
+          <ul class="rows card review">
+            <li><div class="grow stack"><span class="strong">Where</span><dl class="answers"><dt>Repository</dt><dd>example-org/sample-repo-1</dd><dt>Your access</dt><dd><span class="badge warn">Write access</span></dd></dl><p class="note small warn">Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.</p></div><a class="btn sm" href="#screen-project-creation/connect" aria-label="Change Where">Change</a></li>
             <li><div class="grow stack"><span class="strong">Structure</span><dl class="answers"><dt>Starts from</dt><dd>Grillo default · 13 sections</dd><dt>Sections</dt><dd>Problem, Users and roles, Vocabulary, Flows, Screens, Data model, Permissions, Build decisions, Design system, Do-not-build list, Acceptance demo, Release order, Assumptions</dd></dl></div><a class="btn sm" href="#screen-project-creation/structure-folded" aria-label="Change Structure">Change</a></li>
             <li><div class="grow stack"><span class="strong">People</span><dl class="answers"><dt>You</dt><dd>member-a</dd><dt>Your role</dt><dd>Sample role A</dd><dt>Your domains</dt><dd>product</dd><dt>Invited</dt><dd>Nobody: inviting needs admin rights</dd></dl></div><a class="btn sm" href="#screen-project-creation/people-greyed" aria-label="Change People">Change</a></li>
             <li><div class="grow stack"><span class="strong">Idea</span><dl class="answers"><dt>Transcript</dt><dd>Sample transcript line 1: a made-up kick-off remark.</dd></dl></div><a class="btn sm" href="#screen-project-creation/idea-transcript" aria-label="Change Idea">Change</a></li>
@@ -2400,6 +2446,7 @@ Sample transcript line 2: a made-up reply.</textarea>
     <div class="state-tabs"><span class="label">States:</span>
       <button class="btn sm" data-state="preparing">Preparing speech model</button>
       <button class="btn sm" data-state="before-consent">Before consent</button>
+      <button class="btn sm" data-state="before-consent-public">Before consent, a public project</button>
       <button class="btn sm" data-state="listen">Recording, Listen</button>
       <button class="btn sm" data-state="type">Recording, Type</button>
       <button class="btn sm" data-state="extra-agent">Another grilling agent opened</button>
@@ -2491,6 +2538,67 @@ Sample transcript line 2: a made-up reply.</textarea>
               <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="true">Room microphone</button><button aria-pressed="false">Call audio</button></div>
               <p class="small muted">Room microphone records the people in this room. Call audio records the virtual meeting's sound playing on this laptop.</p>
               <label class="switch"><input type="checkbox" class="rec" id="rec-switch-demo" disabled> Record</label>
+              <p class="reason">Read the line above aloud and tick "Everyone here agreed" first.</p>
+              <button class="btn sm">Import a transcript (paste or upload)</button>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="card stack">
+              <div class="row"><span class="strong">Sample ticket 3</span><span class="tag d2">developer</span><span class="tag d1">product</span><span class="muted small">Question 1 of 3</span></div>
+              <p>Sample question 3.1: a made-up question for the room.</p>
+              <div class="row"><div class="seg" role="group" aria-label="Answer mode"><button aria-pressed="false">Listen</button><button aria-pressed="true">Type</button></div><button class="btn primary" disabled>Use it</button><button class="btn">Skip question</button><select class="w-auto" aria-label="Jump to ticket"><option>Jump to ticket…</option><option>Sample ticket 1</option><option>Sample ticket 5</option></select></div>
+              <p class="reason">Listen needs the recording on.</p>
+            </div>
+<pre class="terminal"><span class="t-muted">Grilling agent · Sample project 1</span>
+<span class="t-muted">Present: product, developer. Next unblocked ticket for them: Sample ticket 3.</span>
+
+<span class="t-hl">Sample question 3.1: a made-up question for the room.</span>
+  1. Sample option A
+  2. Sample option B
+  3. Something else
+
+<span class="t-prompt">❯</span> </pre>
+            <div class="typebox"><input type="text" placeholder="Type to the agent…" aria-label="Type to the agent"><button class="btn">Send</button></div>
+            <div class="transcript"><p class="muted">Not recording. The session transcript appears here once Record is on.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="state" data-state="before-consent-public">
+      <p class="state-caption">State: Before consent, a public project (the script also says the transcript is public)</p>
+      <div class="window glass">
+        <div class="titlebar"><img class="logo" src="grillo-logo.png" alt=""><strong>Grillo</strong><span>Sample project 1</span><span class="spacer"></span><span>member-a · host</span></div>
+        <div class="tabbar">
+          <div class="tab-strip">
+            <span class="tab">Project</span><span class="tab-sep"></span>
+            <span class="tab">Map</span><span class="tab">Tickets</span><span class="tab">PRD</span><span class="tab-sep"></span>
+            <span class="tab active">Grilling · Sample ticket 3<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+            <span class="tab">Grilling · Sample ticket 1<span class="dot" title="Waiting for you"></span><label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+            <span class="tab">Generic · Sample notes<label class="switch"><input type="checkbox" aria-label="Open channel"> Channel</label></span>
+            <button class="tab add" aria-label="Open a generic agent">+</button>
+          </div>
+          <span class="tab-sep"></span><span class="tab">Setup</span>
+        </div>
+        <div class="window-body split">
+          <div class="stack">
+            <div class="card stack">
+              <h4>Present</h4>
+              <label class="check"><input type="checkbox" checked> member-a · Ana <span class="tag d1">product</span> <span class="badge info">Host</span></label>
+              <label class="check"><input type="checkbox" checked> member-b · Ben <span class="tag d2">developer</span></label>
+              <label class="check"><input type="checkbox"> member-c · Carla <span class="tag d3">platform</span></label>
+              <p class="small muted">Used only to pick tickets: product, developer and no-domain tickets come up. Change it at any time.</p>
+            </div>
+            <div class="card stack">
+              <h4>Consent</h4>
+              <p class="script">"This call is recorded and transcribed by Grillo. This project is public, so anyone on the internet can read the transcript."</p>
+              <label class="check"><input type="checkbox" data-enables="rec-switch-public-demo"> Everyone here agreed</label>
+            </div>
+            <div class="card stack">
+              <h4>Recording</h4>
+              <div class="seg" role="group" aria-label="Recording source"><button aria-pressed="true">Room microphone</button><button aria-pressed="false">Call audio</button></div>
+              <p class="small muted">Room microphone records the people in this room. Call audio records the virtual meeting's sound playing on this laptop.</p>
+              <label class="switch"><input type="checkbox" class="rec" id="rec-switch-public-demo" disabled> Record</label>
               <p class="reason">Read the line above aloud and tick "Everyone here agreed" first.</p>
               <button class="btn sm">Import a transcript (paste or upload)</button>
             </div>

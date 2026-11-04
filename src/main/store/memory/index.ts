@@ -41,6 +41,8 @@ export interface MemoryRepository {
   repository: RepositoryRef;
   permission: Permission;
   issuesEnabled: boolean;
+  /** Anyone can read and comment on it; left out, it is private. */
+  isPublic?: boolean;
 }
 
 /** The made-up GitHub surroundings the in-memory store starts from. */
@@ -74,6 +76,7 @@ export const DEFAULT_MEMORY_SEED: MemorySeed = {
     { repository: { owner: 'example-org', name: 'team-code' }, permission: 'write', issuesEnabled: true },
     { repository: { owner: 'example-org', name: 'team-docs' }, permission: 'admin', issuesEnabled: true },
     { repository: { owner: 'example-org', name: 'company-handbook' }, permission: 'read', issuesEnabled: true },
+    { repository: { owner: 'example-org', name: 'open-code' }, permission: 'write', issuesEnabled: true, isPublic: true },
   ],
   invitations: [
     {
@@ -111,6 +114,7 @@ interface ProjectRecord {
   name: string;
   repository: RepositoryRef;
   archived: boolean;
+  isPublic: boolean;
   permission: Permission;
   structure: PrdStructure;
   members: Member[];
@@ -278,7 +282,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
     return clone(decision);
   }
 
-  function newProject(repository: RepositoryRef, permission: Permission, structure: PrdStructure): ProjectRecord {
+  function newProject(repository: RepositoryRef, permission: Permission, structure: PrdStructure, isPublic = false): ProjectRecord {
     checkStructure(structure);
     const record: ProjectRecord = {
       id: projectIdOf(repository),
@@ -286,6 +290,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       repository: clone(repository),
       archived: false,
       permission,
+      isPublic,
       structure: clone(structure),
       members: [{ ...seed.identity, role: '', domains: [] }],
       map: null,
@@ -328,6 +333,11 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       const permission = projects.get(id)?.permission ?? seededRepository(id)?.permission;
       return permission ?? refuse('not-found', `No repository ${id}, or you have no access to it`);
     },
+    async isPublicRepository(id) {
+      const seeded = seededRepository(id);
+      const isPublic = projects.get(id)?.isPublic ?? (seeded === undefined ? undefined : seeded.isPublic === true);
+      return isPublic ?? refuse('not-found', `No repository ${id}, or you have no access to it`);
+    },
     async signedInLogin() {
       return me();
     },
@@ -336,12 +346,12 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
     },
     async listRepositories() {
       const reachable = new Map<ProjectId, RepositoryAccess>();
-      for (const { repository, permission } of seed.repositories) {
-        reachable.set(projectIdOf(repository), { repository, permission });
+      for (const { repository, permission, isPublic = false } of seed.repositories) {
+        reachable.set(projectIdOf(repository), { repository, permission, isPublic });
       }
-      for (const { id, repository, permission, archived } of projects.values()) {
+      for (const { id, repository, permission, isPublic, archived } of projects.values()) {
         if (archived) reachable.delete(id);
-        else reachable.set(id, { repository, permission });
+        else reachable.set(id, { repository, permission, isPublic });
       }
       return clone([...reachable.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, access]) => access));
     },
@@ -385,7 +395,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
         if (projects.has(id) || seed.repositories.some((entry) => projectIdOf(entry.repository) === id)) {
           refuse('conflict', `Repository ${id} already exists`);
         }
-        return toProject(newProject(repository, 'admin', structure));
+        return toProject(newProject(repository, 'admin', structure, visibility === 'public'));
       }
       const id = projectIdOf(input.connectRepository);
       const existing = projects.get(id);
@@ -399,7 +409,7 @@ export function createMemoryStore(options: MemoryStoreOptions = {}): MemoryStore
       if (!found.issuesEnabled) {
         refuse('invalid', `Issues are turned off in ${id}: turn them on in the repository settings`);
       }
-      return toProject(newProject(found.repository, found.permission, structure));
+      return toProject(newProject(found.repository, found.permission, structure, found.isPublic === true));
     },
     async archiveProject(id) {
       admin(project(id)).archived = true;

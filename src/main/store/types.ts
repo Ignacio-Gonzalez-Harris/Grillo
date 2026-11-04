@@ -44,6 +44,8 @@ export type Permission = 'admin' | 'write' | 'read';
 export interface RepositoryAccess {
   repository: RepositoryRef;
   permission: Permission;
+  /** False only when GitHub says it is private (PRD section 4.2, connecting an existing repository). */
+  isPublic: boolean;
 }
 
 export interface PrdSection {

@@ -52,7 +52,7 @@ describe('the new-project form', () => {
   ])('searching the repositories for "%s" keeps the ones whose owner/name holds it, whatever the case', (search, expected) => {
     const repositories = ['example-org/team-code', 'example-org/team-docs', 'other-org/Handbook'].map((id) => {
       const [owner, name] = id.split('/');
-      return { repository: { owner, name }, permission: 'write' as const };
+      return { repository: { owner, name }, permission: 'write' as const, isPublic: false };
     });
 
     expect(matchingRepositories(repositories, search).map(({ repository }) => `${repository.owner}/${repository.name}`)).toEqual(expected);

@@ -160,6 +160,8 @@ export interface Store {
   /** The GitHub identity (login, name, email) plus role and domains from the project's members file. */
   currentMember(project: ProjectId): Promise<Member>;
   viewerPermission(project: ProjectId): Promise<Permission>;
+  /** Whether anyone can read the repository; false only when GitHub says it is private. */
+  isPublicRepository(project: ProjectId): Promise<boolean>;
   /** The login of the account signed in to GitHub: a new repository may go under it. */
   signedInLogin(): Promise<Login>;
   listOrganisations(): Promise<Organisation[]>;

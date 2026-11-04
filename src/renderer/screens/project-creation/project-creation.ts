@@ -345,6 +345,8 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
 
   /** The review, unless some step has a problem by now: then that step, saying why. */
   function toReview(): void {
+    // A repository typed in full and never checked: the review must still warn when it is public.
+    if (form.mode === 'connect' && form.access.state === 'unchecked') void checkAccess();
     const step = firstStepWithProblem(form);
     if (step === null) goTo('review');
     else stopAt(step, stepProblem(form, step) as string);
@@ -375,9 +377,14 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
       draw();
       try {
         const permission: unknown = await store.viewerPermission(id);
+        // In doubt it counts as public, as the store counts it: a needless warning costs less than a missing one.
+        const isPublic = await store.isPublicRepository(id).then(
+          (answer: unknown) => answer !== false,
+          () => true,
+        );
         form.access =
           permission === 'admin' || permission === 'write' || permission === 'read'
-            ? { state: 'known', permission }
+            ? { state: 'known', permission, isPublic }
             : { state: 'unknown', message: 'Grillo could not read your access from the store.' };
       } catch (error) {
         form.access = { state: 'unknown', message: messageOf(error) };

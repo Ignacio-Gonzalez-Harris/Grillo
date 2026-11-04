@@ -5,7 +5,7 @@
 import type { Permission } from '../../../main/store/types';
 import { asSentence } from '../../../shared/store';
 import { badge, button } from '../../theme/components';
-import { matchingRepositories, ownedByMember, repositoryToConnect, suggestedRepositoryName, type RepositoryMode } from './form';
+import { connectsPublicRepository, matchingRepositories, ownedByMember, repositoryToConnect, suggestedRepositoryName, type RepositoryMode } from './form';
 import type { WizardContext } from './wizard';
 import { el, note, pageHead, reasonNote, segmented, textInput } from './view';
 
@@ -28,7 +28,7 @@ function chooseRepository(ctx: WizardContext, id: string): void {
   const { form, repositories } = ctx;
   const listed = (Array.isArray(repositories) ? repositories : []).find(({ repository }) => idOf(repository).toLowerCase() === id.toLowerCase());
   form.connectTo = listed ? idOf(listed.repository) : id;
-  form.access = listed ? { state: 'known', permission: listed.permission } : { state: 'unchecked' };
+  form.access = listed ? { state: 'known', permission: listed.permission, isPublic: listed.isPublic !== false } : { state: 'unchecked' };
   ctx.clearMessages();
 }
 
@@ -112,6 +112,7 @@ function connectFields(ctx: WizardContext): HTMLElement[] {
     el('div', 'row', [el('div', 'fill', [search]), button('Check access', { disabled: busy, onClick: () => void ctx.checkAccess() })]),
     ...(reason === null ? [] : [reasonNote(reason)]),
     ...repositoryList(ctx),
+    ...(connectsPublicRepository(form) ? [note(PUBLIC_WARNING, 'warn')] : []),
     el('p', 'note small', [
       "Write access (permission to change the repository) is enough. Grillo adds its labels, its map and tickets as GitHub issues (tracked items on GitHub), and one Grillo folder on the main branch (the repository's main copy). How saves reach the main branch follows this repository's own rules. Issues already there are ignored.",
     ]),
