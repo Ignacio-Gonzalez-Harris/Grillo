@@ -134,7 +134,8 @@ The project screens arrive with their own stories. What already works underneath
   `.grillo/members.json`. Others, an organisation member with no place in the project included, are never answers,
   discussions, decisions or comments waiting to be picked up. Agents read comments through `gh`, with commands that
   leave those comments out, so their text does not reach the model; an agent that runs a command of its own, or text a
-  member pastes, can still bring an outsider's words in (PRD section 8, Risks). Once GitHub
+  member pastes, can still bring an outsider's words in (PRD section 8, Risks). With a protected main, an organisation
+  member's comments count only once the pull request that adds them to the members file is merged. Once GitHub
   stops calling someone who left a public project a collaborator, their comments stop counting and the questions they
   answered read as open again.
 - **Saves** go through the project folder: commit, then push to main. If someone pushed first, Grillo pulls and

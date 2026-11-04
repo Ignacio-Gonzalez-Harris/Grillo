@@ -577,18 +577,20 @@ describe('project creation: the repository list', () => {
       expect(warningOn(root.querySelector('.review'))).toEqual([PUBLIC_WARNING]);
     });
 
-    it('shows no warning when GitHub cannot say what the repository is', async () => {
+    it('warns when GitHub says the access but cannot say whether the repository is public', async () => {
       const context = app({ seed: openSeed });
       const { root, store } = context;
       vi.spyOn(store, 'listRepositories').mockResolvedValue([]);
       vi.spyOn(store, 'isPublicRepository').mockRejectedValue(new Error('GitHub did not answer'));
       await listed(context);
 
-      type(root, 'input[aria-label="Search repositories"]', OPEN);
+      type(root, 'input[aria-label="Search repositories"]', 'example-org/sample-repo-1');
       click(root, 'Check access');
       await until(() => root.querySelector('.rows .badge.warn') !== null, 'the access check');
+      expect(warningOn(stepCard(root))).toEqual([PUBLIC_WARNING]);
 
-      expect(warningOn(stepCard(root))).toEqual([]);
+      toReviewFromWhere(root);
+      expect(warningOn(root.querySelector('.review'))).toEqual([PUBLIC_WARNING]);
     });
   });
 

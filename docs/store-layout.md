@@ -253,9 +253,12 @@ repository GitHub does not call private (`private: true`; a missing value counts
 when its `author_association` is exactly `OWNER` or `COLLABORATOR`, or is `MEMBER` and its author's login is in
 `.grillo/members.json` on the default branch, compared without regard to case. In an organisation's repository `MEMBER`
 means any member of that organisation, so it proves no place in the project on its own; the members file is the check
-because only someone with push access can change it, and every member Grillo invites is written there. A members file
-that cannot be read refuses the read rather than counting nobody. Any other value, or none, means the comment does not
-exist for the store: no answer, discussion, decision, tags-by-hand marker or plain comment, and it cannot damage a
+because only someone with push access can change it, and every member Grillo invites is written there. It is read from
+main alone, never with this laptop's waiting saves over it (see "Saves to a protected main"), because a waiting save has
+not passed the repository's own rules and neither agents nor other laptops can see it. So while main holds no members
+file, or a waiting save holds a new member's line, those organisation members do not count; the owner and collaborators
+do. A damaged members file refuses the read rather than counting nobody. Any other value, or none, means the comment
+does not exist for the store: no answer, discussion, decision, tags-by-hand marker or plain comment, and it cannot damage a
 ticket. The value is read afresh every time, so **once GitHub stops calling someone a collaborator after they leave,
 their comments stop counting** (GitHub's documentation does not say when the value changes, and this was not tried
 against real GitHub): their answers read as unanswered again and their decisions as gone, though the map's settled

@@ -1222,6 +1222,19 @@ describe('GitHub issues backend: comments in a public repository', () => {
     expect(await refusal(store.listAnswers(ticket))).toBe('backend');
   });
 
+  it('keeps working with no members file on main, as a protected main leaves it: only the owner and collaborators count', async () => {
+    const { github, store, ticket, repository } = await publicProject();
+    github.addComment(PROJECT, 2, 'owner-example', forgedAnswer, 'OWNER');
+    github.addComment(PROJECT, 2, 'collaborator-example', 'From a collaborator', 'COLLABORATOR');
+    github.addComment(PROJECT, 2, OTHER, 'From an organisation member', 'MEMBER');
+    repository.files.delete('.grillo/members.json');
+
+    expect((await store.listTickets(PROJECT))[0].damaged).toBeUndefined();
+    expect((await store.getTicket(ticket)).questions[0].answered).toBe(true);
+    expect((await store.listPickupComments(ticket)).map((comment) => comment.author)).toEqual(['collaborator-example']);
+    expect((await store.listProjectPickupComments(PROJECT)).map((comment) => comment.author)).toEqual(['collaborator-example']);
+  });
+
   it('asks for the members file only on a public repository, and a private one reads every comment as before', async () => {
     const { github, repository, store, ticket } = await projectWithTicket();
     github.addComment(PROJECT, 2, 'org-stranger-example', forgedAnswer, 'MEMBER');

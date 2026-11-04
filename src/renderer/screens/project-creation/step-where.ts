@@ -28,7 +28,7 @@ function chooseRepository(ctx: WizardContext, id: string): void {
   const { form, repositories } = ctx;
   const listed = (Array.isArray(repositories) ? repositories : []).find(({ repository }) => idOf(repository).toLowerCase() === id.toLowerCase());
   form.connectTo = listed ? idOf(listed.repository) : id;
-  form.access = listed ? { state: 'known', permission: listed.permission, isPublic: listed.isPublic === true } : { state: 'unchecked' };
+  form.access = listed ? { state: 'known', permission: listed.permission, isPublic: listed.isPublic !== false } : { state: 'unchecked' };
   ctx.clearMessages();
 }
 

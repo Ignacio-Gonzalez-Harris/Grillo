@@ -377,9 +377,10 @@ export function mountProjectCreation(container: HTMLElement, params: ScreenParam
       draw();
       try {
         const permission: unknown = await store.viewerPermission(id);
+        // In doubt it counts as public, as the store counts it: a needless warning costs less than a missing one.
         const isPublic = await store.isPublicRepository(id).then(
-          (answer: unknown) => (typeof answer === 'boolean' ? answer : null),
-          () => null,
+          (answer: unknown) => answer !== false,
+          () => true,
         );
         form.access =
           permission === 'admin' || permission === 'write' || permission === 'read'

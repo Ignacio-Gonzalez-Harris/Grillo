@@ -20,7 +20,7 @@ export const STEP_NAMES: Record<FormStep, string> = { where: 'Where', structure:
 export type Access =
   | { state: 'unchecked' }
   | { state: 'checking' }
-  | { state: 'known'; permission: Permission; isPublic: boolean | null }
+  | { state: 'known'; permission: Permission; isPublic: boolean }
   | { state: 'unknown'; message: string };
 
 /** The value of "Start from" that means Grillo's shipped default. */
@@ -126,9 +126,9 @@ export function ownedByMember(form: ProjectForm): boolean {
   return form.organisation === form.ownAccount;
 }
 
-/** True once GitHub has said the repository to connect is public: the member is warned before connecting it. */
+/** True unless GitHub has said the repository to connect is private, once its access is known: the member is warned first. */
 export function connectsPublicRepository(form: ProjectForm): boolean {
-  return form.mode === 'connect' && form.access.state === 'known' && form.access.isPublic === true;
+  return form.mode === 'connect' && form.access.state === 'known' && form.access.isPublic;
 }
 
 /** Inviting is for repository admins (PRD section 7): in a connected repository, only once admin access is known. */
