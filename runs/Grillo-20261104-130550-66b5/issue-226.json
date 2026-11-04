@@ -1,0 +1,36 @@
+{
+  "run_id": "Grillo-20261104-130550-66b5",
+  "issue": 226,
+  "title": "Say a GitHub account, not a company one, on the download page and in the demo notes",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-04T13:07:24Z",
+  "finished_at": "2026-11-04T13:27:31Z",
+  "outcome": "merged",
+  "pr": 228,
+  "summary": "The download page, the prototype and the demo notes now ask for a GitHub account rather than a company one, because a personal account works too; demo step 2 matches the PRD.",
+  "agents": [
+    {
+      "name": "dev-226",
+      "model": "opus",
+      "tokens_total": 117509
+    },
+    {
+      "name": "review-226",
+      "model": "opus",
+      "tokens_total": 115931
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 216,
+    "review_seconds": 169,
+    "ci_seconds": 109
+  },
+  "rounds": {
+    "review": 1,
+    "ci": 1
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": []
+}

@@ -1,0 +1,20 @@
+{
+  "run_id": "Grillo-20261104-130550-66b5",
+  "issue": 226,
+  "title": "Say a GitHub account, not a company one, on the download page and in the demo notes",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 228,
+  "merged_at": "2026-11-04T13:27:31Z",
+  "merge_commit": "73f63ae81b084394d7dfc6e42d7bdca7d41c976a",
+  "seam": "site/",
+  "story": "The download page used to ask for a company GitHub account, and now it asks for a GitHub account, because a personal one works too. The demo notes changed the same way: each member needs a GitHub account, and step 2 expects a private repository under the owner Ana picked. Nothing else on the page changed, and the demo still does not walk through an own-account or public project.",
+  "checks": [
+    {
+      "key": "site/download-page-github-account-line",
+      "criterion": "The download page no longer says a company GitHub account is required.",
+      "steps": "Open Grillo's published download page in a browser. Scroll to the Install section and find the 'What you need first' card.",
+      "expected": "The third line reads 'A GitHub account.' and the word 'company' appears nowhere in the card."
+    }
+  ],
+  "no_qa_reason": null
+}

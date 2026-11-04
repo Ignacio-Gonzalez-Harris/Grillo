@@ -1,0 +1,49 @@
+{
+  "run_id": "Grillo-20261104-130550-66b5",
+  "issue": 225,
+  "title": "Make public projects safer: keep outsiders' comments from agents, warn on connect and before recording",
+  "login": "Ignacio-Gonzalez-Harris",
+  "started_at": "2026-11-04T13:07:24Z",
+  "finished_at": "2026-11-04T14:13:19Z",
+  "outcome": "merged",
+  "pr": 229,
+  "summary": "On a public project, agents now read comments through commands that leave outsiders' comments out, and an organisation member not in the project no longer counts as a collaborator. Connecting a public repository shows the public warning, and the consent script says the transcript is public.",
+  "agents": [
+    {
+      "name": "dev-225",
+      "model": "opus",
+      "tokens_total": 372892
+    },
+    {
+      "name": "review-225",
+      "model": "opus",
+      "tokens_total": 237228
+    },
+    {
+      "name": "review-225-r2",
+      "model": "opus",
+      "tokens_total": 256695
+    }
+  ],
+  "phases": {
+    "qa_seconds": 0,
+    "dev_seconds": 2255,
+    "review_seconds": 1278,
+    "ci_seconds": 222
+  },
+  "rounds": {
+    "review": 2,
+    "ci": 2
+  },
+  "friction": [],
+  "lessons_learned": [],
+  "deferred": [
+    {
+      "severity": "medium",
+      "area": "src/main/store/github/issues/",
+      "what": "On a public organisation project, an organisation member with repository access who is not in .grillo/members.json on main (access through a team, opened an already-connected project without a Grillo invite, or their line is still waiting in a pull request on a protected main, the connecting member included) has their comments and answers ignored, with no message saying why.",
+      "why": "The review's fail-closed fix leaves this by design, and a join step or message is outside this issue.",
+      "owner": "unowned — next harvest"
+    }
+  ]
+}

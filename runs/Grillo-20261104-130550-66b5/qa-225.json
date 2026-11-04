@@ -1,0 +1,32 @@
+{
+  "run_id": "Grillo-20261104-130550-66b5",
+  "issue": 225,
+  "title": "Make public projects safer: keep outsiders' comments from agents, warn on connect and before recording",
+  "login": "Ignacio-Gonzalez-Harris",
+  "pr": 229,
+  "merged_at": "2026-11-04T14:13:19Z",
+  "merge_commit": "be2e45266496aee9d87bc9b3c45b0ecd47f112ff",
+  "seam": "src/main/store/github/issues/",
+  "story": "Picking a public repository in Connect existing now shows the same warning that choosing Public on a new repository shows, on the Where step and again on the review page; before, connecting gave no warning. On a public project the read-aloud consent line on the meeting screen now also says the transcript is public. On a public project a comment from an organisation member who is not in the project no longer counts, so it no longer appears as an answer or waits for pickup. Agents now read comments with commands that leave such comments out, instead of being told to ignore them.",
+  "checks": [
+    {
+      "key": "project-creation/connect-public-warning",
+      "criterion": "Picking a public repository to connect warns on the Where step and the review page; a private one does not.",
+      "steps": "Set GRILLO_STORE=memory and start the app. On the Project tab press Connect existing. Pick example-org/team-code. Pick example-org/open-code. Press Next through Structure and People, type any idea, and press Next to reach the review page. Press Change on Where, pick example-org/team-docs, and press Back to review.",
+      "expected": "No warning after picking example-org/team-code. After picking example-org/open-code and on the review page: 'Public means anyone on the internet can read this project: its transcripts, answers and PRD. Comments from people who are not collaborators are never treated as answers.' No warning after changing to example-org/team-docs."
+    },
+    {
+      "key": "project-creation/connect-public-typed",
+      "criterion": "A public repository typed in full also warns.",
+      "steps": "With GRILLO_STORE=memory, press Connect existing. Type example-org/open-code in the search box. Press Check access.",
+      "expected": "The same public warning on the Where step."
+    },
+    {
+      "key": "meeting/consent-script-public",
+      "criterion": "On a public project the consent script says the transcript is public; on a private one it is unchanged.",
+      "steps": "With GRILLO_STORE=memory, connect example-org/open-code. The made-up project folder must exist as a git folder at /memory/Grillo/example-org/open-code. Add a map and a ticket, then press Start meeting on the Map. Read the Consent card. Repeat on example-org/team-docs.",
+      "expected": "On the public project: 'This call is recorded and transcribed by Grillo. This project is public, so anyone on the internet can read the transcript.' On the private one, only: 'This call is recorded and transcribed by Grillo.'"
+    }
+  ],
+  "no_qa_reason": null
+}
