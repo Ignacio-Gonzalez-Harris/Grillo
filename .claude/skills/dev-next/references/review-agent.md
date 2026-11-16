@@ -1,7 +1,7 @@
-# The `review-N` sub-agent — phase 4
+# The `review-<N>-r<round>` sub-agent — phase 4
 
 **Always a brand-new agent. Never the one that wrote the code. A fresh one for every round** — a reviewer that has already
-argued for its own findings is no longer fresh eyes. Spawn on opus at **xhigh** effort, else the fallback order in `SKILL.md` *Roles*.
+argued for its own findings is no longer fresh eyes. Spawn `review-<N>-r<round>` (the issue's number and the review round, `SKILL.md` *Roles*) on opus at **xhigh** effort, else the fallback order in `SKILL.md` *Roles*.
 
 Give it only: the issue, the pull request, the worktree path, the gate commands and the exact runtime paths resolved in
 preflight (`SKILL.md` phase 0 step 1). **No prior context.** Anything it runs locally uses those runtime paths, and
@@ -21,8 +21,9 @@ never change the worktree's git state.
 3. **Get the suite result once, never twice.** If CI exists and ran the full suite on the pull request's head commit,
    read it with `gh pr checks <P>` and do not re-run. Still pending → keep polling in a loop until it completes; never
    stop with a monitor armed and no verdict posted. If CI does not exist, or does not run the suite, run the gate
-   yourself in the worktree, exactly as the project's `CLAUDE.md` lists it. Either way, do not trust the dev agent's
-   report.
+   yourself in the worktree, exactly as the project's `CLAUDE.md` lists it, with the full suite's test copies sized
+   right before it runs by the recipe in `in-flight.md`, *Test copies* (`.claude/skills/dev-next/references/`). Either
+   way, do not trust the dev agent's report.
 4. Spot-check the evidence table: pick one row and re-run it. If it does not hold, that is a blocking finding. Put any
    file you create in a fresh `mktemp -d` of your own: a scratch folder shared with earlier agents can turn a
    spot-check into a silent no-op. A test count that differs from CI's because `main` moved is not a finding.
@@ -51,8 +52,9 @@ never change the worktree's git state.
 
 ## Never block on these
 
-Style · naming · file structure · "this could be cleaner" · test organisation · anything you would phrase as a preference.
-At most **one** `Optional:` line in the whole review, and it must not read as a request.
+Style · naming · file structure · "this could be cleaner" · test organisation · code smells · anything you would phrase
+as a preference. A repeated test and a small smell the pull request added are at most a `Fix now:` (below), never a
+must-fix. At most **one** `Optional:` line in the whole review, and it must not read as a request.
 
 A reviewer that blocks on taste burns the team's budget and ships nothing. That failure is worse than the code being untidy.
 
@@ -72,6 +74,18 @@ Taste gets none of them.
 or it edits another pull request's file or an old single-file changelog. The same for a
 change to user-visible behaviour (a screen, a command, an output a person reads) that leaves `docs/runbook.md`
 untouched.
+
+**Also a `Fix now:`, never a must-fix** — only in what this pull request added; code and tests it did not touch are
+out of scope:
+
+- **A new test that clearly repeats one already in the suite** (the same behaviour, at any level), **or proves its
+  behaviour at a slower level than needed** (the whole app where one function would fail). Tests already in the suite
+  are never findings.
+- **A code smell the pull request added that a few lines fix with no design decision.** The six smells: copied code;
+  a long function; a long parameter list; deep nesting; one unit doing several jobs; one change that needs edits in
+  many places. A bigger smell, one that needs a design decision, gets no tag.
+
+These two need no concrete failure; every other tag does (below).
 
 **Do not over-file.** In doubt between `Fix now:` and `Defer:`, pick `Fix now:`. In doubt between `Defer:` and
 `Critical:`, pick `Defer:`. A finding you cannot tie to a concrete failure gets no tag at all — leave it out.

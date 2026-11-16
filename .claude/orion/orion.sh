@@ -9,7 +9,9 @@
 #
 # Usage (run inside the project, or pass --project <dir>):
 #   orion.sh init      [--source <git url|path>] [--ref <branch>] [--update-mode ask|auto|off]
-#                      [--statusline|--no-statusline] [--force]
+#                      [--statusline|--no-statusline] [--force] [--yes]
+#                                       # shows what orion's agents do on their own and asks to go on;
+#                                       # --yes goes on without asking (needed where there is no terminal)
 #   orion.sh update    [--force]        # fetch the latest orion and re-copy the files orion owns
 #   orion.sh update    --skip           # decline the newest orion: the hook stays quiet until a newer one
 #   orion.sh check     [--force]        # session-start hook: pull the branch and look for a newer orion (every
@@ -58,6 +60,11 @@ HOOK_CMD='bash "${CLAUDE_PROJECT_DIR}/.claude/orion/orion.sh" check'
 # on update.
 HOOK_TIMEOUT=60
 CHECK_INTERVAL_SECONDS=86400
+# The time this orion.sh pins in global-offered once the personal rules were offered (2100-01-01 UTC): an older
+# orion.sh offers when that time is a day old, so a time in the future keeps it quiet for good.
+GLOBAL_OFFER_PIN=4102444800
+# The last orion version whose orion.sh offered the personal rules once a day: such a script carries no clause above it.
+LAST_DAILY_OFFER_VERSION=17
 BRANCH_LIMIT_DEFAULT=20
 WORKTREE_LIMIT_DEFAULT=20
 
@@ -68,7 +75,7 @@ say()  { printf '%s\n' "$*"; }
 warn() { printf 'orion: %s\n' "$*" >&2; }
 die()  { warn "$*"; exit 1; }
 
-usage() { sed -n '2,44p' "$0" 2>/dev/null || true; exit 0; }
+usage() { sed -n '2,/^$/p' "$0" 2>/dev/null || true; exit 0; }  # the comment block at the top
 
 # The documented install is `curl ... | bash`, so stdin is the script itself: a question is still possible
 # when the terminal can be opened directly (/dev/tty), which is what ask() reads from in that case.
@@ -136,27 +143,96 @@ worktree_count() {  # project-dir
 
 version_sha() { sed -n '1p' "$1" 2>/dev/null || true; }
 
-# orion's version number: ORION_VERSION in the source, line 5 of the project's VERSION. Empty when the source or the
-# install predates it, or when the value is not a whole number.
 whole_number() { case "$1" in ""|*[!0-9]*) ;; *) printf '%s' "$1" ;; esac; }
-version_number() { whole_number "$(sed -n '5p' "$1" 2>/dev/null | tr -d '\r')"; }
-source_number() { whole_number "$(tr -d ' \t\r\n' < "$1/ORION_VERSION" 2>/dev/null || true)"; }
+
+# orion's version: major.minor.patch (2.0.0 on), held in the release tags v<version> and on line 5 of a project's
+# VERSION. A whole number from before three-part versions (16, v2) still reads as a version: older than any
+# three-part one, and two of them compare as numbers. A personal rule's note may end in "+" ("changed after"): newer
+# than its version, older than any later one. Sets VKEY to "<kind> <major> <minor> <patch> <plus>", kind 0 for no
+# version, 1 for a whole number, 2 for three parts; no subshell, as the hook compares many.
+version_key() {  # version
+    local v="${1#v}" plus=0 rest
+    case "$v" in *+) plus=1; v="${v%+}" ;; esac
+    case "$v" in
+        ""|*[!0-9.]*|.*|*.|*..*|*.*.*.*) VKEY=(0 0 0 0 0) ;;
+        *.*.*) rest="${v#*.}"; VKEY=(2 $((10#${v%%.*})) $((10#${rest%.*})) $((10#${rest#*.})) "$plus") ;;
+        *.*) VKEY=(0 0 0 0 0) ;;
+        *) VKEY=(1 $((10#$v)) 0 0 "$plus") ;;
+    esac
+}
+version_gt() {  # a b -> 0 when version a is newer than version b (any version is newer than no version)
+    local a i
+    version_key "$1"; a=("${VKEY[@]}"); version_key "$2"
+    for i in 0 1 2 3 4; do
+        [ "${a[i]}" -gt "${VKEY[i]}" ] && return 0
+        [ "${a[i]}" -lt "${VKEY[i]}" ] && return 1
+    done
+    return 1
+}
+# The version a release or an install carries (no "+"), without a leading v; nothing when it is none.
+version_of() { version_key "$1"; [ "${VKEY[0]}" = 0 ] || [ "${VKEY[4]}" = 1 ] || printf '%s' "${1#v}"; }
+# A personal rule's version (a "+" allowed); nothing when it is none.
+rule_version_of() { version_key "$1"; [ "${VKEY[0]}" = 0 ] || printf '%s' "${1#v}"; }
+version_number() { version_of "$(sed -n '5p' "$1" 2>/dev/null | tr -d '\r')"; }
+# The highest release among "<sha> refs/tags/v<version>" lines on stdin (the shape ls-remote and for-each-ref print).
+highest_release() {
+    local sha ref v top=""
+    while read -r sha ref; do
+        case "$ref" in refs/tags/v*) v="${ref#refs/tags/}" ;; *) continue ;; esac
+        version_key "$v"; [ "${VKEY[0]}" != 0 ] && [ "${VKEY[4]}" = 0 ] || continue
+        if [ -z "$top" ] || version_gt "$v" "$top"; then top="$v"; fi
+    done
+    printf '%s' "${top#v}"
+}
 version_label() {  # sha number -> "orion <number>", or the short sha when there is no number
     if [ -n "$2" ]; then printf 'orion %s' "$2"; else short "$1"; fi
 }
 
 short() { printf '%s' "${1:0:7}"; }
 
-# Per-computer, per-project state that must never be committed (the orion version the person
-# declined with `update --skip`, the one-shot "post-install check pending" marker, the rules fingerprint last checked).
+# Per-computer, per-repository state that must never be committed (the orion version the person declined with
+# `update --skip`, the one-shot "post-install check pending" marker, the rules fingerprint last checked, the last
+# branch count). Keyed on the repository's shared git folder, so every worktree of one clone shares it; a folder
+# that is not the top of a git checkout keeps its path as the key. A record an older orion keyed on the main
+# checkout's path is carried over on first use.
+CACHE_KEY="" CACHE_KEY_OF="" LEGACY_KEY=""
+cache_key_set() {  # sets CACHE_KEY and LEGACY_KEY for $PROJECT; call it outside $(...) once, so later calls reuse it
+    [ "$CACHE_KEY_OF" = "$PROJECT" ] && return 0
+    local out common="" main
+    # git prints the prefix (an empty line at the top of a checkout), then the shared git folder: ".git" in the main
+    # checkout, the physical path from a worktree, so the folder is resolved physically (pwd -P) in both
+    out="$(cd "$PROJECT" 2>/dev/null && git rev-parse --show-prefix --git-common-dir 2>/dev/null)" || out=""
+    case "$out" in
+        ($'\n'?*) out="${out#$'\n'}"; common="$(cd "$PROJECT" 2>/dev/null && cd "$out" 2>/dev/null && pwd -P)" || common="" ;;
+    esac
+    CACHE_KEY_OF="$PROJECT" LEGACY_KEY=""
+    if [ -n "$common" ]; then
+        CACHE_KEY="$(printf '%s' "$common" | cksum | cut -d' ' -f1)"
+        # an older orion keyed the main checkout on the path it was opened by: that path in the main checkout itself
+        main="${common%/.git}"; [ "$out" = .git ] && main="$PROJECT"
+        case "$common" in */.git) LEGACY_KEY="$(printf '%s' "$main" | cksum | cut -d' ' -f1)" ;; esac
+    else
+        CACHE_KEY="$(printf '%s' "$PROJECT" | cksum | cut -d' ' -f1)"
+    fi
+}
 cache_file() {  # suffix
-    printf '%s/orion/%s.%s' "${XDG_CACHE_HOME:-$HOME/.cache}" "$(printf '%s' "$PROJECT" | cksum | cut -d' ' -f1)" "$1"
+    local dir="${XDG_CACHE_HOME:-$HOME/.cache}/orion"
+    cache_key_set
+    # copied, so an older orion.sh still running in the main checkout keeps its own; the one-shot marker moves
+    if [ -n "$LEGACY_KEY" ] && [ ! -e "$dir/$CACHE_KEY.$1" ] && [ -e "$dir/$LEGACY_KEY.$1" ]; then
+        case "$1" in
+            verify-pending) mv "$dir/$LEGACY_KEY.$1" "$dir/$CACHE_KEY.$1" ;;
+            *) cp "$dir/$LEGACY_KEY.$1" "$dir/$CACHE_KEY.$1" ;;
+        esac 2>/dev/null || true
+    fi
+    printf '%s' "$dir/$CACHE_KEY.$1"
 }
 
 # A fingerprint of the rules orion ships into this project: BASE_CLAUDE.md and every .md file of every
-# orion-managed skill. The session-start hook asks for /orion-verify once each time it changes on this computer.
-# One find and one cat for all of it: a process per file costs seconds under Git Bash, on every session start.
-rules_sum() {
+# orion-managed skill, without carriage returns as in tree_sum, so line endings never count as a change ("raw": with
+# them, the fingerprint an older orion stored). The session-start hook asks for /orion-verify once each time it
+# changes on this computer. One find and one cat for all of it: a process per file costs seconds under Git Bash.
+rules_sum() {  # [raw]
     local entry f dirs=() files=()
     if [ -f "$PROJECT/.claude/orion/BASE_CLAUDE.md" ]; then files+=("$PROJECT/.claude/orion/BASE_CLAUDE.md"); fi
     for entry in "$PROJECT"/.claude/skills/*/; do
@@ -166,12 +242,24 @@ rules_sum() {
     if [ ${#dirs[@]} -gt 0 ]; then
         while IFS= read -r f; do files+=("$f"); done < <(find "${dirs[@]}" -type f -name '*.md' | LC_ALL=C sort)
     fi
-    if [ ${#files[@]} -gt 0 ]; then cat "${files[@]}" 2>/dev/null || true; fi | cksum | cut -d' ' -f1
+    if [ ${#files[@]} -gt 0 ]; then cat "${files[@]}" 2>/dev/null || true; fi \
+        | if [ "${1:-}" = raw ]; then cat; else tr -d '\r'; fi | cksum | cut -d' ' -f1
 }
 
-rules_mark() {  # [sum]: records that this computer has checked these rules
-    local f; f="$(cache_file rules-checked)"
-    mkdir -p "$(dirname "$f")" 2>/dev/null && printf '%s' "${1:-$(rules_sum)}" > "$f" || true
+# The rules-checked record holds every fingerprint this computer has checked for the repository, one per line, newest
+# last, the last RULES_KEPT kept: a main checkout and a worktree on different orion rules both stay checked. A record
+# an older orion wrote holds one fingerprint and reads the same way.
+RULES_KEPT=20
+rules_checked() {  # sum: 0 when this computer has checked these rules for the repository
+    grep -qxF -- "$1" "$(cache_file rules-checked)" 2>/dev/null
+}
+rules_mark() {  # [sum]: adds these rules to the ones this computer has checked
+    local f sum; f="$(cache_file rules-checked)"; sum="${1:-$(rules_sum)}"
+    mkdir -p "$(dirname "$f")" 2>/dev/null || return 0
+    # stderr goes for the whole write: a cache folder that cannot be written is no error for the hook, and neither
+    # is the "Broken pipe" a hook runner that ignores SIGPIPE gets when tail cannot open its file
+    { { { grep -vxF -- "$sum" "$f" || true; printf '%s\n' "$sum"; } | tail -n "$RULES_KEPT" > "$f.new" \
+        && mv "$f.new" "$f"; } 2>/dev/null; } || true
 }
 
 # The `name:` value of a skill's front matter (quotes stripped), or nothing.
@@ -188,6 +276,10 @@ trap cleanup EXIT
 trap 'exit 143' TERM   # a timed-out run still cleans up: exiting on the signal runs the EXIT trap
 trap 'exit 130' INT
 
+# SRC_VERSION is the source's version: in a checkout, the highest release tag its commit contains; fetched from the
+# default branch, the highest release tag of the source, read before the clone, so a release tagged in between is
+# never claimed for older files; fetched from another ref, the release tag on the commit it fetched (release tags
+# mark the default branch only). Empty when there is none.
 fetch_source() {  # source ref
     local here
     here="$( cd "$( dirname "${BASH_SOURCE[0]:-$0}" )" 2>/dev/null && pwd || true )"
@@ -195,11 +287,13 @@ fetch_source() {  # source ref
         SRC_DIR="$here"
         SRC_SHA="$(git -C "$here" rev-parse HEAD 2>/dev/null || printf 'local')"
         SRC_TIME="$(git -C "$here" log -1 --format=%ct 2>/dev/null || printf '0')"
+        SRC_VERSION="$(git -C "$here" for-each-ref --merged HEAD --format='%(objectname) %(refname)' 'refs/tags/v*' 2>/dev/null | highest_release || true)"
         return
     fi
     have git || die "git is required to fetch orion"
     TMP_DIR="$(mktemp -d)"
     say "fetching orion ($2) from $1 ..."
+    latest_remote "$1" "$2"
     # ORION_FETCH_SECONDS (set by the session-start hook) time-limits the network fetch only, never the copy
     # that follows: a copy cut short half-way would leave the project with a half-updated orion.
     if [ -n "${ORION_FETCH_SECONDS:-}" ]; then
@@ -212,6 +306,12 @@ fetch_source() {  # source ref
     SRC_DIR="$TMP_DIR/orion"
     SRC_SHA="$(git -C "$SRC_DIR" rev-parse HEAD)"
     SRC_TIME="$(git -C "$SRC_DIR" log -1 --format=%ct 2>/dev/null || printf '0')"
+    if [ "$2" = "$ORION_DEFAULT_REF" ]; then
+        SRC_VERSION="$LATEST_NUM"
+    else
+        # an annotated tag's commit comes as its peeled line, <tag>^{}
+        SRC_VERSION="$(printf '%s\n' "$LATEST_REFS" | awk -v s="$SRC_SHA" '$1 == s { sub(/\^\{\}$/, "", $2); print $1, $2 }' | highest_release)"
+    fi
 }
 
 # Run a command for at most N seconds, so the session-start hook ends inside its HOOK_TIMEOUT. Git never
@@ -234,13 +334,15 @@ latest_key() {  # installed-number ref
     if [ -n "$LATEST_NUM" ] && [ -n "$1" ] && [ "$2" = "$ORION_DEFAULT_REF" ]; then printf 'v%s' "$LATEST_NUM"; else printf '%s' "$LATEST_SHA"; fi
 }
 
-# One call for both: LATEST_SHA, the ref's commit, and LATEST_NUM, the highest release tag (v<N>, pushed by the
-# release workflow each time ORION_VERSION rises). Either is empty when the source has none.
+# One call for both: LATEST_SHA, the ref's commit, and LATEST_NUM, the highest release tag (v<major.minor.patch>,
+# pushed by the release workflow after each release; the old v<N> tags count as older). Either is empty when the
+# source has none. LATEST_REFS keeps every line the call printed.
 latest_remote() {  # source ref
     local out=""
     out=$(limited 8 git ls-remote "$1" "refs/heads/$2" 'refs/tags/v*' 2>/dev/null || true)
     LATEST_SHA="$(printf '%s\n' "$out" | awk -v r="refs/heads/$2" '$2 == r { print $1; exit }')"
-    LATEST_NUM="$(printf '%s\n' "$out" | awk '$2 ~ /^refs\/tags\/v[0-9]+$/ { n = substr($2, 12) + 0; if (!f || n > m) m = n; f = 1 } END { if (f) print m }')"
+    LATEST_NUM="$(printf '%s\n' "$out" | highest_release)"
+    LATEST_REFS="$out"
 }
 
 # --------------------------------------------------------------------------
@@ -532,7 +634,7 @@ apply_core() {  # source ref update-mode
     rm -rf "$dir/global"; cp -R "$SRC_DIR/baselines/global" "$dir/global"
     # line 4, the source's commit time, is for information only; line 5, orion's version number, tells the
     # update check whether a release is newer, and the computer's status line whether this project's copy is
-    printf '%s\n%s\n%s\n%s\n%s\n' "$SRC_SHA" "$2" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SRC_TIME:-0}" "$(source_number "$SRC_DIR")" > "$dir/VERSION"
+    printf '%s\n%s\n%s\n%s\n%s\n' "$SRC_SHA" "$2" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SRC_TIME:-0}" "$SRC_VERSION" > "$dir/VERSION"
     { printf '%s\n' "orion.sh" "BASE_CLAUDE.md" "VERSION" ".orion-manifest"
       ( cd "$SRC_DIR/baselines" && find statusline global -type f | LC_ALL=C sort ); } > "$dir/.orion-manifest"
     if [ ! -f "$dir/config.json" ]; then
@@ -540,7 +642,7 @@ apply_core() {  # source ref update-mode
             "$(json_escape "$mode")" "$(json_escape "$1")" "$(json_escape "$2")" "$BRANCH_LIMIT_DEFAULT" "$WORKTREE_LIMIT_DEFAULT" > "$dir/config.json"
         say "  +    .claude/orion/config.json (yours: updateMode $mode, edit to ask | auto | off; branchLimit $BRANCH_LIMIT_DEFAULT and worktreeLimit $WORKTREE_LIMIT_DEFAULT, a number or off)"
     fi
-    say "  ~    .claude/orion/{orion.sh, BASE_CLAUDE.md, VERSION, statusline/, global/} @ $(version_label "$SRC_SHA" "$(source_number "$SRC_DIR")") ($(short "$SRC_SHA"))"
+    say "  ~    .claude/orion/{orion.sh, BASE_CLAUDE.md, VERSION, statusline/, global/} @ $(version_label "$SRC_SHA" "$SRC_VERSION") ($(short "$SRC_SHA"))"
 }
 
 # The project's own CLAUDE.md: created once with the project-specific slots the
@@ -567,6 +669,7 @@ has no use for. A rule written here must not contradict the mandatory rules.
 | Lint | \`TBD\` |
 | Deterministic checks on generated output (if any) | \`TBD\` |
 | Dev server (if the review surface needs one) | \`TBD\` |
+| Test copies (how the full suite takes \`<copies>\` parallel workers, e.g. \`-n <copies>\`; \`none\` if it does not split) | \`TBD\` |
 
 ## Stack and layout
 
@@ -596,11 +699,12 @@ EOF
 
 # The starter's own <placeholder> slots, one per line, for verify to look for. A <...> the project wrote itself (a
 # test filter's <test-name>) is a real command, never a slot. <angle-bracket> only names the slots in the starter's
-# intro, and the bare <N> is looked for with its label, as a branch pattern's <N> is no slot.
+# intro, <copies> is the token a filled test-copies command keeps (dev-next puts the number there), and the bare <N>
+# is looked for with its label, as a branch pattern's <N> is no slot.
 starter_slots() {
     local tmp; tmp=$(mktemp)
     write_claude_md_starter "$tmp"
-    grep -oE '<[^<>]+>' "$tmp" | grep -vxF '<angle-bracket>' | sed 's/^<N>$/baseline: <N>/' | sort -u
+    grep -oE '<[^<>]+>' "$tmp" | grep -vxF -e '<angle-bracket>' -e '<copies>' | sed 's/^<N>$/baseline: <N>/' | sort -u
     rm -f "$tmp"
 }
 
@@ -682,12 +786,12 @@ sl_mark() {  # stamp src [statusline-dir]
     printf '%s\n%s\n' "$1" "$(tree_sum "$2" | cksum)" > "${3:-$(sl_home)}/$SL_STAMP"
 }
 
-sl_number() { case "$1" in ""|*[!0-9]*) printf '0' ;; *) printf '%s' "$1" ;; esac; }
+sl_number() { local v; v="$(version_of "$1")"; printf '%s' "${v:-0}"; }
 # A commit time on line 1 counts as version 0, so newer status lines are offered again. The bound is not this
 # project's own version number: a real, newer one stamped by another project on this computer must still win.
 sl_stamp() {
     local n; n="$(sl_number "$(sed -n '1p' "$(sl_home)/$SL_STAMP" 2>/dev/null | tr -d '\r')")"
-    [ "$n" -lt "$SL_OLD_STAMP_MIN" ] || n=0
+    case "$n" in *.*) ;; *) [ "$n" -lt "$SL_OLD_STAMP_MIN" ] || n=0 ;; esac
     printf '%s' "$n"
 }
 sl_seen() { sed -n '2p' "$(sl_home)/$SL_STAMP" 2>/dev/null | tr -d '\r'; }
@@ -702,7 +806,7 @@ statusline_sync() {
     { [ -f "$dest/$SL_STAMP" ] && [ -d "$src" ]; } || return 0
     t="$(project_stamp)"
     # never step back: another project on this computer may carry an older orion
-    [ "$t" -gt "$(sl_stamp)" ] || return 0
+    version_gt "$t" "$(sl_stamp)" || return 0
     if [ "$(tree_sum "$dest")" = "$(tree_sum "$src")" ]; then
         # already the same files: only the bookkeeping moves forward
         sl_seed "$src" "$t"
@@ -768,7 +872,7 @@ install_statusline() {  # force
     if [ -f "$dest/statusline.sh" ] && [ "$1" != "1" ]; then
         say "  =    statusline (already installed - yours to edit; newer orion versions are merged in on your word)"
     else
-        sl_seed "$src" "$(sl_number "$(source_number "$SRC_DIR")")"
+        sl_seed "$src" "$(sl_number "$SRC_VERSION")"
         say "  +    statusline -> ~/.claude/statusline"
     fi
     settings_set_statusline "$HOME/.claude/settings.json" "bash \"$dest/statusline.sh\""
@@ -781,11 +885,25 @@ install_statusline() {  # force
     fi
 }
 
+# What whoever installs orion must know first: it is experimental and the user carries the responsibility, and its agents act on their own (the baseline's Who merges rule).
+autonomy_notice() {
+    say ""
+    say "DISCLAIMER: orion is an experimental framework, provided as-is with no warranty."
+    say "You are responsible for how you use it and for every change its agents make in your projects."
+    say ""
+    say "orion is built for agent autonomy. Once it is installed, its agents in this project:"
+    say "  - claim open issues and build them end to end,"
+    say "  - file new tickets for what they find,"
+    say "  - merge their own pull requests once the checks are green."
+    say "A person still merges a pull request that touches the PRD, an ADR, the UX prototype or CLAUDE.md."
+    say ""
+}
+
 # --------------------------------------------------------------------------
 # commands
 # --------------------------------------------------------------------------
 cmd_init() {
-    local source="$ORION_DEFAULT_SOURCE" ref="$ORION_DEFAULT_REF" force=0 statusline="prompt" project="" resp mode=""
+    local source="$ORION_DEFAULT_SOURCE" ref="$ORION_DEFAULT_REF" force=0 statusline="prompt" project="" resp mode="" yes=0
     local source_given=0 ref_given=0 key val old n
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -794,6 +912,7 @@ cmd_init() {
             --update-mode) mode="$2"; shift 2 ;;
             --project) project="$2"; shift 2 ;;
             --force) force=1; shift ;;
+            --yes|-y) yes=1; shift ;;
             --statusline) statusline=yes; shift ;;
             --no-statusline) statusline=no; shift ;;
             -h|--help) usage ;;
@@ -808,6 +927,12 @@ cmd_init() {
     fi
     case "$mode" in ""|ask|auto|off) ;; *) die "--update-mode must be ask, auto or off (got: $mode)" ;; esac
     say "orion init -> $PROJECT"
+    autonomy_notice
+    if [ "$yes" != "1" ]; then
+        is_tty || die "refusing to init without --yes in a non-interactive shell (an assistant running this: show the person the notice above, then run again with --yes once they agree)"
+        ask "Install orion in $PROJECT on these terms? [y/N] "
+        [[ "$resp" =~ ^[Yy]$ ]] || { say "aborted"; return; }
+    fi
     # config.json is yours, but a --source or --ref given on the command line is an explicit request to change it.
     if [ -f "$cfg" ]; then
         for key in source ref; do
@@ -930,6 +1055,12 @@ cmd_update() {
     { [ -d "$dir/statusline" ] && [ -d "$dir/global" ]; } || force=1
     if [ "$SRC_SHA" = "$current" ] && [ "$force" != "1" ]; then
         say "orion is already at $(short "$current") - nothing to do (pass --force to re-copy anyway)"
+        # installed before its release was tagged: only the version on line 5 is behind
+        if [ -n "$SRC_VERSION" ] && [ "$SRC_VERSION" != "$(version_number "$dir/VERSION")" ]; then
+            awk -v v="$SRC_VERSION" 'NR < 5 { print } END { for (i = NR + 1; i < 5; i++) print ""; print v }' "$dir/VERSION" > "$dir/VERSION.new" \
+                && mv -f "$dir/VERSION.new" "$dir/VERSION"
+            say "  ~    .claude/orion/VERSION records orion $SRC_VERSION, the newest release on that commit"
+        fi
         settings_raise_hook_timeout "$PROJECT/.claude/settings.json"
         return
     fi
@@ -961,6 +1092,7 @@ cmd_check() {
     PROJECT="$(resolve_project "$project")" || exit 0
     local dir="$PROJECT/.claude/orion" now ctx tidy pending pulled global
     [ -f "$dir/VERSION" ] || exit 0
+    cache_key_set
     pulled="$(check_pull_ctx)"
     # A fresh init leaves a one-shot marker: ask for the post-install check instead of an update.
     # Without the /orion-verify skill there is nothing to ask for, so the marker waits for it (or for `verify`).
@@ -1003,15 +1135,17 @@ check_update_ctx() {  # force
     # A release raises the version number, so a merge that changes nothing a project receives is not offered. Release
     # tags mark the default branch only; without a number on both sides any new commit counts, as before numbers.
     if [ -n "$LATEST_NUM" ] && [ -n "$installed" ] && [ "$ref" = "$ORION_DEFAULT_REF" ]; then
-        [ "$LATEST_NUM" -gt "$installed" ] && newer=1
+        # the installed commit is the newest even when its release was tagged after the install: nothing to offer
+        version_gt "$LATEST_NUM" "$installed" && [ "$LATEST_SHA" != "$current" ] && newer=1
         latest="$(version_label "$LATEST_SHA" "$LATEST_NUM")"
     else
         [ "$LATEST_SHA" != "$current" ] && newer=1
         latest="$(short "$LATEST_SHA")"
     fi
     current="$(version_label "$current" "$installed")"
-    # nothing newer, but an update run by an older orion.sh left out the status line or personal rules copy: offer it once more
-    [ "$newer" = 0 ] && [ -d "$dir/statusline" ] && [ -d "$dir/global" ] && return 0
+    # Nothing newer: nothing to offer. A status line or personal rules folder an older orion.sh left out is copied
+    # again by the next update, which re-copies everything when either is missing.
+    [ "$newer" = 1 ] || return 0
     # declined with `update --skip`: quiet until a newer orion, unless the person asked for the check (--force)
     [ "$mode" = "auto" ] || [ "$1" = "1" ] || [ "$(cat "$(cache_file update-skipped)" 2>/dev/null)" != "$(latest_key "$installed" "$ref")" ] || return 0
     case "$mode" in
@@ -1034,11 +1168,19 @@ check_update_ctx() {  # force
 
 # Every session, local only: once each time orion's rules change on this computer (an update, or a pull that
 # brought one), ask for /orion-verify. Runs after the update check, so an auto-update is seen in the same session.
+# A repository with no record on this computer (a fresh clone) is asked once too, worded as new, not as changed.
 check_rules_ctx() {
-    local sum
+    local sum f
     [ -f "$PROJECT/.claude/skills/orion-verify/SKILL.md" ] || return 0
-    sum="$(rules_sum)"
-    [ "$(cat "$(cache_file rules-checked)" 2>/dev/null)" = "$sum" ] && return 0
+    sum="$(rules_sum)"; f="$(cache_file rules-checked)"
+    if [ ! -f "$f" ]; then
+        rules_mark "$sum"
+        printf '%s' "orion is new on this computer for this repository: its rules (.claude/orion/BASE_CLAUDE.md) and the instructions of its skills have not been checked here yet. Before anything else, ask the user with the AskUserQuestion tool whether to check now that they fit with the project's CLAUDE.md, the project's own skills and the user's own rules file (options: 'Check now' recommended, 'Not now'). If they say yes, run the /orion-verify skill (.claude/skills/orion-verify/SKILL.md) exactly as written. If they say no, continue with their request: it is not asked again until the rules change, and /orion-verify runs the check any time."
+        return 0
+    fi
+    rules_checked "$sum" && return 0
+    # the fingerprint an older orion took of these same rules, line endings included: nothing changed
+    if rules_checked "$(rules_sum raw)"; then rules_mark "$sum"; return 0; fi
     rules_mark "$sum"
     printf '%s' "orion's rules (.claude/orion/BASE_CLAUDE.md) or the instructions of its skills have changed since they were last checked on this computer, after an update or a pull that brought one. Before anything else, ask the user with the AskUserQuestion tool whether to check now that they still fit with the project's CLAUDE.md, the project's own skills and the user's own rules file (options: 'Check now' recommended, 'Not now'). If they say yes, run the /orion-verify skill (.claude/skills/orion-verify/SKILL.md) exactly as written. If they say no, continue with their request: it is not asked again until the rules change, and /orion-verify runs the check any time."
 }
@@ -1069,34 +1211,69 @@ check_statusline_ctx() {
 global_copy() { printf '%s' "$PROJECT/.claude/orion/global/GLOBAL_CLAUDE.md"; }
 personal_rules() { printf '%s' "$HOME/.claude/CLAUDE.md"; }
 
-# The version number on the person's ORION GLOBAL heading line (# ORION GLOBAL — v<N>), or nothing when there is no section.
+# The version on the person's ORION GLOBAL heading line (# ORION GLOBAL — v<version>), or nothing when there is no
+# section (a heading in any other form counts as none).
 global_stamp() {
     local f; f="$(personal_rules)"
     [ -f "$f" ] || return 0
-    tr -d '\r' < "$f" | sed -n 's/^# ORION GLOBAL.* v\([0-9][0-9]*\)[[:space:]]*$/\1/p' | head -n1
+    rule_version_of "$(tr -d '\r' < "$f" | sed -n 's/^# ORION GLOBAL.* v\([0-9][0-9.]*+\{0,1\}\)[[:space:]]*$/\1/p' | head -n1)"
 }
 
-# How many clauses of the project's GLOBAL_CLAUDE.md carry a version marker higher than that number (all of them without one).
+# "<count> <highest>": how many clauses of the project's GLOBAL_CLAUDE.md carry a version note newer than that
+# version (all of them without one), and the newest version note in the file (0 when there is none).
 global_newer() {
-    local f; f="$(global_copy)"
-    [ -f "$f" ] || { printf '0'; return 0; }
-    tr -d '\r' < "$f" | sed -n 's/.* <!-- orion:v\([0-9][0-9]*\) -->$/\1/p' | awk -v t="$(global_stamp)" 't == "" || $0 + 0 > t + 0 { n++ } END { print n+0 }'
+    local f t v n=0 top=""; f="$(global_copy)"
+    [ -f "$f" ] || { printf '0 0'; return 0; }
+    t="$(global_stamp)"
+    while IFS= read -r v; do
+        version_key "$v"; [ "${VKEY[0]}" != 0 ] || continue
+        if [ -z "$t" ] || version_gt "$v" "$t"; then n=$((n + 1)); fi
+        if [ -z "$top" ] || version_gt "$v" "$top"; then top="$v"; fi
+    done <<< "$(tr -d '\r' < "$f" | sed -n 's/.* <!-- orion:v\([0-9][0-9.]*+\{0,1\}\) -->$/\1/p')"
+    printf '%s %s' "$n" "${top:-0}"
 }
 
-# Local only: offer the personal rules discussion while a clause is newer than the person's section, at most once a
-# day per computer (any project) and never under updateMode off, in any other mode only offered. Prints the context or nothing.
+# Local only: offer the personal rules discussion while a clause is newer than the person's section, never under
+# updateMode off, in any other mode only offered. Once per clause version per computer (any project):
+# global-offered-version holds "<highest clause version offered> <when>", and the offer comes back only when a project
+# carries a higher one, or on --force; no such record counts as nothing offered. global-offered is the Unix time an
+# older orion.sh on this computer reads and writes to offer at most once a day. Once an offer is recorded here, that
+# time is pinned to GLOBAL_OFFER_PIN, so an older orion.sh never offers again; a past time there (an older orion.sh
+# offered) less than a day old counts as this computer's offer of the project's clauses, recorded without a word,
+# unless a clause is newer than any older orion.sh carries (LAST_DAILY_OFFER_VERSION): that one is still offered.
+# Prints the context or nothing.
 check_global_ctx() {  # force now
-    local n stamp last
+    local n top dir offered ours last
     [ "$(config_get "$PROJECT/.claude/orion/config.json" updateMode ask)" = "off" ] && return 0
-    n="$(global_newer)"
-    [ "$n" -gt 0 ] 2>/dev/null || return 0
-    stamp="${XDG_CACHE_HOME:-$HOME/.cache}/orion/global-offered"
-    if [ "$1" != "1" ] && [ -f "$stamp" ]; then
-        last=$(cat "$stamp" 2>/dev/null || echo 0)
-        [ $(($2 - last)) -lt "$CHECK_INTERVAL_SECONDS" ] && return 0
+    read -r n top <<< "$(global_newer)"
+    [ "${n:-0}" -gt 0 ] 2>/dev/null || return 0
+    dir="${XDG_CACHE_HOME:-$HOME/.cache}/orion"
+    # stderr goes first in every read and write: a missing or unwritable record is no error for the hook
+    read -r offered ours <<< "$(tr -d '\r' 2>/dev/null < "$dir/global-offered-version" || true)"
+    offered="$(rule_version_of "${offered:-}")"; ours="$(whole_number "${ours:-}")"
+    last="$(whole_number "$(tr -d ' \t\r\n' 2>/dev/null < "$dir/global-offered" || true)")"
+    if [ "$1" != "1" ]; then
+        if ! version_gt "${top:-0}" "${offered:-0}"; then
+            [ "$last" = "$GLOBAL_OFFER_PIN" ] || global_offer_record "$dir" "$offered" "$2"
+            return 0
+        fi
+        if [ -n "$last" ] && [ "$last" != "$ours" ] && [ "$last" -le "$2" ] 2>/dev/null \
+            && [ $(($2 - last)) -lt "$CHECK_INTERVAL_SECONDS" ] && ! version_gt "${top:-0}" "$LAST_DAILY_OFFER_VERSION"; then
+            global_offer_record "$dir" "$top" "$2"
+            return 0
+        fi
     fi
-    mkdir -p "$(dirname "$stamp")" 2>/dev/null && printf '%s' "$2" > "$stamp" || true
-    printf '%s' "orion recommends personal rules for the user's own rules file (~/.claude/CLAUDE.md), and $n of them have not been offered on this computer yet. Ask the user with the AskUserQuestion tool whether to go through them now (options: 'Go through them now' recommended, 'Not now'). If yes, follow the steps at the top of .claude/orion/global/GLOBAL_CLAUDE.md exactly as written: the user's file changes only inside its ORION GLOBAL section and only on their word. If no, continue with their request: it is offered again tomorrow, and the user can ask to go through orion's personal rules any time."
+    version_gt "${top:-0}" "${offered:-0}" || top="${offered:-0}"   # --force offers again and never lowers the record
+    global_offer_record "$dir" "$top" "$2"
+    printf '%s' "orion recommends personal rules for the user's own rules file (~/.claude/CLAUDE.md), and $n of them are not in its ORION GLOBAL section yet. Ask the user with the AskUserQuestion tool whether to go through them now (options: 'Go through them now' recommended, 'Not now'). If yes, follow the steps at the top of .claude/orion/global/GLOBAL_CLAUDE.md exactly as written: the user's file changes only inside its ORION GLOBAL section and only on their word. If no, continue with their request: it is offered again only when orion adds or changes one of these rules, and the user can ask to go through orion's personal rules any time."
+}
+
+# Records "<version> <now>" as the highest personal rules version offered on this computer and pins an older
+# orion.sh's time stamp in the future, so only this record decides from then on. Never an error for the hook.
+global_offer_record() {  # dir version now
+    mkdir -p "$1" 2>/dev/null || true
+    printf '%s %s\n' "$2" "$3" 2>/dev/null > "$1/global-offered-version" || true
+    printf '%s' "$GLOBAL_OFFER_PIN" 2>/dev/null > "$1/global-offered" || true
 }
 
 # Every session: bring the branch the session opens on up to date with its remote copy, fast-forward only, as
@@ -1145,7 +1322,7 @@ check_branches_ctx() {  # force now
         over="${over}has $w git worktrees (the limit is $wlimit, worktreeLimit)"
     fi
     [ -n "$over" ] || return 0
-    mkdir -p "$(dirname "$stamp")" 2>/dev/null && printf '%s' "$2" > "$stamp" || true
+    mkdir -p "$(dirname "$stamp")" 2>/dev/null && printf '%s' "$2" 2>/dev/null > "$stamp" || true
     printf '%s' "This project $over, set in .claude/orion/config.json. Before anything else, ask the user with the AskUserQuestion tool whether to tidy up now (options: 'Tidy up now' recommended, 'Not now'). If they say yes, run the /clear-git-resources skill (.claude/skills/clear-git-resources/SKILL.md) exactly as written: it deletes the user's own stale worktrees and branches whose work cannot be lost by itself, asks before deleting anyone else's stale ones, and never touches unmerged work or the audit and QA resources. If they say no, continue with their request and do not mention it again this session."
 }
 
@@ -1210,8 +1387,12 @@ cmd_uninstall() {
         say "  ~    CLAUDE.md (import line removed; your rules untouched)"
     fi
     settings_remove_hook "$PROJECT/.claude/settings.json"
-    # last-check: the daily update stamp older versions left
-    rm -f "$(cache_file verify-pending)" "$(cache_file rules-checked)" "$(cache_file update-skipped)" "$(cache_file last-check)" 2>/dev/null || true
+    # last-check: the daily update stamp older versions left; the main checkout's records an older orion keyed on its path go too
+    cache_key_set
+    for f in verify-pending rules-checked update-skipped last-check; do
+        rm -f "$(cache_file "$f")" 2>/dev/null || true
+        [ -z "$LEGACY_KEY" ] || rm -f "${XDG_CACHE_HOME:-$HOME/.cache}/orion/$LEGACY_KEY.$f" 2>/dev/null || true
+    done
     say "done. The status line (if installed) is a per-computer copy under ~/.claude/statusline and was left alone,"
     say "and so was your own ~/.claude/CLAUDE.md: the personal rules you accepted are yours."
 }
@@ -1226,7 +1407,7 @@ cmd_statusline() {
     [ -d "$PROJECT/.claude/orion/statusline" ] || die "this project carries no orion status line (run: orion.sh update)"
     case "$action" in merge|skip) ;; *) die "usage: orion.sh statusline merge|skip" ;; esac
     # never step back: a project with an older orion has nothing newer to merge or skip
-    if [ "$(project_stamp)" -le "$(sl_stamp)" ]; then
+    if ! version_gt "$(project_stamp)" "$(sl_stamp)"; then
         say "status line: nothing to $action - the copy on this computer already follows this project's orion version or a newer one"
         return
     fi
@@ -1306,7 +1487,7 @@ cmd_verify() {
         while IFS= read -r ref; do
             [ -n "$ref" ] || continue
             if [ ! -e "$PROJECT/$ref" ]; then
-                v_fail rules-reference "the rules rely on $ref, which is not installed (a project skill without the orion marker kept its place, or it was deleted; fix: bash .claude/orion/orion.sh init --force)"
+                v_fail rules-reference "the rules rely on $ref, which is not installed (a project skill without the orion marker kept its place, or it was deleted; fix: bash .claude/orion/orion.sh init --force --yes)"
                 n=$((n+1))
             fi
         done <<< "$( { grep -oE '\.claude/skills/[A-Za-z0-9_./-]+' "$base" | sed 's/[.]*$//'; grep -oE '`/[a-z][a-z0-9-]*' "$base" | sed 's|^`/|.claude/skills/|'; } 2>/dev/null | sort -u || true)"
