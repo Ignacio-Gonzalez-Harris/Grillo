@@ -61,6 +61,7 @@ Mac.** Every agent uses exactly these commands. The scaffold has landed (issue #
 |---|---|
 | Build | `npm run build` (`electron-vite build`) |
 | **The full suite** | `npm test` (`vitest run`) |
+| Full suite with a copy count | `npm test -- --maxWorkers=<n>` (Vitest's parallel workers; `<n>` is sized fresh per run as `BASE_CLAUDE.md` says) |
 | One file | `npx vitest run <path>` |
 | One test | `npx vitest run <path> -t "<test name>"` |
 | Typecheck | `npm run typecheck` (`tsc --noEmit`) |
