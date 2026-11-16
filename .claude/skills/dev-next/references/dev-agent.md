@@ -1,6 +1,6 @@
-# The `dev-N` sub-agent — phase 3
+# The `dev-<N>` sub-agent — phase 3
 
-Spawn on **opus** at **high** effort, else the fallback order in `SKILL.md` *Roles*. Give it the brief below with the placeholders filled in.
+Spawn `dev-<N>` (the issue's number, `SKILL.md` *Roles*) on **opus** at **high** effort, else the fallback order in `SKILL.md` *Roles*. Give it the brief below with the placeholders filled in.
 
 ---
 
@@ -33,17 +33,24 @@ You are implementing GitHub issue **#N** of this repository (the one `origin` po
    **export the variable the project uses to point at it** before running the suite — without it the suite finds
    whatever is on PATH, and tests fail on a machine where that is the wrong version.
 2. Implement the acceptance criteria test first: a failing test, then the code that passes it, then a refactor
-   (`BASE_CLAUDE.md`, *Test first, then clean code*). Nothing more — the `Out` list under `### Scope` means what it
-   says.
+   (`BASE_CLAUDE.md`, *Test first, then clean code*, and **Clean code** below). Nothing more — the `Out` list under
+   `### Scope` means what it says.
 3. **Use only synthetic or de-identified fixtures.** Never copy production, customer or personal data into the
    repository, a test, a log or an issue.
 4. **Honour every domain invariant the project's `CLAUDE.md` names** — a record that must be written for every
    artefact produced, a documented schema that must be kept in step with the code — and test it.
-5. Write tests for every new behaviour. **Never delete, skip or weaken an existing test. Never widen a timeout.**
-   Tests never reach the network: any external service is mocked behind its interface.
-6. Green the gate the project's `CLAUDE.md` lists (build → lint → typecheck → full suite). Every command in the chain.
-   No exceptions.
-7. `git merge origin/main` if you are behind — **never rebase, never stash**. Resolve conflicts in your own files only.
+5. Write tests for every new behaviour (`BASE_CLAUDE.md`, *Every new test earns its place*). **Search the existing
+   tests before writing one:** a behaviour something already checks gets no new test — extend or reuse that test
+   instead of repeating it. Prove each behaviour once, at the cheapest level that would fail if it broke (one function
+   before the whole app; a slow whole-app test only for what a fast one cannot reach). **Never delete, skip or weaken
+   an existing test. Never widen a timeout.** Tests never reach the network: any external service is mocked behind its
+   interface.
+6. `git fetch origin` and `git merge origin/main` **before the gate, not after it**, so the gate runs on the newest
+   `main`, not on a stale base — **never rebase, never stash**. Resolve conflicts in your own files only.
+7. Green the gate the project's `CLAUDE.md` lists (build → lint → typecheck → full suite). Every command in the chain.
+   No exceptions. Size the full suite's test copies (parallel test workers) right before it runs, with the recipe in
+   `in-flight.md`, *Test copies* (`.claude/skills/dev-next/references/`), and pass them the way the project's
+   `CLAUDE.md` *Test copies* row says.
 8. Add this pull request's **own changelog file**, `docs/changelog/<YYYY-MM-DD>-<branch>.md` (today's date, the branch name with `/`
    turned into `-`), holding one line: what changed and why it matters, a few words, never a restatement of the diff.
    Never edit another pull request's file or an old single-file changelog, so parallel pull requests never conflict
@@ -54,6 +61,16 @@ You are implementing GitHub issue **#N** of this repository (the one `origin` po
 9. Push the branch the first time with `git push -u origin feat/<N>-<slug>` (it was created with no upstream, so a
    plain `git push` has nowhere to go), then open the pull request with **`Closes #<N>`** in the body, plus the
    evidence table below.
+
+**Clean code — what the refactor in step 2 looks for**, in the code this pull request writes or changes, never in code
+it does not touch:
+
+- **SOLID, as a guide** (five design rules, in plain words): each unit has one job; a unit is extended without editing
+  what already works; a subtype works wherever its parent does; interfaces stay small and focused; code depends on
+  interfaces, not on concrete parts. **Never add an interface, class or layer only to obey one of them** — the rule
+  against speculative abstractions wins.
+- **Six code smells** (signs of poor design) to remove before the pull request opens: copied code; a long function; a
+  long parameter list; deep nesting; one unit doing several jobs; one change that needs edits in many places.
 
 **Before step 9, the checks that cost review rounds when skipped:**
 
@@ -105,13 +122,13 @@ line, not in a bullet; if it is worth a sentence it is a `Fix now:` in a file yo
 
 **If the gate is already red before you change anything** (run it once after step 1, before step 2): stop. Report
 `INHERITED RED` with every failing test named. Do not fix tests outside your issue, do not weaken them, do not open a
-pull request. The orchestrator opens a `bug` issue for `main` and releases your issue; nobody blames the story.
+pull request. The orchestrator opens a `bug` issue for `main` and stops your issue, still `agent-ready`; nobody blames the story.
 **Exception:** when your issue *is* the bug that greens the gate on `main`, the red gate is the starting point, not
 `INHERITED RED` — the issue names which commands are expected red; any other red command still stops you.
 
 **When review findings come back** (the orchestrator sends them to you): fix every must-fix and every `Fix now:` line in
-this branch, re-green the gate, push, and report again. `Defer:` lines are not yours to act on: the orchestrator
-records them in the audit report.
+this branch, merge `origin/main` and re-green the gate (steps 6 and 7, in that order), push, and report again.
+`Defer:` lines are not yours to act on: the orchestrator records them in the audit report.
 Never argue a must-fix away in code comments — if you think one is wrong, say so in your report and the next fresh
 reviewer decides.
 

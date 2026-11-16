@@ -1,6 +1,6 @@
 ---
 name: orion-verify
-description: ORION - The consistency check that `orion init` asks for once, and the session-start hook asks for again each time orion's rules change on this computer. Verifies that the project's CLAUDE.md, the BASE_CLAUDE.md it imports, every skill under .claude/skills (orion's and the project's own), the settings and the person's own rules file (~/.claude/CLAUDE.md) fit together - no missing pieces, no duplicates, no rule in the project or the person's file that contradicts the mandatory rules, no skill that breaks them. Fixes what is mechanical by itself, asks before touching anything the project owns, and reports the rest in a few lines. Use when a session-start message says the orion post-install check is pending or that orion's rules changed, right after `orion init` or an `orion update` that changed the rules finished in this session, or when the user types /orion-verify.
+description: ORION - The consistency check that `orion init` asks for once, and the session-start hook asks for again each time orion's rules change on this computer and once on a computer where the repository is new (a fresh clone). Verifies that the project's CLAUDE.md, the BASE_CLAUDE.md it imports, every skill under .claude/skills (orion's and the project's own), the settings and the person's own rules file (~/.claude/CLAUDE.md) fit together - no missing pieces, no duplicates, no rule in the project or the person's file that contradicts the mandatory rules, no skill that breaks them. Fixes what is mechanical by itself, asks before touching anything the project owns, and reports the rest in a few lines. Use when a session-start message says the orion post-install check is pending, that orion's rules changed or that orion is new on this computer for this repository, right after `orion init` or an `orion update` that changed the rules finished in this session, or when the user types /orion-verify.
 argument-hint: (no arguments)
 ---
 
@@ -16,7 +16,8 @@ with one orion ships or may tell the agent to do what the rules forbid, a line m
 that whole-picture check. It runs **once after install** (the hook asks for it at the next session start, or `init`'s
 own closing message asks for it when it ran inside a session), **again each time orion's rules change on this
 computer** (`BASE_CLAUDE.md` or any `.md` file of an orion skill, after an update or a pull that brought one: the hook
-asks once, and `update` says so when it changed them), and whenever the user types `/orion-verify`.
+asks once, and `update` says so when it changed them), **once on a computer where the repository is new** (a fresh
+clone with no record of a check here; every worktree of one clone shares that record), and whenever the user types `/orion-verify`.
 
 Three kinds of outcome, kept strictly apart:
 
@@ -49,7 +50,7 @@ project wrote:
 
 | Finding | Fix |
 |---|---|
-| `core-files`, `skills`, `skill-file`, `skill-name` (orion-managed), `settings-hook` missing, `rules-reference` | `bash .claude/orion/orion.sh update --force` (needs network; `init --force` when a project skill without the orion marker sits in an orion skill's place — ask first in that case, the project's copy is theirs) |
+| `core-files`, `skills`, `skill-file`, `skill-name` (orion-managed), `settings-hook` missing, `rules-reference` | `bash .claude/orion/orion.sh update --force` (needs network; `init --force --yes` when a project skill without the orion marker sits in an orion skill's place — ask first in that case, the project's copy is theirs) |
 | `claude-md-import` 0 times | Add the exact import line the finding prints as the first line of `CLAUDE.md`, followed by a blank line |
 | `claude-md-import` more than once | Keep the first occurrence, delete the others |
 | `claude-md-old-import` | Delete the retired `@.claude/orion/ORION.md` line |
@@ -136,7 +137,7 @@ project's own), and for every folder under `~/.claude/skills/` whose name matche
   the yes.
 - **A project skill in an orion skill's place** (same folder name, no marker; `init` printed `skip <name>` for it) —
   the rules may rely on orion's version (`rules-reference` in step 1 says so when they do). **Needs a yes**: rename the
-  project's copy, or replace it with orion's through `init --force`.
+  project's copy, or replace it with orion's through `init --force --yes`.
 - **A user-level skill shadowing a project skill** (`skill-shadow` in step 1) — **reported**; the user removes one.
 - **A skill whose front matter is broken** (no `name`, name differs from the folder, no `description`) — orion-managed:
   fixed by `update --force` in step 1; the project's own: **reported** with the exact fix.
